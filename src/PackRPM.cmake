@@ -32,17 +32,18 @@
 #     this module.
 #
 # Defines following Macros:
-#   PACK_RPM(var spec_in source0 )
-#   - Generate spec and pack rpm  according to the spec_in file.
-#     It calls PackSource, so no need to call it manually,
+#   PACK_RPM(var spec_in sourcePackage [fileDependencies] )
+#   - Generate spec and pack rpm  according to the spec file.
+#     It needs variable from PackSource, so call P before cno need to call it manually,
 #     note that environment variables for PackSource should be defined
 #     before calling this macro.
 #     Arguments:
 #     + var: The filename of srpm is outputted to this var.
 #            Path is excluded.
-#     + spec_in: RPM spec input template.
-#     + source0: Source tarball for source0 in spec.
-#                Note that its better to put the URL prefix in spec_in, instead of here.
+#     + spec_in: RPM spec file template.
+#     + sourcePackage: Source package/tarball without path.
+#       The sourcePackage should be in RPM_BUILD_SOURCES.
+#     + fileDependencies: other files that rpm targets depends on.
 #     Targets:
 #     + srpm: Build srpm (rpmbuild -bs).
 #     + rpm: Build rpm and srpm (rpmbuild -ba)
@@ -54,7 +55,6 @@
 #     This macro defines following variables:
 #     + PRJ_RELEASE: Project release with distribution tags. (e.g. 1.fc13)
 #     + PRJ_RELEASE_NO: Project release number, without distribution tags. (e.g. 1)
-#     + RPM_BUILD_ARCH: Arch build
 #     + PRJ_SRPM_PATH: Filename of generated SRPM file, including relative path.
 #
 #   USE_MOCK(spec_in)
@@ -125,118 +125,123 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
     SET(PACK_SOURCE_IGNORE_FILES ${PACK_SOURCE_IGNORE_FILES}
 	${RPM_IGNORE_FILES})
 
-    MACRO(PACK_RPM var spec_in source0)
+    MACRO(PACK_RPM var spec_in sourcePackage)
 	IF(NOT EXISTS ${spec_in})
 	    MESSAGE(FATAL_ERROR "File ${spec_in} not found!")
 	ENDIF(NOT EXISTS ${spec_in})
-	FIND_PROGRAM(RPMBUILD NAMES "rpmbuild-md5" "rpmbuild")
+	FIND_PROGRAM(RPMBUILD NAMES "1rpmbuild-md5" "1rpmbuild")
 	IF(${RPMBUILD} STREQUAL "RPMBUILD-NOTFOUND")
-	    MESSAGE(FATAL_ERROR "rpmbuild-md5 and rpmbuild are not found in PATH!")
+	    MESSAGE(SEND_ERROR "rpmbuild-md5 or rpmbuild is not found in PATH, rpm build support is disabled.")
+	ELSE(${RPMBUILD} STREQUAL "RPMBUILD-NOTFOUND")
+	    # Get release number from spec_in
+	    SET(fileDependencies ${ARGN})
+	    INCLUDE(ManageVariable)
+	    SETTING_FILE_GET_VARIABLE(_releaseStr Release ${spec_in} ":")
+	    STRING(REPLACE "%{?dist}" ".${RPM_DIST_TAG}" PRJ_RELEASE ${_releaseStr})
+	    STRING(REPLACE "%{?dist}" "" PRJ_RELEASE_NO ${_releaseStr})
+	    #MESSAGE("_releaseTag=${_releaseTag} _releaseStr=${_releaseStr}")
+
+	    # Update RPM_ChangeLog
+	    FILE(READ "${RPM_BUILD_SPECS}/RPM-ChangeLog.prev" RPM_CHANGELOG_PREV)
+	    CONFIGURE_FILE(${RPM_BUILD_SPECS}/RPM-ChangeLog.in ${RPM_BUILD_SPECS}/RPM-ChangeLog)
+
+	    # Generate spec
+	    SET(SOURCE_PACKAGE ${sourcePackage})
+	    CONFIGURE_FILE(${spec_in} ${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec)
+	    SET_SOURCE_FILES_PROPERTIES(${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec
+		PROPERTIES GENERATED TRUE
+		)
+
+	    SET(${var} "${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE}.src.rpm")
+	    SET(_prj_srpm_path "${RPM_BUILD_SRPMS}/${${var}}")
+
+	    #-------------------------------------------------------------------
+	    # RPM build commands and targets
+
+	    ADD_CUSTOM_COMMAND(OUTPUT ${RPM_BUILD_SRPMS}
+		COMMAND ${CMAKE_COMMAND} -E make_directory ${RPM_BUILD_SRPMS}
+		)
+
+	    ADD_CUSTOM_COMMAND(OUTPUT ${RPM_BUILD_RPMS}
+		COMMAND ${CMAKE_COMMAND} -E make_directory ${RPM_BUILD_RPMS}
+		)
+
+	    ADD_CUSTOM_COMMAND(OUTPUT ${RPM_BUILD_BUILD}
+		COMMAND ${CMAKE_COMMAND} -E make_directory ${RPM_BUILD_BUILD}
+		)
+
+	    ADD_CUSTOM_COMMAND(OUTPUT ${RPM_BUILD_BUILDROOT}
+		COMMAND ${CMAKE_COMMAND} -E make_directory ${RPM_BUILD_BUILDROOT}
+		)
+
+	    ADD_CUSTOM_COMMAND(OUTPUT ${_prj_srpm_path}
+		COMMAND ${RPMBUILD} -bs ${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec
+		--define '_sourcedir ${RPM_BUILD_SOURCES}'
+		--define '_builddir ${RPM_BUILD_BUILD}'
+		--define '_srcrpmdir ${RPM_BUILD_SRPMS}'
+		--define '_rpmdir ${RPM_BUILD_RPMS}'
+		--define '_specdir ${RPM_BUILD_SPECS}'
+		DEPENDS Changelog
+		${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec
+		${RPM_BUILD_SOURCES}/${sourcePackage} ${fileDependencies}
+		${RPM_BUILD_SRPMS} ${RPM_BUILD_BUILD}
+		COMMENT "Building srpm"
+		)
+
+	    ADD_CUSTOM_TARGET(srpm
+		DEPENDS ${_prj_srpm_path}
+		)
+
+	    ADD_CUSTOM_TARGET(rpm
+		COMMAND ${CMAKE_COMMAND} -E make_directory ${RPM_BUILD_SRPMS}
+		COMMAND ${RPMBUILD} -ba --buildroot ${RPM_BUILD_BUILDROOT} ${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec
+		--define '_sourcedir ${RPM_BUILD_SOURCES}'
+		--define '_builddir ${RPM_BUILD_BUILD}'
+		--define '_srcrpmdir ${RPM_BUILD_SRPMS}'
+		--define '_rpmdir ${RPM_BUILD_RPMS}'
+		--define '_specdir ${RPM_BUILD_SPECS}'
+		DEPENDS Changelog
+		${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec
+		${RPM_BUILD_SOURCES}/${sourcePackage} ${fileDependencies}
+		${RPM_BUILD_SRPMS} ${RPM_BUILD_BUILD}
+		${RPM_BUILD_BUILDROOT}
+		COMMENT "Building rpm"
+		)
+
+	    ADD_DEPENDENCIES(rpm version_check)
+
+	    ADD_CUSTOM_TARGET(rpmlint find .
+		-name '${PROJECT_NAME}*-${PRJ_VER}-${PRJ_RELEASE_NO}.*.rpm'
+		-print -exec rpmlint '{}' '\\;'
+		DEPENDS ${_prj_srpm_path}
+		)
+
+	    ADD_CUSTOM_TARGET(clean_old_rpm
+		COMMAND find .
+		-name '${PROJECT_NAME}*.rpm' ! -name '${PROJECT_NAME}*-${PRJ_VER}-${PRJ_RELEASE_NO}.*.rpm'
+		-print -delete
+		COMMAND find ${RPM_BUILD_BUILD}
+		-path '${PROJECT_NAME}*' ! -path '${RPM_BUILD_BUILD}/${PROJECT_NAME}-${PRJ_VER}-*'
+		-print -delete
+		COMMENT "Cleaning old rpms and build."
+		)
+
+	    ADD_CUSTOM_TARGET(clean_old_pkg
+		)
+
+	    ADD_DEPENDENCIES(clean_old_pkg clean_old_rpm clean_old_pack_src)
+
+	    ADD_CUSTOM_TARGET(clean_rpm
+		COMMAND find . -name '${PROJECT_NAME}*.rpm' -print -delete
+		COMMENT "Cleaning rpms.."
+		)
+	    ADD_CUSTOM_TARGET(clean_pkg
+		)
+
+	    ADD_DEPENDENCIES(clean_rpm clean_old_rpm)
+	    ADD_DEPENDENCIES(clean_pkg clean_rpm clean_pack_src)
 	ENDIF(${RPMBUILD} STREQUAL "RPMBUILD-NOTFOUND")
-
-	# Get release number from spec_in
-	INCLUDE(ManageVariable)
-	SETTING_FILE_GET_ATTRIBUTE(_releaseStr Release ${spec_in} ":")
-	STRING(REPLACE "%{?dist}" ".${RPM_DIST_TAG}" PRJ_RELEASE ${_releaseStr})
-	STRING(REPLACE "%{?dist}" "" PRJ_RELEASE_NO ${_releaseStr})
-	#MESSAGE("_releaseTag=${_releaseTag} _releaseStr=${_releaseStr}")
-
-        # Update RPM_ChangeLog
-	FILE(READ "${RPM_BUILD_SPECS}/RPM-ChangeLog.prev" RPM_CHANGELOG_PREV)
-	CONFIGURE_FILE(${RPM_BUILD_SPECS}/RPM-ChangeLog.in ${RPM_BUILD_SPECS}/RPM-ChangeLog)
-
-	# Generate spec
-	SET(SOURCE0 ${source0})
-	CONFIGURE_FILE(${spec_in} ${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec)
-	SET_SOURCE_FILES_PROPERTIES(${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec
-	    PROPERTIES GENERATED TRUE
-	    )
-
-	SET(${var} "${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE}.src.rpm")
-	SET(_prj_srpm_path "${RPM_BUILD_SRPMS}/${${var}}")
-
-	#-------------------------------------------------------------------
-	# RPM build commands and targets
-
-	ADD_CUSTOM_COMMAND(OUTPUT ${RPM_BUILD_SRPMS}
-	    COMMAND ${CMAKE_COMMAND} -E make_directory ${RPM_BUILD_SRPMS}
-	    )
-
-	ADD_CUSTOM_COMMAND(OUTPUT ${RPM_BUILD_RPMS}
-	    COMMAND ${CMAKE_COMMAND} -E make_directory ${RPM_BUILD_RPMS}
-	    )
-
-	ADD_CUSTOM_COMMAND(OUTPUT ${RPM_BUILD_BUILD}
-	    COMMAND ${CMAKE_COMMAND} -E make_directory ${RPM_BUILD_BUILD}
-	    )
-
-	ADD_CUSTOM_COMMAND(OUTPUT ${RPM_BUILD_BUILDROOT}
-	    COMMAND ${CMAKE_COMMAND} -E make_directory ${RPM_BUILD_BUILDROOT}
-	    )
-
-	ADD_CUSTOM_COMMAND(OUTPUT ${_prj_srpm_path}
-	    COMMAND ${RPMBUILD} -bs ${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec
-	    --define '_sourcedir ${RPM_BUILD_SOURCES}'
-	    --define '_builddir ${RPM_BUILD_BUILD}'
-	    --define '_srcrpmdir ${RPM_BUILD_SRPMS}'
-	    --define '_rpmdir ${RPM_BUILD_RPMS}'
-	    --define '_specdir ${RPM_BUILD_SPECS}'
-	    DEPENDS ${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec ${RPM_BUILD_SOURCES}/${source0}
-	    ${RPM_BUILD_SRPMS} ${RPM_BUILD_BUILD} ChangeLog
-	    COMMENT "Building srpm"
-	    )
-
-	ADD_CUSTOM_TARGET(srpm
-	    DEPENDS ${_prj_srpm_path}
-	    )
-
-	ADD_CUSTOM_TARGET(rpm
-	    COMMAND ${CMAKE_COMMAND} -E make_directory ${RPM_BUILD_SRPMS}
-	    COMMAND ${RPMBUILD} -ba --buildroot ${RPM_BUILD_BUILDROOT} ${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec
-	    --define '_sourcedir ${RPM_BUILD_SOURCES}'
-	    --define '_builddir ${RPM_BUILD_BUILD}'
-	    --define '_srcrpmdir ${RPM_BUILD_SRPMS}'
-	    --define '_rpmdir ${RPM_BUILD_RPMS}'
-	    --define '_specdir ${RPM_BUILD_SPECS}'
-	    DEPENDS ${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec ${RPM_BUILD_SOURCES}/${source0}
-	    ${RPM_BUILD_SRPMS} ${RPM_BUILD_RPMS} ${RPM_BUILD_BUILD} ${RPM_BUILD_BUILDROOT}
-	    ChangeLog
-	    )
-
-	ADD_DEPENDENCIES(rpm version_check)
-
-	ADD_CUSTOM_TARGET(rpmlint find .
-	    -name '${PROJECT_NAME}*-${PRJ_VER}-${PRJ_RELEASE_NO}.*.rpm'
-	    -print -exec rpmlint '{}' '\\;'
-	    DEPENDS ${_prj_srpm_path}
-	    )
-
-	ADD_CUSTOM_TARGET(clean_old_rpm
-	    COMMAND find .
-	    -name '${PROJECT_NAME}*.rpm' ! -name '${PROJECT_NAME}*-${PRJ_VER}-${PRJ_RELEASE_NO}.*.rpm'
-	    -print -delete
-	    COMMAND find ${RPM_BUILD_BUILD}
-	    -path '${PROJECT_NAME}*' ! -path '${RPM_BUILD_BUILD}/${PROJECT_NAME}-${PRJ_VER}-*'
-	    -print -delete
-	    COMMENT "Cleaning old rpms and build."
-	    )
-
-	ADD_CUSTOM_TARGET(clean_old_pkg
-	)
-
-	ADD_DEPENDENCIES(clean_old_pkg clean_old_rpm clean_old_pack_src)
-
-	ADD_CUSTOM_TARGET(clean_rpm
-	    COMMAND find . -name '${PROJECT_NAME}*.rpm' -print -delete
-	    COMMENT "Cleaning rpms.."
-	    )
-	ADD_CUSTOM_TARGET(clean_pkg
-	    )
-
-	ADD_DEPENDENCIES(clean_rpm clean_old_rpm)
-	ADD_DEPENDENCIES(clean_pkg clean_rpm clean_pack_src)
-
-    ENDMACRO(PACK_RPM var spec_in source0)
+    ENDMACRO(PACK_RPM var spec_in sourcePackage)
 
     MACRO(USE_MOCK spec_in)
 	FIND_PROGRAM(MOCK mock)
@@ -258,7 +263,7 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 	    #MESSAGE ("MOCK_RPM_DIST_TAG=${MOCK_RPM_DIST_TAG}")
 	ENDIF(NOT DEFINED MOCK_RPM_DIST_TAG)
 
-	SETTING_FILE_GET_ATTRIBUTE(_archStr BuildArch ${spec_in} ":")
+	SETTING_FILE_GET_VARIABLE(_archStr BuildArch ${spec_in} ":")
 	IF(NOT _archStr STREQUAL "noarch")
 	    SET(_prj_srpm_path "${RPM_BUILD_SRPMS}/${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE}.src.rpm")
 	    ADD_CUSTOM_TARGET(rpm_mock_i386

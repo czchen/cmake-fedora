@@ -147,7 +147,7 @@ IF(NOT DEFINED _USE_HOSTING_SERVICE_CMAKE_)
 	IF(EXISTS "${filename}")
 	    INCLUDE(ManageVariable)
 	    INCLUDE(ManageVersion)
-	    SETTING_FILE_GET_ALL_ATTRIBUTES("${filename}" UNQUOTED)
+	    SETTING_FILE_GET_ALL_VARIABLES("${filename}" UNQUOTED)
 
 	    #===================================================================
 	    # Targets:
@@ -159,6 +159,7 @@ IF(NOT DEFINED _USE_HOSTING_SERVICE_CMAKE_)
 		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/ChangeLog ${CMAKE_SOURCE_DIR}/ChangeLog.prev
 		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/${RPM_BUILD_SPECS}/RPM-ChangeLog
 		${CMAKE_SOURCE_DIR}/${RPM_BUILD_SPECS}/RPM-ChangeLog.prev
+		DEPENDS ${CMAKE_SOURCE_DIR}/ChangeLog ${CMAKE_SOURCE_DIR}/${RPM_BUILD_SPECS}/RPM-ChangeLog
 		COMMENT "Changelogs are updated for next version."
 		)
 

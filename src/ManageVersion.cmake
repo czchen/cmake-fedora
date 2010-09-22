@@ -5,15 +5,21 @@
 #     Arguments:
 #     + releaseFile: release file to be read.
 #       This file should contain following definition:
-#       PRJ_VER: Release version.
-#       SUMMARY: Summary of the release. Will be output as CHANGE_SUMMARY.
-#       and a [Changes] section tag, below which listed the change in the
-#       release.
-#     This macro also set following variables:
-#       PRJ_VER: Release version.
-#       CHANGE_SUMMARY: Summary of changes.
-#       CHANGELOG_ITEMS: Lines below the [Changes] tag.
-#       RELEASE_FILE: The loaded release file.
+#       + PRJ_VER: Release version.
+#       + SUMMARY: Summary of the release. Will be output as CHANGE_SUMMARY.
+#          and a [Changes] section tag, below which listed the change in the
+#          release.
+#     This macro outputs following files:
+#     + ChangeLog: Log of changes.
+#       Depends on ChangeLog.prev and releaseFile.
+#     This macro defines following targets:
+#     + version_check: Check whether the current PRJ_VER value match
+#       the PRJ_VER declared in releaseFile.
+#     This macro sets following variables:
+#     + PRJ_VER: Release version.
+#     + CHANGE_SUMMARY: Summary of changes.
+#     + CHANGELOG_ITEMS: Lines below the [Changes] tag.
+#     + RELEASE_FILE: The loaded release file.
 #
 
 IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
@@ -36,7 +42,7 @@ IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
 	MATH(EXPR _setting_line_num ${_line_num}-1)
 	COMMAND_OUTPUT_TO_VARIABLE(_releaseFile_head head -n ${_setting_line_num} ${releaseFile})
 	FILE(WRITE "${releaseFile}_NO_PACK_HEAD" "${_releaseFile_head}")
-	SETTING_FILE_GET_ALL_ATTRIBUTES("${releaseFile}_NO_PACK_HEAD")
+	SETTING_FILE_GET_ALL_VARIABLES("${releaseFile}_NO_PACK_HEAD")
 	SET(CHANGE_SUMMARY "${SUMMARY}")
 
 	# Read [Changes] Section
@@ -64,11 +70,6 @@ IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
 	    COMMENT "ChangeLog is older than ${releaseFile}. Rebuilding"
 	    VERBATIM
 	    )
-
-	#FILE(WRITE "ChangeLog" "* ${TODAY_CHANGELOG} - ${MAINTAINER} - ${PRJ_VER}\n")
-	#FILE(APPEND "ChangeLog" "${CHANGELOG_ITEMS}\n")
-	#FILE(READ "ChangeLog.prev" _changelog_prev)
-	#FILE(APPEND "ChangeLog" "${_changelog_prev}")
 
 	# PRJ_VER won't be updated until the execution of cmake .
 	SET(_version_check_cmd grep -e 'PRJ_VER=' ${RELEASE_FILE} |  tr -d '\\r\\n' | sed -e s/PRJ_VER=//)

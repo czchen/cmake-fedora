@@ -19,6 +19,7 @@
 #       is passed as CPACK_GENERATOR. Default to TGZ.
 #     Variable to be read:
 #     + PROJECT_NAME: Project name
+#     + VENDOR: Organization that issue this project.
 #     + PRJ_VER: Project version
 #     + PACK_SOURCE_IGNORE_FILES: A list of regex filename pattern to indicate
 #       the files to be excluded. Note that cmake generated file
@@ -47,11 +48,12 @@ IF(NOT DEFINED _PACK_SOURCE_CMAKE_)
 	"Makefile$"
 	)
 
+    SET(PACK_SOURCE_IGNORE_FILES ${PACK_SOURCE_IGNORE_FILES}
+	${PACK_SOURCE_IGNORE_FILES_CMAKE} ${PACK_SOURCE_IGNORE_FILES_DEFAULT})
+
     INCLUDE(ManageVersion)
 
     MACRO(PACK_SOURCE var outputDir)
-	SET(PACK_SOURCE_IGNORE_FILES ${PACK_SOURCE_IGNORE_FILES}
-	    ${PACK_SOURCE_IGNORE_FILES_CMAKE} ${PACK_SOURCE_IGNORE_FILES_DEFAULT})
 	#MESSAGE("PACK_SOURCE_IGNORE_FILES=${PACK_SOURCE_IGNORE_FILES}")
 
 	IF(PRJ_VER STREQUAL "")
@@ -92,6 +94,9 @@ IF(NOT DEFINED _PACK_SOURCE_CMAKE_)
 
 	SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PRJ_VER}-Source")
 	SET(${var} "${CPACK_SOURCE_PACKAGE_FILE_NAME}.${_pack_source_ext}")
+
+	# IF VENDOR is empty, then use AUTHORS instead
+	SET(CPACK_PACKAGE_VENDOR "${VENDOR}")
 
 	INCLUDE(CPack)
 

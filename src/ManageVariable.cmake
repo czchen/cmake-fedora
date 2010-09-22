@@ -1,4 +1,4 @@
-# - Module that help to get/set variables.
+# - Get or set variables from various sources.
 # Defines the following macros:
 #   COMMAND_OUTPUT_TO_VARIABLE(var cmd)
 #     - Store command output to a variable, without new line characters (\n and \r).
@@ -9,7 +9,7 @@
 #         var: A variable that stores the result.
 #         cmd: A command.
 #
-#   SETTING_FILE_GET_ATTRIBUTE(var attr_name setting_file [UNQUOTED]
+#   SETTING_FILE_GET_VARIABLE(var attr_name setting_file [UNQUOTED]
 #     [NOESCAPE_SEMICOLON] [setting_sign])
 #     - Get an attribute value from a setting file.
 #       * Parameters:
@@ -21,7 +21,7 @@
 #         setting_sign: (Optional) The symbol that separate attribute name and its value.
 #           Default value: "="
 #
-#   SETTING_FILE_GET_ALL_ATTRIBUTES(setting_file [UNQUOTED] [NOREPLACE]
+#   SETTING_FILE_GET_ALL_VARIABLES(setting_file [UNQUOTED] [NOREPLACE]
 #     [NOESCAPE_SEMICOLON] [setting_sign])
 #     - Get all attribute values from a setting file.
 #       '#' is used to comment out setting.
@@ -48,9 +48,10 @@
 #         var: Variable to be set
 #         untrimmed_value: Untrimmed values that may have space, \t, \n, \r in the front or back of the string.
 #
+
 IF(NOT DEFINED _MANAGE_VARIABLE_CMAKE_)
     SET(_MANAGE_VARIABLE_CMAKE_ "DEFINED")
-    INCLUDE(SupportCmake-2.4)
+    INCLUDE(ManageString)
 
     MACRO(COMMAND_OUTPUT_TO_VARIABLE var cmd)
 	EXECUTE_PROCESS(
@@ -67,7 +68,7 @@ IF(NOT DEFINED _MANAGE_VARIABLE_CMAKE_)
 	#MESSAGE("var=${var} _cmd_output=${_cmd_output} value=|${value}|" )
     ENDMACRO(COMMAND_OUTPUT_TO_VARIABLE var cmd)
 
-    MACRO(SETTING_FILE_GET_ATTRIBUTE var attr_name setting_file)
+    MACRO(SETTING_FILE_GET_VARIABLE var attr_name setting_file)
 	SET(setting_sign "=")
 	SET(_UNQUOTED "")
 	SET(_NOESCAPE_SEMICOLON "")
@@ -111,9 +112,9 @@ IF(NOT DEFINED _MANAGE_VARIABLE_CMAKE_)
 
 	    SET_VAR(${var} "${_result_line}")
 	ENDFOREACH()
-    ENDMACRO(SETTING_FILE_GET_ATTRIBUTE var attr_name setting_file)
+    ENDMACRO(SETTING_FILE_GET_VARIABLE var attr_name setting_file)
 
-    MACRO(SETTING_FILE_GET_ALL_ATTRIBUTES setting_file)
+    MACRO(SETTING_FILE_GET_ALL_VARIABLES setting_file)
 	SET(setting_sign "=")
 	SET(_UNQUOTED "")
 	SET(_NOREPLACE "")
@@ -174,7 +175,7 @@ IF(NOT DEFINED _MANAGE_VARIABLE_CMAKE_)
 		ENDIF("${_NOREPLACE}" STREQUAL "" OR "${${_var}}" STREQUAL "")
 	    ENDIF(NOT "${_var}" STREQUAL "")
 	ENDFOREACH()
-    ENDMACRO(SETTING_FILE_GET_ALL_ATTRIBUTES setting_file)
+    ENDMACRO(SETTING_FILE_GET_ALL_VARIABLES setting_file)
 
     MACRO(GET_ENV var default_value)
 	IF(${ARGC} GREATER 2)

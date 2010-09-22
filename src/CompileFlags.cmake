@@ -32,9 +32,9 @@
 #      Default: ${CMAKE_INSTALL_PREFIX}/libexec
 #    + PROJECT_NAME: Project name
 #    + PRJ_VER: Project version
-#    + PROJECT_DATA_DIR: Data directory for the project.
+#    + PRJ_DATA_DIR: Data directory for the project.
 #      Default: ${DATA_DIR}/${PROJECT_NAME}
-#    + PROJECT_DOC_DIR: Documentation for the project.
+#    + PRJ_DOC_DIR: Documentation for the project.
 #      Default: ${DOC_DIR}/${PROJECT_NAME}-${PRJ_VER}
 #
 
@@ -74,11 +74,11 @@ IF(NOT DEFINED _COMPILE_FLAGS_CMAKE_)
 	IF(DEFINED PROJECT_NAME)
 	    ADD_DEFINITIONS(-DPROJECT_NAME='"${PROJECT_NAME}"')
 
-	    SET_COMPILE_ENV(PROJECT_DATA_DIR "${DATA_DIR}/${PROJECT_NAME}")
+	    SET_COMPILE_ENV(PRJ_DATA_DIR "${DATA_DIR}/${PROJECT_NAME}")
 
 	    IF(DEFINED PRJ_VER)
 		ADD_DEFINITIONS(-DPRJ_VER='"${PRJ_VER}"')
-		SET_COMPILE_ENV(PROJECT_DOC_DIR "${DOC_DIR}/${PROJECT_NAME}-${PRJ_VER}")
+		SET_COMPILE_ENV(PRJ_DOC_DIR "${DOC_DIR}/${PROJECT_NAME}-${PRJ_VER}")
 	    ENDIF(DEFINED PRJ_VER)
 	ENDIF(DEFINED PROJECT_NAME)
     ENDMACRO(SET_USUAL_COMPILE_ENV)
