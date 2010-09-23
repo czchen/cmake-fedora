@@ -1,0 +1,22 @@
+# Unit test for ManageVariable
+
+SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS ON)
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} src)
+MESSAGE("CMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}")
+MACRO(PRINT_ERROR var)
+    SET(_val ${${var}})
+    MESSAGE(SEND_ERROR "Error: ${var}=|${_val}|")
+ENDMACRO()
+
+MACRO(TEST_STR_MATCH var value)
+    IF(NOT ${${var}} STREQUAL "${value}")
+	PRINT_ERROR(${var})
+    ENDIF()
+ENDMACRO()
+
+INCLUDE(ManageVariable)
+SETTING_FILE_GET_ALL_VARIABLES(test/sample-setting.txt UNQUOTED)
+TEST_STR_MATCH(VAR_Q_1 "Kudo")
+TEST_STR_MATCH(VAR_Q_2 "Kudo")
+TEST_STR_MATCH(VAR_Q_3 "Kudo ")
+

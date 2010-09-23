@@ -1,0 +1,9 @@
+# Quoting
+VAR_Q_1= Kudo
+VAR_Q_2= "Kudo"
+VAR_Q_3= "Kudo "
+
+# String with ;
+VAR_SC_1 = "ASD;FGH"
+VAR_SC_1 = ASD;FGH
+

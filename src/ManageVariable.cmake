@@ -9,25 +9,25 @@
 #         var: A variable that stores the result.
 #         cmd: A command.
 #
-#   SETTING_FILE_GET_VARIABLE(var attr_name setting_file [UNQUOTED]
+#   SETTING_FILE_GET_VARIABLE(var attr_name setting_file [NOUNQUOTED]
 #     [NOESCAPE_SEMICOLON] [setting_sign])
 #     - Get an attribute value from a setting file.
 #       * Parameters:
 #         var: Variable to store the attribute value.
 #         attr_name: Name of the attribute.
 #         setting_file: Setting filename.
-#         UNQUOTED: (Optional) remove the double quote mark around the string.
+#         NOUNQUOTED: (Optional) do not remove the double quote mark around the string.
 #         NOESCAPE_SEMICOLON: Escape semicolons.
 #         setting_sign: (Optional) The symbol that separate attribute name and its value.
 #           Default value: "="
 #
-#   SETTING_FILE_GET_ALL_VARIABLES(setting_file [UNQUOTED] [NOREPLACE]
+#   SETTING_FILE_GET_ALL_VARIABLES(setting_file [NOUNQUOTED] [NOREPLACE]
 #     [NOESCAPE_SEMICOLON] [setting_sign])
 #     - Get all attribute values from a setting file.
 #       '#' is used to comment out setting.
 #       * Parameters:
 #         setting_file: Setting filename.
-#         UNQUOTED: (Optional) remove the double quote mark around the string.
+#         NOUNQUOTED: (Optional) do not remove the double quote mark around the string.
 #         NOREPLACE (Optional) Without this parameter, this macro replaces
 #           previous defined variables, use NOREPLACE to prevent this.
 #         NOESCAPE_SEMICOLON: Escape semicolons.

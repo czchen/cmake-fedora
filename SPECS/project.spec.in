@@ -28,13 +28,16 @@ Requires:   cmake >=2.4
 %__rm -rf $RPM_BUILD_ROOT
 %__make install DESTDIR=$RPM_BUILD_ROOT
 %find_lang %{name}
+# We install that using
+%__rm -fr @PRJ_DOC_DIR@
 
 %clean
 %__rm -rf $RPM_BUILD_ROOT
 
 %files -f %{name}.lang
 %defattr(-,root,root,-)
-%doc @INSTALL_DOC@
+%doc @INSTALL_DOCS@
+
 %{_datadir}/%{name}
 
 %changelog

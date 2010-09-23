@@ -10,7 +10,7 @@
 #       + default_value: Default value of the var
 #       + env: (Optional)The name of environment variable. Only need if different from var.
 #
-#  SET_USUAL_COMPILE_ENV()
+#  SET_USUAL_COMPILE_ENVS()
 #  - Set the most often used variable and compile flags.
 #    It defines compile flags according to the values of corresponding variables,
 #    usually under the same or similar name.
@@ -39,8 +39,8 @@
 #
 
 
-IF(NOT DEFINED _COMPILE_FLAGS_CMAKE_)
-    SET(_COMPILE_FLAGS_CMAKE_ "DEFINED")
+IF(NOT DEFINED _COMPILE_ENV_CMAKE_)
+    SET(_COMPILE_ENV_CMAKE_ "DEFINED")
 
     MACRO(SET_COMPILE_ENV var default_value)
 	IF(${ARGC} GREATER 2)
@@ -54,7 +54,7 @@ IF(NOT DEFINED _COMPILE_FLAGS_CMAKE_)
 	ADD_DEFINITIONS(-D${_env}='"${${var}}"')
     ENDMACRO(SET_COMPILE_ENV var default_value)
 
-    MACRO(SET_USUAL_COMPILE_ENV)
+    MACRO(SET_USUAL_COMPILE_ENVS)
 	ADD_DEFINITIONS(-DCMAKE_INSTALL_PREFIX='"${CMAKE_INSTALL_PREFIX}"')
 
 	SET_COMPILE_ENV(DATA_DIR "${CMAKE_INSTALL_PREFIX}/share")
@@ -81,8 +81,8 @@ IF(NOT DEFINED _COMPILE_FLAGS_CMAKE_)
 		SET_COMPILE_ENV(PRJ_DOC_DIR "${DOC_DIR}/${PROJECT_NAME}-${PRJ_VER}")
 	    ENDIF(DEFINED PRJ_VER)
 	ENDIF(DEFINED PROJECT_NAME)
-    ENDMACRO(SET_USUAL_COMPILE_ENV)
+    ENDMACRO(SET_USUAL_COMPILE_ENVS)
 
-ENDIF(NOT DEFINED _COMPILE_FLAGS_CMAKE_)
+ENDIF(NOT DEFINED _COMPILE_ENV_CMAKE_)
 
 
