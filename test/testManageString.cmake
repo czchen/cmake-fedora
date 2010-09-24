@@ -1,0 +1,50 @@
+# Unit test for ManageString
+INCLUDE(test/testCommon.cmake)
+INCLUDE(ManageString)
+
+# STRING_SPLIT
+SET(STR_SPLIT_1 "hi=hello=how are you=fine")
+STRING_SPLIT(_str_split_1 "=" "${STR_SPLIT_1}")
+#MESSAGE("_str_split_1=${_str_split_1}")
+TEST_STR_MATCH(_str_split_1 "hi;hello;how are you;fine")
+STRING_SPLIT(_str_split_1 "=" "${STR_SPLIT_1}" 2)
+TEST_STR_MATCH(_str_split_1 "hi;hello=how are you=fine")
+
+SET(STR_SPLIT_2 "hi; hello; how are you;I am fine")
+
+STRING_SPLIT(_str_split_2a " " "${STR_SPLIT_2}")
+SET(_str_split_2a_a "hi\\;" "hello\\;" "how" "are" "you\\;I" "am" "fine")
+FOREACH(_tok ${_str_split_2a})
+    MESSAGE("  2a_tok=${_tok}")
+ENDFOREACH()
+IF(NOT _str_split_2a STREQUAL _str_split_2a_a)
+    MESSAGE(SEND_ERROR "Error: on _str_split_2a=${_str_split_2a} _str_split_2a_a=${${_str_split_2a}}")
+ENDIF()
+
+STRING_SPLIT(_str_split_2b " " "${STR_SPLIT_2}" 2)
+SET(_str_split_2b_a "hi\\;" "hello\\; how are you\\;I am fine")
+FOREACH(_tok ${_str_split_2b})
+    MESSAGE("  2b_tok=${_tok}")
+ENDFOREACH()
+IF(NOT _str_split_2b STREQUAL _str_split_2b_a)
+    MESSAGE(SEND_ERROR "Error: on _str_split_2b=${_str_split_2b}")
+ENDIF()
+
+STRING_SPLIT(_str_split_2c ";" "${STR_SPLIT_2}")
+SET(_str_split_2c_a "hi" " hello" " how are you" "I am fine")
+FOREACH(_tok ${_str_split_2c})
+    MESSAGE("  2c_tok=${_tok}")
+ENDFOREACH()
+IF(NOT _str_split_2c STREQUAL _str_split_2c_a)
+    MESSAGE(SEND_ERROR "Error: on _str_split_2c=${_str_split_2c}")
+ENDIF()
+
+STRING_SPLIT(_str_split_2d ";" "${STR_SPLIT_2}" 2)
+SET(_str_split_2d_a "hi" " hello\\; how are you\\;I am fine")
+FOREACH(_tok ${_str_split_2d})
+    MESSAGE("  2d_tok=${_tok}")
+ENDFOREACH()
+IF(NOT _str_split_2d STREQUAL _str_split_2d_a)
+    MESSAGE(SEND_ERROR "Error: on _str_split_2d=${_str_split_2d}")
+ENDIF()
+
