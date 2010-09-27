@@ -88,5 +88,6 @@ ENDIF(EXISTS ${MAINTAINER_SETTING})
 # Test Suites.
 #
 ENABLE_TESTING()
-ADD_TEST("ManageVariable" ctest test/ManageVariable.cmake)
+ADD_TEST("ManageString" ctest -S test/testManageString.cmake)
+ADD_TEST("ManageVariable" ctest -S test/testManageVariable.cmake)
 
