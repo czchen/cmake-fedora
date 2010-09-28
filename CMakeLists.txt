@@ -3,17 +3,16 @@ cmake_minimum_required(VERSION 2.4)
 # Project specific information
 #
 PROJECT(cmake-fedora)
-SET(PRJ_SUMMARY "A set of cmake modules  that provides helper macros and targets for fedora developers")
+SET(PRJ_SUMMARY "cmake helper modules for fedora developers")
 
 SET(PRJ_DESCRIPTION
-    "cmake-fedora consist a set of cmake modules that provides"
-    "helper macros and targets for fedora developers."
+"cmake-fedora consist a set of cmake modules that provides
+helper macros and targets for fedora developers."
     )
 SET(AUTHORS "Ding-Yi Chen")
 SET(MAINTAINER "Ding-Yi Chen <dchen at redhat.com>")
 SET(VENDOR "Red Hat, APAC, Inc.")
 SET(LICENSE BSD)
-
 
 ####################################################################
 # Includes
@@ -32,9 +31,6 @@ INCLUDE(UseUninstall)
 INCLUDE(CompileEnv)
 SET_USUAL_COMPILE_ENVS()
 
-####################################################################
-# Sub directories
-#
 
 ####################################################################
 # Packing
@@ -43,7 +39,8 @@ SET_USUAL_COMPILE_ENVS()
 #====================================================================
 # Files to be install.
 #
-SET(INSTALL_DOCS ${RELEASE_FILE} AUTHORS README ChangeLog COPYING)
+SET(INSTALL_DOCS ${RELEASE_FILE} AUTHORS README ChangeLog COPYING TODO)
+STRING_JOIN(PRJ_DOC_LIST " " ${INSTALL_DOCS})
 
 INSTALL(FILES ${INSTALL_DOCS}
     DESTINATION "${PRJ_DOC_DIR}")

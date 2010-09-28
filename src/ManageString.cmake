@@ -17,6 +17,13 @@
 #       + var: A variable that stores the result.
 #       + str: A string.
 #
+#   STRING_JOIN(var delimiter str_list [str...])
+#   - Concatenate strings, with delimiter inserted between strings.
+#     * Parameters:
+#       + var: A variable that stores the result.
+#       + str_list: A list of string.
+#       + str: (Optional) more string to be join.
+#
 #   STRING_SPLIT(var delimiter str [NOESCAPE_SEMICOLON])
 #   - Split a string into a list using a delimiter, which can be in 1 or more
 #     characters long.
@@ -81,6 +88,26 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
     #    MACRO(STRING_ESCAPE_SEMICOLON var str)
     #	STRING(REGEX REPLACE ";" "\\\\;" ${var} "${str}")
     #ENDMACRO(STRING_ESCAPE_SEMICOLON var str)
+
+    MACRO(STRING_JOIN var delimiter str_list)
+	SET(_ret "")
+	FOREACH(_str ${str_list})
+	    IF(_ret STREQUAL "")
+		SET(_ret "${_str}")
+	    ELSE(_ret STREQUAL "")
+		SET(_ret "${_ret}${delimiter}${_str}")
+	    ENDIF(_ret STREQUAL "")
+	ENDFOREACH(_str ${str_list})
+
+	FOREACH(_str ${ARGN})
+	    IF(_ret STREQUAL "")
+		SET(_ret "${_str}")
+	    ELSE(_ret STREQUAL "")
+		SET(_ret "${_ret}${delimiter}${_str}")
+	    ENDIF(_ret STREQUAL "")
+	ENDFOREACH(_str ${str_list})
+	SET(${var} "${_ret}")
+    ENDMACRO(STRING_JOIN var delimiter str_list)
 
     MACRO(STRING_SPLIT var delimiter str)
 	SET(_max_tokens "")

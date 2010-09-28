@@ -10,8 +10,8 @@ SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} src test ${CTEST_SOURCE_DIRECTORY}/sr
 MESSAGE("CMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}")
 
 MACRO(TEST_STR_MATCH var value)
-    SET(_val "${var}")
-    IF(NOT "${value}" STREQUAL "${_val}" )
+    SET(_val "${${var}}")
+    IF(NOT "${value}" STREQUAL _val )
 	MESSAGE(SEND_ERROR "  Error: ${var} = |${_val}| <> |${value}|")
     ENDIF()
 ENDMACRO()

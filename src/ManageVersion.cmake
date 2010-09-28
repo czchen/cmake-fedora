@@ -32,6 +32,7 @@ IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
 
     MACRO(LOAD_RELEASE_FILE releaseFile)
 	COMMAND_OUTPUT_TO_VARIABLE(_grep_line grep -F "[Changes]" -n -m 1 ${releaseFile})
+	SET(RELEASE_FILE ${releaseFile})
 	#MESSAGE("_grep_line=|${_grep_line}|")
 	IF("${_grep_line}" STREQUAL "")
 	    MESSAGE(FATAL_ERROR "${releaseFile} does not have a [Changes] tag!")

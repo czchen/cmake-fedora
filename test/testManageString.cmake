@@ -21,6 +21,10 @@ SET(STR_TRIM_2 "  hi=hello=how are you=fine2  3   ")
 STRING_TRIM(str_trim_2 "${STR_TRIM_2}")
 TEST_STR_MATCH(str_trim_2 "hi=hello=how are you=fine2  3")
 
+# STRING JOIN
+STRING_JOIN(str_join_1 " " "Are" "you sure" " it" "is" "right?" " ")
+TEST_STR_MATCH(str_join_1 "Are you sure  it is right?  ")
+
 # STRING_SPLIT
 SET(STR_SPLIT_1 "hi=hello=how are you=fine")
 STRING_SPLIT(_str_split_1 "=" "${STR_SPLIT_1}")
