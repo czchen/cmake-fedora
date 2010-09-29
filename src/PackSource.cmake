@@ -21,6 +21,7 @@
 #     + PROJECT_NAME: Project name
 #     + VENDOR: Organization that issue this project.
 #     + PRJ_VER: Project version
+#     + PRJ_SUMMARY: (Optional) Project summary
 #     + PACK_SOURCE_IGNORE_FILES: A list of regex filename pattern to indicate
 #       the files to be excluded. Note that cmake generated file
 #       (PACK_SOURCE_IGNORE_FILE_CMAKE) is already in this list.
@@ -88,14 +89,13 @@ IF(NOT DEFINED _PACK_SOURCE_CMAKE_)
 	    SET(CPACK_PACKAGE_DESCRIPTION_FILE ${CMAKE_SOURCE_DIR}/README)
 	ENDIF(EXISTS ${CMAKE_SOURCE_DIR}/README)
 
-	IF(DEFINED PROJECT_DESCRIPTION)
-	    SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PROJECT_DESCRIPTION}")
-	ENDIF(DEFINED PROJECT_DESCRIPTION)
+	IF(DEFINED PRJ_SUMMARY)
+	    SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PRJ_SUMMARY}")
+	ENDIF(DEFINED PRJ_SUMMARY)
 
 	SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PRJ_VER}-Source")
 	SET(${var} "${CPACK_SOURCE_PACKAGE_FILE_NAME}.${_pack_source_ext}")
 
-	# IF VENDOR is empty, then use AUTHORS instead
 	SET(CPACK_PACKAGE_VENDOR "${VENDOR}")
 
 	INCLUDE(CPack)
