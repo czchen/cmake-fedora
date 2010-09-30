@@ -99,26 +99,30 @@ IF(NOT DEFINED _PACK_SOURCE_CMAKE_)
 	SET(CPACK_PACKAGE_VENDOR "${VENDOR}")
 
 	INCLUDE(CPack)
-
-	ADD_CUSTOM_COMMAND(OUTPUT "${_outputDir_rel}/${${var}}"
-	   COMMAND make pack_src
-	   DEPENDS ChangeLog ${RELEASE_FILE}
-	   COMMENT "Packing the source"
+	ADD_CUSTOM_COMMAND(OUTPUT ${_outputDir_rel}
+	    COMMAND cmake -E make_directory ${_outputDir_rel}
+	    COMMENT "Making package out directory."
 	    )
 
 	IF("${_outputDir_rel}" STREQUAL ".")
-	    ADD_CUSTOM_TARGET(pack_src
+	    ADD_CUSTOM_COMMAND(OUTPUT "${_outputDir_rel}/${${var}}"
 		COMMAND make package_source
-		DEPENDS ChangeLog
+		DEPENDS ChangeLog ${RELEASE_FILE}
+		COMMENT "Packing the source"
 		)
 	ELSE("${_outputDir_rel}" STREQUAL ".")
-	    ADD_CUSTOM_TARGET(pack_src
+	    ADD_CUSTOM_COMMAND(OUTPUT "${_outputDir_rel}/${${var}}"
 		COMMAND make package_source
 		COMMAND cmake -E copy ${${var}} "${_outputDir_rel}/"
 		COMMAND cmake -E remove ${${var}}
-		DEPENDS ChangeLog
+		DEPENDS ChangeLog ${RELEASE_FILE} ${_outputDir_rel}
+		COMMENT "Packing the source"
 		)
 	ENDIF("${_outputDir_rel}" STREQUAL ".")
+
+	ADD_CUSTOM_TARGET(pack_src
+	    DEPENDS "${_outputDir_rel}/${${var}}"
+	    )
 
 	ADD_DEPENDENCIES(pack_src version_check)
 

@@ -181,7 +181,7 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 		--define '_srcrpmdir ${RPM_BUILD_SRPMS}'
 		--define '_rpmdir ${RPM_BUILD_RPMS}'
 		--define '_specdir ${RPM_BUILD_SPECS}'
-		DEPENDS Changelog
+		DEPENDS ChangeLog
 		${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec
 		${RPM_BUILD_SOURCES}/${sourcePackage} ${fileDependencies}
 		${RPM_BUILD_SRPMS} ${RPM_BUILD_BUILD}
@@ -200,7 +200,7 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 		--define '_srcrpmdir ${RPM_BUILD_SRPMS}'
 		--define '_rpmdir ${RPM_BUILD_RPMS}'
 		--define '_specdir ${RPM_BUILD_SPECS}'
-		DEPENDS Changelog
+		DEPENDS ChangeLog
 		${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec
 		${RPM_BUILD_SOURCES}/${sourcePackage} ${fileDependencies}
 		${RPM_BUILD_SRPMS} ${RPM_BUILD_BUILD}

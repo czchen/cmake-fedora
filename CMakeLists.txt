@@ -17,7 +17,7 @@ SET(LICENSE BSD)
 ####################################################################
 # Includes
 #
-SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/src)
+SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/Modules)
 MESSAGE("CMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}")
 
 IF(CMAKE_VERSION)
@@ -25,37 +25,42 @@ IF(CMAKE_VERSION)
 ENDIF(CMAKE_VERSION)
 
 INCLUDE(ManageVersion)
-LOAD_RELEASE_FILE("${CMAKE_SOURCE_DIR}/RELEASE-NOTES.txt")
+LOAD_RELEASE_FILE("RELEASE-NOTES.txt")
 INCLUDE(UseUninstall)
 
 INCLUDE(CompileEnv)
 SET_USUAL_COMPILE_ENVS()
 
+####################################################################
+# Hosting
+#
+INCLUDE(UseHostingService)
+SET(MAINTAINER_SETTING "MAINTAINER_SETTING_NO_PACK")
+USE_HOSTING_SERVICE_READ_SETTING_FILE("${MAINTAINER_SETTING}")
 
 ####################################################################
-# Packing
+# Building
 #
 
-#====================================================================
-# Files to be install.
+####################################################################
+# Installing
 #
+
 SET(INSTALL_DOCS ${RELEASE_FILE} AUTHORS README ChangeLog COPYING TODO)
 STRING_JOIN(PRJ_DOC_LIST " " ${INSTALL_DOCS})
 
 INSTALL(FILES ${INSTALL_DOCS}
     DESTINATION "${PRJ_DOC_DIR}")
 
-#====================================================================
-# Hosting Service
-#
-INCLUDE(UseHostingService)
-SET(MAINTAINER_SETTING "MAINTAINER_SETTING_NO_PACK")
-USE_HOSTING_SERVICE_READ_SETTING_FILE("${MAINTAINER_SETTING}")
+INSTALL(FILES CMakeLists.txt ${RELEASE_FILE} SPECS/project.spec.in
+    DESTINATION "${PRJ_DOC_DIR}/examples")
 
-#====================================================================
-# Pack configuration
+INSTALL(DIRECTORY Modules/
+    DESTINATION ${DATA_DIR}/cmake/Modules
+    FILES_MATCHING REGEX "\\.cmake(\\.in)?$")
+####################################################################
+# Packing
 #
-
 INCLUDE(PackSource)
 INCLUDE(PackRPM)
 INCLUDE(UseFedpkg)

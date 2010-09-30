@@ -3,6 +3,7 @@
 *.old
 *.orig
 *.so
+*~
 ChangeLog
 CMakeCache.txt
 CMakeFiles/
@@ -23,6 +24,8 @@ SPECS/RPM-ChangeLog
 SPECS/cmake-fedora.spec
 RPMS/
 SRPMS/
+BUILD/
+SOURCES/
 tags
 debug*s.list
 FedPkg
