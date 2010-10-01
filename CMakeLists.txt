@@ -31,6 +31,7 @@ INCLUDE(UseUninstall)
 INCLUDE(CompileEnv)
 SET_USUAL_COMPILE_ENVS()
 
+INCLUDE(CMakeVersion)
 ####################################################################
 # Hosting
 #
@@ -57,7 +58,7 @@ INSTALL(FILES CMakeLists.txt ${RELEASE_FILE} SPECS/project.spec.in
 
 INSTALL(DIRECTORY Modules/
     DESTINATION ${DATA_DIR}/cmake/Modules
-    FILES_MATCHING REGEX "\\.cmake(\\.in)?$")
+    REGEX "\\.cmake(\\.in)?$")
 ####################################################################
 # Packing
 #
