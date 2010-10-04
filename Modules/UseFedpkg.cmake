@@ -23,10 +23,11 @@
 #     + FEDPKG_DIR: Directory for fedpkg checkout.
 #       Default: FedPkg.
 #     Defines following targets:
-#     + fedpkg_scratch_build: Sent srpm for scratch build
-#     + fedpkg_submit: Submit package to koji for each tag.
-#     + fedpkg_build: Build package with koji for each tag.
-#     + fedpkg_update: Submit to bodhi
+#     + fedpkg_scratch_build: Perform scratch build with fedpkg.
+#     + fedpkg_submit: Submit build with fedpkg.
+#     + fedpkg_build: Perform build with fedpkg.
+#     + fedpkg_update: Update with fedpkg.
+#     + koji_scratch_build: Sent srpm for scratch build
 #   USE_BODHI([TAGS [tag1 [tag2 ...]] [KARMA karmaValue] )
 #   - Use bodhi targets with bodhi command line client.
 #     Argument:
@@ -59,6 +60,33 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
     SET(PACK_SOURCE_IGNORE_FILES ${PACK_SOURCE_IGNORE_FILES} "/${FEDPKG_DIR}/"
 	"/bodhi\\\\.template$")
 
+    MACRO(_use_koji_make_cmds srpm tags)
+	#commit
+	SET(KOJI "koji")
+	IF (DEFINED CHANGE_SUMMARY)
+	    SET (COMMIT_MSG  "-m \"${CHANGE_SUMMARY}\"")
+	ELSE(DEFINED CHANGE_SUMMARY)
+	    SET (COMMIT_MSG  "")
+	ENDIF(DEFINED CHANGE_SUMMARY)
+	SET(_first_branch "")
+	FOREACH(_tag ${tags})
+	    IF(_tag MATCHES "^el")
+		STRING(REGEX REPLACE _branch "el\([0-9]+\)" "\\1E-epel"
+		    "${_tag}")
+	    ELSE(_tag MATCHES "^el")
+		SET(_branch "${_tag}")
+	    ENDIF(_tag MATCHES "^el")
+
+	    IF(_first_branch STREQUAL "")
+		SET(_first_branch ${_branch})
+		SET(KOJI_SCRATCH_BUILD_CMD "${KOJI} build --scratch dist-${_branch} ${srpm}")
+	    ELSE(_first_branch STREQUAL "")
+		SET(KOJI_SCRATCH_BUILD_CMD "${KOJI_SCRATCH_BUILD_CMD}"
+		    " ${KOJI} build --scratch dist-${_branch} ${srpm}")
+	    ENDIF(_first_branch STREQUAL "")
+	ENDFOREACH(_tag ${tags})
+    ENDMACRO(_use_koji_make_cmds srpm tags)
+
     MACRO(_use_fedpkg_make_cmds srpm tags)
 	#commit
 	IF (DEFINED CHANGE_SUMMARY)
@@ -66,6 +94,7 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 	ELSE(DEFINED CHANGE_SUMMARY)
 	    SET (COMMIT_MSG  "")
 	ENDIF(DEFINED CHANGE_SUMMARY)
+	SET(_first_branch "")
 
 	FOREACH(_tag ${tags})
 	    IF(_tag STREQUAL "${FEDORA_RAWHIDE_TAG}")
@@ -74,7 +103,7 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		SET(_branch "${_tag}")
 	    ENDIF(_tag STREQUAL "${FEDORA_RAWHIDE_TAG}")
 
-	    IF(DEFINED _first_branch)
+	    IF(_first_branch STREQUAL "")
 		SET(FEDPKG_SCRATCH_BUILD_CMD "${FEDPKG_SCRATCH_BUILD_CMD}"
 		   " ${FEDPKG} switch-branch ${_branch}"
 		   " ${FEDPKG} scratch-build --srpm ${srpm}")
@@ -88,7 +117,7 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		SET(FEDPKG_UPDATE_CMD "${FEDPKG_UPDATE_CMD}"
 		    " ${FEDPKG} switch-branch ${_branch}"
 		    " ${FEDPKG} update")
-	    ELSE(DEFINED _first_branch)
+	    ELSE(_first_branch STREQUAL "")
 		SET(_first_branch ${_branch})
 		SET(FEDPKG_SCRATCH_BUILD_CMD
 		    "${FEDPKG} switch-branch ${_branch}"
@@ -104,27 +133,12 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		SET(FEDPKG_UPDATE_CMD
 		    "${FEDPKG} switch-branch ${_branch}"
 		    " ${FEDPKG} update")
-	    ENDIF(DEFINED _first_branch)
+	    ENDIF(_first_branch STREQUAL "")
 	ENDFOREACH(_tag ${tags})
     ENDMACRO(_use_fedpkg_make_cmds tags srpm)
 
     MACRO(USE_FEDPKG srpm)
 	IF(EXISTS $ENV{HOME}/.fedora-upload-ca.cert)
-	    FIND_PROGRAM(FEDPKG fedpkg)
-	    IF(FEDPKG STREQUAL "FEDPKG-NOTFOUND")
-		MESSAGE(FATAL-ERROR "Program fedpkg is not found!")
-	    ENDIF(FEDPKG STREQUAL "FEDPKG-NOTFOUND")
-	    ADD_CUSTOM_COMMAND(OUTPUT ${FEDPKG_DIR}
-		COMMAND mkdir -p ${FEDPKG_DIR}
-		)
-
-	    ADD_CUSTOM_COMMAND(OUTPUT ${FEDPKG_DIR}/${PROJECT_NAME}
-		COMMAND fedpkg clone ${PROJECT_NAME}
-		DEPENDS ${FEDPKG_DIR}
-		WORKING_DIRECTORY ${FEDPKG_DIR}
-		)
-
-
 	    SET(_rawhide 1)
 	    FOREACH(_arg ${ARGN})
 		IF ("${_arg}" STREQUAL "NORAWHIDE")
@@ -142,44 +156,75 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		SET(_koji_dist_tags ${FEDORA_RAWHIDE_TAG} ${_koji_dist_tags})
 	    ENDIF(_rawhide EQUAL 1)
 
-	    ## Make target commands for the released dist
-	    _use_fedpkg_make_cmds("${srpm}" "${_koji_dist_tags}")
+	    FIND_PROGRAM(FEDPKG fedpkg)
+	    IF(FEDPKG STREQUAL "FEDPKG-NOTFOUND")
+		MESSAGE("Program fedpkg is not found!")
+	    ELSE(FEDPKG STREQUAL "FEDPKG-NOTFOUND")
+		ADD_CUSTOM_COMMAND(OUTPUT ${FEDPKG_DIR}
+		    COMMAND mkdir -p ${FEDPKG_DIR}
+		    )
 
-	    #MESSAGE(FEDPKG_SCRATCH_BUILD_CMD=${FEDPKG_SCRATCH_BUILD_CMD})
-	    ADD_CUSTOM_TARGET(fedpkg_scratch_build
-		COMMAND eval "${FEDPKG_SCRATCH_BUILD_CMD}"
-		DEPENDS ${FEDPKG_DIR}/${PROJECT_NAME} ${srpm} ChangeLog
-		WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
-		COMMENT "Start Koji scratch build"
-		VERBATIM
-		)
+		ADD_CUSTOM_COMMAND(OUTPUT ${FEDPKG_DIR}/${PROJECT_NAME}
+		    COMMAND fedpkg clone ${PROJECT_NAME}
+		    DEPENDS ${FEDPKG_DIR}
+		    WORKING_DIRECTORY ${FEDPKG_DIR}
+		    )
 
-	    #MESSAGE(FEDPKG_COMMIT_CMD=${FEDPKG_COMMIT_CMD})
-	    ADD_CUSTOM_TARGET(fedpkg_commit
-		COMMAND eval "${FEDPKG_COMMIT_CMD}"
-		DEPENDS ${FEDPKG_DIR}/${PROJECT_NAME} ${srpm} ChangeLog
-		WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
-		COMMENT "Submitting to Koji"
-		VERBATIM
-		)
 
-	    #MESSAGE("FEDPKG_BUILD_CMD=${FEDPKG_BUILD_CMD}")
-	    ADD_CUSTOM_TARGET(fedpkg_build
-		COMMAND eval "${FEDPKG_BUILD_CMD}"
-		DEPENDS ${FEDPKG_DIR}/${PROJECT_NAME} ${srpm} ChangeLog
-		WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
-		COMMENT "Building on Koji"
-		VERBATIM
-		)
+		## Make target commands for the released dist
+		_use_fedpkg_make_cmds("${srpm}" "${_koji_dist_tags}")
 
-	    #MESSAGE("FEDPKG_BUILD_CMD=${FEDPKG_BUILD_CMD}")
-	    ADD_CUSTOM_TARGET(fedpkg_update
-		COMMAND eval "${FEDPKG_UPDATE_CMD}"
-		DEPENDS ${FEDPKG_DIR}/${PROJECT_NAME} ${srpm} ChangeLog
-		WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
-		COMMENT "Updating on Bodhi"
-		VERBATIM
-		)
+		#MESSAGE(FEDPKG_SCRATCH_BUILD_CMD=${FEDPKG_SCRATCH_BUILD_CMD})
+		ADD_CUSTOM_TARGET(fedpkg_scratch_build
+		    COMMAND eval "${FEDPKG_SCRATCH_BUILD_CMD}"
+		    DEPENDS ${FEDPKG_DIR}/${PROJECT_NAME} ${srpm} ChangeLog
+		    WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
+		    COMMENT "Start fedpkg scratch build"
+		    VERBATIM
+		    )
+
+		#MESSAGE(FEDPKG_COMMIT_CMD=${FEDPKG_COMMIT_CMD})
+		ADD_CUSTOM_TARGET(fedpkg_commit
+		    COMMAND eval "${FEDPKG_COMMIT_CMD}"
+		    DEPENDS ${FEDPKG_DIR}/${PROJECT_NAME} ${srpm} ChangeLog
+		    WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
+		    COMMENT "Submitting build to fedpkg"
+		    VERBATIM
+		    )
+
+		#MESSAGE("FEDPKG_BUILD_CMD=${FEDPKG_BUILD_CMD}")
+		ADD_CUSTOM_TARGET(fedpkg_build
+		    COMMAND eval "${FEDPKG_BUILD_CMD}"
+		    DEPENDS ${FEDPKG_DIR}/${PROJECT_NAME} ${srpm} ChangeLog
+		    WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
+		    COMMENT "Building with fedpkg"
+		    VERBATIM
+		    )
+
+		#MESSAGE("FEDPKG_BUILD_CMD=${FEDPKG_BUILD_CMD}")
+		ADD_CUSTOM_TARGET(fedpkg_update
+		    COMMAND eval "${FEDPKG_UPDATE_CMD}"
+		    DEPENDS ${FEDPKG_DIR}/${PROJECT_NAME} ${srpm} ChangeLog
+		    WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
+		    COMMENT "Updating with fedpkg"
+		    VERBATIM
+		    )
+	    ENDIF(FEDPKG STREQUAL "FEDPKG-NOTFOUND")
+	    FIND_PROGRAM(KOJI koji)
+	    IF(KOJI STREQUAL "KOJI-NOTFOUND")
+		MESSAGE("Program koji is not found!")
+	    ELSE(KOJI STREQUAL "KOJI-NOTFOUND")
+		## Make target commands for the released dist
+		_use_koji_make_cmds("${srpm}" "${_koji_dist_tags}")
+
+		#MESSAGE("KOJI_SCRATCH_BUILD_CMD=${KOJI_SCRATCH_BUILD_CMD}")
+		ADD_CUSTOM_TARGET(koji_scratch_build
+		    COMMAND eval "${KOJI_SCRATCH_BUILD_CMD}"
+		    DEPENDS ${srpm} ChangeLog
+		    COMMENT "Start Koji scratch build"
+		    VERBATIM
+		    )
+	    ENDIF(KOJI STREQUAL "KOJI-NOTFOUND")
 
 	ENDIF(EXISTS $ENV{HOME}/.fedora-upload-ca.cert)
     ENDMACRO(USE_FEDPKG srpm)
