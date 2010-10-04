@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.4)
 # Project specific information
 #
 PROJECT(cmake-fedora)
-SET(PRJ_SUMMARY "cmake helper modules for fedora developers")
+SET(PRJ_SUMMARY "CMake helper modules for fedora developers")
 
 SET(PRJ_DESCRIPTION
 "cmake-fedora consist a set of cmake modules that provides
@@ -32,12 +32,6 @@ INCLUDE(CompileEnv)
 SET_USUAL_COMPILE_ENVS()
 
 INCLUDE(CMakeVersion)
-####################################################################
-# Hosting
-#
-INCLUDE(UseHostingService)
-SET(MAINTAINER_SETTING "MAINTAINER_SETTING_NO_PACK")
-USE_HOSTING_SERVICE_READ_SETTING_FILE("${MAINTAINER_SETTING}")
 
 ####################################################################
 # Building
@@ -62,6 +56,7 @@ INSTALL(DIRECTORY Modules/
 ####################################################################
 # Packing
 #
+SET(MAINTAINER_SETTING "MAINTAINER_SETTING_NO_PACK")
 INCLUDE(PackSource)
 INCLUDE(PackRPM)
 INCLUDE(UseFedpkg)
@@ -86,6 +81,14 @@ IF(EXISTS ${MAINTAINER_SETTING})
     USE_FEDPKG("${RPM_BUILD_SRPMS}/${PRJ_SRPM_FILE_NAME}")
     USE_BODHI()
 ENDIF(EXISTS ${MAINTAINER_SETTING})
+
+####################################################################
+# Hosting
+#
+INCLUDE(UseHostingService)
+USE_HOSTING_SERVICE_READ_SETTING_FILE("${MAINTAINER_SETTING}"
+    "${RPM_BUILD_SOURCES}/${PACK_SOURCE_FILE_NAME}")
+
 
 ####################################################################
 # Test Suites.

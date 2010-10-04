@@ -5,7 +5,7 @@
 # setting file.
 #
 # Defines following Macros:
-#   USE_HOSTING_SERVICE_READ_SETTING_FILE(filename)
+#   USE_HOSTING_SERVICE_READ_SETTING_FILE(filename packedSourcePath)
 #   - It checks the existence of setting file.
 #     If it does not exist, this macro acts as a no-op;
 #     if it exists, then it reads variables defined in the setting file,
@@ -13,9 +13,7 @@
 #     See the "Setting File Format" section for description of file format.
 #     Arguments:
 #     + filename: Filename of the setting file.
-#     Reads and defines following variables:
-#     + PACK_SOURCE_IGNORE_FILES: It appends list of generated file to
-#       ignore file list.
+#     + packedSourcePath: Source tarball.
 #     Reads following variables:
 #     + PRJ_VER: Project version.
 #     + CHANGE_SUMMARY: Change summary.
@@ -46,15 +44,16 @@
 #   <ServiceName>_<protocol>_<PropertyName>=<value>
 #
 # ServiceName is the name of the hosting service.
-# If using a known service name, you may be able to omit some definition,
-# as they have build in value. Do not worry that your hosting service is
+# If using a known service name, you may be able to omit some definition such
+# like protocol, as they have build in value.
+# Do not worry that your hosting service is
 # not in the known list, you can still benefit from this module, providing
 # your hosting service use supported protocols.
 #
-# Known service name is: SOURCEFORGE.
+# Known service name is: SOURCEFORGE, FEDORAHOSTED.
 #
 # Protocol is the protocol used to upload file.
-#  Supported protocol is: SFTP.
+#  Supported protocol is: SFTP, SCP.
 #
 # PropertyName is a property that is needed to preform the upload.
 # It is usually associate to the Protocol.
@@ -87,45 +86,25 @@
 
 IF(NOT DEFINED _USE_HOSTING_SERVICE_CMAKE_)
     SET(_USE_HOSTING_SERVICE_CMAKE_ "DEFINED")
-    MACRO(USE_HOSTING_SERVICE_SFTP alias user site)
-	SET(_stage "NONE")
-	FOREACH(_arg ${ARGN})
-	    IF(_arg STREQUAL "BATCH")
-		SET(_stage "BATCH")
-	    ELSEIF(_arg STREQUAL "BATCH_TEMPLATE")
-		SET(_stage "BATCH_TEMPLATE")
-	    ELSEIF(_arg STREQUAL "OPTIONS")
-		SET(_stage "OPTIONS")
-	    ELSE(_arg STREQUAL "BATCH")
-		IF(_stage STREQUAL "BATCH")
-		    SET(_batch ${_arg})
-		    SET(_stage "NONE")
-		ELSEIF(_stage STREQUAL "BATCH_TEMPLATE")
-		    SET(_batch_template ${_arg})
-		    SET(_stage "NONE")
-		ELSEIF(_stage STREQUAL "OPTIONS")
-		    SET(_optionStr "${_optionStr} ${_arg}")
-		ELSE(_stage STREQUAL "BATCH")
-		    MESSAGE(FATAL_ERROR "Invalid option (${_arg}) for USE_HOSTING_SERVICE_SFTP!")
-		ENDIF(_stage STREQUAL "SERVER_TYPE")
-	    ENDIF(_arg STREQUAL "SERVER_TYPE")
-	ENDFOREACH(_arg ${ARGN})
+    MACRO(USE_HOSTING_SERVICE_SFTP alias user site packedSourcePath)
 	SET(_developer_upload_cmd "sftp")
-	IF(_batch_template)
-	    IF(NOT _batch)
-		SET(_batch ${CMAKE_BINARY_DIR}/BatchUpload-${alias})
-	    ENDIF(NOT _batch)
-	    CONFIGURE_FILE(${_batch_template} ${_batch})
-	    SET(PACK_SOURCE_IGNORE_FILES ${PACK_SOURCE_IGNORE_FILES} ${_batch})
-	ENDIF(_batch_template)
+	IF(NOT "${${alias}_BATCH_TEMPLATE}" STREQUAL "")
+	    IF(NOT "${alias}_BATCH" STREQUAL "")
+		SET(${alias}_BATCH
+		    ${CMAKE_BINARY_DIR}/BatchUpload-${alias}_NO_PACK)
+	    ENDIF(NOT "${alias}_BATCH" STREQUAL "")
+	    CONFIGURE_FILE(${alias}_BATCH_TEMPLATE ${alias}_BATCH)
+	    SET(PACK_SOURCE_IGNORE_FILES ${PACK_SOURCE_IGNORE_FILES} ${alias}_BATCH)
+	ENDIF(NOT "${${alias}_BATCH_TEMPLATE}" STREQUAL "")
 
-	IF(_batch STREQUAL "")
-	    SET(_developer_upload_cmd "${_developer_upload_cmd} -b ${_batch}" )
-	ENDIF(_batch STREQUAL "")
+	IF(NOT "${alias}_BATCH" STREQUAL "")
+	    SET(_developer_upload_cmd "${_developer_upload_cmd} -b ${alias}_BATCH" )
+	ENDIF(NOT "${alias}_BATCH" STREQUAL "")
 
-	IF(_optionStr)
-	    SET(_developer_upload_cmd "${_developer_upload_cmd} -F ${_optionStr}" )
-	ENDIF(_optionStr)
+	IF(NOT "${alias}_OPTIONS" STREQUAL "")
+	    SET(_developer_upload_cmd "${_developer_upload_cmd} -F ${alias}_OPTIONS" )
+	ENDIF(NOT "${alias}_OPTIONS" STREQUAL "")
+
 	SET(_developer_upload_cmd "${_developer_upload_cmd} ${user}@${site}")
 
 	ADD_CUSTOM_TARGET(upload_${alias}
@@ -134,7 +113,45 @@ IF(NOT DEFINED _USE_HOSTING_SERVICE_CMAKE_)
 	    COMMENT "Uploading the package releases to ${alias}..."
 	    VERBATIM
 	    )
-    ENDMACRO(USE_HOSTING_SERVICE_SFTP user site)
+    ENDMACRO(USE_HOSTING_SERVICE_SFTP user site packedSourcePath)
+
+    # MACRO(USE_HOSTING_SERVICE_SCP alias user site packedSourcePath
+    #   [DEST_PATH destination]
+    #   [OPTIONS options]
+    # )
+    MACRO(USE_HOSTING_SERVICE_SCP alias user site packedSourcePath)
+	SET(_developer_upload_cmd "scp")
+
+	SET(_stage "NONE")
+	SET(_destPath "")
+	SET(_options "")
+	FOREACH(_arg ${ARGN})
+	    IF(_arg STREQUAL "DEST_PATH")
+		SET(_stage "DEST_PATH")
+	    ELSEIF(_arg STREQUAL "OPTIONS")
+		SET(_stage "OPTIONS")
+	    ELSE(_arg STREQUAL "DEST_PATH")
+		IF(_stage STREQUAL "DEST_PATH")
+		    SET(_destPath "${_arg}")
+		ELSEIF(_stage STREQUAL "OPTIONS")
+		    SET(_options "${_options} ${_arg}")
+		ENDIF(_stage STREQUAL "DEST_PATH")
+	    ENDIF(_arg STREQUAL "DEST_PATH")
+	ENDFOREACH(_arg ${ARGN})
+	IF(_destPath)
+	    SET(_dest "${user}@${site}:${_destPath}")
+	ELSE(_destPath)
+	    SET(_dest "${user}@${site}")
+	ENDIF(_destPath)
+
+
+	ADD_CUSTOM_TARGET(upload_${alias}
+	    COMMAND ${_developer_upload_cmd} ${_options}  ${packedSourcePath} ${_dest}
+	    DEPENDS ${packedSourcePath} ${DEVELOPER_DEPENDS}
+	    COMMENT "Uploading the package releases to ${alias}..."
+	    VERBATIM
+	    )
+    ENDMACRO(USE_HOSTING_SERVICE_SCP user site packedSourcePath)
 
     MACRO(USE_HOSTING_SERVICE_GOOGLE_UPLOAD)
 	FIND_PROGRAM(CURL_CMD curl)
@@ -143,7 +160,7 @@ IF(NOT DEFINED _USE_HOSTING_SERVICE_CMAKE_)
 	ENDIF(CURL_CMD STREQUAL "CURL_CMD-NOTFOUND")
     ENDMACRO(USE_HOSTING_SERVICE_GOOGLE_UPLOAD)
 
-    MACRO(USE_HOSTING_SERVICE_READ_SETTING_FILE filename)
+    MACRO(USE_HOSTING_SERVICE_READ_SETTING_FILE filename packedSourcePath)
 	IF(EXISTS "${filename}")
 	    INCLUDE(ManageVariable)
 	    INCLUDE(ManageVersion)
@@ -194,23 +211,25 @@ IF(NOT DEFINED _USE_HOSTING_SERVICE_CMAKE_)
 	    # Setting for each hosting service
 	    FOREACH(_service ${HOSTING_SERVICES})
 		IF(_service STREQUAL "SOURCEFORGE")
-		    USE_HOSTING_SERVICE_SFTP("${_service}" ${SOURCEFORGE_SFTP_USER}
-			frs.sourceforge.net
-			BATCH ${SOURCEFORGE_SFTP_BATCH}
-			BATCH_TEMPLATE ${SOURCEFORGE_SFTP_BATCH_TEMPLATE}
-			OPTIONS ${SOURCEFORGE_SFTP_OPTIONS})
+		    USE_HOSTING_SERVICE_SFTP("${_service}" ${SOURCEFORGE_USER}
+			frs.sourceforge.net ${packedSourcePath})
+		ELSEIF(_service STREQUAL "FEDORAHOSTED")
+		    USE_HOSTING_SERVICE_SCP("${_service}" ${FEDORAHOSTED_USER}
+			fedorahosted.org  ${packedSourcePath}
+			DEST_PATH "${PROJECT_NAME}")
 		ELSEIF(_service STREQUAL "GOOGLECODE")
 		    USE_HOSTING_SERVICE_GOOGLE_UPLOAD()
 		ELSEIF(_service STREQUAL "GITHUB")
 		ELSE(_service STREQUAL "SOURCEFORGE")
 		    # Generic hosting service
 		    IF(NOT "${${_service}_SFTP_USER}" STREQUAL "")
+			# SFTP hosting service
 			USE_HOSTING_SERVICE_SFTP("${_service}" ${${_service}_SFTP_USER}
 			    ${${_service}_SFTP_SITE}
 			    BATCH ${${_service}_SFTP_BATCH}
 			    BATCH_TEMPLATE ${${_service}_SFTP_BATCH_TEMPLATE}
 			    OPTIONS ${${_service}_SFTP_OPTIONS})
-			# SFTP hosting service
+		    ELSEIF(NOT "${${_service}_SCP_USER}" STREQUAL "")
 		    ENDIF(NOT "${${_service}_SFTP_USER}" STREQUAL "")
 		ENDIF(_service STREQUAL "SOURCEFORGE")
 		ADD_DEPENDENCIES(upload "upload_${_service}")
@@ -219,7 +238,7 @@ IF(NOT DEFINED _USE_HOSTING_SERVICE_CMAKE_)
 
 	ENDIF(EXISTS "${filename}")
 
-    ENDMACRO(USE_HOSTING_SERVICE_READ_SETTING_FILE filename)
+    ENDMACRO(USE_HOSTING_SERVICE_READ_SETTING_FILE filename packedSourcePath)
 
 ENDIF(NOT DEFINED _USE_HOSTING_SERVICE_CMAKE_)
 
