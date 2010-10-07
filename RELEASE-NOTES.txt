@@ -1,7 +1,7 @@
-PRJ_VER=0.1.2
-SUMMARY=Removed excess spaces.
-BODHI_UPDATE_TYPE=bugfix
+PRJ_VER=0.1.4
+SUMMARY=Fixed error in UseFedpkg
+BODHI_UPDATE_TYPE=newpackage
 REDHAT_BUGZILLA=
 [Changes]
-- Removed excess spaces.
+- Fixed error in UseFedpkg.
 

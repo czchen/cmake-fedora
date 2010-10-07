@@ -104,20 +104,6 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 	    ENDIF(_tag STREQUAL "${FEDORA_RAWHIDE_TAG}")
 
 	    IF(_first_branch STREQUAL "")
-		SET(FEDPKG_SCRATCH_BUILD_CMD "${FEDPKG_SCRATCH_BUILD_CMD}"
-		   " ${FEDPKG} switch-branch ${_branch}"
-		   " ${FEDPKG} scratch-build --srpm ${srpm}")
-		SET(FEDPKG_COMMIT_CMD "${FEDPKG_COMMIT_CMD}"
-		    " ${FEDPKG} switch-branch ${_branch}"
-		    " git merge ${_first_branch}"
-		    " git push")
-		SET(FEDPKG_BUILD_CMD "${FEDPKG_BUILD_CMD} "
-		    " ${FEDPKG} switch-branch ${_branch}"
-		    " ${FEDPKG} build")
-		SET(FEDPKG_UPDATE_CMD "${FEDPKG_UPDATE_CMD}"
-		    " ${FEDPKG} switch-branch ${_branch}"
-		    " ${FEDPKG} update")
-	    ELSE(_first_branch STREQUAL "")
 		SET(_first_branch ${_branch})
 		SET(FEDPKG_SCRATCH_BUILD_CMD
 		    "${FEDPKG} switch-branch ${_branch}"
@@ -133,6 +119,20 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		SET(FEDPKG_UPDATE_CMD
 		    "${FEDPKG} switch-branch ${_branch}"
 		    " ${FEDPKG} update")
+	    ELSE(_first_branch STREQUAL "")
+		SET(FEDPKG_SCRATCH_BUILD_CMD "${FEDPKG_SCRATCH_BUILD_CMD}"
+		    " ${FEDPKG} switch-branch ${_branch}"
+		    " ${FEDPKG} scratch-build --srpm ${srpm}")
+		SET(FEDPKG_COMMIT_CMD "${FEDPKG_COMMIT_CMD}"
+		    " ${FEDPKG} switch-branch ${_branch}"
+		    " git merge ${_first_branch}"
+		    " git push")
+		SET(FEDPKG_BUILD_CMD "${FEDPKG_BUILD_CMD} "
+		    " ${FEDPKG} switch-branch ${_branch}"
+		    " ${FEDPKG} build")
+		SET(FEDPKG_UPDATE_CMD "${FEDPKG_UPDATE_CMD}"
+		    " ${FEDPKG} switch-branch ${_branch}"
+		    " ${FEDPKG} update")
 	    ENDIF(_first_branch STREQUAL "")
 	ENDFOREACH(_tag ${tags})
     ENDMACRO(_use_fedpkg_make_cmds tags srpm)
@@ -140,6 +140,7 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
     MACRO(USE_FEDPKG srpm)
 	IF(EXISTS $ENV{HOME}/.fedora-upload-ca.cert)
 	    SET(_rawhide 1)
+	    SET(_koji_dist_tags "")
 	    FOREACH(_arg ${ARGN})
 		IF ("${_arg}" STREQUAL "NORAWHIDE")
 		    SET(_rawhide 0)
@@ -148,9 +149,9 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		ENDIF("${_arg}" STREQUAL "NORAWHIDE")
 	    ENDFOREACH(_arg)
 
-	    IF(NOT DEFINED _koji_dist_tags)
+	    IF(_koji_dist_tags STREQUAL "")
 		SET(_koji_dist_tags ${FEDORA_CURRENT_RELEASE_TAGS})
-	    ENDIF(NOT DEFINED _koji_dist_tags)
+	    ENDIF(_koji_dist_tags STREQUAL "")
 
 	    IF(_rawhide EQUAL 1)
 		SET(_koji_dist_tags ${FEDORA_RAWHIDE_TAG} ${_koji_dist_tags})
