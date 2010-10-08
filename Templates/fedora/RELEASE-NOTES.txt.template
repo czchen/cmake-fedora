@@ -1,0 +1,7 @@
+PRJ_VER=<PRJ_VER_INIT>
+SUMMARY=Initial release.
+BODHI_UPDATE_TYPE=newpackage
+REDHAT_BUGZILLA=
+[Changes]
+- Initial release.
+

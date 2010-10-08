@@ -1,0 +1,49 @@
+Name:       @PROJECT_NAME@
+Version:    @PRJ_VER@
+Release:    1%{?dist}
+Summary:    @PRJ_SUMMARY@
+License:    @LICENSE@
+Group:      System Environment/Libraries
+URL:        <URL>
+Source0:    <SITE>/@SOURCE_PACKAGE@
+
+BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+
+BuildRequires:  cmake >= 2.4
+
+Requires:   cmake >= 2.4
+
+%description
+@PRJ_DESCRIPTION@
+
+%prep
+%setup -q -n %{name}-%{version}-Source
+
+%build
+# $RPM_OPT_FLAGS should be  loaded from cmake macro.
+%cmake -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo .
+%__make VERBOSE=1  %{?_smp_mflags}
+
+%install
+%__rm -rf $RPM_BUILD_ROOT
+%__make install DESTDIR=$RPM_BUILD_ROOT
+# We install document using %doc
+(cd $RPM_BUILD_ROOT/@PRJ_DOC_DIR@
+    %__rm -rf @PRJ_DOC_LIST@
+)
+
+%clean
+%__rm -rf $RPM_BUILD_ROOT
+
+%files
+%defattr(-,root,root,-)
+%doc @PRJ_DOC_LIST@
+
+%{_datadir}/%{name}
+
+%changelog
+* @TODAY_CHANGELOG@ @MAINTAINER@ - @PRJ_VER@-@PRJ_RELEASE_NO@
+@CHANGELOG_ITEMS@
+
+@RPM_CHANGELOG_PREV@
+
