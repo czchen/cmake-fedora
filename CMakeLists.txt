@@ -53,6 +53,12 @@ INSTALL(FILES CMakeLists.txt ${RELEASE_FILE} SPECS/project.spec.in
 INSTALL(DIRECTORY Modules/
     DESTINATION ${DATA_DIR}/cmake/Modules
     REGEX "\\.cmake(\\.in)?$")
+
+INSTALL(DIRECTORY Templates/
+    DESTINATION ${DATA_DIR}/cmake/Templates)
+
+INSTALL(PROGRAMS scripts/cmake-fedora-newprj.sh
+    DESTINATION ${BIN_DIR})
 ####################################################################
 # Packing
 #

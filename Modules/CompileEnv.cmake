@@ -19,6 +19,8 @@
 #
 #    Defines following flags according to the variable with same name.
 #    + CMAKE_INSTALL_PREFIX: Compile flag whose value is ${CMAKE_INSTALL_PREFIX}.
+#    + BIN_DIR: Directory for executable.
+#      Default:  ${CMAKE_INSTALL_PREFIX}/bin
 #    + DATA_DIR: Directory for architecture independent data files.
 #      Default: ${CMAKE_INSTALL_PREFIX}/share
 #    + DOC_DIR: Directory for documentation
@@ -57,6 +59,7 @@ IF(NOT DEFINED _COMPILE_ENV_CMAKE_)
     MACRO(SET_USUAL_COMPILE_ENVS)
 	ADD_DEFINITIONS(-DCMAKE_INSTALL_PREFIX='"${CMAKE_INSTALL_PREFIX}"')
 
+	SET_COMPILE_ENV(BIN_DIR "${CMAKE_INSTALL_PREFIX}/bin")
 	SET_COMPILE_ENV(DATA_DIR "${CMAKE_INSTALL_PREFIX}/share")
 	SET_COMPILE_ENV(DOC_DIR "${DATA_DIR}/doc")
 	SET_COMPILE_ENV(SYSCONF_DIR "/etc" )

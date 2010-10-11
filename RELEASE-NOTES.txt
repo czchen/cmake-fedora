@@ -1,7 +1,9 @@
-PRJ_VER=0.1.4
-SUMMARY=Fixed error in UseFedpkg
-BODHI_UPDATE_TYPE=newpackage
+PRJ_VER=0.2.0
+SUMMARY=Add new project building script;Add EL-5, EL-6 build;Fixed error in UseFedpkg
+BODHI_UPDATE_TYPE=enhancement
 REDHAT_BUGZILLA=
 [Changes]
-- Fixed error in UseFedpkg.
+- Add new project building script.
+- Add el5, el6 build.
+- Fixed errors in UseFedpkg.
 
