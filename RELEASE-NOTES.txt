@@ -1,9 +1,11 @@
 PRJ_VER=0.2.0
-SUMMARY=Add new project building script;Add EL-5, EL-6 build;Fixed error in UseFedpkg
+SUMMARY=Add new project building script;Build for EL-5, EL-6;Fixed error in UseFedpkg
 BODHI_UPDATE_TYPE=enhancement
 REDHAT_BUGZILLA=
 [Changes]
 - Add new project building script.
+- Build for EL-5, EL-6
 - Add el5, el6 build.
 - Fixed errors in UseFedpkg.
+- Fix tag target.
 
