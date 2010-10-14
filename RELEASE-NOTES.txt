@@ -1,6 +1,6 @@
-PRJ_VER=0.2.0
+PRJ_VER=0.2.2
 SUMMARY=Add new project building script;Build for EL-5, EL-6;Fixed error in UseFedpkg
-BODHI_UPDATE_TYPE=enhancement
+BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=
 [Changes]
 - Add new project building script.
