@@ -1,3 +1,11 @@
+* Fri Oct 15 2010 Ding-Yi Chen <dchen at redhat.com> - 0.2.2
+- Add new project building script.
+- Build for EL-5, EL-6
+- Add el5, el6 build.
+- Fixed errors in UseFedpkg.
+- Fixed target: tag
+- Fixed target: bodhi_new
+
 * Fri Oct 08 2010 Ding-Yi Chen <dchen at redhat.com> - 0.1.4
 - Fixed error in UseFedpkg.
 

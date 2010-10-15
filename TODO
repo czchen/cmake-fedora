@@ -1,4 +1,7 @@
- * Debug message
+ * Targets: 
+   * release, all in one step
+   * clean_all
+ * Debug message level
  * Project generate script
   * GUI
 
