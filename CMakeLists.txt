@@ -14,8 +14,6 @@ SET(MAINTAINER "Ding-Yi Chen <dchen at redhat.com>")
 SET(VENDOR "Red Hat, APAC, Inc.")
 SET(LICENSE BSD)
 
-SET(FEDORA_CURRENT_RELEASE_TAGS f14 f13 f12 el6 el5)
-
 ####################################################################
 # Includes
 #
@@ -55,6 +53,12 @@ INSTALL(FILES CMakeLists.txt ${RELEASE_FILE} SPECS/project.spec.in
 INSTALL(DIRECTORY Modules/
     DESTINATION ${DATA_DIR}/cmake/Modules
     REGEX "\\.cmake(\\.in)?$")
+
+INSTALL(DIRECTORY Templates/
+    DESTINATION ${DATA_DIR}/cmake/Templates)
+
+INSTALL(PROGRAMS scripts/cmake-fedora-newprj.sh
+    DESTINATION ${BIN_DIR})
 ####################################################################
 # Packing
 #
@@ -80,8 +84,9 @@ IF(NOT MOCK_CMD STREQUAL "MOCK_CMD-NOTFOUND")
 ENDIF(NOT MOCK_CMD STREQUAL "MOCK_CMD-NOTFOUND")
 
 IF(EXISTS ${MAINTAINER_SETTING})
-    USE_FEDPKG("${RPM_BUILD_SRPMS}/${PRJ_SRPM_FILE_NAME}")
-    USE_BODHI()
+    USE_FEDPKG("${RPM_BUILD_SRPMS}/${PRJ_SRPM_FILE_NAME}" TAGS
+	${FEDORA_RAWHIDE_TAG} ${FEDORA_CURRENT_RELEASE_TAGS} el6 el5)
+    USE_BODHI(TAGS ${FEDORA_CURRENT_RELEASE_TAGS} el6 el5)
 ENDIF(EXISTS ${MAINTAINER_SETTING})
 
 ####################################################################

@@ -39,7 +39,7 @@ Requires:   cmake >= 2.4
 %files
 %defattr(-,root,root,-)
 %doc @PRJ_DOC_LIST@
-
+%{_bindir}/cmake-fedora-newprj.sh
 %{_datadir}/cmake/Modules/CMakeVersion.cmake
 %{_datadir}/cmake/Modules/CompileEnv.cmake
 %{_datadir}/cmake/Modules/DateTimeFormat.cmake
@@ -55,6 +55,7 @@ Requires:   cmake >= 2.4
 %{_datadir}/cmake/Modules/UseHostingService.cmake
 %{_datadir}/cmake/Modules/UseUninstall.cmake
 %{_datadir}/cmake/Modules/cmake_uninstall.cmake.in
+%{_datadir}/cmake/Templates/fedora
 
 %changelog
 * @TODAY_CHANGELOG@ @MAINTAINER@ - @PRJ_VER@-@PRJ_RELEASE_NO@

@@ -1,8 +1,12 @@
-PRJ_VER=0.2.0
-SUMMARY=Fixed error in UseFedpkg
+PRJ_VER=0.2.2
+SUMMARY=Add new project building script;Build for EL-5, EL-6;Fixed error in UseFedpkg
 BODHI_UPDATE_TYPE=bugfix
-REDHAT_BUGZILLA=
+REDHAT_BUGZILLA=639816
 [Changes]
-- Add el6 and el5 to build logic.
-- Remove excess - in ChangeLog.
+- Add new project building script.
+- Build for EL-5, EL-6
+- Add el5, el6 build.
+- Fixed errors in UseFedpkg.
+- Fixed target: tag
+- Fixed target: bodhi_new
 

@@ -87,41 +87,139 @@ function find_file(){
     done
 }
 
+function copy_file(){
+    _dest=$2
+    if [ -e ${_dest} ];then
+	echo "${_dest} already exists, skip generation!" > /dev/stderr
+	return 1
+    fi
+    _src=`find_file $1 ${PRJ_TEMPLATES_PATH}`
+    cp $_src $_dest
+    return 0
+}
+
 function generate_file(){
     _file=$1
     shift
-    _pathStr=$1
-    shift
-
-    if [ -e ${_file} ];then
-	echo "${_file} already exists, skip generation!"
-	return
-    fi
-
     templateFileName=`basename ${_file}`".template"
-#    echo templateFileName=${templateFileName}
-    templateFile=`find_file ${templateFileName} ${_pathStr}`
-#    echo templateFile=${templateFile}
+    #echo templateFileName=${templateFileName}
 
-    cp ${templateFile} ${_file}
-    for var in $@; do
-	value=$(eval echo \$${var})
-	#echo var=$var value=$value
-	sed -i.bak -e "s/<${var}>/$value/" ${_file}
-    done
+    if copy_file ${templateFileName} ${_file} ;then
+	for var in $@; do
+	    value=$(eval echo \$${var})
+	    #echo var=$var value=$value
+	    sed -i.bak -e "s/<${var}>/$value/" ${_file}
+	done
+    fi
 
 }
 
+# generate_license _dest _src [[_pattern _replace] ...]
+function generate_license(){
+    _dest=$1
+    _src=$2
+    shift 2
 
-generate_file CMakeLists.txt ${PRJ_TEMPLATES_PATH} PRJ_NAME PRJ_AUTHORS\
-  PRJ_LICENSE PRJ_MAINTAINER PRJ_VENDOR PRJ_SUMMARY
-rm -f CMakeLists.txt.bak
+    if copy_file ${_src} ${_dest} ;then
+	_pattern=""
+	_replace=""
+	for _token in "$@"; do
+	    #echo "_token=${_token}"
+	    if [ "$_pattern" = "" ]; then
+		_pattern=$_token
+	    else
+		_replace=$_token
+		#echo "s/$_pattern/$_replace/"
+		sed -i.bak -e "s/$_pattern/$_replace/" ${_dest}
+		_pattern=""
+		_replace=""
+	    fi
+	done
+    fi
+}
 
-generate_file RELEASE-NOTES.txt ${PRJ_TEMPLATES_PATH} PRJ_VER_INIT
+
+
+generate_file CMakeLists.txt  PRJ_NAME PRJ_AUTHORS PRJ_LICENSE PRJ_MAINTAINER\
+    PRJ_VENDOR PRJ_SUMMARY
+
+generate_file RELEASE-NOTES.txt  PRJ_VER_INIT
 
 mkdir -p SPECS
-generate_file SPECS/project.spec.in ${PRJ_TEMPLATES_PATH}
-generate_file SPECS/RPM-ChangeLog.in ${PRJ_TEMPLATES_PATH}
+generate_file SPECS/project.spec.in
+generate_file SPECS/RPM-ChangeLog.in
+
+YEAR=`date +%Y`
+#copy licenses
+case $PRJ_LICENSE in
+    LGPLv3* )
+        generate_license COPYING.LESSER lgpl-3.0.txt
+	generate_license COPYING gpl-3.0.txt \
+	    "<one line to give the program's name and a brief idea of what it does.>" \
+	    "$PRJ_NAME - $PRJ_SUMMARY" \
+	    "<year>" "$YEAR" \
+	    "<name of author>" "$PRJ_AUTHORS" \
+	    "<program>" "<$PRJ_NAME>"
+	;;
+
+    GPLv3* )
+	generate_license COPYING gpl-3.0.txt \
+	    "<one line to give the program's name and a brief idea of what it does.>" \
+	    "$PRJ_NAME - $PRJ_SUMMARY" \
+	    "<year>" "$YEAR" \
+	    "<name of author>" "$PRJ_AUTHORS" \
+	    "<program>" "<$PRJ_NAME>"
+	;;
+
+    LGPLv2* )
+        generate_license COPYING.LESSER lgpl-2.1.txt \
+	    "<one line to give the library's name and a brief idea of what it does.>" \
+	    "$PRJ_NAME - $PRJ_SUMMARY" \
+	    "<year>" "$YEAR" \
+	    "<name of author>" "$PRJ_AUTHORS" \
+	    "Frob" "<$PRJ_NAME>" \
+	    "year name of author" "$YEAR $PRJ_AUTHORS" \
+	    "Yoyodyne, Inc" "$PRJ_VENDOR" \
+	    "a library for tweaking knobs" "$PRJ_SUMMARY" \
+	    "James Random Hacker" "$PRJ_AUTHORS"
+	generate_license COPYING gpl-2.0.txt \
+	    "<one line to give the program's name and a brief idea of what it does.>" \
+	    "$PRJ_NAME - $PRJ_SUMMARY" \
+	    "<year>" "$YEAR" \
+	    "<name of author>" "$PRJ_AUTHORS" \
+	    "Gnomovision" "<$PRJ_NAME>" \
+	    "version 69" "version $PRJ_VER_INIT" \
+	    "year name of author" "$YEAR $PRJ_AUTHORS" \
+	    "Yoyodyne, Inc." "$PRJ_VENDOR" \
+	    "which makes passes at compilers" "$PRJ_SUMMARY" \
+	    "James Hacker" "$PRJ_AUTHORS"
+	;;
+
+    GPLv2* )
+	generate_license COPYING gpl-2.0.txt \
+	    "<one line to give the program's name and a brief idea of what it does.>" \
+	    "$PRJ_NAME - $PRJ_SUMMARY" \
+	    "<year>" "$YEAR" \
+	    "<name of author>" "$PRJ_AUTHORS" \
+	    "Gnomovision" "<$PRJ_NAME>" \
+	    "version 69" "version $PRJ_VER_INIT" \
+	    "year name of author" "$YEAR $PRJ_AUTHORS" \
+	    "Yoyodyne, Inc." "$PRJ_VENDOR" \
+	    "which makes passes at compilers" "$PRJ_SUMMARY" \
+	    "James Hacker" "$PRJ_AUTHORS"
+	;;
+
+    BSD )
+	generate_license COPYING bsd-3-clauses.txt \
+	    "<YEAR>" "$YEAR" \
+	    "<OWNER>" "$PRJ_AUTHORS" \
+	    "<ORGANIZATION>" "$PRJ_VENDOR"
+	;;
+
+    * )
+	;;
+esac
+rm -f *.bak
 
 generate_file MAINTAINER_SETTING_NO_PACK ${PRJ_TEMPLATES_PATH} PRJ_SOURCE_VERSION_CONTROL
 

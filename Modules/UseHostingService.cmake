@@ -151,7 +151,6 @@ IF(NOT DEFINED _USE_HOSTING_SERVICE_CMAKE_)
 	    SET(_dest "${user}@${site}")
 	ENDIF(_destPath)
 
-
 	ADD_CUSTOM_TARGET(upload_${alias}
 	    COMMAND ${_developer_upload_cmd} ${_options}  ${packedSourcePath} ${_dest}
 	    DEPENDS ${packedSourcePath} ${DEVELOPER_DEPENDS}
@@ -190,12 +189,14 @@ IF(NOT DEFINED _USE_HOSTING_SERVICE_CMAKE_)
 		ADD_CUSTOM_TARGET(tag
 		    COMMAND git tag -a -m "${CHANGE_SUMMARY}" "${PRJ_VER}" HEAD
 		    COMMENT "Tagging the source as ver ${PRJ_VER}"
+		    VERBATIM
 		    )
 		ADD_DEPENDENCIES(tag version_check)
 	    ELSEIF(SOURCE_VERSION_CONTROL STREQUAL "hg")
 		ADD_CUSTOM_TARGET(tag
 		    COMMAND hg tag -m "${CHANGE_SUMMARY}" "${PRJ_VER}"
 		    COMMENT "Tagging the source as ver ${PRJ_VER}"
+		    VERBATIM
 		    )
 		ADD_DEPENDENCIES(tag version_check)
 	    ELSEIF(SOURCE_VERSION_CONTROL STREQUAL "svn")
@@ -203,6 +204,7 @@ IF(NOT DEFINED _USE_HOSTING_SERVICE_CMAKE_)
 		    ADD_CUSTOM_TARGET(tag
 			COMMAND svn copy "${SOURCE_BASE_URL}/trunk" "${SOURCE_BASE_URL}/tags/${PRJ_VER}" -m "${CHANGE_SUMMARY}"
 			COMMENT "Tagging the source as ver ${PRJ_VER}"
+			VERBATIM
 			)
 		ENDIF(DEFINED SOURCE_BASE_URL)
 		ADD_DEPENDENCIES(tag version_check)
@@ -210,6 +212,7 @@ IF(NOT DEFINED _USE_HOSTING_SERVICE_CMAKE_)
 		ADD_CUSTOM_TARGET(tag
 		    COMMAND cvs tag "${PRJ_VER}"
 		    COMMENT "Tagging the source as ver ${PRJ_VER}"
+		    VERBATIM
 		    )
 		ADD_DEPENDENCIES(tag version_check)
 	    ENDIF(SOURCE_VERSION_CONTROL STREQUAL "git")
