@@ -1,12 +1,18 @@
-* Project generate script
-  * Command line
+ * Debug message
+ * Project generate script
   * GUI
 
-* Hosting support
+ * Hosting support
   * GoogleCode
-  * FedoraHosted
   * GitHub
 
-* Support other distribution
+ * Support other distribution
   * Debian/Ubuntu
+
+==Done=
+ * Project generate script
+  * Command line
+
+ * Hosting support
+  * FedoraHosted
 
