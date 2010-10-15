@@ -61,16 +61,23 @@
 #  For protocol SFTP:
 #    USER: the user name for sftp.
 #    SITE: the host name of the sftp site.
-#    BATCH: File that stores the batch commands.
-#    BATCH_TEMPATE: File that provides template to for generating
+#    BATCH: (Optional) File that stores the batch commands.
+#    BATCH_TEMPATE: (Optional) File that provides template to for generating
 #                   batch commands.
 #                   If BATCH is also given: Generated batch file is named
 #                   as defined with BATCH;
 #                   if BATCH is not given: Generated batch file is named
 #                   as ${CMAKE_BINARY_DIR}/BatchUpload-${ServiceName}
-#   OPTIONS: List of options for sftp.
+#   OPTIONS: (Optional) Other options for sftp.
 #
-# Example
+#  For protocol SCP:
+#    USER: the user name for sftp.
+#    SITE: the host name of the sftp site.
+#    DEST_PATH: (Optional) file path of remote.
+#    OPTIONS: (Optional) Other options for scp.
+#
+# Example:
+#
 # For a hosting service "Host1" with git,
 # while uploading the source package to "Host2" with sftp.
 # The setting file might looks as follows:

@@ -14,6 +14,8 @@ SET(MAINTAINER "Ding-Yi Chen <dchen at redhat.com>")
 SET(VENDOR "Red Hat, APAC, Inc.")
 SET(LICENSE BSD)
 
+SET(FEDORA_CURRENT_RELEASE_TAGS f14 f13 f12 el6 el5)
+
 ####################################################################
 # Includes
 #

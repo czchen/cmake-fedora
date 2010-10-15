@@ -123,3 +123,5 @@ mkdir -p SPECS
 generate_file SPECS/project.spec.in ${PRJ_TEMPLATES_PATH}
 generate_file SPECS/RPM-ChangeLog.in ${PRJ_TEMPLATES_PATH}
 
+generate_file MAINTAINER_SETTING_NO_PACK ${PRJ_TEMPLATES_PATH} PRJ_SOURCE_VERSION_CONTROL
+
