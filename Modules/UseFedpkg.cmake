@@ -107,31 +107,39 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		SET(_first_branch ${_branch})
 		SET(FEDPKG_SCRATCH_BUILD_CMD
 		    "${FEDPKG} switch-branch ${_branch}"
-		    "${FEDPKG} scratch-build --srpm ${srpm}")
+		    " git pull"
+		    " ${FEDPKG} scratch-build --srpm ${srpm}")
 		SET(FEDPKG_COMMIT_CMD
 		    "${FEDPKG} switch-branch ${_branch}"
+		    " git pull"
 		    " ${FEDPKG} import  ${srpm}"
 		    " ${FEDPKG} commit ${COMMIT_MSG} -p"
 		    )
 		SET(FEDPKG_BUILD_CMD
 		    "${FEDPKG} switch-branch ${_branch}"
+		    " git pull"
 		    " ${FEDPKG} build")
 		SET(FEDPKG_UPDATE_CMD
 		    "${FEDPKG} switch-branch ${_branch}"
+		    " git pull"
 		    " ${FEDPKG} update")
 	    ELSE(_first_branch STREQUAL "")
 		SET(FEDPKG_SCRATCH_BUILD_CMD "${FEDPKG_SCRATCH_BUILD_CMD}"
 		    " ${FEDPKG} switch-branch ${_branch}"
+		    " git pull"
 		    " ${FEDPKG} scratch-build --srpm ${srpm}")
 		SET(FEDPKG_COMMIT_CMD "${FEDPKG_COMMIT_CMD}"
 		    " ${FEDPKG} switch-branch ${_branch}"
+		    " git pull"
 		    " git merge ${_first_branch}"
 		    " git push")
 		SET(FEDPKG_BUILD_CMD "${FEDPKG_BUILD_CMD} "
 		    " ${FEDPKG} switch-branch ${_branch}"
+		    " git pull"
 		    " ${FEDPKG} build")
 		SET(FEDPKG_UPDATE_CMD "${FEDPKG_UPDATE_CMD}"
 		    " ${FEDPKG} switch-branch ${_branch}"
+		    " git pull"
 		    " ${FEDPKG} update")
 	    ENDIF(_first_branch STREQUAL "")
 	ENDFOREACH(_tag ${tags})
@@ -332,7 +340,7 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 	    ENDIF(BODHI_USER)
 
 	    ADD_CUSTOM_TARGET(bodhi_new
-		COMMAND echo "bodhi --new ${_bodhi_login} --file ${_bodhi_template_file}"
+		COMMAND eval "bodhi --new ${_bodhi_login} --file ${_bodhi_template_file}"
 		COMMENT "Send new package to bodhi"
 		VERBATIM
 		)
