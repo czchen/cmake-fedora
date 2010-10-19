@@ -22,6 +22,8 @@ Options:
     -M { maintainer_contact}: name and email of a maintainer.
     -V { vendor }: Vendor. This will also apply to license document if
         possible.
+    -e { old_spec(.in) }: Extract values from original spec or spec.in.
+       This maybe handy when converting an old project to cmake-fedora.
     -i { initial_version }: Inital project version.
 	Default value is 0.1.0 if this option is not given.
     -m { project_summary}: Project summary.
@@ -38,8 +40,48 @@ PRJ_SUMMARY="<PRJ_SUMMARY>"
 PRJ_TEMPLATES_PATH="$CMAKE_TEMPLATES_PATH"
 PRJ_LICENSE=""
 PRJ_SOURCE_VERSION_CONTROL=""
+OPT_EXTRACT_SPEC=""
 
-while getopts "hA:B:L:M:V:i:m:s:" opt; do
+# extract_from_spec
+function extract_from_spec(){
+    var=$1;
+    value=$(eval echo \$${var});
+
+    case $var in
+	PRJ_AUTHORS )
+	    newValue=`grep -e '^\* [A-Za-z]\+ [A-Za-z]\+ [0-9]\+ [0-9]\+ .*<' $OPT_EXTRACT_SPEC\
+	    | sed -e 's/^\* [A-Za-z]\+ [A-Za-z]\+ [0-9]\+ [0-9]\+ \([^<]*\) *<.*/\1/' \
+	    | head -n 1`
+	    ;;
+	PRJ_LICENSE )
+	    newValue=`grep -e '^License:[[:space:]]*' $OPT_EXTRACT_SPEC \
+	    | sed -e 's/License:[[:space:]]*//'`
+	    ;;
+	PRJ_MAINTAINER )
+	    newValue=`grep -e '^\* [A-Za-z]\+ [A-Za-z]\+ [0-9]\+ [0-9]\+ .*<' $OPT_EXTRACT_SPEC \
+	    | sed -e 's/^\* [A-Za-z]\+ [A-Za-z]\+ [0-9]\+ [0-9]\+ \([^>]*>\).*/\1/' \
+	    | head -n 1`
+	    ;;
+	PRJ_VER_INIT )
+	    newValue=`grep -e '^Version:[[:space:]]*[0-9]' $OPT_EXTRACT_SPEC\
+	    | sed -e 's/Version:[[:space:]]*//'`
+	    ;;
+	PRJ_SUMMARY )
+	    newValue=`grep -e '^Summary:[[:space:]]*' $OPT_EXTRACT_SPEC\
+	    | sed -e 's/Summary:[[:space:]]*//'`
+	    ;;
+	*)
+	    ;;
+    esac
+
+    if [ -n "$newValue" ];then
+	echo "$newValue";
+    else
+	echo "$value";
+    fi
+}
+
+while getopts "hA:B:L:M:V:e:i:m:s:" opt; do
     case $opt in
 	h)
 	    print_usage;
@@ -60,6 +102,14 @@ while getopts "hA:B:L:M:V:i:m:s:" opt; do
 	V)
 	    PRJ_VENDOR="$OPTARG";
 	    ;;
+	e)
+	    OPT_EXTRACT_SPEC=$OPTARG;
+	    PRJ_AUTHORS=`extract_from_spec PRJ_AUTHORS`;
+	    PRJ_LICENSE=`extract_from_spec PRJ_LICENSE`;
+	    PRJ_MAINTAINER=`extract_from_spec PRJ_MAINTAINER`;
+	    PRJ_VER_INIT=`extract_from_spec PRJ_VER_INIT`;
+	    PRJ_SUMMARY=`extract_from_spec PRJ_SUMMARY`;
+	    ;;
 	i)
 	    PRJ_VER_INIT="$OPTARG";
 	    ;;
@@ -69,12 +119,23 @@ while getopts "hA:B:L:M:V:i:m:s:" opt; do
 	s)
 	    PRJ_SOURCE_VERSION_CONTROL=$OPTARG;
 	    ;;
-	    *)
-	;;
+	*)
+	    ;;
     esac
 done
 shift $((OPTIND-1));
 PRJ_NAME=$1;
+if [ -z $PRJ_NAME ];then
+    print_usage
+    exit 1
+fi
+
+if [ -n "$OPT_EXTRACT_SPEC" ];then
+    for v in PRJ_AUTHORS PRJ_LICENSE PRJ_MAINTAINER PRJ_VER_INIT PRJ_SUMMARY;do
+	value=$(eval echo \$${v})
+	echo "Detected $v=$value"
+    done
+fi
 
 function find_file(){
     _file=$1
@@ -98,21 +159,28 @@ function copy_file(){
     return 0
 }
 
-function generate_file(){
-    _file=$1
-    shift
-    templateFileName=`basename ${_file}`".template"
-    #echo templateFileName=${templateFileName}
+function generate_file2(){
+    _dest=$1
+    _src=$2
+    templateFileName=`basename ${_src}`".template"
+    shift 2
 
-    if copy_file ${templateFileName} ${_file} ;then
+    if copy_file ${templateFileName} ${_dest} ;then
 	for var in $@; do
 	    value=$(eval echo \$${var})
 	    #echo var=$var value=$value
-	    sed -i.bak -e "s/<${var}>/$value/" ${_file}
+	    sed -i.bak -e "s/<${var}>/$value/" ${_dest}
 	done
     fi
 
 }
+
+function generate_file(){
+    _file=$1
+    shift
+    generate_file2 $_file $_file $@
+}
+
 
 # generate_license _dest _src [[_pattern _replace] ...]
 function generate_license(){
@@ -138,8 +206,7 @@ function generate_license(){
     fi
 }
 
-
-
+#generate files
 generate_file CMakeLists.txt  PRJ_NAME PRJ_AUTHORS PRJ_LICENSE PRJ_MAINTAINER\
     PRJ_VENDOR PRJ_SUMMARY
 
@@ -219,7 +286,32 @@ case $PRJ_LICENSE in
     * )
 	;;
 esac
-rm -f *.bak
 
-generate_file MAINTAINER_SETTING_NO_PACK ${PRJ_TEMPLATES_PATH} PRJ_SOURCE_VERSION_CONTROL
+generate_file2 MAINTAINER_SETTING_NO_PACK MAINTAINER_SETTING PRJ_SOURCE_VERSION_CONTROL
+
+if [ -f ChangeLog ]; then
+    mv ChangeLog ChangeLog.prev
+else
+    touch ChangeLog.prev
+fi
+
+# Apply old RPM ChangeLog
+# find spec first, then spec.in
+if [ -n "$OPT_EXTRACT_SPEC" ];then
+    oldspec=$OPT_EXTRACT_SPEC
+else
+    oldspec=`find . -name "${PRJ_NAME}.spec" | head -n 1`
+fi
+if [ -z "$oldspec" ];then
+    oldspec=`find . -name "${PRJ_NAME}.spec.in" | head -n 1`
+fi
+if [ -n "$oldspec" ];then
+    csplit -f 'NO_PACK_' $oldspec '%\%changelog%'+1
+    mv NO_PACK_00 SPECS/RPM-ChangeLog.prev
+else
+    touch SPECS/RPM-ChangeLog.prev
+fi
+
+
+rm -f *.bak
 
