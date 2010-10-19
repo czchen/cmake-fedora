@@ -54,6 +54,30 @@ IF(NOT DEFINED _PACK_SOURCE_CMAKE_)
 
     INCLUDE(ManageVersion)
 
+    MACRO(PACK_SOURCE_FILES var)
+	SET(_filelist "")
+	FILE(GLOB_RECURSE _ls "*")
+	STRING(REPLACE "\\\\" "\\" _ignore_files "${PACK_SOURCE_IGNORE_FILES}")
+	FOREACH(_file ${_ls})
+	    SET(_matched 0)
+	    FOREACH(filePattern ${_ignore_files})
+		#MESSAGE("filePattern=${filePattern}")
+		IF(NOT _matched)
+		    IF(_file MATCHES "${filePattern}")
+			SET(_matched 1)
+		    ENDIF(_file MATCHES "${filePattern}")
+		ENDIF(NOT _matched)
+	    ENDFOREACH(filePattern ${_ignore_files})
+	    IF(NOT _matched)
+		FILE(RELATIVE_PATH _file ${CMAKE_SOURCE_DIR} "${_file}")
+		#MESSAGE("_file=${_file}")
+		LIST(APPEND _filelist "${_file}")
+	    ENDIF(NOT _matched)
+	ENDFOREACH(_file ${_ls})
+	SET(${var} ${_filelist})
+	#MESSAGE("PACK_SOURCE_IGNORE_FILES=${_ignore_files}")
+    ENDMACRO(PACK_SOURCE_FILES var)
+
     MACRO(PACK_SOURCE var outputDir)
 	#MESSAGE("PACK_SOURCE_IGNORE_FILES=${PACK_SOURCE_IGNORE_FILES}")
 
@@ -97,17 +121,18 @@ IF(NOT DEFINED _PACK_SOURCE_CMAKE_)
 	SET(${var} "${CPACK_SOURCE_PACKAGE_FILE_NAME}.${_pack_source_ext}")
 
 	SET(CPACK_PACKAGE_VENDOR "${VENDOR}")
+	PACK_SOURCE_FILES(PACK_SOURCE_FILE_LIST)
 
 	INCLUDE(CPack)
 	ADD_CUSTOM_COMMAND(OUTPUT ${_outputDir_rel}
 	    COMMAND cmake -E make_directory ${_outputDir_rel}
-	    COMMENT "Making package out directory."
+	    COMMENT "Making package output directory."
 	    )
 
 	IF("${_outputDir_rel}" STREQUAL ".")
 	    ADD_CUSTOM_COMMAND(OUTPUT "${_outputDir_rel}/${${var}}"
 		COMMAND make package_source
-		DEPENDS ChangeLog ${RELEASE_FILE}
+		DEPENDS ChangeLog ${RELEASE_FILE} ${PACK_SOURCE_FILE_LIST}
 		COMMENT "Packing the source"
 		)
 	ELSE("${_outputDir_rel}" STREQUAL ".")
@@ -115,7 +140,7 @@ IF(NOT DEFINED _PACK_SOURCE_CMAKE_)
 		COMMAND make package_source
 		COMMAND cmake -E copy ${${var}} "${_outputDir_rel}/"
 		COMMAND cmake -E remove ${${var}}
-		DEPENDS ChangeLog ${RELEASE_FILE} ${_outputDir_rel}
+		DEPENDS ChangeLog ${RELEASE_FILE} ${PACK_SOURCE_FILE_LIST} ${_outputDir_rel}
 		COMMENT "Packing the source"
 		)
 	ENDIF("${_outputDir_rel}" STREQUAL ".")
