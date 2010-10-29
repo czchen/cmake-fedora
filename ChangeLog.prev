@@ -1,3 +1,9 @@
+* Sat Oct 30 2010 Ding-Yi Chen <dchen at redhat.com> - 0.2.4
+- cmake-fedora-newprj.sh: New option "-e" that extract value from specified
+  spec or spec.in.
+- Now usage is printed instead of junk output when project_name is not given.
+- Source code (whatever is packed) and tarball dependency now checked.
+
 * Wed Oct 20 2010 Ding-Yi Chen <dchen at redhat.com> - 0.2.4
 - cmake-fedora-newprj.sh: New option "-e" that extract value from specified
   spec or spec.in.

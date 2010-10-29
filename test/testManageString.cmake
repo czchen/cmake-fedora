@@ -63,4 +63,5 @@ SET(_str_split_2d_a "hi" " hello\\; how are you\\;I am fine")
 #ENDFOREACH()
 TEST_STR_MATCH(_str_split_2d "${_str_split_2d_a}")
 
-
+SET(_str_split_3
+    "BASE_URL=http://example.com/\nFLIES_PATH=flies\nFLIES_URL=\${}

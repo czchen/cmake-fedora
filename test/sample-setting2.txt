@@ -1,0 +1,4 @@
+BASE_URL=http://example.com/
+FLIES_PATH=flies
+FLIES_URL=${BASE_URL}${FLIES_PATH}
+
