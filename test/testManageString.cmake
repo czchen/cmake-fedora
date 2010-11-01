@@ -37,9 +37,6 @@ SET(STR_SPLIT_2 "hi; hello; how are you;I am fine")
 
 STRING_SPLIT(_str_split_2a " " "${STR_SPLIT_2}")
 SET(_str_split_2a_a "hi\\;" "hello\\;" "how" "are" "you\\;I" "am" "fine")
-#FOREACH(_tok ${_str_split_2a})
-#    MESSAGE("  2a_tok=${_tok}")
-#ENDFOREACH()
 TEST_STR_MATCH(_str_split_2a "${_str_split_2a_a}")
 
 STRING_SPLIT(_str_split_2b " " "${STR_SPLIT_2}" 2)
@@ -51,17 +48,15 @@ TEST_STR_MATCH(_str_split_2b "${_str_split_2b_a}")
 
 STRING_SPLIT(_str_split_2c ";" "${STR_SPLIT_2}")
 SET(_str_split_2c_a "hi" " hello" " how are you" "I am fine")
-#FOREACH(_tok ${_str_split_2c})
-#    MESSAGE("  2c_tok=${_tok}")
-#ENDFOREACH()
 TEST_STR_MATCH(_str_split_2c "${_str_split_2c_a}")
 
 STRING_SPLIT(_str_split_2d ";" "${STR_SPLIT_2}" 2)
 SET(_str_split_2d_a "hi" " hello\\; how are you\\;I am fine")
-#FOREACH(_tok ${_str_split_2d})
-#    MESSAGE("  2d_tok=${_tok}")
-#ENDFOREACH()
 TEST_STR_MATCH(_str_split_2d "${_str_split_2d_a}")
 
-SET(_str_split_3
-    "BASE_URL=http://example.com/\nFLIES_PATH=flies\nFLIES_URL=\${}
+# Test whether ${var} is lost
+FILE(READ ${CTEST_SCRIPT_DIRECTORY}/sample-setting2.txt _str_split_3a)
+MESSAGE("content=${_str_split_3a}")
+SET(content2 "${_str_split_3a}")
+MESSAGE("contents2=${content2}")
+

@@ -1,9 +1,7 @@
-PRJ_VER=0.2.4
-SUMMARY=Improved cmake-fedora-newprj.sh; Source and tarball dependency now checked.
+PRJ_VER=0.2.5
+SUMMARY=
 BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=
 [Changes]
-- cmake-fedora-newprj.sh: New option "-e" that extract value from specified
-  spec or spec.in.
-- Now usage is printed instead of junk output when project_name is not given.
-- Source code (whatever is packed) and tarball dependency now checked.
+- Variable won't be lost after STRING_SPLIT
+- Fixed the variable values won't apply in SETTING_FILE_GET_ALL_VARIABLES
