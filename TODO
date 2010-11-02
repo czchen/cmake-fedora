@@ -1,9 +1,20 @@
- * Targets: 
-   * release, all in one step
+ * Documentation
+   * Wiki
+   * README
+ * Targets:
+   * release: all in one step
+   * install_rpm: install as rpm
    * clean_all
  * Debug message level
  * Project generate script
+  * Import spec template.
+  * Import old spec.
   * GUI
+
+ * spec file: file section
+  * Auto generate
+  * Auto update
+  * i18n/l10n relative setting
 
  * Hosting support
   * GoogleCode
@@ -15,6 +26,7 @@
 ==Done=
  * Project generate script
   * Command line
+  * Import spec template.
 
  * Hosting support
   * FedoraHosted

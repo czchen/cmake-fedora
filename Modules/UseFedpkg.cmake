@@ -1,4 +1,4 @@
-# - fedpkg and bodhi targets for Fedora and EPEL developers.
+# - koji, fedpkg and bodhi targets for Fedora and EPEL developers.
 # This module provides convenient targets for scratch build, submit,
 # and build on koji, using the GIT infrastructure,
 # as well as bodhi update.
@@ -237,7 +237,7 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 
 		#MESSAGE("KOJI_SCRATCH_BUILD_CMD=${KOJI_SCRATCH_BUILD_CMD}")
 		ADD_CUSTOM_TARGET(koji_scratch_build
-		    COMMAND echo "${KOJI_SCRATCH_BUILD_CMD}"
+		    COMMAND eval "${KOJI_SCRATCH_BUILD_CMD}"
 		    DEPENDS ${srpm} ChangeLog
 		    COMMENT "Start Koji scratch build"
 		    VERBATIM

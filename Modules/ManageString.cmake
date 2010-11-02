@@ -56,28 +56,43 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 	ENDIF(${var} STREQUAL "")
     ENDMACRO(STRING_TRIM var str)
 
-    # Meant to be internal
-    MACRO(STRING_ESCAPE var str)
-	# '$', ';' and '\' are tricky, need to be encoded.
-	# '\' => '#B'
-	# '#' => '#H'
+    # Internal macro
+    # Similar to STRING_ESCAPE, but read directly from file,
+    # This avoid the variable substitution
+    # Variable escape is enforced.
+    MACRO(FILE_READ_ESCAPE var filename)
+	# '$' is very tricky.
 	# '$' => '#D'
+	FILE(READ "${filename}" _ret)
+	STRING(REGEX REPLACE "[$]" "#D" _ret "${_ret}")
+	STRING_ESCAPE(${var} "${_ret}" ${ARGN})
+    ENDMACRO(FILE_READ_ESCAPE var filename)
+
+    # Internal macro
+    # Variable cannot be escaped here, as variable is already substituted
+    # at the time it passes to this macro.
+    MACRO(STRING_ESCAPE var str)
+	# ';' and '\' are tricky, need to be encoded.
+	# '#' => '#H'
+	# '\' => '#B'
 	# ';' => '#S'
 	SET(_ESCAPE_VARIABLE "")
 	SET(_NOESCAPE_SEMICOLON "")
+	SET(_ret "${str}")
 	STRING(REGEX REPLACE "#" "#H" _ret "${str}")
-	STRING(REGEX REPLACE "\\\\" "#B" _ret "${_ret}")
 	FOREACH(_arg ${ARGN})
 	    IF(${_arg} STREQUAL "NOESCAPE_SEMICOLON")
 		SET(_NOESCAPE_SEMICOLON "NOESCAPE_SEMICOLON")
 	    ELSEIF(${_arg} STREQUAL "ESCAPE_VARIABLE")
 		SET(_ESCAPE_VARIABLE "ESCAPE_VARIABLE")
-		STRING(REGEX REPLACE "$" "#D" _ret "${_ret}")
+		STRING(REGEX REPLACE "[$]" "#D" _ret "${_ret}")
 	    ENDIF(${_arg} STREQUAL "NOESCAPE_SEMICOLON")
 	ENDFOREACH(_arg)
+	STRING(REGEX REPLACE "\\\\" "#B" _ret "${_ret}")
 	IF(_NOESCAPE_SEMICOLON STREQUAL "")
 	    STRING(REGEX REPLACE ";" "#S" _ret "${_ret}")
 	ENDIF(_NOESCAPE_SEMICOLON STREQUAL "")
+	#MESSAGE("STRING_ESCAPE:_ret=${_ret}")
 	SET(${var} "${_ret}")
     ENDMACRO(STRING_ESCAPE var str)
 
@@ -94,11 +109,12 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 		SET(_NOESCAPE_SEMICOLON "NOESCAPE_SEMICOLON")
 	    ELSEIF(${_arg} STREQUAL "ESCAPE_VARIABLE")
 		SET(_ESCAPE_VARIABLE "ESCAPE_VARIABLE")
-		STRING(REGEX REPLACE "$" "#D" _ret "${_ret}")
+		STRING(REGEX REPLACE "#D" "$" _ret "${_ret}")
 	    ENDIF(${_arg} STREQUAL "NOESCAPE_SEMICOLON")
 	ENDFOREACH(_arg)
 	#MESSAGE("var=${var} _ret=${_ret} _NOESCAPE_SEMICOLON=${_NOESCAPE_SEMICOLON}	ESCAPE_VARIABLE=${_ESCAPE_VARIABLE}")
 
+	STRING(REGEX REPLACE "#B" "\\\\" _ret "${_ret}")
 	IF(_NOESCAPE_SEMICOLON STREQUAL "")
 	    # ';' => '#S'
 	    STRING(REGEX REPLACE "#S" "\\\\;" _ret "${_ret}")
@@ -109,8 +125,8 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 	    # '#D' => '$'
 	    STRING(REGEX REPLACE "#D" "$" _ret "${_ret}")
 	ENDIF(NOT _ESCAPE_VARIABLE STREQUAL "")
-	STRING(REGEX REPLACE "#B" "\\\\" _ret "${_ret}")
 	STRING(REGEX REPLACE "#H" "#" _ret "${_ret}")
+	#MESSAGE("STRING_UNESCAPE:_ret=${_ret}")
 	SET(${var} "${_ret}")
     ENDMACRO(STRING_UNESCAPE var str)
 
@@ -131,9 +147,11 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 	ENDIF(_ret MATCHES "^\"")
 
 	# Unencoding
-	STRING(REGEX REPLACE "#B" "\\\\" _ret "${_ret}")
-	STRING(REGEX REPLACE "#S" "\\\\;" ${var} "${_ret}")
-	STRING(REGEX REPLACE "#H" "#" _ret "${_ret}")
+	STRING_UNESCAPE(${var} "${_ret}" ${ARGN})
+
+	#	STRING(REGEX REPLACE "#B" "\\\\" _ret "${_ret}")
+	#STRING(REGEX REPLACE "#S" "\\\\;" ${var} "${_ret}")
+	#STRING(REGEX REPLACE "#H" "#" _ret "${_ret}")
     ENDMACRO(STRING_UNQUOTE var str)
 
     #    MACRO(STRING_ESCAPE_SEMICOLON var str)

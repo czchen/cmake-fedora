@@ -4,8 +4,8 @@ Release:    1%{?dist}
 Summary:    @PRJ_SUMMARY@
 License:    @LICENSE@
 Group:      System Environment/Libraries
-URL:        http://git.fedorahosted.org/git/?p=cmake-fedora.git
-Source0:    https://fedorahosted.org/releases/c/m/cmake-fedora/@SOURCE_PACKAGE@
+URL:        http://git.fedorahosted.org/git/?p=%{name}.git
+Source0:    https://fedorahosted.org/releases/c/m/%{name}/%{name}-%{version}-Source.@PACK_SOURCE_FILE_EXTENSION@
 
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:  noarch

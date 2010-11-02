@@ -54,9 +54,4 @@ STRING_SPLIT(_str_split_2d ";" "${STR_SPLIT_2}" 2)
 SET(_str_split_2d_a "hi" " hello\\; how are you\\;I am fine")
 TEST_STR_MATCH(_str_split_2d "${_str_split_2d_a}")
 
-# Test whether ${var} is lost
-FILE(READ ${CTEST_SCRIPT_DIRECTORY}/sample-setting2.txt _str_split_3a)
-MESSAGE("content=${_str_split_3a}")
-SET(content2 "${_str_split_3a}")
-MESSAGE("contents2=${content2}")
 

@@ -5,7 +5,7 @@ Summary:    @PRJ_SUMMARY@
 License:    @LICENSE@
 Group:      System Environment/Libraries
 URL:        <URL>
-Source0:    <SITE>/@SOURCE_PACKAGE@
+Source0:    <SITE>/%{name}-%{version}-Source.@PACK_SOURCE_FILE_EXTENSION@
 
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
