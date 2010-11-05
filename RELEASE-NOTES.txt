@@ -1,14 +1,8 @@
-PRJ_VER=0.3.0
-SUMMARY= New macroes:SETTING_FILE_GET_VARIABLES_PATTERN,PACK_SOURCE_FILES
+PRJ_VER=0.3.1
+SUMMARY=
 BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=
 [Changes]
-- New macro: SETTING_FILE_GET_VARIABLES_PATTERN
-- New macro: PACK_SOURCE_FILES
-- Fixed: Variable lost in SETTING_FILE_GET_ALL_VARIABLES and
-  SETTING_FILE_GET_VARABLE.
-- Fixed: Variable values won't apply in SETTING_FILE_GET_ALL_VARIABLES
-- UseUninstall finds cmake_uninstall.in in additional paths:
-  /usr/share/cmake/Modules and /usr/share/cmake/Modules
-- Minor improvements in CMakeLists.txt and project.spec.in templates.
-
+- SETTING_FILE_GET_VARIABLES_PATTERN:
+  Fixed: unable to use relative path problem.
+  Fixed: UNQUOTE and NOESCAPE_SEMICOLON can now used together.

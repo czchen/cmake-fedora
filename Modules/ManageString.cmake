@@ -57,18 +57,6 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
     ENDMACRO(STRING_TRIM var str)
 
     # Internal macro
-    # Similar to STRING_ESCAPE, but read directly from file,
-    # This avoid the variable substitution
-    # Variable escape is enforced.
-    MACRO(FILE_READ_ESCAPE var filename)
-	# '$' is very tricky.
-	# '$' => '#D'
-	FILE(READ "${filename}" _ret)
-	STRING(REGEX REPLACE "[$]" "#D" _ret "${_ret}")
-	STRING_ESCAPE(${var} "${_ret}" ${ARGN})
-    ENDMACRO(FILE_READ_ESCAPE var filename)
-
-    # Internal macro
     # Variable cannot be escaped here, as variable is already substituted
     # at the time it passes to this macro.
     MACRO(STRING_ESCAPE var str)
@@ -118,6 +106,8 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 	IF(_NOESCAPE_SEMICOLON STREQUAL "")
 	    # ';' => '#S'
 	    STRING(REGEX REPLACE "#S" "\\\\;" _ret "${_ret}")
+	ELSE(_NOESCAPE_SEMICOLON STREQUAL "")
+	    STRING(REGEX REPLACE "#S" ";" _ret "${_ret}")
 	ENDIF(_NOESCAPE_SEMICOLON STREQUAL "")
 	#MESSAGE("STRING_UNESCAPE:var=${var} _ret=${_ret}")
 
