@@ -13,6 +13,14 @@ SET(STR_QUOTE_3 "'hi=hello=how are you=fine'")
 STRING_UNQUOTE(_str_quote_3 "${STR_QUOTE_3}")
 TEST_STR_MATCH(_str_quote_3 "hi=hello=how are you=fine")
 
+SET(STR_QUOTE_4 "\"   many space  \"")
+STRING_UNQUOTE(_str_quote_4 "${STR_QUOTE_4}")
+TEST_STR_MATCH(_str_quote_4 "   many space  ")
+
+SET(STR_QUOTE_5 "Not quoted")
+STRING_UNQUOTE(_str_quote_5 "${STR_QUOTE_5}")
+TEST_STR_MATCH(_str_quote_5 "")
+
 # STRING TRIM
 SET(STR_TRIM_1 " \"hi=hello=how are you=fine\" ")
 STRING_TRIM(str_trim_1 "${STR_TRIM_1}")
@@ -20,6 +28,10 @@ TEST_STR_MATCH(str_trim_1 "hi=hello=how are you=fine")
 SET(STR_TRIM_2 "  hi=hello=how are you=fine2  3   ")
 STRING_TRIM(str_trim_2 "${STR_TRIM_2}")
 TEST_STR_MATCH(str_trim_2 "hi=hello=how are you=fine2  3")
+
+SET(STR_TRIM_3 "")
+STRING_TRIM(str_trim_3 "${STR_TRIM_3}")
+TEST_STR_MATCH(str_trim_3 "")
 
 # STRING JOIN
 STRING_JOIN(str_join_1 " " "Are" "you sure" " it" "is" "right?" " ")

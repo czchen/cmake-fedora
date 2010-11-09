@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.4)
 ####################################################################
 # Project specific information
 #
-PROJECT(cmake-fedora)
+PROJECT(cmake-fedora NONE)
 SET(PRJ_SUMMARY "CMake helper modules for fedora developers")
 
 SET(PRJ_DESCRIPTION

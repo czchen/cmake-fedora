@@ -1,8 +1,9 @@
-PRJ_VER=0.3.1
-SUMMARY=Fixed SETTING_FILE_GET_VARIABLES_PATTERN bugs
+PRJ_VER=0.3.2
+SUMMARY=Fixed STRING_TRIM; Removed f12 from current release.
 BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=
 [Changes]
-- SETTING_FILE_GET_VARIABLES_PATTERN:
-  Fixed: unable to use relative path problem.
-  Fixed: UNQUOTE and NOESCAPE_SEMICOLON can now used together.
+- Fixed: Macro invoked with incorrect arguments for macro named STRING_ESCAPE
+  Caused by give and empty string from STRING_TRIM
+- Removed: f12 from FEDORA_CURRENT_RELEASE_TAGS
+

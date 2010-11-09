@@ -7,6 +7,7 @@
    * clean_all
  * Debug message level
  * Project generate script
+  * Generate the SCM ignore files.
   * Import spec template.
   * Import old spec.
   * GUI

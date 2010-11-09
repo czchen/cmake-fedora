@@ -13,6 +13,7 @@
 #
 #   STRING_UNQUOTE(var str)
 #   - Remove double quote marks and quote marks around a string.
+#     If the string is not quoted, then it returns an empty string.
 #     * Parameters:
 #       + var: A variable that stores the result.
 #       + str: A string.
@@ -122,7 +123,7 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 
 
     MACRO(STRING_UNQUOTE var str)
-	STRING_ESCAPE(_ret ${str} ${ARGN})
+	STRING_ESCAPE(_ret "${str}" ${ARGN})
 	IF(_ret MATCHES "^[ \t\r\n]+")
 	    STRING(REGEX REPLACE "^[ \t\r\n]+" "" _ret "${_ret}")
 	ENDIF(_ret MATCHES "^[ \t\r\n]+")

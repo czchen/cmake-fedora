@@ -50,7 +50,7 @@
 
 IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
     SET(_USE_FEDPKG_CMAKE_ "DEFINED")
-    SET(FEDORA_CURRENT_RELEASE_TAGS f14 f13 f12)
+    SET(FEDORA_CURRENT_RELEASE_TAGS f14 f13)
     SET(FEDORA_RAWHIDE_TAG rawhide)
     IF(NOT DEFINED FEDPKG_DIR)
 	SET(FEDPKG_DIR "FedPkg")
@@ -257,7 +257,7 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
     ENDMACRO(_use_bodhi_convert_tag tag_out tag_in)
 
     MACRO(_append_notes _file)
-	STRING(REGEX REPLACE "\n" "\n " _notes ${CHANGELOG_ITEMS})
+	STRING(REGEX REPLACE "\n" "\n " _notes "${CHANGELOG_ITEMS}")
 	FILE(APPEND ${_file} "notes=${_notes}\n\n")
     ENDMACRO(_append_notes _file)
 
