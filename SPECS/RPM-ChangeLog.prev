@@ -1,3 +1,8 @@
+* Tue Nov 09 2010 Ding-Yi Chen <dchen at redhat.com> - 0.3.2-1
+- Fixed: Macro invoked with incorrect arguments for macro named STRING_ESCAPE
+  Caused by give and empty string from STRING_TRIM
+- Removed: f12 from FEDORA_CURRENT_RELEASE_TAGS
+
 * Mon Nov 08 2010 Ding-Yi Chen <dchen at redhat.com> - 0.3.1-1
 - SETTING_FILE_GET_VARIABLES_PATTERN:
   Fixed: unable to use relative path problem.
