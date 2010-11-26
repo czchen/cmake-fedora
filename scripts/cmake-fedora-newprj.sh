@@ -212,6 +212,8 @@ generate_file CMakeLists.txt  PRJ_NAME PRJ_AUTHORS PRJ_LICENSE PRJ_MAINTAINER\
 
 generate_file RELEASE-NOTES.txt  PRJ_VER_INIT
 
+generate_file ChangeLog.in
+
 mkdir -p SPECS
 generate_file SPECS/project.spec.in
 generate_file SPECS/RPM-ChangeLog.in
