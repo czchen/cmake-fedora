@@ -67,7 +67,8 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 	# ';' => '#S'
 	SET(_ESCAPE_VARIABLE "")
 	SET(_NOESCAPE_SEMICOLON "")
-	SET(_ret "${str}")
+	#	SET(_ret "${str}")
+
 	STRING(REGEX REPLACE "#" "#H" _ret "${str}")
 	FOREACH(_arg ${ARGN})
 	    IF(${_arg} STREQUAL "NOESCAPE_SEMICOLON")
