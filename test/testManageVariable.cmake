@@ -11,7 +11,7 @@ SETTING_FILE_GET_VARIABLE(var_q_4_noescape_sc "VAR_Q_4" test/sample-setting.txt
 TEST_STR_MATCH(var_q_4_noescape_sc "Kudo;Good")
 #MESSAGE("var_q_4_noescape_sc=|${var_q_4_noescape_sc}|")
 
-SETTING_FILE_GET_VALUE(var_slash_1 "VAR_SLASH_1" test/sample-setting.txt)
+SETTING_FILE_GET_VARIABLE(var_slash_1 "VAR_SLASH_1" test/sample-setting.txt)
 TEST_STR_MATCH(var_slash_1 "With 2 SLASHES")
 
 SETTING_FILE_GET_ALL_VARIABLES(test/sample-setting.txt)

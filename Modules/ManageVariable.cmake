@@ -136,9 +136,17 @@ IF(NOT DEFINED _MANAGE_VARIABLE_CMAKE_)
 	# '$' is very tricky.
 	# '$' => '#D'
 	GET_FILENAME_COMPONENT(_filename_abs "${filename}" ABSOLUTE)
-	FILE(READ "${_filename_abs}" _ret)
-	STRING(REGEX REPLACE "[$]" "#D" _ret "${_ret}")
-	STRING_ESCAPE(${var} "${_ret}" ${ARGN})
+	EXECUTE_PROCESS(COMMAND cat ${filename}
+	    COMMAND sed -e "s/#/#H/g"
+	    COMMAND sed -e "s/[$]/#D/g"
+	    COMMAND sed -e "s/;/#S/g"
+	    COMMAND sed -e "s/[\\]/#B/g"
+	    OUTPUT_VARIABLE _ret
+	    OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+	STRING(REGEX REPLACE "\n" ";" _ret "${_ret}")
+	#MESSAGE("_ret=|${_ret}|")
+	SET(${var} "${_ret}")
     ENDMACRO(FILE_READ_ESCAPE var filename)
 
     MACRO(SETTING_FILE_GET_VARIABLES_PATTERN var attr_pattern setting_file)
@@ -162,9 +170,9 @@ IF(NOT DEFINED _MANAGE_VARIABLE_CMAKE_)
 	ENDFOREACH(_arg)
 
 	# Escape everything to be safe.
-	FILE_READ_ESCAPE(_txt_content "${setting_file}")
+	FILE_READ_ESCAPE(_lines "${setting_file}")
 
-	STRING_SPLIT(_lines "\n" "${_txt_content}")
+	#STRING_SPLIT(_lines "\n" "${_txt_content}")
 	#MESSAGE("_lines=|${_lines}|")
 	SET(_actual_line "")
 	SET(_join_next 0)
