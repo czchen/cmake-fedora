@@ -17,6 +17,6 @@ VAR_SLASH_2=Test\
 SLASH
 
 VAR_SLASH_3="Will \n\
-and \n\
-OK"
+ and \n\
+OK?"
 

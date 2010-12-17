@@ -4,6 +4,7 @@ BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=
 [Changes]
 - Fixed: Support for out-of-source build.
+- Fixed: Join the next line if ended with back slash '\'.
 - ChangeLog: Now generate from "cmake ." directly.
 - changelog: target removed. So it won't do unnecessary rebuild.
 

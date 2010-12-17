@@ -177,7 +177,7 @@ IF(NOT DEFINED _MANAGE_VARIABLE_CMAKE_)
 	SET(_actual_line "")
 	SET(_join_next 0)
 	FOREACH(_line ${_lines})
-	    MESSAGE("_line=|${_line}|")
+	    #MESSAGE("_line=|${_line}|")
 	    IF(NOT _line MATCHES "^[ \\t]*#H")
 		# Not a comment line.
 		IF(_join_next EQUAL 1)
@@ -185,7 +185,7 @@ IF(NOT DEFINED _MANAGE_VARIABLE_CMAKE_)
 		ELSE(_join_next EQUAL 1)
 		    SET(_actual_line "${_line}")
 		ENDIF(_join_next EQUAL 1)
-		MESSAGE("_actual_line=|${_actual_line}|")
+		#MESSAGE("_actual_line=|${_actual_line}|")
 
 		IF(_actual_line MATCHES "#B$")
 		    #Join the lines that end with \\
@@ -199,8 +199,6 @@ IF(NOT DEFINED _MANAGE_VARIABLE_CMAKE_)
 			    "${_actual_line}" "${_noUnQuoted}" )
 			IF(_noReplace STREQUAL "" OR NOT DEFINED ${_attr})
 			    # Unencoding
-			    # Note content is escaped twice.
-			    STRING_UNESCAPE(_value "${_value}" ${_noEscapeSemicolon} ESCAPE_VARIABLE)
 			    STRING_UNESCAPE(_value "${_value}" ${_noEscapeSemicolon} ESCAPE_VARIABLE)
 			    IF(_escapeVariable STREQUAL "")
 				# Variable should not be escaped
