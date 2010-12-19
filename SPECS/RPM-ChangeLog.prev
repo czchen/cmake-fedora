@@ -1,3 +1,9 @@
+* Sun Dec 19 2010 Ding-Yi Chen <dchen at redhat.com> - 0.3.3-1
+- Fixed: Support for out-of-source build.
+- Fixed: Join the next line if ended with back slash '\'.
+- ChangeLog: Now generate from "cmake ." directly.
+- changelog: target removed. So it won't do unnecessary rebuild.
+
 * Tue Nov 09 2010 Ding-Yi Chen <dchen at redhat.com> - 0.3.2-1
 - Fixed: Macro invoked with incorrect arguments for macro named STRING_ESCAPE
   Caused by give and empty string from STRING_TRIM
