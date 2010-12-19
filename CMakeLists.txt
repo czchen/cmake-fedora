@@ -17,7 +17,7 @@ SET(LICENSE BSD)
 ####################################################################
 # Includes
 #
-SET(CMAKE_MODULE_PATH ${CMAKE_ROOT}/Modules ${CMAKE_SOURCE_DIR}/Modules)
+SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/Modules ${CMAKE_ROOT}/Modules )
 MESSAGE("CMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}")
 
 IF(CMAKE_VERSION)

@@ -51,7 +51,7 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 
 	IF(${var} STREQUAL "")
 	    SET(_var_1 "${str}")
-	    STRING(REGEX REPLACE  "^[ \t\r\n]+" "" _var_2 "${_var_1}" )
+	    STRING(REGEX REPLACE  "^[ \t\r\n]+" "" _var_2 "${str}" )
 	    STRING(REGEX REPLACE  "[ \t\r\n]+$" "" _var_3 "${_var_2}" )
 	    SET(${var} "${_var_3}")
 	ENDIF(${var} STREQUAL "")

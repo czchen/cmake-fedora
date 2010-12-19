@@ -148,8 +148,12 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 	    #MESSAGE("_releaseTag=${_releaseTag} _releaseStr=${_releaseStr}")
 
 	    # Update RPM_ChangeLog
-	    FILE(READ "${_specInDir}/RPM-ChangeLog.prev" RPM_CHANGELOG_PREV)
-	    STRING_TRIM(RPM_CHANGELOG_PREV "${RPM_CHANGELOG_PREV}")
+	    # Use this instead of FILE(READ is to avoid error when reading '\'
+	    # character.
+	    EXECUTE_PROCESS(COMMAND cat "${_specInDir}/RPM-ChangeLog.prev"
+		OUTPUT_VARIABLE RPM_CHANGELOG_PREV
+		OUTPUT_STRIP_TRAILING_WHITESPACE)
+
 	    CONFIGURE_FILE(${_specInDir}/RPM-ChangeLog.in ${RPM_BUILD_SPECS}/RPM-ChangeLog)
 
 	    # Generate spec
