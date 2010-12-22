@@ -137,6 +137,7 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 	SET(${var} ${_archStr})
     ENDMACRO(PACK_RPM_GET_ARCH var spec_in)
 
+
     MACRO(PACK_RPM var spec_in sourcePackage)
 	IF(NOT EXISTS ${spec_in})
 	    MESSAGE(FATAL_ERROR "File ${spec_in} not found!")
@@ -211,6 +212,9 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 		DEPENDS ${_prj_srpm_path}
 		)
 
+	    # RPMs (except SRPM)
+	    PACK_RPM_GET_ARCH(_archStr "${spec_in}")
+
 	    ADD_CUSTOM_TARGET(rpm
 		COMMAND ${RPMBUILD} -ba --buildroot ${RPM_BUILD_BUILDROOT} ${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec
 		--define '_sourcedir ${RPM_BUILD_SOURCES}'
@@ -227,6 +231,16 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 		)
 
 	    ADD_DEPENDENCIES(rpm version_check)
+
+	    ADD_CUSTOM_TARGET(install_rpms
+		find ${RPM_BUILD_RPMS}/${_archStr}
+		-name '${PROJECT_NAME}*-${PRJ_VER}-${PRJ_RELEASE_NO}.*.${_archStr}.rpm' !
+		-name '${PROJECT_NAME}-debuginfo-${PRJ_RELEASE_NO}.*.${_archStr}.rpm'
+		-print -exec sudo rpm --upgrade --hash --verbose '{}' '\\;'
+		COMMENT "Install all rpms except debuginfo"
+		)
+
+	    ADD_DEPENDENCIES(install_rpms rpm)
 
 	    ADD_CUSTOM_TARGET(rpmlint find .
 		-name '${PROJECT_NAME}*-${PRJ_VER}-${PRJ_RELEASE_NO}.*.rpm'
@@ -259,12 +273,6 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 	    ADD_DEPENDENCIES(clean_rpm clean_old_rpm)
 	    ADD_DEPENDENCIES(clean_pkg clean_rpm clean_pack_src)
 
-	    #	    ADD_CUSTOM_TARGET(install_rpms
-	    #	    find ${RPM_BUILD_RPMS}
-	    #	    -name '${PROJECT_NAME}*-${PRJ_VER}-${PRJ_RELEASE_NO}.*.rpm'
-	    #	    -print -exec rpm --upgrade --hash --verbose '{}' '\\;'
-	    #	    DEPENDS ${_prj_srpm_path}
-	    #	    )
 	ENDIF(${RPMBUILD} STREQUAL "RPMBUILD-NOTFOUND")
     ENDMACRO(PACK_RPM var spec_in sourcePackage)
 
