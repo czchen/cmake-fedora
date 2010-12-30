@@ -50,7 +50,7 @@
 #     + fileDependencies: other files that rpm targets depends on.
 #     Targets:
 #     + srpm: Build srpm (rpmbuild -bs).
-#     + rpm: Build rpm and srpm (rpmbuild -ba)
+#     + rpm: Build rpm and srpm (rpmbuild -bb)
 #     + rpmlint: Run rpmlint to generated rpms.
 #     + clean_rpm": Clean all rpm and build files.
 #     + clean_pkg": Clean all source packages, rpm and build files.
@@ -174,6 +174,8 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 
 	    SET(${var} "${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE}.src.rpm")
 	    SET(_prj_srpm_path "${RPM_BUILD_SRPMS}/${${var}}")
+	    PACK_RPM_GET_ARCH(_archStr "${spec_in}")
+	    SET(_prj_rpm_path "${RPM_BUILD_RPMS}/${_archStr}/${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE}.${_archStr}.rpm")
 
 	    #-------------------------------------------------------------------
 	    # RPM build commands and targets
@@ -213,21 +215,24 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 		)
 
 	    # RPMs (except SRPM)
-	    PACK_RPM_GET_ARCH(_archStr "${spec_in}")
 
-	    ADD_CUSTOM_TARGET(rpm
-		COMMAND ${RPMBUILD} -ba --buildroot ${RPM_BUILD_BUILDROOT} ${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec
+	    ADD_CUSTOM_COMMAND(OUTPUT ${_prj_rpm_path}
+		COMMAND ${RPMBUILD} -bb --buildroot ${RPM_BUILD_BUILDROOT} ${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec
 		--define '_sourcedir ${RPM_BUILD_SOURCES}'
 		--define '_builddir ${RPM_BUILD_BUILD}'
 		--define '_srcrpmdir ${RPM_BUILD_SRPMS}'
 		--define '_rpmdir ${RPM_BUILD_RPMS}'
 		--define '_specdir ${RPM_BUILD_SPECS}'
-		DEPENDS ChangeLog
+		DEPENDS ChangeLog ${_prj_srpm_path}
 		${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec
 		${RPM_BUILD_SOURCES}/${sourcePackage} ${fileDependencies}
 		${RPM_BUILD_SRPMS} ${RPM_BUILD_BUILD}
 		${RPM_BUILD_BUILDROOT} ${RPM_BUILD_RPMS}
 		COMMENT "Building rpm"
+		)
+
+	    ADD_CUSTOM_TARGET(rpm
+		DEPENDS ${_prj_rpm_path}
 		)
 
 	    ADD_DEPENDENCIES(rpm version_check)
@@ -237,15 +242,14 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 		-name '${PROJECT_NAME}*-${PRJ_VER}-${PRJ_RELEASE_NO}.*.${_archStr}.rpm' !
 		-name '${PROJECT_NAME}-debuginfo-${PRJ_RELEASE_NO}.*.${_archStr}.rpm'
 		-print -exec sudo rpm --upgrade --hash --verbose '{}' '\\;'
+		DEPENDS ${_prj_rpm_path}
 		COMMENT "Install all rpms except debuginfo"
 		)
-
-	    ADD_DEPENDENCIES(install_rpms rpm)
 
 	    ADD_CUSTOM_TARGET(rpmlint find .
 		-name '${PROJECT_NAME}*-${PRJ_VER}-${PRJ_RELEASE_NO}.*.rpm'
 		-print -exec rpmlint '{}' '\\;'
-		DEPENDS ${_prj_srpm_path}
+		DEPENDS ${_prj_srpm_path} ${_prj_rpm_path}
 		)
 
 	    ADD_CUSTOM_TARGET(clean_old_rpm

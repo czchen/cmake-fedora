@@ -7,5 +7,7 @@ REDHAT_BUGZILLA=
   it always use latest modules.
 - Fixed Reading a file that contains '\'.
 - Added Macro PACK_RPM_GET_ARCH
-- Added target install_rpms for bulk rpms installation
+- Added target install_rpms for bulk rpms installation.
+- Target rpm now uses -bb instead of -ba.
+- Target rpm now depends on srpm.
 
