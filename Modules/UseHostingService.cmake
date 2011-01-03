@@ -1,5 +1,5 @@
 # - Read setting files and provides developer only targets.
-# This module have macros that generate variables such as
+# This module has macros that generate variables such as
 # upload to a hosting services, which are valid to only the developers.
 # This is normally done by checking the existence of a developer
 # setting file.
