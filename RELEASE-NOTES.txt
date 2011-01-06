@@ -1,8 +1,10 @@
 PRJ_VER=0.4.0
-SUMMARY=
+SUMMARY=New targets: release, install_rpms
 BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=
 [Changes]
+- New target: release
+- New target: install_rpms
 - ./Module should precedes /usr/share/cmake/Modules, so
   it always use latest modules.
 - Fixed Reading a file that contains '\'.
@@ -10,4 +12,7 @@ REDHAT_BUGZILLA=
 - Added target install_rpms for bulk rpms installation.
 - Target rpm now uses -bb instead of -ba.
 - Target rpm now depends on srpm.
-
+- Source version control logic is split out as ManageSourceVersionControl
+- Module UseHostingService is renamed as ManageMaintainerTarget
+- Macro USE_HOSTING_SERVICE_READ_SETTING_FILE is renamed as
+  MAINTAINER_SETTING_READ_FILE

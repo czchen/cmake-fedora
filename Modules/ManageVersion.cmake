@@ -1,4 +1,5 @@
-# - Module that manage version
+# - Targets and macros that related to versioning.
+#
 # Defines following macros:
 #   LOAD_RELEASE_FILE(releaseFile)
 #   - Load release file information.
@@ -9,6 +10,8 @@
 #       + SUMMARY: Summary of the release. Will be output as CHANGE_SUMMARY.
 #          and a [Changes] section tag, below which listed the change in the
 #          release.
+#     This macro reads or define following variables:
+#     + RELEASE_TARGETS: Sequence of release targets.
 #     This macro outputs following files:
 #     + ChangeLog: Log of changes.
 #       Depends on ChangeLog.prev and releaseFile.
@@ -29,13 +32,10 @@ IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
     MESSAGE("CMAKE_HOST_SYSTEM_PROCESSOR=${CMAKE_HOST_SYSTEM_PROCESSOR}")
     MESSAGE("CMAKE_HOST_SYSTEM_VERSION=${CMAKE_HOST_SYSTEM_VERSION}")
     INCLUDE(ManageVariable)
-    IF(NOT DEFINED RELEASE_TARGETS)
-	SET(RELEASE_TARGETS rpmlint koji_scratch_build fedpkg_commit
-	    fedpkg_build tag upload bodhi_new changelog_update)
-    ENDIF(NOT DEFINED RELEASE_TARGETS)
 
     MACRO(LOAD_RELEASE_FILE releaseFile)
 	COMMAND_OUTPUT_TO_VARIABLE(_grep_line grep -F "[Changes]" -n -m 1 ${releaseFile})
+
 	SET(RELEASE_FILE ${releaseFile})
 	#MESSAGE("_grep_line=|${_grep_line}|")
 	IF("${_grep_line}" STREQUAL "")

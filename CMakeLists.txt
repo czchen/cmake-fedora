@@ -92,8 +92,8 @@ ENDIF(EXISTS ${MAINTAINER_SETTING})
 ####################################################################
 # Hosting
 #
-INCLUDE(UseHostingService)
-USE_HOSTING_SERVICE_READ_SETTING_FILE("${MAINTAINER_SETTING}"
+INCLUDE(ManageMaintainerTargets)
+MAINTAINER_SETTING_READ_FILE("${MAINTAINER_SETTING}"
     "${RPM_BUILD_SOURCES}/${PACK_SOURCE_FILE_NAME}")
 
 
