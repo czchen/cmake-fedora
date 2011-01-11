@@ -17,7 +17,7 @@ SET(LICENSE BSD)
 ####################################################################
 # Includes
 #
-SET(CMAKE_MODULE_PATH ${CMAKE_ROOT}/Modules ${CMAKE_SOURCE_DIR}/Modules)
+SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/Modules ${CMAKE_ROOT}/Modules )
 MESSAGE("CMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}")
 
 IF(CMAKE_VERSION)
@@ -92,8 +92,8 @@ ENDIF(EXISTS ${MAINTAINER_SETTING})
 ####################################################################
 # Hosting
 #
-INCLUDE(UseHostingService)
-USE_HOSTING_SERVICE_READ_SETTING_FILE("${MAINTAINER_SETTING}"
+INCLUDE(ManageMaintainerTargets)
+MAINTAINER_SETTING_READ_FILE("${MAINTAINER_SETTING}"
     "${RPM_BUILD_SOURCES}/${PACK_SOURCE_FILE_NAME}")
 
 

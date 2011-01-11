@@ -1,4 +1,5 @@
-# - Module that manage version
+# - Targets and macros that related to versioning.
+#
 # Defines following macros:
 #   LOAD_RELEASE_FILE(releaseFile)
 #   - Load release file information.
@@ -9,6 +10,8 @@
 #       + SUMMARY: Summary of the release. Will be output as CHANGE_SUMMARY.
 #          and a [Changes] section tag, below which listed the change in the
 #          release.
+#     This macro reads or define following variables:
+#     + RELEASE_TARGETS: Sequence of release targets.
 #     This macro outputs following files:
 #     + ChangeLog: Log of changes.
 #       Depends on ChangeLog.prev and releaseFile.
@@ -32,6 +35,7 @@ IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
 
     MACRO(LOAD_RELEASE_FILE releaseFile)
 	COMMAND_OUTPUT_TO_VARIABLE(_grep_line grep -F "[Changes]" -n -m 1 ${releaseFile})
+
 	SET(RELEASE_FILE ${releaseFile})
 	#MESSAGE("_grep_line=|${_grep_line}|")
 	IF("${_grep_line}" STREQUAL "")
@@ -83,6 +87,7 @@ IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
 	    COMMAND test \"`${_version_check_cmd}`\" = \"\" -o \"`${_version_check_cmd}`\" = "${PRJ_VER}"
 	    || echo Inconsistent version detected. Fixing.. && ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR}
 	    )
+
     ENDMACRO(LOAD_RELEASE_FILE releaseFile)
 
 ENDIF(NOT DEFINED _MANAGE_VERSION_CMAKE_)

@@ -1,3 +1,24 @@
+* Fri Jan 07 2011 Ding-Yi Chen <dchen at redhat.com> - 0.4.0-1
+- New target: release
+- New target: install_rpms
+- ./Module should precedes /usr/share/cmake/Modules, so
+  it always use latest modules.
+- Fixed Reading a file that contains '\'.
+- Added Macro PACK_RPM_GET_ARCH
+- Added target install_rpms for bulk rpms installation.
+- Target rpm now uses -bb instead of -ba.
+- Target rpm now depends on srpm.
+- Source version control logic is split out as ManageSourceVersionControl
+- Module UseHostingService is renamed as ManageMaintainerTarget
+- Macro USE_HOSTING_SERVICE_READ_SETTING_FILE is renamed as
+  MAINTAINER_SETTING_READ_FILE
+
+* Sun Dec 19 2010 Ding-Yi Chen <dchen at redhat.com> - 0.3.3-1
+- Fixed: Support for out-of-source build.
+- Fixed: Join the next line if ended with back slash '\'.
+- ChangeLog: Now generate from "cmake ." directly.
+- changelog: target removed. So it won't do unnecessary rebuild.
+
 * Tue Nov 09 2010 Ding-Yi Chen <dchen at redhat.com> - 0.3.2-1
 - Fixed: Macro invoked with incorrect arguments for macro named STRING_ESCAPE
   Caused by give and empty string from STRING_TRIM

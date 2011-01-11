@@ -43,6 +43,8 @@ Requires:   cmake >= 2.4
 %{_datadir}/cmake/Modules/CMakeVersion.cmake
 %{_datadir}/cmake/Modules/CompileEnv.cmake
 %{_datadir}/cmake/Modules/DateTimeFormat.cmake
+%{_datadir}/cmake/Modules/ManageMaintainerTargets.cmake
+%{_datadir}/cmake/Modules/ManageSourceVersionControl.cmake
 %{_datadir}/cmake/Modules/ManageString.cmake
 %{_datadir}/cmake/Modules/ManageVariable.cmake
 %{_datadir}/cmake/Modules/ManageVersion.cmake
@@ -52,7 +54,6 @@ Requires:   cmake >= 2.4
 %{_datadir}/cmake/Modules/UseFedpkg.cmake
 %{_datadir}/cmake/Modules/UseGConf.cmake
 %{_datadir}/cmake/Modules/UseGettext.cmake
-%{_datadir}/cmake/Modules/UseHostingService.cmake
 %{_datadir}/cmake/Modules/UseUninstall.cmake
 %{_datadir}/cmake/Modules/cmake_uninstall.cmake.in
 %{_datadir}/cmake/Templates/fedora

@@ -1,11 +1,11 @@
 # - Read setting files and provides developer only targets.
-# This module have macros that generate variables such as
+# This module has macros that generate variables such as
 # upload to a hosting services, which are valid to only the developers.
 # This is normally done by checking the existence of a developer
 # setting file.
 #
 # Defines following Macros:
-#   USE_HOSTING_SERVICE_READ_SETTING_FILE(filename packedSourcePath)
+#   MAINTAINER_SETTING_READ_FILE(filename packedSourcePath)
 #   - It checks the existence of setting file.
 #     If it does not exist, this macro acts as a no-op;
 #     if it exists, then it reads variables defined in the setting file,
@@ -17,12 +17,16 @@
 #     Reads following variables:
 #     + PRJ_VER: Project version.
 #     + CHANGE_SUMMARY: Change summary.
+#     Reads or define following variables:
+#     + RELEASE_TARGETS: Sequence of release targets.
 #     Defines following targets:
 #     + changelog_update: Update changelog by copying ChangeLog to ChangeLog.prev
 #       and RPM-ChangeLog to RPM-ChangeLog. This target should be execute before
 #       starting a new version.
 #     + tag: tag the latest commit with the ${PRJ_VER} and ${CHANGE_SUMMARY} as comment.
 #     + upload: upload the source packages to hosting services.
+#     + release: Do the release chores.
+#       The actual sequence of target to be done for release is defined via RELEASE_TARGETS.
 #
 # Setting File Format
 #
@@ -166,10 +170,11 @@ IF(NOT DEFINED _USE_HOSTING_SERVICE_CMAKE_)
 	ENDIF(CURL_CMD STREQUAL "CURL_CMD-NOTFOUND")
     ENDMACRO(USE_HOSTING_SERVICE_GOOGLE_UPLOAD)
 
-    MACRO(USE_HOSTING_SERVICE_READ_SETTING_FILE filename packedSourcePath)
+    MACRO(MAINTAINER_SETTING_READ_FILE filename packedSourcePath)
 	IF(EXISTS "${filename}")
 	    INCLUDE(ManageVariable)
 	    INCLUDE(ManageVersion)
+	    INCLUDE(ManageSourceVersionControl)
 	    SETTING_FILE_GET_ALL_VARIABLES("${filename}" UNQUOTED)
 
 	    #===================================================================
@@ -186,36 +191,14 @@ IF(NOT DEFINED _USE_HOSTING_SERVICE_CMAKE_)
 		)
 
 	    IF(SOURCE_VERSION_CONTROL STREQUAL "git")
-		ADD_CUSTOM_TARGET(tag
-		    COMMAND git tag -a -m "${CHANGE_SUMMARY}" "${PRJ_VER}" HEAD
-		    COMMENT "Tagging the source as ver ${PRJ_VER}"
-		    VERBATIM
-		    )
-		ADD_DEPENDENCIES(tag version_check)
+		MANAGE_SOURCE_VERSION_CONTROL_GIT()
 	    ELSEIF(SOURCE_VERSION_CONTROL STREQUAL "hg")
-		ADD_CUSTOM_TARGET(tag
-		    COMMAND hg tag -m "${CHANGE_SUMMARY}" "${PRJ_VER}"
-		    COMMENT "Tagging the source as ver ${PRJ_VER}"
-		    VERBATIM
-		    )
-		ADD_DEPENDENCIES(tag version_check)
+		MANAGE_SOURCE_VERSION_CONTROL_HG()
 	    ELSEIF(SOURCE_VERSION_CONTROL STREQUAL "svn")
-		IF(DEFINED SOURCE_BASE_URL)
-		    ADD_CUSTOM_TARGET(tag
-			COMMAND svn copy "${SOURCE_BASE_URL}/trunk" "${SOURCE_BASE_URL}/tags/${PRJ_VER}" -m "${CHANGE_SUMMARY}"
-			COMMENT "Tagging the source as ver ${PRJ_VER}"
-			VERBATIM
-			)
-		ENDIF(DEFINED SOURCE_BASE_URL)
-		ADD_DEPENDENCIES(tag version_check)
+		MANAGE_SOURCE_VERSION_CONTROL_SVN()
 	    ELSEIF(SOURCE_VERSION_CONTROL STREQUAL "cvs")
-		ADD_CUSTOM_TARGET(tag
-		    COMMAND cvs tag "${PRJ_VER}"
-		    COMMENT "Tagging the source as ver ${PRJ_VER}"
-		    VERBATIM
-		    )
-		ADD_DEPENDENCIES(tag version_check)
-	    ENDIF(SOURCE_VERSION_CONTROL STREQUAL "git")
+		MANAGE_SOURCE_VERSION_CONTROL_CVS()
+	ENDIF(SOURCE_VERSION_CONTROL STREQUAL "git")
 
 	    # Setting for each hosting service
 	    FOREACH(_service ${HOSTING_SERVICES})
@@ -245,9 +228,28 @@ IF(NOT DEFINED _USE_HOSTING_SERVICE_CMAKE_)
 
 	    ENDFOREACH(_service ${HOSTING_SERVICES})
 
+	    ## Target: release
+	    IF(NOT DEFINED RELEASE_TARGETS)
+		SET(RELEASE_TARGETS koji_scratch_build tag upload rpmlint fedpkg_commit
+		    fedpkg_build bodhi_new changelog_update commit_after_release
+		    push_svc_tags)
+	    ENDIF(NOT DEFINED RELEASE_TARGETS)
+
+	    ADD_CUSTOM_TARGET(release
+		COMMENT "Sent release"
+		)
+
+	    SET(_prevTarget "")
+	    FOREACH(_relTarget ${RELEASE_TARGETS})
+		IF(NOT _prevTarget STREQUAL "")
+		    ADD_DEPENDENCIES(${_relTarget} ${_prevTarget})
+		ENDIF(NOT _prevTarget STREQUAL "")
+		SET(_prevTarget ${_relTarget})
+	    ENDFOREACH(_relTarget ${RELEASE_TARGETS})
+	    ADD_DEPENDENCIES(release ${_prevTarget})
 	ENDIF(EXISTS "${filename}")
 
-    ENDMACRO(USE_HOSTING_SERVICE_READ_SETTING_FILE filename packedSourcePath)
+    ENDMACRO(MAINTAINER_SETTING_READ_FILE filename packedSourcePath)
 
 ENDIF(NOT DEFINED _USE_HOSTING_SERVICE_CMAKE_)
 

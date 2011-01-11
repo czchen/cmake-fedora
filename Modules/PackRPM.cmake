@@ -50,7 +50,7 @@
 #     + fileDependencies: other files that rpm targets depends on.
 #     Targets:
 #     + srpm: Build srpm (rpmbuild -bs).
-#     + rpm: Build rpm and srpm (rpmbuild -ba)
+#     + rpm: Build rpm and srpm (rpmbuild -bb)
 #     + rpmlint: Run rpmlint to generated rpms.
 #     + clean_rpm": Clean all rpm and build files.
 #     + clean_pkg": Clean all source packages, rpm and build files.
@@ -129,6 +129,15 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
     SET(PACK_SOURCE_IGNORE_FILES ${PACK_SOURCE_IGNORE_FILES}
 	${RPM_IGNORE_FILES})
 
+    MACRO(PACK_RPM_GET_ARCH var spec_in)
+	SETTING_FILE_GET_VARIABLE(_archStr BuildArch ${spec_in} ":")
+	IF(NOT _archStr STREQUAL "noarch")
+	    SET(_archStr ${CMAKE_HOST_SYSTEM_PROCESSOR})
+	ENDIF(NOT _archStr STREQUAL "noarch")
+	SET(${var} ${_archStr})
+    ENDMACRO(PACK_RPM_GET_ARCH var spec_in)
+
+
     MACRO(PACK_RPM var spec_in sourcePackage)
 	IF(NOT EXISTS ${spec_in})
 	    MESSAGE(FATAL_ERROR "File ${spec_in} not found!")
@@ -148,12 +157,15 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 	    #MESSAGE("_releaseTag=${_releaseTag} _releaseStr=${_releaseStr}")
 
 	    # Update RPM_ChangeLog
-	    FILE(READ "${_specInDir}/RPM-ChangeLog.prev" RPM_CHANGELOG_PREV)
-	    STRING_TRIM(RPM_CHANGELOG_PREV "${RPM_CHANGELOG_PREV}")
+	    # Use this instead of FILE(READ is to avoid error when reading '\'
+	    # character.
+	    EXECUTE_PROCESS(COMMAND cat "${_specInDir}/RPM-ChangeLog.prev"
+		OUTPUT_VARIABLE RPM_CHANGELOG_PREV
+		OUTPUT_STRIP_TRAILING_WHITESPACE)
+
 	    CONFIGURE_FILE(${_specInDir}/RPM-ChangeLog.in ${RPM_BUILD_SPECS}/RPM-ChangeLog)
 
 	    # Generate spec
-	    SET(SOURCE_PACKAGE ${sourcePackage})
 	    CONFIGURE_FILE(${spec_in} ${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec)
 	    #SET_SOURCE_FILES_PROPERTIES(${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec
 	    #	${RPM_BUILD_SPECS}/RPM-ChangeLog
@@ -162,6 +174,8 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 
 	    SET(${var} "${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE}.src.rpm")
 	    SET(_prj_srpm_path "${RPM_BUILD_SRPMS}/${${var}}")
+	    PACK_RPM_GET_ARCH(_archStr "${spec_in}")
+	    SET(_prj_rpm_path "${RPM_BUILD_RPMS}/${_archStr}/${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE}.${_archStr}.rpm")
 
 	    #-------------------------------------------------------------------
 	    # RPM build commands and targets
@@ -200,15 +214,16 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 		DEPENDS ${_prj_srpm_path}
 		)
 
-	    ADD_CUSTOM_TARGET(rpm
-		COMMAND ${CMAKE_COMMAND} -E make_directory ${RPM_BUILD_SRPMS}
-		COMMAND ${RPMBUILD} -ba --buildroot ${RPM_BUILD_BUILDROOT} ${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec
+	    # RPMs (except SRPM)
+
+	    ADD_CUSTOM_COMMAND(OUTPUT ${_prj_rpm_path}
+		COMMAND ${RPMBUILD} -bb --buildroot ${RPM_BUILD_BUILDROOT} ${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec
 		--define '_sourcedir ${RPM_BUILD_SOURCES}'
 		--define '_builddir ${RPM_BUILD_BUILD}'
 		--define '_srcrpmdir ${RPM_BUILD_SRPMS}'
 		--define '_rpmdir ${RPM_BUILD_RPMS}'
 		--define '_specdir ${RPM_BUILD_SPECS}'
-		DEPENDS ChangeLog
+		DEPENDS ChangeLog ${_prj_srpm_path}
 		${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec
 		${RPM_BUILD_SOURCES}/${sourcePackage} ${fileDependencies}
 		${RPM_BUILD_SRPMS} ${RPM_BUILD_BUILD}
@@ -216,12 +231,25 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 		COMMENT "Building rpm"
 		)
 
+	    ADD_CUSTOM_TARGET(rpm
+		DEPENDS ${_prj_rpm_path}
+		)
+
 	    ADD_DEPENDENCIES(rpm version_check)
+
+	    ADD_CUSTOM_TARGET(install_rpms
+		find ${RPM_BUILD_RPMS}/${_archStr}
+		-name '${PROJECT_NAME}*-${PRJ_VER}-${PRJ_RELEASE_NO}.*.${_archStr}.rpm' !
+		-name '${PROJECT_NAME}-debuginfo-${PRJ_RELEASE_NO}.*.${_archStr}.rpm'
+		-print -exec sudo rpm --upgrade --hash --verbose '{}' '\\;'
+		DEPENDS ${_prj_rpm_path}
+		COMMENT "Install all rpms except debuginfo"
+		)
 
 	    ADD_CUSTOM_TARGET(rpmlint find .
 		-name '${PROJECT_NAME}*-${PRJ_VER}-${PRJ_RELEASE_NO}.*.rpm'
 		-print -exec rpmlint '{}' '\\;'
-		DEPENDS ${_prj_srpm_path}
+		DEPENDS ${_prj_srpm_path} ${_prj_rpm_path}
 		)
 
 	    ADD_CUSTOM_TARGET(clean_old_rpm
@@ -248,6 +276,7 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 
 	    ADD_DEPENDENCIES(clean_rpm clean_old_rpm)
 	    ADD_DEPENDENCIES(clean_pkg clean_rpm clean_pack_src)
+
 	ENDIF(${RPMBUILD} STREQUAL "RPMBUILD-NOTFOUND")
     ENDMACRO(PACK_RPM var spec_in sourcePackage)
 
@@ -256,22 +285,22 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 	IF(MOCK STREQUAL "MOCK-NOTFOUND")
 	    MESSAGE("mock is not found in PATH, mock support disabled.")
 	ELSE(MOCK STREQUAL "MOCK-NOTFOUND")
-	    IF(NOT DEFINED MOCK_RPM_DIST_TAG)
-		STRING(REGEX MATCH "^fc([1-9][0-9]*)"  _fedora_mock_dist "${RPM_DIST_TAG}")
-		STRING(REGEX MATCH "^el([1-9][0-9]*)"  _el_mock_dist "${RPM_DIST_TAG}")
-
-		IF (_fedora_mock_dist)
-		    STRING(REGEX REPLACE "^fc([1-9][0-9]*)" "fedora-\\1" MOCK_RPM_DIST_TAG "${RPM_DIST_TAG}")
-		ELSEIF (_el_mock_dist)
-		    STRING(REGEX REPLACE "^el([1-9][0-9]*)" "epel-\\1" MOCK_RPM_DIST_TAG "${RPM_DIST_TAG}")
-		ELSE (_fedora_mock_dist)
-		    SET(MOCK_RPM_DIST_TAG "fedora-devel")
-		ENDIF(_fedora_mock_dist)
-		#MESSAGE ("MOCK_RPM_DIST_TAG=${MOCK_RPM_DIST_TAG}")
-	    ENDIF(NOT DEFINED MOCK_RPM_DIST_TAG)
-
-	    SETTING_FILE_GET_VARIABLE(_archStr BuildArch ${spec_in} ":")
+	    PACK_RPM_GET_ARCH(_archStr ${spec_in})
 	    IF(NOT _archStr STREQUAL "noarch")
+		IF(NOT DEFINED MOCK_RPM_DIST_TAG)
+		    STRING(REGEX MATCH "^fc([1-9][0-9]*)"  _fedora_mock_dist "${RPM_DIST_TAG}")
+		    STRING(REGEX MATCH "^el([1-9][0-9]*)"  _el_mock_dist "${RPM_DIST_TAG}")
+
+		    IF (_fedora_mock_dist)
+			STRING(REGEX REPLACE "^fc([1-9][0-9]*)" "fedora-\\1" MOCK_RPM_DIST_TAG "${RPM_DIST_TAG}")
+		    ELSEIF (_el_mock_dist)
+			STRING(REGEX REPLACE "^el([1-9][0-9]*)" "epel-\\1" MOCK_RPM_DIST_TAG "${RPM_DIST_TAG}")
+		    ELSE (_fedora_mock_dist)
+			SET(MOCK_RPM_DIST_TAG "fedora-devel")
+		    ENDIF(_fedora_mock_dist)
+		ENDIF(NOT DEFINED MOCK_RPM_DIST_TAG)
+
+		#MESSAGE ("MOCK_RPM_DIST_TAG=${MOCK_RPM_DIST_TAG}")
 		SET(_prj_srpm_path "${RPM_BUILD_SRPMS}/${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE}.src.rpm")
 		ADD_CUSTOM_TARGET(rpm_mock_i386
 		    COMMAND ${CMAKE_COMMAND} -E make_directory ${RPM_BUILD_RPMS}/i386
@@ -284,7 +313,6 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 		    COMMAND ${MOCK} -r  "${MOCK_RPM_DIST_TAG}-x86_64" --resultdir="${RPM_BUILD_RPMS}/x86_64" ${_prj_srpm_path}
 		    DEPENDS ${_prj_srpm_path}
 		    )
-
 	    ENDIF(NOT _archStr STREQUAL "noarch")
 	ENDIF(MOCK STREQUAL "MOCK-NOTFOUND")
 
