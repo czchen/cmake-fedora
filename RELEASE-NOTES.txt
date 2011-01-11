@@ -1,10 +1,10 @@
 PRJ_VER=0.3.3
-SUMMARY=Support for out-of-source build
+SUMMARY=Support for out-of-source build; Fixed backslash.
 BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=
 [Changes]
 - Fixed: Support for out-of-source build.
-- Fixed: Join the next line if ended with back slash '\'.
+- Fixed: Join the next line if ended with backslash '\'.
 - ChangeLog: Now generate from "cmake ." directly.
 - changelog: target removed. So it won't do unnecessary rebuild.
-
+- mock is not enforce for USE_MOCK
