@@ -48,7 +48,7 @@
 # Version control system for the source code. Accepted values: git, hg, svn, cvs.
 #
 # The services can be defined by following format:
-#   <ServiceName>_<protocol>_<PropertyName>=<value>
+#   <ServiceName>_<PropertyName>=<value>
 #
 # ServiceName is the name of the hosting service.
 # If using a known service name, you may be able to omit some definition such
@@ -59,15 +59,13 @@
 #
 # Known service name is: SourceForge, FedoraHosted.
 #
-# Protocol is the protocol used to upload file.
-#  Supported protocol is: SFTP, SCP.
 #
 # PropertyName is a property that is needed to preform the upload.
-# It is usually associate to the Protocol.
-#
-#  For protocol SFTP:
-#    USER: the user name for sftp.
-#    SITE: the host name of the sftp site.
+#    USER: the user name for the hosting service.
+#    SITE: the host name of the hosting service.
+#    PROTOCOL:  (Optional if service is known) Protocol for upload.
+#          Supported: sftp, scp.
+#    DEST_PATH: (Optional) file path on the  remote.
 #    BATCH: (Optional) File that stores the batch commands.
 #    BATCH_TEMPATE: (Optional) File that provides template to for generating
 #                   batch commands.
@@ -75,13 +73,7 @@
 #                   as defined with BATCH;
 #                   if BATCH is not given: Generated batch file is named
 #                   as ${CMAKE_BINARY_DIR}/BatchUpload-${ServiceName}
-#   OPTIONS: (Optional) Other options for sftp.
-#
-#  For protocol SCP:
-#    USER: the user name for sftp.
-#    SITE: the host name of the sftp site.
-#    DEST_PATH: (Optional) file path of remote.
-#    OPTIONS: (Optional) Other options for scp.
+#    OPTIONS: (Optional) Other options to be passed.
 #
 # Example:
 #
@@ -93,54 +85,77 @@
 # # No, Host1 is not needed here.
 # HOSTING_SERVICES=Host2
 #
-# Host2_SFTP_USER=host2account
-# Host2_SFTP_SITE=host2hostname
-# Host2_SFTP_BATCH_TEMPLATE=BatchUpload-Host2.in
+# Host2_USER=host2account
+# Host2_PROTOCOL=sftp
+# Host2_SITE=host2hostname
+# Host2_BATCH_TEMPLATE=BatchUpload-Host2.in
 #
 
-IF(NOT DEFINED _USE_HOSTING_SERVICE_CMAKE_)
-    SET(_USE_HOSTING_SERVICE_CMAKE_ "DEFINED")
-    MACRO(USE_HOSTING_SERVICE_SFTP alias user site packedSourcePath)
-	SET(_developer_upload_cmd "sftp")
-	IF(NOT "${${alias}_BATCH_TEMPLATE}" STREQUAL "")
-	    IF(NOT "${alias}_BATCH" STREQUAL "")
-		SET(${alias}_BATCH
-		    ${CMAKE_BINARY_DIR}/BatchUpload-${alias}_NO_PACK)
-	    ENDIF(NOT "${alias}_BATCH" STREQUAL "")
-	    CONFIGURE_FILE(${alias}_BATCH_TEMPLATE ${alias}_BATCH)
-	    SET(PACK_SOURCE_IGNORE_FILES ${PACK_SOURCE_IGNORE_FILES} ${alias}_BATCH)
-	ENDIF(NOT "${${alias}_BATCH_TEMPLATE}" STREQUAL "")
+IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
+    SET(_MANAGE_MAINTAINER_TARGETS_CMAKE_ "DEFINED")
 
-	IF(NOT "${alias}_BATCH" STREQUAL "")
-	    SET(_developer_upload_cmd "${_developer_upload_cmd} -b ${alias}_BATCH" )
-	ENDIF(NOT "${alias}_BATCH" STREQUAL "")
+    MACRO(MANAGE_MAINTAINER_TARGETS_SFTP hostAlias filePath remoteBasePath)
+	FIND_PROGRAM(_developer_upload_cmd sftp)
+	IF(_developer_upload_cmd STREQUAL "_developer_upload_cmd-NOTFOUND")
+	    MESSAGE(FATAL_ERROR "Program sftp is not found!")
+	ENDIF(_developer_upload_cmd STREQUAL "_developer_upload_cmd-NOTFOUND")
 
-	IF(NOT "${alias}_OPTIONS" STREQUAL "")
-	    SET(_developer_upload_cmd "${_developer_upload_cmd} -F ${alias}_OPTIONS" )
-	ENDIF(NOT "${alias}_OPTIONS" STREQUAL "")
+	IF(NOT "${${hostAlias}_BATCH_TEMPLATE}" STREQUAL "")
+	    IF(NOT "${hostAlias}_BATCH" STREQUAL "")
+		SET(${hostAlias}_BATCH
+		    ${CMAKE_BINARY_DIR}/BatchUpload-${hostAlias}_NO_PACK)
+	    ENDIF(NOT "${hostAlias}_BATCH" STREQUAL "")
+	    CONFIGURE_FILE(${hostAlias}_BATCH_TEMPLATE ${hostAlias}_BATCH)
+	    SET(PACK_SOURCE_IGNORE_FILES ${PACK_SOURCE_IGNORE_FILES} ${hostAlias}_BATCH)
+	ENDIF(NOT "${${hostAlias}_BATCH_TEMPLATE}" STREQUAL "")
 
-	SET(_developer_upload_cmd "${_developer_upload_cmd} ${user}@${site}")
+	IF(NOT "${hostAlias}_BATCH" STREQUAL "")
+	    SET(_developer_upload_cmd "${_developer_upload_cmd} -b ${hostAlias}_BATCH" )
+	ENDIF(NOT "${hostAlias}_BATCH" STREQUAL "")
 
-	ADD_CUSTOM_TARGET(upload_${alias}
+	IF(NOT "${hostAlias}_OPTIONS" STREQUAL "")
+	    SET(_developer_upload_cmd "${_developer_upload_cmd} -F ${hostAlias}_OPTIONS" )
+	ENDIF(NOT "${hostAlias}_OPTIONS" STREQUAL "")
+
+	SET(_developer_upload_cmd "${_developer_upload_cmd} ${${hostAlias}_USER}@${${hostAlias}_SITE}")
+
+	ADD_CUSTOM_TARGET(upload_${hostAlias}
 	    COMMAND ${_developer_upload_cmd}
-	    DEPENDS ${DEVELOPER_DEPENDS}
-	    COMMENT "Uploading the package releases to ${alias}..."
+	    DEPENDS ${filePath} ${DEVELOPER_DEPENDS}
+	    COMMENT "Uploading the ${filePath} to ${hostAlias}..."
 	    VERBATIM
 	    )
-    ENDMACRO(USE_HOSTING_SERVICE_SFTP user site packedSourcePath)
+    ENDMACRO(MANAGE_MAINTAINER_TARGETS_SFTP  hostAlias filePath remoteBasePath)
 
-    # MACRO(USE_HOSTING_SERVICE_SCP alias user site packedSourcePath
-    #   [DEST_PATH destination]
-    #   [OPTIONS options]
-    # )
-    MACRO(USE_HOSTING_SERVICE_SCP alias user site packedSourcePath)
+    MACRO(MANAGE_MAINTAINER_TARGETS_SCP  hostAlias filePath remoteBasePath)
 	FIND_PROGRAM(_developer_upload_cmd scp)
 	IF(_developer_upload_cmd STREQUAL "_developer_upload_cmd-NOTFOUND")
 	    MESSAGE(FATAL_ERROR "Program scp is not found!")
 	ENDIF(_developer_upload_cmd STREQUAL "_developer_upload_cmd-NOTFOUND")
 
-	SET(_stage "NONE")
-	SET(_destPath "")
+	IF(remoteBasePath STREQUAL ".")
+	    SET(_dest "${user}@${site}")
+	ELSE(remoteBasePath STREQUAL ".")
+	    SET(_dest "${user}@${site}:${remoteBasePath}")
+	ENDIF(remoteBasePath STREQUAL ".")
+
+	ADD_CUSTOM_TARGET(upload_${alias}
+	    COMMAND ${_developer_upload_cmd} ${_options} ${filePath} ${_dest}
+	    DEPENDS ${filePath} ${DEVELOPER_DEPENDS}
+	    COMMENT "Uploading the ${filePath} to ${hostAlias}..."
+	    VERBATIM
+	    )
+    ENDMACRO(MANAGE_MAINTAINER_TARGETS_SCP  hostAlias filePath remoteBasePath)
+
+    MACRO(MANAGE_MAINTAINER_TARGETS_GOOGLE_UPLOAD)
+	FIND_PROGRAM(CURL_CMD curl)
+	IF(CURL_CMD STREQUAL "CURL_CMD-NOTFOUND")
+	    MESSAGE(FATAL_ERROR "Need curl to perform google upload")
+	ENDIF(CURL_CMD STREQUAL "CURL_CMD-NOTFOUND")
+    ENDMACRO(MANAGE_MAINTAINER_TARGETS_GOOGLE_UPLOAD)
+
+    MACRO(MANAGE_MAINTAINER_TARGETS_UPLOAD hostAlias filePath)
+	SET(_destPath ".")
 	SET(_options "")
 	FOREACH(_arg ${ARGN})
 	    IF(_arg STREQUAL "DEST_PATH")
@@ -155,26 +170,31 @@ IF(NOT DEFINED _USE_HOSTING_SERVICE_CMAKE_)
 		ENDIF(_stage STREQUAL "DEST_PATH")
 	    ENDIF(_arg STREQUAL "DEST_PATH")
 	ENDFOREACH(_arg ${ARGN})
+
+	IF(hostAlias STREQUAL "[Ss][Oo][Uu][Rr][Cc][Ee][Ff][Oo][Rr][Gg][Ee]")
+	    SET(${hostAlias}_PROTOCOL sftp)
+	    SET(${hostAlias}_SITE frs.sourceforge.net)
+	ELSEIF(hostAlias MATCHES "[Ff][Ee][Dd][Oo][Rr][Aa][Hh][Oo][Ss][Tt][Ee][Dd]")
+	    SET(${hostAlias}_PROTOCOL scp)
+	    SET(${hostAlias}_SITE fedorahosted.org)
+	ELSE(hostAlias STREQUAL "[Ss][Oo][Uu][Rr][Cc][Ee][Ff][Oo][Rr][Gg][Ee]")
+	ENDIF(hostAlias STREQUAL "[Ss][Oo][Uu][Rr][Cc][Ee][Ff][Oo][Rr][Gg][Ee]")
+
 	IF(_destPath)
 	    SET(_dest "${user}@${site}:${_destPath}")
 	ELSE(_destPath)
 	    SET(_dest "${user}@${site}")
 	ENDIF(_destPath)
 
-	ADD_CUSTOM_TARGET(upload_${alias}
-	    COMMAND ${_developer_upload_cmd} ${_options}  ${packedSourcePath} ${_dest}
-	    DEPENDS ${packedSourcePath} ${DEVELOPER_DEPENDS}
-	    COMMENT "Uploading the package releases to ${alias}..."
-	    VERBATIM
-	    )
-    ENDMACRO(USE_HOSTING_SERVICE_SCP user site packedSourcePath)
+	IF(${hostAlias}_PROTOCOL STREQUAL "sftp")
+	    MANAGE_MAINTAINER_TARGETS_SFTP(${hostAlias} "${filePath}"
+		"${destPath}" "${options}")
+	ELSEIF(${hostAlias}_PROTOCOL STREQUAL "scp")
+	    MANAGE_MAINTAINER_TARGETS_SFTP(${hostAlias} "${filePath}"
+		"${destPath}" "${options}")
+	ENDIF(${hostAlias}_PROTOCOL STREQUAL "sftp")
+    ENDMACRO(MANAGE_MAINTAINER_TARGETS_UPLOAD hostAlias filePath)
 
-    MACRO(USE_HOSTING_SERVICE_GOOGLE_UPLOAD)
-	FIND_PROGRAM(CURL_CMD curl)
-	IF(CURL_CMD STREQUAL "CURL_CMD-NOTFOUND")
-	    MESSAGE(FATAL_ERROR "Need curl to perform google upload")
-	ENDIF(CURL_CMD STREQUAL "CURL_CMD-NOTFOUND")
-    ENDMACRO(USE_HOSTING_SERVICE_GOOGLE_UPLOAD)
 
     MACRO(MAINTAINER_SETTING_READ_FILE filename packedSourcePath)
 	IF(EXISTS "${filename}")
@@ -204,53 +224,29 @@ IF(NOT DEFINED _USE_HOSTING_SERVICE_CMAKE_)
 		MANAGE_SOURCE_VERSION_CONTROL_SVN()
 	    ELSEIF(SOURCE_VERSION_CONTROL STREQUAL "cvs")
 		MANAGE_SOURCE_VERSION_CONTROL_CVS()
-	ENDIF(SOURCE_VERSION_CONTROL STREQUAL "git")
+	    ENDIF(SOURCE_VERSION_CONTROL STREQUAL "git")
 
-	# Setting for each hosting service
-	FOREACH(_service ${HOSTING_SERVICES})
-	    IF(_service STREQUAL "[Ss][Oo][Uu][Rr][Cc][Ee][Ff][Oo][Rr][Gg][Ee]")
-		USE_HOSTING_SERVICE_SFTP("${_service}" ${${_service}_USER}
-		    frs.sourceforge.net ${packedSourcePath})
-	    ELSEIF(_service MATCHES "[Ff][Ee][Dd][Oo][Rr][Aa][Hh][Oo][Ss][Tt][Ee][Dd]")
-		USE_HOSTING_SERVICE_SCP("${_service}" ${${_service}_HOSTED_USER}
-		    fedorahosted.org  ${packedSourcePath}
-		    DEST_PATH "${PROJECT_NAME}")
-	    ELSEIF(_service STREQUAL "GOOGLECODE")
-		USE_HOSTING_SERVICE_GOOGLE_UPLOAD()
-	    ELSEIF(_service STREQUAL "GITHUB")
-	    ELSE(_service STREQUAL "SOURCEFORGE")
-		# Generic hosting service
-		IF(NOT "${${_service}_SFTP_USER}" STREQUAL "")
-		    # SFTP hosting service
-		    USE_HOSTING_SERVICE_SFTP("${_service}" ${${_service}_SFTP_USER}
-			${${_service}_SFTP_SITE}
-			BATCH ${${_service}_SFTP_BATCH}
-			BATCH_TEMPLATE ${${_service}_SFTP_BATCH_TEMPLATE}
-			OPTIONS ${${_service}_SFTP_OPTIONS})
-		ELSEIF(NOT "${${_service}_SCP_USER}" STREQUAL "")
-		ENDIF(NOT "${${_service}_SFTP_USER}" STREQUAL "")
-	    ENDIF(_service STREQUAL "SOURCEFORGE")
-	    ADD_DEPENDENCIES(upload "upload_${_service}")
+	    # Setting for each hosting service
+	    FOREACH(_hostAlias ${HOSTING_SERVICES})
+		MANAGE_MAINTAINER_TARGETS_UPLOAD(_hostAlias ${packedSourcePath})
+	    ENDFOREACH(_hostAlias ${HOSTING_SERVICES})
 
-	ENDFOREACH(_service ${HOSTING_SERVICES})
+	    ## Target: release
+	    IF(NOT DEFINED RELEASE_TARGETS)
+		SET(RELEASE_TARGETS koji_scratch_build tag upload rpmlint fedpkg_commit
+		    fedpkg_build bodhi_new changelog_update commit_after_release
+		    push_svc_tags)
+	    ENDIF(NOT DEFINED RELEASE_TARGETS)
 
+	    ADD_CUSTOM_TARGET(release
+		COMMENT "Sent release"
+		)
 
-	## Target: release
-	IF(NOT DEFINED RELEASE_TARGETS)
-	    SET(RELEASE_TARGETS koji_scratch_build tag upload rpmlint fedpkg_commit
-		fedpkg_build bodhi_new changelog_update commit_after_release
-		push_svc_tags)
-	ENDIF(NOT DEFINED RELEASE_TARGETS)
+	    ADD_DEPENDENCIES(release ${RELEASE_TARGETS})
 
-	ADD_CUSTOM_TARGET(release
-	    COMMENT "Sent release"
-	    )
-
-	ADD_DEPENDENCIES(release ${RELEASE_TARGETS})
-
-    ENDIF(EXISTS "${filename}")
+	ENDIF(EXISTS "${filename}")
 
     ENDMACRO(MAINTAINER_SETTING_READ_FILE filename packedSourcePath)
 
-ENDIF(NOT DEFINED _USE_HOSTING_SERVICE_CMAKE_)
+ENDIF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
 
