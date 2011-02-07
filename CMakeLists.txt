@@ -96,6 +96,21 @@ INCLUDE(ManageMaintainerTargets)
 MAINTAINER_SETTING_READ_FILE("${MAINTAINER_SETTING}"
     "${RPM_BUILD_SOURCES}/${PACK_SOURCE_FILE_NAME}")
 
+####################################################################
+# Custom
+#
+
+# Module-only tarballs
+ADD_CUSTOM_TARGET(module_only_tgz
+    COMMAND tar czvf Modules ${PROJECT}-${VERSION}-modules-only.tar.gz
+    COMMAND ln -s ${PROJECT}-${VERSION}-modules-only.tar.gz ${PROJECT}-modules-only-latest.tar.gz
+    )
+
+IF(EXISTS "${MAINTAINER_SETTING}")
+    MANAGE_MAINTAINER_TARGETS_UPLOAD(FedoraHosted ${PROJECT}-${VERSION}-modules-only.tar.gz)
+    MANAGE_MAINTAINER_TARGETS_UPLOAD(FedoraHosted ${PROJECT}-modules-only-latest.tar.gz)
+ENDIF(EXISTS "${MAINTAINER_SETTING}")
+
 
 ####################################################################
 # Test Suites.
