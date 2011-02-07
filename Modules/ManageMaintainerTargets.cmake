@@ -18,15 +18,18 @@
 #     + PRJ_VER: Project version.
 #     + CHANGE_SUMMARY: Change summary.
 #     Reads or define following variables:
-#     + RELEASE_TARGETS: Sequence of release targets.
+#     + RELEASE_TARGETS: Depended targets for release.
+#       Note that the sequence of the target does not guarantee the
+#       sequence of execution.
 #     Defines following targets:
 #     + changelog_update: Update changelog by copying ChangeLog to ChangeLog.prev
 #       and RPM-ChangeLog to RPM-ChangeLog. This target should be execute before
 #       starting a new version.
 #     + tag: tag the latest commit with the ${PRJ_VER} and ${CHANGE_SUMMARY} as comment.
+#       Note that this target is actually included through ManageSourceVersionControl.
 #     + upload: upload the source packages to hosting services.
 #     + release: Do the release chores.
-#       The actual sequence of target to be done for release is defined via RELEASE_TARGETS.
+#       The actual depended target to be done for release is defined via RELEASE_TARGETS.
 #
 # Setting File Format
 #
@@ -54,7 +57,7 @@
 # not in the known list, you can still benefit from this module, providing
 # your hosting service use supported protocols.
 #
-# Known service name is: SOURCEFORGE, FEDORAHOSTED.
+# Known service name is: SourceForge, FedoraHosted.
 #
 # Protocol is the protocol used to upload file.
 #  Supported protocol is: SFTP, SCP.
@@ -131,7 +134,10 @@ IF(NOT DEFINED _USE_HOSTING_SERVICE_CMAKE_)
     #   [OPTIONS options]
     # )
     MACRO(USE_HOSTING_SERVICE_SCP alias user site packedSourcePath)
-	SET(_developer_upload_cmd "scp")
+	FIND_PROGRAM(_developer_upload_cmd scp)
+	IF(_developer_upload_cmd STREQUAL "_developer_upload_cmd-NOTFOUND")
+	    MESSAGE(FATAL_ERROR "Program scp is not found!")
+	ENDIF(_developer_upload_cmd STREQUAL "_developer_upload_cmd-NOTFOUND")
 
 	SET(_stage "NONE")
 	SET(_destPath "")
@@ -200,54 +206,49 @@ IF(NOT DEFINED _USE_HOSTING_SERVICE_CMAKE_)
 		MANAGE_SOURCE_VERSION_CONTROL_CVS()
 	ENDIF(SOURCE_VERSION_CONTROL STREQUAL "git")
 
-	    # Setting for each hosting service
-	    FOREACH(_service ${HOSTING_SERVICES})
-		IF(_service STREQUAL "SOURCEFORGE")
-		    USE_HOSTING_SERVICE_SFTP("${_service}" ${SOURCEFORGE_USER}
-			frs.sourceforge.net ${packedSourcePath})
-		ELSEIF(_service STREQUAL "FEDORAHOSTED")
-		    USE_HOSTING_SERVICE_SCP("${_service}" ${FEDORAHOSTED_USER}
-			fedorahosted.org  ${packedSourcePath}
-			DEST_PATH "${PROJECT_NAME}")
-		ELSEIF(_service STREQUAL "GOOGLECODE")
-		    USE_HOSTING_SERVICE_GOOGLE_UPLOAD()
-		ELSEIF(_service STREQUAL "GITHUB")
-		ELSE(_service STREQUAL "SOURCEFORGE")
-		    # Generic hosting service
-		    IF(NOT "${${_service}_SFTP_USER}" STREQUAL "")
-			# SFTP hosting service
-			USE_HOSTING_SERVICE_SFTP("${_service}" ${${_service}_SFTP_USER}
-			    ${${_service}_SFTP_SITE}
-			    BATCH ${${_service}_SFTP_BATCH}
-			    BATCH_TEMPLATE ${${_service}_SFTP_BATCH_TEMPLATE}
-			    OPTIONS ${${_service}_SFTP_OPTIONS})
-		    ELSEIF(NOT "${${_service}_SCP_USER}" STREQUAL "")
-		    ENDIF(NOT "${${_service}_SFTP_USER}" STREQUAL "")
-		ENDIF(_service STREQUAL "SOURCEFORGE")
-		ADD_DEPENDENCIES(upload "upload_${_service}")
+	# Setting for each hosting service
+	FOREACH(_service ${HOSTING_SERVICES})
+	    IF(_service STREQUAL "[Ss][Oo][Uu][Rr][Cc][Ee][Ff][Oo][Rr][Gg][Ee]")
+		USE_HOSTING_SERVICE_SFTP("${_service}" ${${_service}_USER}
+		    frs.sourceforge.net ${packedSourcePath})
+	    ELSEIF(_service MATCHES "[Ff][Ee][Dd][Oo][Rr][Aa][Hh][Oo][Ss][Tt][Ee][Dd]")
+		USE_HOSTING_SERVICE_SCP("${_service}" ${${_service}_HOSTED_USER}
+		    fedorahosted.org  ${packedSourcePath}
+		    DEST_PATH "${PROJECT_NAME}")
+	    ELSEIF(_service STREQUAL "GOOGLECODE")
+		USE_HOSTING_SERVICE_GOOGLE_UPLOAD()
+	    ELSEIF(_service STREQUAL "GITHUB")
+	    ELSE(_service STREQUAL "SOURCEFORGE")
+		# Generic hosting service
+		IF(NOT "${${_service}_SFTP_USER}" STREQUAL "")
+		    # SFTP hosting service
+		    USE_HOSTING_SERVICE_SFTP("${_service}" ${${_service}_SFTP_USER}
+			${${_service}_SFTP_SITE}
+			BATCH ${${_service}_SFTP_BATCH}
+			BATCH_TEMPLATE ${${_service}_SFTP_BATCH_TEMPLATE}
+			OPTIONS ${${_service}_SFTP_OPTIONS})
+		ELSEIF(NOT "${${_service}_SCP_USER}" STREQUAL "")
+		ENDIF(NOT "${${_service}_SFTP_USER}" STREQUAL "")
+	    ENDIF(_service STREQUAL "SOURCEFORGE")
+	    ADD_DEPENDENCIES(upload "upload_${_service}")
 
-	    ENDFOREACH(_service ${HOSTING_SERVICES})
+	ENDFOREACH(_service ${HOSTING_SERVICES})
 
-	    ## Target: release
-	    IF(NOT DEFINED RELEASE_TARGETS)
-		SET(RELEASE_TARGETS koji_scratch_build tag upload rpmlint fedpkg_commit
-		    fedpkg_build bodhi_new changelog_update commit_after_release
-		    push_svc_tags)
-	    ENDIF(NOT DEFINED RELEASE_TARGETS)
 
-	    ADD_CUSTOM_TARGET(release
-		COMMENT "Sent release"
-		)
+	## Target: release
+	IF(NOT DEFINED RELEASE_TARGETS)
+	    SET(RELEASE_TARGETS koji_scratch_build tag upload rpmlint fedpkg_commit
+		fedpkg_build bodhi_new changelog_update commit_after_release
+		push_svc_tags)
+	ENDIF(NOT DEFINED RELEASE_TARGETS)
 
-	    SET(_prevTarget "")
-	    FOREACH(_relTarget ${RELEASE_TARGETS})
-		IF(NOT _prevTarget STREQUAL "")
-		    ADD_DEPENDENCIES(${_relTarget} ${_prevTarget})
-		ENDIF(NOT _prevTarget STREQUAL "")
-		SET(_prevTarget ${_relTarget})
-	    ENDFOREACH(_relTarget ${RELEASE_TARGETS})
-	    ADD_DEPENDENCIES(release ${_prevTarget})
-	ENDIF(EXISTS "${filename}")
+	ADD_CUSTOM_TARGET(release
+	    COMMENT "Sent release"
+	    )
+
+	ADD_DEPENDENCIES(release ${RELEASE_TARGETS})
+
+    ENDIF(EXISTS "${filename}")
 
     ENDMACRO(MAINTAINER_SETTING_READ_FILE filename packedSourcePath)
 

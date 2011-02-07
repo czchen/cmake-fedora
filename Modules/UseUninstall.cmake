@@ -8,8 +8,9 @@
 IF(NOT DEFINED _USE_UNINSTALL_CMAKE_)
     SET(_USE_UNINSTALL_CMAKE_ "DEFINED")
     FIND_FILE(_cmake_uninstall_in cmake_uninstall.cmake.in
-	PATHS ${CMAKE_ROOT}/Modules ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/Modules)
+	PATHS ${CMAKE_MODULE_PATH} ${CMAKE_ROOT}/Modules ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/Modules)
 
+    MESSAGE("_cmake_uninstall_in=${_cmake_uninstall_in}")
     IF("${_cmake_uninstall_in}" STREQUAL "_cmake_uninstall_in-NOTFOUND")
 	MESSAGE(FATAL_ERROR "Cannot find cmake_uninstall.cmake.in in ${CMAKE_ROOT}/Modules"
 	   " ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/Modules")
