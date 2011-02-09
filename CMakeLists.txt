@@ -101,18 +101,19 @@ MAINTAINER_SETTING_READ_FILE("${MAINTAINER_SETTING}"
 #
 
 # Module-only tarballs
-ADD_CUSTOM_TARGET(module_only_tgz
-    COMMAND tar czvf --exclude=.* ${PROJECT_NAME}-${PRJ_VER}-modules-only.tar.gz Modules
+ADD_CUSTOM_TARGET(module_only
+    COMMAND tar --exclude=.* -czvf  ${PROJECT_NAME}-${PRJ_VER}-modules-only.tar.gz Modules
     COMMAND ln -sf ${PROJECT_NAME}-${PRJ_VER}-modules-only.tar.gz ${PROJECT_NAME}-modules-only-latest.tar.gz
     )
 
 IF(EXISTS "${MAINTAINER_SETTING}")
     MANAGE_MAINTAINER_TARGETS_UPLOAD(FedoraHosted
-	${PROJECT_NAME}-${PROJECT_NAME}-modules-only.tar.gz
-	FILE_ALIAS module_only )
-    MANAGE_MAINTAINER_TARGETS_UPLOAD(FedoraHosted
+	${PROJECT_NAME}-${PRJ_VER}-modules-only.tar.gz
 	${PROJECT_NAME}-modules-only-latest.tar.gz
-	FILE_ALIAS module_only_latest )
+	FILE_ALIAS module_only )
+    #    MANAGE_MAINTAINER_TARGETS_UPLOAD(FedoraHosted
+    #	${PROJECT_NAME}-modules-only-latest.tar.gz
+    #	FILE_ALIAS module_only_latest )
 ENDIF(EXISTS "${MAINTAINER_SETTING}")
 
 

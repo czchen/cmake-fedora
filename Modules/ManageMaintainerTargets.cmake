@@ -5,18 +5,18 @@
 # setting file.
 #
 # Defines following Macros:
-#   MANAGE_MAINTAINER_TARGETS_UPLOAD(hostService fileLocalPath [DEST_PATH destPath]
-#   [FILE_ALIAS fileAlias])
+#   MANAGE_MAINTAINER_TARGETS_UPLOAD(hostService fileLocalPath [file2LocalPath ..]
+#   [DEST_PATH destPath] [FILE_ALIAS fileAlias])
 #   - Upload a file to hosting services
 #     Arguments:
 #     + hostService: The name of the hosting services.
 #       Some properties will get preset if hostSevice is recognized.
 #     + fileLocalPath: Local path of the file to be uploaded.
-#     + DEST_PATH destPath: Destination path, default is "." if DEST_PATH is
-#       not used.
-#     + FILE_ALIAS fileAlias: Alias to be appear as part of make target.
+#     + file2LocalPath: (Optional) Local path of 2nd (3rd and so on) file to be uploaded.
+#     + DEST_PATH destPath: (Optional) Destination path.
+#       Default is "." if DEST_PATH is not used.
+#     + FILE_ALIAS fileAlias: (Optional) Alias to be appeared as part of make target.
 #       Default: file name is used.
-#
 #
 #   MAINTAINER_SETTING_READ_FILE(filename packedSourcePath)
 #   - Read the maintainer setting file.
@@ -107,7 +107,8 @@
 IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
     SET(_MANAGE_MAINTAINER_TARGETS_CMAKE_ "DEFINED")
 
-    MACRO(MANAGE_MAINTAINER_TARGETS_SFTP hostService fileLocalPath remoteBasePath destPath fileAlias)
+    MACRO(MANAGE_MAINTAINER_TARGETS_SFTP
+	    hostService remoteBasePath destPath fileAlias fileLocalPath )
 	FIND_PROGRAM(_developer_upload_cmd sftp)
 	IF(_developer_upload_cmd STREQUAL "_developer_upload_cmd-NOTFOUND")
 	    MESSAGE(FATAL_ERROR "Program sftp is not found!")
@@ -138,35 +139,39 @@ IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
 	    COMMENT "Uploading the ${fileLocalPath} to ${hostService}..."
 	    VERBATIM
 	    )
-    ENDMACRO(MANAGE_MAINTAINER_TARGETS_SFTP  hostService fileLocalPath remoteBasePath destPath fileAlias)
+    ENDMACRO(MANAGE_MAINTAINER_TARGETS_SFTP
+        hostService remoteBasePath destPath fileAlias fileLocalPath )
 
-    MACRO(MANAGE_MAINTAINER_TARGETS_SCP  hostService fileLocalPath remoteBasePath destPath fileAlias)
+    MACRO(MANAGE_MAINTAINER_TARGETS_SCP
+	    hostService remoteBasePath destPath fileAlias fileLocalPath)
 	FIND_PROGRAM(_developer_upload_cmd scp)
 	IF(_developer_upload_cmd STREQUAL "_developer_upload_cmd-NOTFOUND")
 	    MESSAGE(FATAL_ERROR "Program scp is not found!")
 	ENDIF(_developer_upload_cmd STREQUAL "_developer_upload_cmd-NOTFOUND")
 
-	IF(remoteBasePath STREQUAL ".")
-	    IF(destPath STREQUAL ".")
+	IF("${remoteBasePath}" STREQUAL ".")
+	    IF("${destPath}" STREQUAL ".")
 		SET(_dest "")
-	    ELSE(destPath STREQUAL ".")
+	    ELSE("${destPath}" STREQUAL ".")
 		SET(_dest ":${destPath}")
-	    ENDIF(destPath STREQUAL ".")
-	ELSE(remoteBasePath STREQUAL ".")
-	    IF(destPath STREQUAL ".")
+	    ENDIF("${destPath}" STREQUAL ".")
+	ELSE("${remoteBasePath}" STREQUAL ".")
+	    IF("${destPath}" STREQUAL ".")
 		SET(_dest ":${remoteBasePath}")
-	    ELSE(destPath STREQUAL ".")
+	    ELSE("${destPath}" STREQUAL ".")
 		SET(_dest ":${remoteBasePath}/${destPath}")
-	    ENDIF(destPath STREQUAL ".")
-	ENDIF(remoteBasePath STREQUAL ".")
+	    ENDIF("${destPath}" STREQUAL ".")
+	ENDIF("${remoteBasePath}" STREQUAL ".")
 
 	ADD_CUSTOM_TARGET(upload_${hostService}_${fileAlias}
-	    COMMAND ${_developer_upload_cmd} ${_options} ${fileLocalPath} ${user}@${site}${_dest}
+	    COMMAND ${_developer_upload_cmd} ${${hostService}_OPTIONS} ${fileLocalPath}
+	      ${${hostService}_USER}@${${hostService}_SITE}${_dest}
 	    DEPENDS ${fileLocalPath} ${DEVELOPER_DEPENDS}
 	    COMMENT "Uploading the ${fileLocalPath} to ${hostService}..."
 	    VERBATIM
 	    )
-    ENDMACRO(MANAGE_MAINTAINER_TARGETS_SCP  hostService fileLocalPath remoteBasePath destPath fileAlias)
+    ENDMACRO(MANAGE_MAINTAINER_TARGETS_SCP
+	hostService fileLocalPath remoteBasePath destPath fileAlias)
 
     MACRO(MANAGE_MAINTAINER_TARGETS_GOOGLE_UPLOAD)
 	FIND_PROGRAM(CURL_CMD curl)
@@ -178,7 +183,8 @@ IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
     MACRO(MANAGE_MAINTAINER_TARGETS_UPLOAD hostService fileLocalPath)
 	SET(_destPath ".")
 	SET(_remoteBasePath ".")
-	SET(_fileAlias "${fileLocalPath}")
+	GET_FILENAME_COMPONENT(_fileAlias "${fileLocalPath}" NAME)
+	SET(_fileLocalPathList ${fileLocalPath})
 	SET(_stage "")
 	FOREACH(_arg ${ARGN})
 	    IF ("${_arg}" STREQUAL "FILE_ALIAS")
@@ -188,29 +194,32 @@ IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
 	    ELSE("${_arg}" STREQUAL "FILE_ALIAS")
 		IF(_stage STREQUAL "FILE_ALIAS")
 		    SET(_fileAlias "${_arg}")
-		ELSE(_stage STREQUAL "DEST_PATH")
+		ELSEIF(_stage STREQUAL "DEST_PATH")
 		    SET(_destPath "${_arg}")
-		ENDIF(_stage STREQUAL "TAGS")
-	    ENDIF("${_arg}" STREQUAL "NORAWHIDE")
+		ELSE(_stage STREQUAL "FILE_ALIAS")
+		    LIST(APPEND _fileLocalPathList "${_arg}")
+		ENDIF(_stage STREQUAL "FILE_ALIAS")
+	    ENDIF("${_arg}" STREQUAL "FILE_ALIAS")
 	ENDFOREACH(_arg ${ARGN})
 
-	IF(hostService STREQUAL "[Ss][Oo][Uu][Rr][Cc][Ee][Ff][Oo][Rr][Gg][Ee]")
+	IF("${hostService}" MATCHES "[Ss][Oo][Uu][Rr][Cc][Ee][Ff][Oo][Rr][Gg][Ee]")
 	    SET(${hostService}_PROTOCOL sftp)
 	    SET(${hostService}_SITE frs.sourceforge.net)
-	ELSEIF(hostService MATCHES "[Ff][Ee][Dd][Oo][Rr][Aa][Hh][Oo][Ss][Tt][Ee][Dd]")
+	ELSEIF("${hostService}" MATCHES "[Ff][Ee][Dd][Oo][Rr][Aa][Hh][Oo][Ss][Tt][Ee][Dd]")
 	    SET(${hostService}_PROTOCOL scp)
 	    SET(${hostService}_SITE fedorahosted.org)
-	    SET(_remoteBasePath "${PROJECT}")
-	ELSE(hostService STREQUAL "[Ss][Oo][Uu][Rr][Cc][Ee][Ff][Oo][Rr][Gg][Ee]")
-	ENDIF(hostService STREQUAL "[Ss][Oo][Uu][Rr][Cc][Ee][Ff][Oo][Rr][Gg][Ee]")
+	    SET(_remoteBasePath "${PROJECT_NAME}")
+	ELSE("${hostService}" MATCHES "[Ss][Oo][Uu][Rr][Cc][Ee][Ff][Oo][Rr][Gg][Ee]")
+	ENDIF("${hostService}" MATCHES "[Ss][Oo][Uu][Rr][Cc][Ee][Ff][Oo][Rr][Gg][Ee]")
 
 	IF(${hostService}_PROTOCOL STREQUAL "sftp")
-	    MANAGE_MAINTAINER_TARGETS_SFTP(${hostService} "${fileLocalPath}"
-		"${_remoteBasePath}" "${_destPath}")
+	    MANAGE_MAINTAINER_TARGETS_SFTP(${hostService} "${_remoteBasePath}"
+		"${_destPath}" "${_fileAlias}" "${_fileLocalPathList}")
 	ELSEIF(${hostService}_PROTOCOL STREQUAL "scp")
-	    MANAGE_MAINTAINER_TARGETS_SCP(${hostService} "${fileLocalPath}"
-		"${_remoteBasePath}" "${_destPath}" "${_fileAlias}")
+	    MANAGE_MAINTAINER_TARGETS_SCP(${hostService} "${_remoteBasePath}"
+		"${_destPath}" "${_fileAlias}" "${_fileLocalPathList}")
 	ENDIF(${hostService}_PROTOCOL STREQUAL "sftp")
+	ADD_DEPENDENCIES(upload_${hostService} upload_${hostService}_${_fileAlias})
     ENDMACRO(MANAGE_MAINTAINER_TARGETS_UPLOAD hostService fileLocalPath)
 
     MACRO(MAINTAINER_SETTING_READ_FILE filename packedSourcePath)
@@ -245,7 +254,9 @@ IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
 
 	    # Setting for each hosting service
 	    FOREACH(_hostService ${HOSTING_SERVICES})
-		MANAGE_MAINTAINER_TARGETS_UPLOAD(_hostService ${packedSourcePath})
+		ADD_CUSTOM_TARGET(upload_${_hostService})
+		MANAGE_MAINTAINER_TARGETS_UPLOAD(${_hostService} ${packedSourcePath} FILE_ALIAS "source_tarball")
+		ADD_DEPENDENCIES(upload upload_${_hostService})
 	    ENDFOREACH(_hostService ${HOSTING_SERVICES})
 
 	    ## Target: release
