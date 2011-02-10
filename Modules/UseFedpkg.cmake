@@ -94,6 +94,9 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 	    SET (COMMIT_MSG  "")
 	ENDIF(DEFINED CHANGE_SUMMARY)
 	SET(_first_branch "")
+	ADD_CUSTOM_TARGET(fedpkg_scratch_build)
+	ADD_CUSTOM_TARGET(fedpkg_build)
+	ADD_CUSTOM_TARGET(fedpkg_upload)
 
 	FOREACH(_tag ${tags})
 	    IF(_tag STREQUAL "${FEDORA_RAWHIDE_TAG}")
@@ -102,42 +105,51 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		SET(_branch "${_tag}")
 	    ENDIF(_tag STREQUAL "${FEDORA_RAWHIDE_TAG}")
 
+
+	    ADD_CUSTOM_TARGET(fedpkg_scratch_build_${_branch}
+		COMMAND ${FEDPKG} switch-branch ${_branch}
+		COMMAND git pull
+		COMMAND ${FEDPKG} scratch-build --srpm ${srpm}
+		WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
+		)
+	    ADD_DEPENDENCIES(fedpkg_scratch_build fedpkg_scratch_build_${_branch})
+
+	    ADD_CUSTOM_TARGET(fedpkg_build_${_branch}
+		COMMAND ${FEDPKG} switch-branch ${_branch}
+		COMMAND git pull
+		COMMAND ${FEDPKG} build
+		WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
+		)
+	    ADD_DEPENDENCIES(fedpkg_build fedpkg_build_${_branch})
+
+	    ADD_CUSTOM_TARGET(fedpkg_update_${_branch}
+		COMMAND ${FEDPKG} switch-branch ${_branch}
+		COMMAND git pull
+		COMMAND ${FEDPKG} update
+		WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
+		)
+	    ADD_DEPENDENCIES(fedpkg_update fedpkg_update_${_branch})
+
 	    IF(_first_branch STREQUAL "")
 		SET(_first_branch ${_branch})
-		SET(FEDPKG_SCRATCH_BUILD_CMD
-		    "${FEDPKG} switch-branch ${_branch}"
-		    " git pull"
-		    " ${FEDPKG} scratch-build --srpm ${srpm}")
-		SET(FEDPKG_COMMIT_CMD
-		    "${FEDPKG} switch-branch ${_branch}"
-		    " git pull"
-		    " ${FEDPKG} import  ${srpm}"
-		    " ${FEDPKG} commit ${COMMIT_MSG} -p"
+		ADD_CUSTOM_TARGET(fedpkg_commit_${_branch}
+		    COMMAND ${FEDPKG} switch-branch ${_branch}
+		    COMMAND git pull
+		    COMMAND ${FEDPKG} import  ${srpm}
+		    COMMAND ${FEDPKG} commit  ${srpm} -p
+		    WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
 		    )
-		SET(FEDPKG_BUILD_CMD
-		    "${FEDPKG} switch-branch ${_branch}"
-		    " git pull"
-		    " ${FEDPKG} build")
-		SET(FEDPKG_UPDATE_CMD
-		    "${FEDPKG} switch-branch ${_branch}"
-		    " git pull"
-		    " ${FEDPKG} update")
+
+		ADD_DEPENDENCIES(fedpkg_commit fedpkg_commit_${_branch})
 	    ELSE(_first_branch STREQUAL "")
-		SET(FEDPKG_SCRATCH_BUILD_CMD "${FEDPKG_SCRATCH_BUILD_CMD} && ${FEDPKG} switch-branch ${_branch}"
-		    " git pull"
-		    " ${FEDPKG} scratch-build --srpm ${srpm}")
-		SET(FEDPKG_COMMIT_CMD "${FEDPKG_COMMIT_CMD}"
-		    " ${FEDPKG} switch-branch ${_branch}"
-		    " git pull"
-		    " git merge ${_first_branch}"
-		    " git push")
-		SET(FEDPKG_BUILD_CMD "${FEDPKG_BUILD_CMD} && ${FEDPKG} switch-branch ${_branch}"
-		    " git pull"
-		    " ${FEDPKG} build")
-		SET(FEDPKG_UPDATE_CMD "${FEDPKG_UPDATE_CMD}"
-		    " ${FEDPKG} switch-branch ${_branch}"
-		    " git pull"
-		    " ${FEDPKG} update")
+		ADD_CUSTOM_TARGET(fedpkg_commit_${_branch}
+		    COMMAND ${FEDPKG} switch-branch ${_branch}
+		    COMMAND git pull
+		    COMMAND git merge ${_first_branch}
+		    COMMAND git push
+		    WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
+		    )
+		ADD_DEPENDENCIES(fedpkg_commit fedpkg_commit_${_branch})
 	    ENDIF(_first_branch STREQUAL "")
 	ENDFOREACH(_tag ${tags})
     ENDMACRO(_use_fedpkg_make_cmds tags srpm)
@@ -189,32 +201,7 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		## Make target commands for the released dist
 		_use_fedpkg_make_cmds("${srpm}" "${_koji_dist_tags}")
 
-		#MESSAGE(FEDPKG_SCRATCH_BUILD_CMD=${FEDPKG_SCRATCH_BUILD_CMD})
-		ADD_CUSTOM_TARGET(fedpkg_scratch_build
-		    COMMAND eval "${FEDPKG_SCRATCH_BUILD_CMD}"
-		    DEPENDS ${FEDPKG_DIR}/${PROJECT_NAME} ${srpm} ChangeLog
-		    WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
-		    COMMENT "Start fedpkg scratch build"
-		    VERBATIM
-		    )
-
-		#MESSAGE(FEDPKG_COMMIT_CMD=${FEDPKG_COMMIT_CMD})
-		ADD_CUSTOM_TARGET(fedpkg_commit
-		    COMMAND eval "${FEDPKG_COMMIT_CMD}"
-		    DEPENDS ${FEDPKG_DIR}/${PROJECT_NAME} ${srpm} ChangeLog
-		    WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
-		    COMMENT "Submitting build to fedpkg"
-		    VERBATIM
-		    )
-
-		#MESSAGE("FEDPKG_BUILD_CMD=${FEDPKG_BUILD_CMD}")
-		ADD_CUSTOM_TARGET(fedpkg_build
-		    COMMAND eval "${FEDPKG_BUILD_CMD}"
-		    DEPENDS ${FEDPKG_DIR}/${PROJECT_NAME} ${srpm} ChangeLog
-		    WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
-		    COMMENT "Building with fedpkg"
-		    VERBATIM
-		    )
+		#ADD_DEPENDENCIES(fedpkg_build fedpkg_commit)
 
 		#MESSAGE("FEDPKG_BUILD_CMD=${FEDPKG_BUILD_CMD}")
 		ADD_CUSTOM_TARGET(fedpkg_update
