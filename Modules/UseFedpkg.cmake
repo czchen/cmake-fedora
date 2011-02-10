@@ -81,8 +81,7 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		SET(_first_branch ${_branch})
 		SET(KOJI_SCRATCH_BUILD_CMD "${KOJI} build --scratch dist-${_branch} ${srpm}")
 	    ELSE(_first_branch STREQUAL "")
-		SET(KOJI_SCRATCH_BUILD_CMD "${KOJI_SCRATCH_BUILD_CMD}"
-		    " ${KOJI} build --scratch dist-${_branch} ${srpm}")
+		SET(KOJI_SCRATCH_BUILD_CMD "${KOJI_SCRATCH_BUILD_CMD} && ${KOJI} build --scratch dist-${_branch} ${srpm}")
 	    ENDIF(_first_branch STREQUAL "")
 	ENDFOREACH(_tag ${tags})
     ENDMACRO(_use_koji_make_cmds srpm tags)
@@ -124,8 +123,7 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		    " git pull"
 		    " ${FEDPKG} update")
 	    ELSE(_first_branch STREQUAL "")
-		SET(FEDPKG_SCRATCH_BUILD_CMD "${FEDPKG_SCRATCH_BUILD_CMD}"
-		    " ${FEDPKG} switch-branch ${_branch}"
+		SET(FEDPKG_SCRATCH_BUILD_CMD "${FEDPKG_SCRATCH_BUILD_CMD} && ${FEDPKG} switch-branch ${_branch}"
 		    " git pull"
 		    " ${FEDPKG} scratch-build --srpm ${srpm}")
 		SET(FEDPKG_COMMIT_CMD "${FEDPKG_COMMIT_CMD}"
@@ -133,8 +131,7 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		    " git pull"
 		    " git merge ${_first_branch}"
 		    " git push")
-		SET(FEDPKG_BUILD_CMD "${FEDPKG_BUILD_CMD} "
-		    " ${FEDPKG} switch-branch ${_branch}"
+		SET(FEDPKG_BUILD_CMD "${FEDPKG_BUILD_CMD} && ${FEDPKG} switch-branch ${_branch}"
 		    " git pull"
 		    " ${FEDPKG} build")
 		SET(FEDPKG_UPDATE_CMD "${FEDPKG_UPDATE_CMD}"

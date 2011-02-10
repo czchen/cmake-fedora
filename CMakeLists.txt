@@ -101,9 +101,14 @@ MAINTAINER_SETTING_READ_FILE("${MAINTAINER_SETTING}"
 #
 
 # Module-only tarballs
-ADD_CUSTOM_TARGET(module_only
+ADD_CUSTOM_COMMAND(OUTPUT ${PROJECT_NAME}-${PRJ_VER}-modules-only.tar.gz
+    ${PROJECT_NAME}-modules-only-latest.tar.gz
     COMMAND tar --exclude=.* -czvf  ${PROJECT_NAME}-${PRJ_VER}-modules-only.tar.gz Modules
     COMMAND ln -sf ${PROJECT_NAME}-${PRJ_VER}-modules-only.tar.gz ${PROJECT_NAME}-modules-only-latest.tar.gz
+    )
+
+ADD_CUSTOM_TARGET(module_only
+    DEPENDS ${PROJECT_NAME}-${PRJ_VER}-modules-only.tar.gz ${PROJECT_NAME}-modules-only-latest.tar.gz
     )
 
 IF(EXISTS "${MAINTAINER_SETTING}")
