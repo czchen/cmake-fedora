@@ -77,12 +77,10 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		SET(_branch "${_tag}")
 	    ENDIF(_tag MATCHES "^el")
 
-	    IF(_first_branch STREQUAL "")
-		SET(_first_branch ${_branch})
-		SET(KOJI_SCRATCH_BUILD_CMD "${KOJI} build --scratch dist-${_branch} ${srpm}")
-	    ELSE(_first_branch STREQUAL "")
-		SET(KOJI_SCRATCH_BUILD_CMD "${KOJI_SCRATCH_BUILD_CMD} && ${KOJI} build --scratch dist-${_branch} ${srpm}")
-	    ENDIF(_first_branch STREQUAL "")
+	    ADD_CUSTOM_TARGET(koji_scratch_build_${_branch}
+		COMMAND ${KOJI} build --scratch dist-${_branch} ${srpm}
+		COMMENT "koji scratch build on ${_branch} with ${srpm}"
+		)
 	ENDFOREACH(_tag ${tags})
     ENDMACRO(_use_koji_make_cmds srpm tags)
 
@@ -94,6 +92,19 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 	    SET (COMMIT_MSG  "")
 	ENDIF(DEFINED CHANGE_SUMMARY)
 	SET(_first_branch "")
+	ADD_CUSTOM_TARGET(fedpkg_scratch_build
+	    COMMENT "fedpkg scratch build"
+	    )
+	ADD_CUSTOM_TARGET(fedpkg_commit
+	    COMMENT "fedpkg commit"
+	    )
+	ADD_CUSTOM_TARGET(fedpkg_build
+	    COMMENT "fedpkg build"
+	    )
+	ADD_CUSTOM_TARGET(fedpkg_update
+	    COMMENT "fedpkg update"
+	    )
+	MESSAGE("tags=${tags}")
 
 	FOREACH(_tag ${tags})
 	    IF(_tag STREQUAL "${FEDORA_RAWHIDE_TAG}")
@@ -102,43 +113,72 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		SET(_branch "${_tag}")
 	    ENDIF(_tag STREQUAL "${FEDORA_RAWHIDE_TAG}")
 
+	    MESSAGE("_branch=${_branch}")
+
+	    ADD_CUSTOM_TARGET(fedpkg_scratch_build_${_branch}
+		COMMAND ${FEDPKG} switch-branch ${_branch}
+		COMMAND git pull
+		COMMAND ${FEDPKG} scratch-build --srpm ${srpm}
+		WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
+		COMMENT "fedpkg scratch build on ${_branch} with ${srpm}"
+		)
+	    ADD_DEPENDENCIES(fedpkg_scratch_build fedpkg_scratch_build_${_branch})
+
+	    ADD_CUSTOM_TARGET(fedpkg_build_${_branch}
+		COMMAND ${FEDPKG} switch-branch ${_branch}
+		COMMAND git pull
+		COMMAND ${FEDPKG} build
+		WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
+		COMMENT "fedpkg build on ${_branch} with ${srpm}"
+		)
+	    ADD_DEPENDENCIES(fedpkg_build fedpkg_build_${_branch})
+
+	    ADD_CUSTOM_TARGET(fedpkg_update_${_branch}
+		COMMAND ${FEDPKG} switch-branch ${_branch}
+		COMMAND git pull
+		COMMAND ${FEDPKG} update
+		WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
+		COMMENT "fedpkg update on ${_branch} with ${srpm}"
+		)
+	    ADD_DEPENDENCIES(fedpkg_update fedpkg_update_${_branch})
+
 	    IF(_first_branch STREQUAL "")
 		SET(_first_branch ${_branch})
-		SET(FEDPKG_SCRATCH_BUILD_CMD
-		    "${FEDPKG} switch-branch ${_branch}"
-		    " git pull"
-		    " ${FEDPKG} scratch-build --srpm ${srpm}")
-		SET(FEDPKG_COMMIT_CMD
-		    "${FEDPKG} switch-branch ${_branch}"
-		    " git pull"
-		    " ${FEDPKG} import  ${srpm}"
-		    " ${FEDPKG} commit ${COMMIT_MSG} -p"
+
+		# import first
+		ADD_CUSTOM_COMMAND(OUTPUT
+		    ${FEDPKG_DIR}/${PROJECT_NAME}/.git/ref/tags/${PRJ_VER}
+		    COMMAND COMMAND ${FEDPKG} switch-branch ${_branch}
+		    COMMAND git pull
+		    COMMAND ${FEDPKG} import  ${srpm}
+		    COMMAND git tag -a -m "${CHANGE_SUMMARY}" "${PRJ_VER}" HEAD
+		    COMMAND git push
+		    COMMAND git push --tags
+		    WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
+		    COMMENT "fedpkg import on ${_branch} with ${srpm}"
 		    )
-		SET(FEDPKG_BUILD_CMD
-		    "${FEDPKG} switch-branch ${_branch}"
-		    " git pull"
-		    " ${FEDPKG} build")
-		SET(FEDPKG_UPDATE_CMD
-		    "${FEDPKG} switch-branch ${_branch}"
-		    " git pull"
-		    " ${FEDPKG} update")
+
+		ADD_CUSTOM_TARGET(fedpkg_commit_${_branch}
+		    COMMAND ${FEDPKG} switch-branch ${_branch}
+		    COMMAND git pull
+		    COMMAND ${FEDPKG} commit -p
+		    DEPENDS ${FEDPKG_DIR}/${PROJECT_NAME}/.git/ref/tags/${PRJ_VER}
+		    WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
+		    COMMENT "fedpkg commit on ${_branch} with ${srpm}"
+		    )
+
 	    ELSE(_first_branch STREQUAL "")
-		SET(FEDPKG_SCRATCH_BUILD_CMD "${FEDPKG_SCRATCH_BUILD_CMD} && ${FEDPKG} switch-branch ${_branch}"
-		    " git pull"
-		    " ${FEDPKG} scratch-build --srpm ${srpm}")
-		SET(FEDPKG_COMMIT_CMD "${FEDPKG_COMMIT_CMD}"
-		    " ${FEDPKG} switch-branch ${_branch}"
-		    " git pull"
-		    " git merge ${_first_branch}"
-		    " git push")
-		SET(FEDPKG_BUILD_CMD "${FEDPKG_BUILD_CMD} && ${FEDPKG} switch-branch ${_branch}"
-		    " git pull"
-		    " ${FEDPKG} build")
-		SET(FEDPKG_UPDATE_CMD "${FEDPKG_UPDATE_CMD}"
-		    " ${FEDPKG} switch-branch ${_branch}"
-		    " git pull"
-		    " ${FEDPKG} update")
+		ADD_CUSTOM_TARGET(fedpkg_commit_${_branch}
+		    COMMAND ${FEDPKG} switch-branch ${_branch}
+		    COMMAND git pull
+		    COMMAND git merge ${_first_branch}
+		    COMMAND git push
+		    DEPENDS ${FEDPKG_DIR}/${PROJECT_NAME}/.git/ref/tags/${PRJ_VER}
+		    WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
+		    COMMENT "fedpkg commit on ${_branch} with ${srpm}"
+		    )
 	    ENDIF(_first_branch STREQUAL "")
+	    ADD_DEPENDENCIES(fedpkg_commit fedpkg_commit_${_branch})
 	ENDFOREACH(_tag ${tags})
     ENDMACRO(_use_fedpkg_make_cmds tags srpm)
 
@@ -168,8 +208,9 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 	    ENDIF(NOT "${FEDORA_RELEASE_TAGS}" STREQUAL "")
 
 	    IF(_rawhide EQUAL 1)
-		SET(_koji_dist_tags ${FEDORA_RAWHIDE_TAG} ${_koji_dist_tags})
+		LIST(INSERT _koji_dist_tags 0 ${FEDORA_RAWHIDE_TAG})
 	    ENDIF(_rawhide EQUAL 1)
+	    LIST(REMOVE_DUPLICATES _koji_dist_tags)
 
 	    FIND_PROGRAM(FEDPKG fedpkg)
 	    IF(FEDPKG STREQUAL "FEDPKG-NOTFOUND")
@@ -189,41 +230,8 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		## Make target commands for the released dist
 		_use_fedpkg_make_cmds("${srpm}" "${_koji_dist_tags}")
 
-		#MESSAGE(FEDPKG_SCRATCH_BUILD_CMD=${FEDPKG_SCRATCH_BUILD_CMD})
-		ADD_CUSTOM_TARGET(fedpkg_scratch_build
-		    COMMAND eval "${FEDPKG_SCRATCH_BUILD_CMD}"
-		    DEPENDS ${FEDPKG_DIR}/${PROJECT_NAME} ${srpm} ChangeLog
-		    WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
-		    COMMENT "Start fedpkg scratch build"
-		    VERBATIM
-		    )
+		#ADD_DEPENDENCIES(fedpkg_build fedpkg_commit)
 
-		#MESSAGE(FEDPKG_COMMIT_CMD=${FEDPKG_COMMIT_CMD})
-		ADD_CUSTOM_TARGET(fedpkg_commit
-		    COMMAND eval "${FEDPKG_COMMIT_CMD}"
-		    DEPENDS ${FEDPKG_DIR}/${PROJECT_NAME} ${srpm} ChangeLog
-		    WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
-		    COMMENT "Submitting build to fedpkg"
-		    VERBATIM
-		    )
-
-		#MESSAGE("FEDPKG_BUILD_CMD=${FEDPKG_BUILD_CMD}")
-		ADD_CUSTOM_TARGET(fedpkg_build
-		    COMMAND eval "${FEDPKG_BUILD_CMD}"
-		    DEPENDS ${FEDPKG_DIR}/${PROJECT_NAME} ${srpm} ChangeLog
-		    WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
-		    COMMENT "Building with fedpkg"
-		    VERBATIM
-		    )
-
-		#MESSAGE("FEDPKG_BUILD_CMD=${FEDPKG_BUILD_CMD}")
-		ADD_CUSTOM_TARGET(fedpkg_update
-		    COMMAND eval "${FEDPKG_UPDATE_CMD}"
-		    DEPENDS ${FEDPKG_DIR}/${PROJECT_NAME} ${srpm} ChangeLog
-		    WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
-		    COMMENT "Updating with fedpkg"
-		    VERBATIM
-		    )
 	    ENDIF(FEDPKG STREQUAL "FEDPKG-NOTFOUND")
 	    FIND_PROGRAM(KOJI koji)
 	    IF(KOJI STREQUAL "KOJI-NOTFOUND")
