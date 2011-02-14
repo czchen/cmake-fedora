@@ -149,6 +149,7 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		    COMMAND COMMAND ${FEDPKG} switch-branch ${_branch}
 		    COMMAND git pull
 		    COMMAND ${FEDPKG} import  ${srpm}
+		    COMMAND ${FEDPKG} commit -p
 		    COMMAND git tag -a -m "${CHANGE_SUMMARY}" "${PRJ_VER}" HEAD
 		    COMMAND git push
 		    COMMAND git push --tags
