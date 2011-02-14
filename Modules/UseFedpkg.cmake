@@ -127,6 +127,7 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		COMMAND git pull
 		COMMAND ${FEDPKG} build
 		WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
+		DEPENDS ${FEDPKG_DIR}/${PROJECT_NAME}/.git/ref/tags/${PRJ_VER}
 		COMMENT "fedpkg build on ${_branch} with ${srpm}"
 		)
 	    ADD_DEPENDENCIES(fedpkg_build fedpkg_build_${_branch})
@@ -136,6 +137,7 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		COMMAND git pull
 		COMMAND ${FEDPKG} update
 		WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
+		DEPENDS ${FEDPKG_DIR}/${PROJECT_NAME}/.git/ref/tags/${PRJ_VER}
 		COMMENT "fedpkg update on ${_branch} with ${srpm}"
 		)
 	    ADD_DEPENDENCIES(fedpkg_update fedpkg_update_${_branch})
@@ -149,20 +151,16 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		    COMMAND COMMAND ${FEDPKG} switch-branch ${_branch}
 		    COMMAND git pull
 		    COMMAND ${FEDPKG} import  ${srpm}
-		    COMMAND ${FEDPKG} commit -p
-		    COMMAND git tag -a -m "${CHANGE_SUMMARY}" "${PRJ_VER}" HEAD
+		    COMMAND ${FEDPKG} commit -t -m "Release version ${PRJ_VER}" -p ${srpm}
 		    COMMAND git push
 		    COMMAND git push --tags
 		    WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
 		    COMMENT "fedpkg import on ${_branch} with ${srpm}"
+		    VERBATIM
 		    )
 
 		ADD_CUSTOM_TARGET(fedpkg_commit_${_branch}
-		    COMMAND ${FEDPKG} switch-branch ${_branch}
-		    COMMAND git pull
-		    COMMAND ${FEDPKG} commit -p
 		    DEPENDS ${FEDPKG_DIR}/${PROJECT_NAME}/.git/ref/tags/${PRJ_VER}
-		    WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
 		    COMMENT "fedpkg commit on ${_branch} with ${srpm}"
 		    )
 
@@ -178,6 +176,8 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		    )
 	    ENDIF(_first_branch STREQUAL "")
 	    ADD_DEPENDENCIES(fedpkg_commit fedpkg_commit_${_branch})
+	    ADD_DEPENDENCIES(fedpkg_build_${_branch} fedpkg_commit_${_branch})
+
 	ENDFOREACH(_tag ${tags})
     ENDMACRO(_use_fedpkg_make_cmds tags srpm)
 

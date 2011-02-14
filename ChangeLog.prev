@@ -1,3 +1,36 @@
+* Mon Feb 14 2011 Ding-Yi Chen <dchen at redhat.com> - 0.4.8
+- Now has more informative error message, when cmake-fedora is not installed.
+- Fixed UseUninstall
+- Fixed Bug 670079 - [cmake-fedora] target "release"
+  will not stop when koji build failed
+- Fixed Bug 671063 - [cmake-fedora] target "rpmlint"
+  should not depend on "koji_scratch_build"
+- Protocol for hosting server should now be specified as "[Hosting]_PROTOCOL".
+- Refactoring ManageMaintainerTargets.
+- fedpkg and koji build for every branches are revealed.
+
+* Mon Feb 14 2011 Ding-Yi Chen <dchen at redhat.com> - 0.4.7
+- Now has more informative error message, when cmake-fedora is not installed.
+- Fixed UseUninstall
+- Fixed Bug 670079 - [cmake-fedora] target "release"
+  will not stop when koji build failed
+- Fixed Bug 671063 - [cmake-fedora] target "rpmlint"
+  should not depend on "koji_scratch_build"
+- Protocol for hosting server should now be specified as "[Hosting]_PROTOCOL".
+- Refactoring ManageMaintainerTargets.
+- fedpkg and koji build for every branches are revealed.
+
+* Mon Feb 14 2011 Ding-Yi Chen <dchen at redhat.com> - 0.4.6
+- Now has more informative error message, when cmake-fedora is not installed.
+- Fixed UseUninstall
+- Fixed Bug 670079 - [cmake-fedora] target "release"
+  will not stop when koji build failed
+- Fixed Bug 671063 - [cmake-fedora] target "rpmlint"
+  should not depend on "koji_scratch_build"
+- Protocol for hosting server should now be specified as "[Hosting]_PROTOCOL".
+- Refactoring ManageMaintainerTargets.
+- fedpkg and koji build for every branches are revealed.
+
 * Mon Feb 14 2011 Ding-Yi Chen <dchen at redhat.com> - 0.4.4
 - Now has more informative error message, when cmake-fedora is not installed.
 - Fixed UseUninstall
@@ -92,6 +125,9 @@ just showing it.
 
 * Mon Oct 04 2010 Ding-Yi Chen <dchen at redhat.com> - 0.1.0
 - Initial package.
+
+
+
 
 
 
