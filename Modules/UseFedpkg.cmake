@@ -60,7 +60,7 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
     SET(_bodhi_template_file "bodhi.NO_PACK.template")
     SET(PACK_SOURCE_IGNORE_FILES ${PACK_SOURCE_IGNORE_FILES} "/${FEDPKG_DIR}/")
 
-    MACRO(_use_koji_make_cmds srpm tags)
+    MACRO(_use_koji_make_targets srpm tags)
 	#commit
 	IF(DEFINED CHANGE_SUMMARY)
 	    SET (COMMIT_MSG  "-m \"${CHANGE_SUMMARY}\"")
@@ -81,10 +81,12 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		COMMAND ${KOJI} build --scratch dist-${_branch} ${srpm}
 		COMMENT "koji scratch build on ${_branch} with ${srpm}"
 		)
-	ENDFOREACH(_tag ${tags})
-    ENDMACRO(_use_koji_make_cmds srpm tags)
 
-    MACRO(_use_fedpkg_make_cmds srpm tags)
+	    ADD_DEPENDENCIES(koji_scratch_build koji_scratch_build_${_branch})
+	ENDFOREACH(_tag ${tags})
+    ENDMACRO(_use_koji_make_targets srpm tags)
+
+    MACRO(_use_fedpkg_make_targets srpm tags)
 	#commit
 	IF (DEFINED CHANGE_SUMMARY)
 	    SET (COMMIT_MSG  "-m \"${CHANGE_SUMMARY}\"")
@@ -104,7 +106,16 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 	ADD_CUSTOM_TARGET(fedpkg_update
 	    COMMENT "fedpkg update"
 	    )
-	#MESSAGE("tags=${tags}")
+	MESSAGE("tags=${tags}")
+
+	## Know the tag file path
+	#LIST(GET tags 0 _first_tag)
+	LIST(LENGTH "${tags}"  _first_tag)
+	MESSAGE("_first_tag=${_first_tag}")
+	# bodhi tags is used as tag file name
+	_use_bodhi_convert_tag(_first_bodhi_tag ${_first_tag})
+	SET(_first_tag_path  ${FEDPKG_DIR}/${PROJECT_NAME}/.git/ref/tags/${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE_NO}.${_first_tag})
+	MESSAGE("_first_tag_path=${_first_tag_path}")
 
 	FOREACH(_tag ${tags})
 	    IF(_tag STREQUAL "${FEDORA_RAWHIDE_TAG}")
@@ -127,7 +138,7 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		COMMAND git pull
 		COMMAND ${FEDPKG} build
 		WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
-		DEPENDS ${FEDPKG_DIR}/${PROJECT_NAME}/.git/ref/tags/${PRJ_VER}
+		DEPENDS ${_first_tag_path}
 		COMMENT "fedpkg build on ${_branch} with ${srpm}"
 		)
 	    ADD_DEPENDENCIES(fedpkg_build fedpkg_build_${_branch})
@@ -137,7 +148,7 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		COMMAND git pull
 		COMMAND ${FEDPKG} update
 		WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
-		DEPENDS ${FEDPKG_DIR}/${PROJECT_NAME}/.git/ref/tags/${PRJ_VER}
+		DEPENDS ${_first_tag_path}
 		COMMENT "fedpkg update on ${_branch} with ${srpm}"
 		)
 	    ADD_DEPENDENCIES(fedpkg_update fedpkg_update_${_branch})
@@ -146,31 +157,28 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		SET(_first_branch ${_branch})
 
 		# import first
-		ADD_CUSTOM_COMMAND(OUTPUT
-		    ${FEDPKG_DIR}/${PROJECT_NAME}/.git/ref/tags/${PRJ_VER}
+		ADD_CUSTOM_COMMAND(OUTPUT ${_first_tag_path}
 		    COMMAND COMMAND ${FEDPKG} switch-branch ${_branch}
 		    COMMAND git pull
 		    COMMAND ${FEDPKG} import  ${srpm}
 		    COMMAND ${FEDPKG} commit -t -m "Release version ${PRJ_VER}" -p
-		    COMMAND git push
-		    COMMAND git push --tags
 		    WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
 		    COMMENT "fedpkg import on ${_branch} with ${srpm}"
 		    VERBATIM
 		    )
 
 		ADD_CUSTOM_TARGET(fedpkg_commit_${_branch}
-		    DEPENDS ${FEDPKG_DIR}/${PROJECT_NAME}/.git/ref/tags/${PRJ_VER}
+		    DEPENDS ${_first_tag_path}
 		    COMMENT "fedpkg commit on ${_branch} with ${srpm}"
 		    )
 
 	    ELSE(_first_branch STREQUAL "")
 		ADD_CUSTOM_TARGET(fedpkg_commit_${_branch}
 		    COMMAND ${FEDPKG} switch-branch ${_branch}
-		    COMMAND git pull
+		    COMMAND fedpkg pull
 		    COMMAND git merge ${_first_branch}
-		    COMMAND git push
-		    DEPENDS ${FEDPKG_DIR}/${PROJECT_NAME}/.git/ref/tags/${PRJ_VER}
+		    COMMAND fedpkg push
+		    DEPENDS ${_first_tag_path}
 		    WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
 		    COMMENT "fedpkg commit on ${_branch} with ${srpm}"
 		    )
@@ -179,7 +187,7 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 	    ADD_DEPENDENCIES(fedpkg_build_${_branch} fedpkg_commit_${_branch})
 
 	ENDFOREACH(_tag ${tags})
-    ENDMACRO(_use_fedpkg_make_cmds tags srpm)
+    ENDMACRO(_use_fedpkg_make_targets tags srpm)
 
     MACRO(USE_FEDPKG srpm)
 	IF(EXISTS $ENV{HOME}/.fedora-upload-ca.cert)
@@ -227,7 +235,7 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 
 
 		## Make target commands for the released dist
-		_use_fedpkg_make_cmds("${srpm}" "${_koji_dist_tags}")
+		_use_fedpkg_make_targets("${srpm}" "${_koji_dist_tags}")
 
 		#ADD_DEPENDENCIES(fedpkg_build fedpkg_commit)
 
@@ -237,15 +245,11 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		MESSAGE("Program koji is not found!")
 	    ELSE(KOJI STREQUAL "KOJI-NOTFOUND")
 		## Make target commands for the released dist
-		_use_koji_make_cmds("${srpm}" "${_koji_dist_tags}")
-
-		#MESSAGE("KOJI_SCRATCH_BUILD_CMD=${KOJI_SCRATCH_BUILD_CMD}")
 		ADD_CUSTOM_TARGET(koji_scratch_build
-		    COMMAND eval "${KOJI_SCRATCH_BUILD_CMD}"
-		    DEPENDS ${srpm} ChangeLog
-		    COMMENT "Start Koji scratch build"
-		    VERBATIM
+		    COMMENT "Koji scratch build"
 		    )
+		_use_koji_make_targets("${srpm}" "${_koji_dist_tags}")
+
 	    ENDIF(KOJI STREQUAL "KOJI-NOTFOUND")
 
 	ENDIF(EXISTS $ENV{HOME}/.fedora-upload-ca.cert)
