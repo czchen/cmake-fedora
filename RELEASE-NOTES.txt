@@ -12,4 +12,5 @@ REDHAT_BUGZILLA=670079,671063
 - Protocol for hosting server should now be specified as "[Hosting]_PROTOCOL".
 - Refactoring ManageMaintainerTargets.
 - fedpkg and koji build for every branches are revealed.
+- Now set rawhide as f16, release dists are f15,f14,f13.
 
