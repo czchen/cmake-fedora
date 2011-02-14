@@ -81,7 +81,7 @@ IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
 
 	# PRJ_VER won't be updated until the execution of cmake .
 	SET(_version_check_cmd grep -e 'PRJ_VER=' ${RELEASE_FILE} |  tr -d '\\r\\n' | sed -e s/PRJ_VER=//)
-	ADD_CUSTOM_TARGET(version_check
+	ADD_CUSTOM_TARGET(version_check ALL
 	    COMMAND ${CMAKE_COMMAND} -E echo "PRJ_VER=${PRJ_VER}"
 	    COMMAND ${CMAKE_COMMAND} -E echo "Release file="`eval \"${_version_check_cmd}\"`
 	    COMMAND test \"`${_version_check_cmd}`\" = \"\" -o \"`${_version_check_cmd}`\" = "${PRJ_VER}"

@@ -104,7 +104,7 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 	ADD_CUSTOM_TARGET(fedpkg_update
 	    COMMENT "fedpkg update"
 	    )
-	MESSAGE("tags=${tags}")
+	#MESSAGE("tags=${tags}")
 
 	FOREACH(_tag ${tags})
 	    IF(_tag STREQUAL "${FEDORA_RAWHIDE_TAG}")
@@ -112,8 +112,6 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 	    ELSE(_tag STREQUAL "${FEDORA_RAWHIDE_TAG}")
 		SET(_branch "${_tag}")
 	    ENDIF(_tag STREQUAL "${FEDORA_RAWHIDE_TAG}")
-
-	    MESSAGE("_branch=${_branch}")
 
 	    ADD_CUSTOM_TARGET(fedpkg_scratch_build_${_branch}
 		COMMAND ${FEDPKG} switch-branch ${_branch}

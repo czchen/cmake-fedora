@@ -261,7 +261,7 @@ IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
 
 	    ## Target: release
 	    IF(NOT DEFINED RELEASE_TARGETS)
-		SET(RELEASE_TARGETS koji_scratch_build tag upload rpmlint
+		SET(RELEASE_TARGETS all koji_scratch_build tag upload rpmlint
 		    fedpkg_commit fedpkg_build bodhi_new
 		    changelog_update commit_after_release
 		    push_svc_tags)
