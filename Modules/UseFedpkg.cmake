@@ -50,8 +50,8 @@
 
 IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
     SET(_USE_FEDPKG_CMAKE_ "DEFINED")
-    SET(FEDORA_CURRENT_RELEASE_TAGS f14 f13)
-    SET(FEDORA_RAWHIDE_TAG rawhide)
+    SET(FEDORA_CURRENT_RELEASE_TAGS f15 f14 f13)
+    SET(FEDORA_RAWHIDE_TAG f16)
     IF(NOT DEFINED FEDPKG_DIR)
 	SET(FEDPKG_DIR "FedPkg")
     ELSEIF (FEDPKG_DIR STREQUAL "")
@@ -151,7 +151,7 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		    COMMAND COMMAND ${FEDPKG} switch-branch ${_branch}
 		    COMMAND git pull
 		    COMMAND ${FEDPKG} import  ${srpm}
-		    COMMAND ${FEDPKG} commit -t -m "Release version ${PRJ_VER}" -p ${srpm}
+		    COMMAND ${FEDPKG} commit -t -m "Release version ${PRJ_VER}" -p
 		    COMMAND git push
 		    COMMAND git push --tags
 		    WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
