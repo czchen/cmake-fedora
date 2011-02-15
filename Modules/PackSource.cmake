@@ -141,7 +141,8 @@ IF(NOT DEFINED _PACK_SOURCE_CMAKE_)
 	IF("${_outputDir_rel}" STREQUAL ".")
 	    ADD_CUSTOM_COMMAND(OUTPUT "${_outputDir_rel}/${${var}}"
 		COMMAND make package_source
-		DEPENDS ChangeLog ${RELEASE_FILE} ${PACK_SOURCE_FILE_LIST}
+		DEPENDS ${CMAKE_SOURCE_DIR}/ChangeLog
+	           ${RELEASE_FILE} ${PACK_SOURCE_FILE_LIST}
 		COMMENT "Packing the source"
 		)
 	ELSE("${_outputDir_rel}" STREQUAL ".")
@@ -149,7 +150,8 @@ IF(NOT DEFINED _PACK_SOURCE_CMAKE_)
 		COMMAND make package_source
 		COMMAND cmake -E copy ${${var}} "${_outputDir_rel}/"
 		COMMAND cmake -E remove ${${var}}
-		DEPENDS ChangeLog ${RELEASE_FILE} ${PACK_SOURCE_FILE_LIST} ${_outputDir_rel}
+		DEPENDS ${CMAKE_SOURCE_DIR}/ChangeLog
+		    ${RELEASE_FILE} ${PACK_SOURCE_FILE_LIST} ${_outputDir_rel}
 		COMMENT "Packing the source"
 		)
 	ENDIF("${_outputDir_rel}" STREQUAL ".")
@@ -167,7 +169,7 @@ IF(NOT DEFINED _PACK_SOURCE_CMAKE_)
 	    COMMENT "Cleaning old source packages"
 	    )
 
-	ADD_DEPENDENCIES(clean_old_pack_src version_check)
+	ADD_DEPENDENCIES(clean_old_pack_src changelog version_check)
 
 	ADD_CUSTOM_TARGET(clean_pack_src
 	    COMMAND find .

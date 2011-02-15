@@ -203,10 +203,10 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 		--define '_srcrpmdir ${RPM_BUILD_SRPMS}'
 		--define '_rpmdir ${RPM_BUILD_RPMS}'
 		--define '_specdir ${RPM_BUILD_SPECS}'
-		DEPENDS ChangeLog
+		DEPENDS ${CMAKE_SOURCE_DIR}/ChangeLog
 		${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec
 		${RPM_BUILD_SOURCES}/${sourcePackage} ${fileDependencies}
-		${RPM_BUILD_SRPMS} ${RPM_BUILD_BUILD}
+		${RPM_BUILD_SRPMS}
 		COMMENT "Building srpm"
 		)
 
@@ -214,6 +214,7 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 		DEPENDS ${_prj_srpm_path}
 		)
 
+	    ADD_DEPENDENCIES(srpm version_check)
 	    # RPMs (except SRPM)
 
 	    ADD_CUSTOM_COMMAND(OUTPUT ${_prj_rpm_path}
@@ -223,10 +224,10 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 		--define '_srcrpmdir ${RPM_BUILD_SRPMS}'
 		--define '_rpmdir ${RPM_BUILD_RPMS}'
 		--define '_specdir ${RPM_BUILD_SPECS}'
-		DEPENDS ChangeLog ${_prj_srpm_path}
+		DEPENDS ${CMAKE_SOURCE_DIR}/ChangeLog ${_prj_srpm_path}
 		${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec
 		${RPM_BUILD_SOURCES}/${sourcePackage} ${fileDependencies}
-		${RPM_BUILD_SRPMS} ${RPM_BUILD_BUILD}
+		${RPM_BUILD_BUILD}
 		${RPM_BUILD_BUILDROOT} ${RPM_BUILD_RPMS}
 		COMMENT "Building rpm"
 		)
@@ -251,6 +252,8 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 		-print -exec rpmlint '{}' '\\;'
 		DEPENDS ${_prj_srpm_path} ${_prj_rpm_path}
 		)
+
+	    ADD_DEPENDENCIES(rpmlint version_check)
 
 	    ADD_CUSTOM_TARGET(clean_old_rpm
 		COMMAND find .
