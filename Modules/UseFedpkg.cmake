@@ -60,7 +60,8 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
     SET(_bodhi_template_file "bodhi.NO_PACK.template")
     SET(PACK_SOURCE_IGNORE_FILES ${PACK_SOURCE_IGNORE_FILES} "/${FEDPKG_DIR}/")
 
-    MACRO(_use_koji_make_targets srpm tags)
+    MACRO(_use_koji_make_targets srpm)
+	SET(_tags ${ARGN})
 	#commit
 	IF(DEFINED CHANGE_SUMMARY)
 	    SET (COMMIT_MSG  "-m \"${CHANGE_SUMMARY}\"")
@@ -68,13 +69,12 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 	    SET (COMMIT_MSG  "")
 	ENDIF(DEFINED CHANGE_SUMMARY)
 	SET(_first_branch "")
-	FOREACH(_tag ${tags})
+	FOREACH(_tag ${_tags})
+	    SET(_branch ${_tag})
 	    IF(_tag MATCHES "^el")
 		STRING(REGEX REPLACE "el\([0-9]+\)"
 		    "\\1E-epel-testing-candidate"  _branch
 		    "${_tag}")
-	    ELSE(_tag MATCHES "^el")
-		SET(_branch "${_tag}")
 	    ENDIF(_tag MATCHES "^el")
 
 	    ADD_CUSTOM_TARGET(koji_scratch_build_${_branch}
@@ -83,10 +83,11 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		)
 
 	    ADD_DEPENDENCIES(koji_scratch_build koji_scratch_build_${_branch})
-	ENDFOREACH(_tag ${tags})
-    ENDMACRO(_use_koji_make_targets srpm tags)
+	ENDFOREACH(_tag ${_tags})
+    ENDMACRO(_use_koji_make_targets srpm)
 
-    MACRO(_use_fedpkg_make_targets srpm tags)
+    MACRO(_use_fedpkg_make_targets srpm)
+	SET(_tags ${ARGN})
 	#commit
 	IF (DEFINED CHANGE_SUMMARY)
 	    SET (COMMIT_MSG  "-m \"${CHANGE_SUMMARY}\"")
@@ -106,18 +107,15 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 	ADD_CUSTOM_TARGET(fedpkg_update
 	    COMMENT "fedpkg update"
 	    )
-	MESSAGE("tags=${tags}")
 
 	## Know the tag file path
-	#LIST(GET tags 0 _first_tag)
-	LIST(LENGTH "${tags}"  _first_tag)
-	MESSAGE("_first_tag=${_first_tag}")
+	LIST(GET _tags 0 _first_tag)
 	# bodhi tags is used as tag file name
 	_use_bodhi_convert_tag(_first_bodhi_tag ${_first_tag})
-	SET(_first_tag_path  ${FEDPKG_DIR}/${PROJECT_NAME}/.git/ref/tags/${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE_NO}.${_first_tag})
-	MESSAGE("_first_tag_path=${_first_tag_path}")
+	SET(_first_tag_path  ${FEDPKG_DIR}/${PROJECT_NAME}/.git/ref/tags/${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE_NO}.${_first_bodhi_tag})
+	# MESSAGE("_first_tag_path=${_first_tag_path}")
 
-	FOREACH(_tag ${tags})
+	FOREACH(_tag ${_tags})
 	    IF(_tag STREQUAL "${FEDORA_RAWHIDE_TAG}")
 		SET(_branch "master")
 	    ELSE(_tag STREQUAL "${FEDORA_RAWHIDE_TAG}")
@@ -186,14 +184,15 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 	    ADD_DEPENDENCIES(fedpkg_commit fedpkg_commit_${_branch})
 	    ADD_DEPENDENCIES(fedpkg_build_${_branch} fedpkg_commit_${_branch})
 
-	ENDFOREACH(_tag ${tags})
-    ENDMACRO(_use_fedpkg_make_targets tags srpm)
+	ENDFOREACH(_tag ${_tags})
+    ENDMACRO(_use_fedpkg_make_targets srpm)
 
     MACRO(USE_FEDPKG srpm)
 	IF(EXISTS $ENV{HOME}/.fedora-upload-ca.cert)
 	    SET(_rawhide 1)
 	    SET(_koji_dist_tags "")
 	    SET(_stage "")
+
 	    FOREACH(_arg ${ARGN})
 		IF ("${_arg}" STREQUAL "NORAWHIDE")
 		    SET(_rawhide 0)
@@ -201,17 +200,15 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		    SET(_stage "TAGS")
 		ELSE("${_arg}" STREQUAL "NORAWHIDE")
 		    IF(_stage STREQUAL "TAGS")
-			SET(_koji_dist_tags ${_koji_dist_tags} ${_arg})
+			LIST(APPEND _koji_dist_tags ${_arg})
 		    ENDIF(_stage STREQUAL "TAGS")
 		ENDIF("${_arg}" STREQUAL "NORAWHIDE")
 	    ENDFOREACH(_arg)
 
-	    IF(_koji_dist_tags STREQUAL "")
-		SET(_koji_dist_tags ${FEDORA_CURRENT_RELEASE_TAGS})
-	    ENDIF(_koji_dist_tags STREQUAL "")
-
 	    IF(NOT "${FEDORA_RELEASE_TAGS}" STREQUAL "")
 		SET(_koji_dist_tags ${FEDORA_RELEASE_TAGS})
+	    ELSEIF(_koji_dist_tags STREQUAL "")
+		LIST(APPEND _koji_dist_tags ${FEDORA_CURRENT_RELEASE_TAGS})
 	    ENDIF(NOT "${FEDORA_RELEASE_TAGS}" STREQUAL "")
 
 	    IF(_rawhide EQUAL 1)
@@ -235,7 +232,7 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 
 
 		## Make target commands for the released dist
-		_use_fedpkg_make_targets("${srpm}" "${_koji_dist_tags}")
+		_use_fedpkg_make_targets("${srpm}" ${_koji_dist_tags})
 
 		#ADD_DEPENDENCIES(fedpkg_build fedpkg_commit)
 
@@ -248,7 +245,7 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		ADD_CUSTOM_TARGET(koji_scratch_build
 		    COMMENT "Koji scratch build"
 		    )
-		_use_koji_make_targets("${srpm}" "${_koji_dist_tags}")
+		_use_koji_make_targets("${srpm}" ${_koji_dist_tags})
 
 	    ENDIF(KOJI STREQUAL "KOJI-NOTFOUND")
 
@@ -280,79 +277,78 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 	IF(EXISTS $ENV{HOME}/.fedora-upload-ca.cert)
 	    FIND_PROGRAM(BODHI bodhi)
 	    IF(BODHI STREQUAL "BODHI-NOTFOUND")
-		MESSAGE(FATAL-ERROR "Program bodhi is not found!")
+		MESSAGE("Program bodhi is not found!")
+	    ELSE(BODHI STREQUAL "BODHI-NOTFOUND")
+		SET(_stage "NONE")
+		FOREACH(_arg ${ARGN})
+		    IF(_arg STREQUAL "TAGS")
+			SET(_stage "TAGS")
+		    ELSEIF(_arg STREQUAL "KARMA")
+			SET(_stage "KARMA")
+		    ELSE(_arg STREQUAL "TAGS")
+			# option values
+			IF(_stage STREQUAL "TAGS")
+			    SET(_tags ${_tags} ${_arg})
+			ELSEIF(_stage STREQUAL "KARMA")
+			    IF(_arg STREQUAL "0")
+				SET(_autokarma "False")
+			    ELSE(_arg STREQUAL "0")
+				SET(_autokarma "True")
+			    ENDIF(_arg STREQUAL "0")
+			    SET(_stable_karma "${_arg}")
+			    SET(_unstable_karma "-${_arg}")
+			    SET(_tags ${_arg})
+			ENDIF(_stage STREQUAL "TAGS")
+		    ENDIF(_arg STREQUAL "TAGS")
+		ENDFOREACH(_arg ${ARGN})
+
+		IF(NOT _tags)
+		    SET(_tags ${FEDORA_CURRENT_RELEASE_TAGS})
+		ENDIF(NOT _tags)
+
+		IF(NOT "${FEDORA_RELEASE_TAGS}" STREQUAL "")
+		    SET(_tags ${FEDORA_RELEASE_TAGS})
+		ENDIF(NOT "${FEDORA_RELEASE_TAGS}" STREQUAL "")
+
+		FILE(REMOVE ${_bodhi_template_file})
+		FOREACH(_tag ${_tags})
+		    _use_bodhi_convert_tag(_bodhi_tag ${_tag})
+
+		    FILE(APPEND ${_bodhi_template_file} "[${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE_NO}.${_bodhi_tag}]\n\n")
+
+		    IF(BODHI_UPDATE_TYPE)
+			FILE(APPEND ${_bodhi_template_file} "type=${BODHI_UPDATE_TYPE}\n\n")
+		    ELSE(BODHI_UPDATE_TYPE)
+			FILE(APPEND ${_bodhi_template_file} "type=bugfix\n\n")
+		    ENDIF(BODHI_UPDATE_TYPE)
+
+		    FILE(APPEND ${_bodhi_template_file} "request=testing\n")
+		    FILE(APPEND ${_bodhi_template_file} "bugs=${REDHAT_BUGZILLA}\n")
+
+		    _append_notes(${_bodhi_template_file})
+
+		    FILE(APPEND ${_bodhi_template_file} "autokarma=${_autokarma}\n")
+		    FILE(APPEND ${_bodhi_template_file} "stable_karma=${_stable_karma}\n")
+		    FILE(APPEND ${_bodhi_template_file} "unstable_karma=${_unstable_karma}\n")
+		    FILE(APPEND ${_bodhi_template_file} "close_bugs=True\n")
+
+		    IF(SUGGEST_REBOOT)
+			FILE(APPEND ${_bodhi_template_file} "suggest_reboot=True\n")
+		    ELSE(SUGGEST_REBOOT)
+			FILE(APPEND ${_bodhi_template_file} "suggest_reboot=False\n\n")
+		    ENDIF(SUGGEST_REBOOT)
+		ENDFOREACH(_tag ${_tags})
+
+		IF(BODHI_USER)
+		    SET(_bodhi_login "-u ${BODHI_USER}")
+		ENDIF(BODHI_USER)
+
+		ADD_CUSTOM_TARGET(bodhi_new
+		    COMMAND eval "bodhi --new ${_bodhi_login} --file ${_bodhi_template_file}"
+		    COMMENT "Send new package to bodhi"
+		    VERBATIM
+		    )
 	    ENDIF(BODHI STREQUAL "BODHI-NOTFOUND")
-
-	    SET(_stage "NONE")
-	    FOREACH(_arg ${ARGN})
-		IF(_arg STREQUAL "TAGS")
-		    SET(_stage "TAGS")
-		ELSEIF(_arg STREQUAL "KARMA")
-		    SET(_stage "KARMA")
-		ELSE(_arg STREQUAL "TAGS")
-		    # option values
-		    IF(_stage STREQUAL "TAGS")
-			SET(_tags ${_tags} ${_arg})
-		    ELSEIF(_stage STREQUAL "KARMA")
-			IF(_arg STREQUAL "0")
-			    SET(_autokarma "False")
-			ELSE(_arg STREQUAL "0")
-			    SET(_autokarma "True")
-			ENDIF(_arg STREQUAL "0")
-			SET(_stable_karma "${_arg}")
-			SET(_unstable_karma "-${_arg}")
-			SET(_tags ${_arg})
-		    ENDIF(_stage STREQUAL "TAGS")
-		ENDIF(_arg STREQUAL "TAGS")
-	    ENDFOREACH(_arg ${ARGN})
-
-	    IF(NOT _tags)
-		SET(_tags ${FEDORA_CURRENT_RELEASE_TAGS})
-	    ENDIF(NOT _tags)
-
-	    IF(NOT "${FEDORA_RELEASE_TAGS}" STREQUAL "")
-		SET(_tags ${FEDORA_RELEASE_TAGS})
-	    ENDIF(NOT "${FEDORA_RELEASE_TAGS}" STREQUAL "")
-
-	    FILE(REMOVE ${_bodhi_template_file})
-	    FOREACH(_tag ${_tags})
-		_use_bodhi_convert_tag(_bodhi_tag ${_tag})
-
-		FILE(APPEND ${_bodhi_template_file} "[${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE_NO}.${_bodhi_tag}]\n\n")
-
-		IF(BODHI_UPDATE_TYPE)
-		    FILE(APPEND ${_bodhi_template_file} "type=${BODHI_UPDATE_TYPE}\n\n")
-		ELSE(BODHI_UPDATE_TYPE)
-		    FILE(APPEND ${_bodhi_template_file} "type=bugfix\n\n")
-		ENDIF(BODHI_UPDATE_TYPE)
-
-		FILE(APPEND ${_bodhi_template_file} "request=testing\n")
-		FILE(APPEND ${_bodhi_template_file} "bugs=${REDHAT_BUGZILLA}\n")
-
-		_append_notes(${_bodhi_template_file})
-
-		FILE(APPEND ${_bodhi_template_file} "autokarma=${_autokarma}\n")
-		FILE(APPEND ${_bodhi_template_file} "stable_karma=${_stable_karma}\n")
-		FILE(APPEND ${_bodhi_template_file} "unstable_karma=${_unstable_karma}\n")
-		FILE(APPEND ${_bodhi_template_file} "close_bugs=True\n")
-
-		IF(SUGGEST_REBOOT)
-		    FILE(APPEND ${_bodhi_template_file} "suggest_reboot=True\n")
-		ELSE(SUGGEST_REBOOT)
-		    FILE(APPEND ${_bodhi_template_file} "suggest_reboot=False\n\n")
-		ENDIF(SUGGEST_REBOOT)
-	    ENDFOREACH(_tag ${_tags})
-
-	    IF(BODHI_USER)
-		SET(_bodhi_login "-u ${BODHI_USER}")
-	    ENDIF(BODHI_USER)
-
-	    ADD_CUSTOM_TARGET(bodhi_new
-		COMMAND eval "bodhi --new ${_bodhi_login} --file ${_bodhi_template_file}"
-		COMMENT "Send new package to bodhi"
-		VERBATIM
-		)
-
 	ENDIF(EXISTS $ENV{HOME}/.fedora-upload-ca.cert)
     ENDMACRO(USE_BODHI)
 
