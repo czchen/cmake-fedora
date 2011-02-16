@@ -264,8 +264,15 @@ IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
 		SET(RELEASE_TARGETS rpmlint koji_scratch_build tag upload
 		    fedpkg_build bodhi_new
 		    changelog_update commit_after_release
-		    push_svc_tags)
+		    push_post_build)
 	    ENDIF(NOT DEFINED RELEASE_TARGETS)
+
+	    LIST(FIND RELEASE_TARGETS koji_scratch_build
+		_koji_scratch_build_found)
+
+	    IF(_koji_scratch_build_found GREATER -1)
+		ADD_DEPENDENCIES(tag koji_scratch_build)
+	    ENDIF(_koji_scratch_build_found GREATER -1)
 
 	    ADD_CUSTOM_TARGET(release
 		COMMENT "Sent release"
