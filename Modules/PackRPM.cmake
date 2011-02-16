@@ -176,6 +176,7 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 	    SET(_prj_srpm_path "${RPM_BUILD_SRPMS}/${${var}}")
 	    PACK_RPM_GET_ARCH(_archStr "${spec_in}")
 	    SET(_prj_rpm_path "${RPM_BUILD_RPMS}/${_archStr}/${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE}.${_archStr}.rpm")
+	    MESSAGE("_prj_rpm_path=${_prj_rpm_path}")
 
 	    #-------------------------------------------------------------------
 	    # RPM build commands and targets
@@ -203,8 +204,7 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 		--define '_srcrpmdir ${RPM_BUILD_SRPMS}'
 		--define '_rpmdir ${RPM_BUILD_RPMS}'
 		--define '_specdir ${RPM_BUILD_SPECS}'
-		DEPENDS ${CMAKE_SOURCE_DIR}/ChangeLog
-		${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec
+		DEPENDS ${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec
 		${RPM_BUILD_SOURCES}/${sourcePackage} ${fileDependencies}
 		${RPM_BUILD_SRPMS}
 		COMMENT "Building srpm"
@@ -218,9 +218,10 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 	    # RPMs (except SRPM)
 
 	    ADD_CUSTOM_COMMAND(OUTPUT ${_prj_rpm_path}
-		COMMAND ${RPMBUILD} -bb --buildroot ${RPM_BUILD_BUILDROOT} ${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec
+		COMMAND ${RPMBUILD} -bb  ${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec
 		--define '_sourcedir ${RPM_BUILD_SOURCES}'
 		--define '_builddir ${RPM_BUILD_BUILD}'
+		--define '_buildrootdir ${RPM_BUILD_BUILDROOT}'
 		--define '_srcrpmdir ${RPM_BUILD_SRPMS}'
 		--define '_rpmdir ${RPM_BUILD_RPMS}'
 		--define '_specdir ${RPM_BUILD_SPECS}'
