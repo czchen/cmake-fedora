@@ -69,30 +69,28 @@ IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
 	    || echo Inconsistent version detected. Fixing.. && ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR}
 	    )
 
-	#CONFIGURE_FILE(ChangeLog.in ChangeLog)
+	CONFIGURE_FILE(ChangeLog.in ChangeLog)
 
-	#ADD_CUSTOM_COMMAND(OUTPUT ChangeLog
-	#    COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR}
-	#    DEPENDS ${releaseFile} ChangeLog.prev
-	#    COMMENT "ChangeLog is older than ${releaseFile}. Rebuilding"
-	#    VERBATIM
-	#    )
+	ADD_CUSTOM_COMMAND(OUTPUT ChangeLog
+	    COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR}
+	    DEPENDS ${releaseFile} ChangeLog.prev
+	    COMMENT "ChangeLog is older than ${releaseFile}. Rebuilding"
+	    VERBATIM
+	    )
 
 	ADD_CUSTOM_TARGET(changelog ALL
 	    DEPENDS ${CMAKE_SOURCE_DIR}/ChangeLog
 	    )
 
-	ADD_CUSTOM_COMMAND(OUTPUT ${CMAKE_SOURCE_DIR}/ChangeLog
-	    COMMAND ${CMAKE_COMMAND} -E echo "* ${TODAY_CHANGELOG} ${MAINTAINER} - ${PRJ_VER}" > ChangeLog
-	    COMMAND cat ${releaseFile}_NO_PACK_CHANGELOG_ITEM  >> ChangeLog
-	    COMMAND echo -e "\\n" >> ChangeLog
-	    COMMAND cat ChangeLog.prev >> ChangeLog
-	    DEPENDS ${CMAKE_SOURCE_DIR}/${releaseFile} ${CMAKE_SOURCE_DIR}/ChangeLog.prev
-	    COMMENT "Building ChangeLog"
-	    VERBATIM
-	    )
-
-
+	#ADD_CUSTOM_COMMAND(OUTPUT ${CMAKE_SOURCE_DIR}/ChangeLog
+	#    COMMAND ${CMAKE_COMMAND} -E echo "* ${TODAY_CHANGELOG} ${MAINTAINER} - ${PRJ_VER}" > ChangeLog
+	#    COMMAND cat ${releaseFile}_NO_PACK_CHANGELOG_ITEM  >> ChangeLog
+	#    COMMAND echo -e "\\n" >> ChangeLog
+	#    COMMAND cat ChangeLog.prev >> ChangeLog
+	#    DEPENDS ${CMAKE_SOURCE_DIR}/${releaseFile} ${CMAKE_SOURCE_DIR}/ChangeLog.prev
+	#    COMMENT "Building ChangeLog"
+	#    VERBATIM
+	#    )
     ENDMACRO(LOAD_RELEASE_FILE releaseFile)
 
 ENDIF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
