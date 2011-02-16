@@ -176,27 +176,15 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 	    SET(_prj_srpm_path "${RPM_BUILD_SRPMS}/${${var}}")
 	    PACK_RPM_GET_ARCH(_archStr "${spec_in}")
 	    SET(_prj_rpm_path "${RPM_BUILD_RPMS}/${_archStr}/${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE}.${_archStr}.rpm")
-	    MESSAGE("_prj_rpm_path=${_prj_rpm_path}")
 
 	    #-------------------------------------------------------------------
 	    # RPM build commands and targets
-
-	    ADD_CUSTOM_COMMAND(OUTPUT ${RPM_BUILD_SRPMS}
-		COMMAND ${CMAKE_COMMAND} -E make_directory ${RPM_BUILD_SRPMS}
-		)
-
-	    ADD_CUSTOM_COMMAND(OUTPUT ${RPM_BUILD_RPMS}
-		COMMAND ${CMAKE_COMMAND} -E make_directory ${RPM_BUILD_RPMS}
-		)
 
 	    ADD_CUSTOM_COMMAND(OUTPUT ${RPM_BUILD_BUILD}
 		COMMAND ${CMAKE_COMMAND} -E make_directory ${RPM_BUILD_BUILD}
 		)
 
-	    ADD_CUSTOM_COMMAND(OUTPUT ${RPM_BUILD_BUILDROOT}
-		COMMAND ${CMAKE_COMMAND} -E make_directory ${RPM_BUILD_BUILDROOT}
-		)
-
+	    # Don't worry about SRPMS, RPMS and BUILDROOT, it will be created by rpmbuild
 	    ADD_CUSTOM_COMMAND(OUTPUT ${_prj_srpm_path}
 		COMMAND ${RPMBUILD} -bs ${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec
 		--define '_sourcedir ${RPM_BUILD_SOURCES}'
@@ -206,7 +194,6 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 		--define '_specdir ${RPM_BUILD_SPECS}'
 		DEPENDS ${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec
 		${RPM_BUILD_SOURCES}/${sourcePackage} ${fileDependencies}
-		${RPM_BUILD_SRPMS}
 		COMMENT "Building srpm"
 		)
 
@@ -214,7 +201,7 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 		DEPENDS ${_prj_srpm_path}
 		)
 
-	    ADD_DEPENDENCIES(srpm version_check)
+	    ADD_DEPENDENCIES(srpm pack_src)
 	    # RPMs (except SRPM)
 
 	    ADD_CUSTOM_COMMAND(OUTPUT ${_prj_rpm_path}
@@ -225,11 +212,7 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 		--define '_srcrpmdir ${RPM_BUILD_SRPMS}'
 		--define '_rpmdir ${RPM_BUILD_RPMS}'
 		--define '_specdir ${RPM_BUILD_SPECS}'
-		DEPENDS ${CMAKE_SOURCE_DIR}/ChangeLog ${_prj_srpm_path}
-		${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec
-		${RPM_BUILD_SOURCES}/${sourcePackage} ${fileDependencies}
-		${RPM_BUILD_BUILD}
-		${RPM_BUILD_BUILDROOT} ${RPM_BUILD_RPMS}
+		DEPENDS ${_prj_srpm_path} ${RPM_BUILD_RPMS}
 		COMMENT "Building rpm"
 		)
 
@@ -237,16 +220,17 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 		DEPENDS ${_prj_rpm_path}
 		)
 
-	    ADD_DEPENDENCIES(rpm version_check)
+	    ADD_DEPENDENCIES(rpm srpm)
 
 	    ADD_CUSTOM_TARGET(install_rpms
 		find ${RPM_BUILD_RPMS}/${_archStr}
 		-name '${PROJECT_NAME}*-${PRJ_VER}-${PRJ_RELEASE_NO}.*.${_archStr}.rpm' !
 		-name '${PROJECT_NAME}-debuginfo-${PRJ_RELEASE_NO}.*.${_archStr}.rpm'
 		-print -exec sudo rpm --upgrade --hash --verbose '{}' '\\;'
-		DEPENDS ${_prj_rpm_path}
 		COMMENT "Install all rpms except debuginfo"
 		)
+
+	    ADD_DEPENDENCIES(install_rpms rpm)
 
 	    ADD_CUSTOM_TARGET(rpmlint find .
 		-name '${PROJECT_NAME}*-${PRJ_VER}-${PRJ_RELEASE_NO}.*.rpm'
