@@ -92,9 +92,9 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		COMMENT "koji scratch build on ${_branch} with ${srpm}"
 		)
 
+	    ADD_DEPENDENCIES(koji_scratch_build_${_branch} rpmlint)
 	    ADD_DEPENDENCIES(koji_scratch_build koji_scratch_build_${_branch})
 	ENDFOREACH(_tag ${_tags})
-	ADD_DEPENDENCIES(koji_scratch_build rpm)
     ENDMACRO(_use_koji_make_targets srpm)
 
     MACRO(_use_fedpkg_make_targets srpm)
@@ -119,8 +119,6 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 	    COMMENT "fedpkg update"
 	    )
 
-	ADD_DEPENDENCIES(fedpkg_scratch_build rpm)
-
 	## Know the tag file path
 	LIST(GET _tags 0 _first_tag)
 	# bodhi tags is used as tag file name
@@ -144,7 +142,7 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		COMMENT "fedpkg scratch build on ${_branch} with ${srpm}"
 		)
 	    ADD_DEPENDENCIES(fedpkg_scratch_build fedpkg_scratch_build_${_branch})
-	    ADD_DEPENDENCIES(fedpkg_scratch_build_${_branch} rpm)
+	    ADD_DEPENDENCIES(fedpkg_scratch_build_${_branch} rpmlint)
 
 	    ADD_CUSTOM_TARGET(fedpkg_build_${_branch}
 		COMMAND ${FEDPKG} switch-branch ${_branch}
@@ -196,7 +194,6 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 		    COMMENT "fedpkg commit on ${_branch} with ${srpm}"
 		    )
 	    ENDIF(_first_branch STREQUAL "")
-	    ADD_DEPENDENCIES(fedpkg_commit_${_branch} rpm)
 	    ADD_DEPENDENCIES(fedpkg_commit fedpkg_commit_${_branch})
 	    ADD_DEPENDENCIES(fedpkg_build_${_branch} fedpkg_commit_${_branch})
 
@@ -369,7 +366,7 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
     ENDMACRO(USE_BODHI)
 
     MACRO(RELEASE_ON_FEDORA srpm)
-	USE_FEDPKG($srpm ${ARGN})
+	USE_FEDPKG(${srpm} ${ARGN})
 	USE_BODHI(${ARGN})
 	ADD_CUSTOM_TARGET(release_on_fedora)
 	ADD_DEPENDENCIES(release_on_fedora bodhi_new)

@@ -114,9 +114,6 @@ IF(EXISTS "${MAINTAINER_SETTING}")
 	${PROJECT_NAME}-${PRJ_VER}-modules-only.tar.gz
 	${PROJECT_NAME}-modules-only-latest.tar.gz
 	FILE_ALIAS module_only )
-    #    MANAGE_MAINTAINER_TARGETS_UPLOAD(FedoraHosted
-    #	${PROJECT_NAME}-modules-only-latest.tar.gz
-    #	FILE_ALIAS module_only_latest )
 ENDIF(EXISTS "${MAINTAINER_SETTING}")
 
 
