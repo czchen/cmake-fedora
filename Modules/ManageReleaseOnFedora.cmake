@@ -1,6 +1,7 @@
-# - koji, fedpkg and bodhi targets for Fedora and EPEL developers.
-# This module provides convenient targets for scratch build, submit,
-# and build on koji, using the GIT infrastructure,
+# - Fedora release tasks related to koji, fedpkg and bodhi
+#
+# This module provides convenient targets and macroes for scratch build,
+# submit, and build on koji, using the GIT infrastructure,
 # as well as bodhi update.
 # Since this module is mainly for Fedora developers/maintainers,
 # This module checks ~/.fedora-upload-ca.cert
@@ -57,8 +58,8 @@
 #     + bodhi_new: Send a new release to bodhi.
 #
 
-IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
-    SET(_USE_FEDPKG_CMAKE_ "DEFINED")
+IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
+    SET(_MANAGE_RELEASE_ON_FEDORA_ "DEFINED")
     SET(FEDORA_CURRENT_RELEASE_TAGS f15 f14 f13)
     SET(FEDORA_RAWHIDE_TAG f16)
     IF(NOT DEFINED FEDPKG_DIR)
@@ -373,5 +374,5 @@ IF(NOT DEFINED _USE_FEDPKG_CMAKE_)
 	ADD_DEPENDENCIES(bodhi_new fedpkg_build)
     ENDMACRO(RELEASE_ON_FEDORA srpm)
 
-ENDIF(NOT DEFINED _USE_FEDPKG_CMAKE_)
+ENDIF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 

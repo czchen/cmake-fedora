@@ -64,7 +64,7 @@ INSTALL(PROGRAMS scripts/cmake-fedora-newprj.sh
 SET(MAINTAINER_SETTING "MAINTAINER_SETTING_NO_PACK")
 INCLUDE(PackSource)
 INCLUDE(PackRPM)
-INCLUDE(UseFedpkg)
+INCLUDE(ManageReleaseOnFedora)
 
 SET(PRJ_IGNORE_FILES_COMMON
     "/doc/"  "\\\\.spec$" "messages.po$" "\\\\.orig$"

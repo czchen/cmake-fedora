@@ -61,7 +61,7 @@ INSTALL(FILES ${INSTALL_DOCS}
 SET(MAINTAINER_SETTING "MAINTAINER_SETTING_NO_PACK")
 INCLUDE(PackSource)
 INCLUDE(PackRPM)
-INCLUDE(UseFedpkg)
+INCLUDE(ManageReleaseOnFedora)
 
 SET(PRJ_IGNORE_FILES_COMMON
     "\\\\.spec$" "messages.po$" "\\\\.orig$"
