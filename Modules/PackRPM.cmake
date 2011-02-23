@@ -186,7 +186,7 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 
 	    # Don't worry about SRPMS, RPMS and BUILDROOT, it will be created by rpmbuild
 	    ADD_CUSTOM_COMMAND(OUTPUT ${_prj_srpm_path}
-		COMMAND ${RPMBUILD} -bs ${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec
+		COMMAND ${RPMBUILD}-md5 -bs ${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec
 		--define '_sourcedir ${RPM_BUILD_SOURCES}'
 		--define '_builddir ${RPM_BUILD_BUILD}'
 		--define '_srcrpmdir ${RPM_BUILD_SRPMS}'
