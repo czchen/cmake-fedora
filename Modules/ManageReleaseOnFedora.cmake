@@ -95,7 +95,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		COMMENT "koji scratch build on ${_tag} with ${srpm}"
 		)
 
-	    ADD_DEPENDENCIES(koji_scratch_build_${_tag} rpmlint)
+	    #	    ADD_DEPENDENCIES(koji_scratch_build_${_tag} rpmlint)
 	    ADD_DEPENDENCIES(koji_scratch_build koji_scratch_build_${_tag})
 	ENDFOREACH(_tag ${_tags})
     ENDMACRO(_use_koji_make_targets srpm)
@@ -126,7 +126,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	LIST(GET _tags 0 _first_tag)
 	# bodhi tags is used as tag file name
 	_use_bodhi_convert_tag(_first_bodhi_tag ${_first_tag})
-	SET(_first_tag_path  ${FEDPKG_DIR}/${PROJECT_NAME}/.git/ref/tag/${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE_NO}.${_first_bodhi_tag})
+	SET(_first_tag_path  ${CMAKE_BINARY_DIR}/${FEDPKG_DIR}/${PROJECT_NAME}/.git/refs/tags/${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE_NO}.${_first_bodhi_tag})
 	# MESSAGE("_first_tag_path=${_first_tag_path}")
 
 	FOREACH(_tag ${_tags})
@@ -152,7 +152,6 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		COMMAND git pull
 		COMMAND ${FEDPKG} build
 		WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
-		DEPENDS ${_first_tag_path}
 		COMMENT "fedpkg build on ${_branch} with ${srpm}"
 		)
 	    ADD_DEPENDENCIES(fedpkg_build fedpkg_build_${_branch})
@@ -199,8 +198,9 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		    )
 	    ENDIF(_first_branch STREQUAL "")
 	    IF(_no_koji_scratch_build EQUAL 0)
-		ADD_DEPENDENCIES(fedpkg_commit_${_tag} koji_scratch_build_${_tag})
+		#ADD_DEPENDENCIES(fedpkg_commit_${_tag} koji_scratch_build_${_tag})
 	    ENDIF(_no_koji_scratch_build EQUAL 0)
+	    ADD_DEPENDENCIES(fedpkg_commit_${_tag} rpmlint)
 	    ADD_DEPENDENCIES(fedpkg_commit fedpkg_commit_${_tag})
 	    ADD_DEPENDENCIES(fedpkg_build_${_tag} fedpkg_commit_${_tag})
 
