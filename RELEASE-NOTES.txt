@@ -1,6 +1,6 @@
-PRJ_VER=0.4.999
+PRJ_VER=0.4.9991
 SUMMARY=Fixed 670079,671063; Fixed UseUninstall;More informative error message
-BODHI_UPDATE_TYPE=bugfix
+BODHI_UPDATE_TYPE=enhancement
 REDHAT_BUGZILLA=670079,671063
 [Changes]
 - Macro: RELEASE_ON_FEDORA added.

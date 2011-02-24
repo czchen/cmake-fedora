@@ -368,7 +368,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		ENDIF(BODHI_USER)
 
 		ADD_CUSTOM_TARGET(bodhi_new
-		    COMMAND eval "bodhi --new ${_bodhi_login} --file ${_bodhi_template_file}"
+		    COMMAND bodhi --new ${_bodhi_login} --file ${_bodhi_template_file}
 		    COMMENT "Send new package to bodhi"
 		    VERBATIM
 		    )
