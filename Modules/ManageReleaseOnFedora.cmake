@@ -126,7 +126,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	LIST(GET _tags 0 _first_tag)
 	# bodhi tags is used as tag file name
 	_use_bodhi_convert_tag(_first_bodhi_tag ${_first_tag})
-	SET(_first_tag_path  ${FEDPKG_DIR}/${PROJECT_NAME}/.git/ref/tags/${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE_NO}.${_first_bodhi_tag})
+	SET(_first_tag_path  ${FEDPKG_DIR}/${PROJECT_NAME}/.git/ref/tag/${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE_NO}.${_first_bodhi_tag})
 	# MESSAGE("_first_tag_path=${_first_tag_path}")
 
 	FOREACH(_tag ${_tags})
@@ -248,7 +248,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		    )
 
 		ADD_CUSTOM_COMMAND(OUTPUT ${FEDPKG_DIR}/${PROJECT_NAME}
-		    COMMAND fedpkg clone ${PROJECT_NAME}
+		    COMMAND ${FEDPKG} clone ${PROJECT_NAME}
 		    DEPENDS ${FEDPKG_DIR}
 		    WORKING_DIRECTORY ${FEDPKG_DIR}
 		    )
@@ -256,8 +256,6 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 
 		## Make target commands for the released dist
 		_use_fedpkg_make_targets("${srpm}" ${_koji_dist_tags})
-
-		#ADD_DEPENDENCIES(fedpkg_build fedpkg_commit)
 
 	    ENDIF(FEDPKG STREQUAL "FEDPKG-NOTFOUND")
 	    FIND_PROGRAM(KOJI koji)
