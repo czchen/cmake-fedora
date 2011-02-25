@@ -261,21 +261,24 @@ IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
 
 	    ## Target: release
 	    IF(NOT DEFINED RELEASE_TARGETS)
-		SET(RELEASE_TARGETS release_on_fedora push_post_build)
+		SET(RELEASE_TARGETS release_on_fedora)
 	    ENDIF(NOT DEFINED RELEASE_TARGETS)
 
-	    LIST(FIND RELEASE_TARGETS koji_scratch_build
-		_koji_scratch_build_found)
+	    GET_TARGET_PROPERTY(_koji_scratch_build_target_location koji_scratch_build LOCATION)
 
-	    IF(_koji_scratch_build_found GREATER -1)
+	    IF(NOT "${_koji_scratch_build_target_location}" STREQUAL "NOTFOUND")
 		ADD_DEPENDENCIES(tag koji_scratch_build)
-	    ENDIF(_koji_scratch_build_found GREATER -1)
+	    ENDIF(NOT "${_koji_scratch_build_target_location}" STREQUAL "NOTFOUND")
 
 	    ADD_CUSTOM_TARGET(release
 		COMMENT "Sent release"
 		)
 
-	    ADD_DEPENDENCIES(release ${RELEASE_TARGETS})
+	    ADD_DEPENDENCIES(release push_post_release)
+	    ADD_DEPENDENCIES(push_post_release ${RELEASE_TARGETS})
+	    FOREACH(_release_target ${RELEASE_TARGETS})
+		ADD_DEPENDENCIES(${_release_target} upload)
+	    ENDFOREACH(_release_target ${RELEASE_TARGETS})
 
 	ENDIF(EXISTS "${filename}")
 

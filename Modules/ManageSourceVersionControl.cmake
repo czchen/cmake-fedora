@@ -36,7 +36,7 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	ADD_DEPENDENCIES(upload tag)
 	ADD_DEPENDENCIES(changelog_update tag)
 	ADD_DEPENDENCIES(commit_after_release changelog_update)
-	ADD_DEPENDENCIES(push_post_build commit_after_release)
+	ADD_DEPENDENCIES(push_post_release commit_after_release)
     ENDMACRO(MANAGE_SOURCE_VERSION_CONTROL_COMMON)
 
     MACRO(MANAGE_SOURCE_VERSION_CONTROL_GIT)
@@ -48,22 +48,35 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	    VERBATIM
 	    )
 
-	ADD_CUSTOM_TARGET(push_post_build
+	ADD_CUSTOM_TARGET(push_post_release
 	    COMMAND git push
 	    COMMAND git push --tags
 	    COMMENT "Git push tags"
 	    VERBATIM
 	    )
 
+	SET(_force_commit_cmd "if git commit -a -m 'On release ${PRJ_VER}'"
+	    "then echo 'Commit uncommitted changes.'"
+	    "else echo 'Nothing new to commit.'"
+	    "fi")
+
+	ADD_CUSTOM_TARGET(force_commit
+	    COMMAND ${_force_commit_cmd}
+	    COMMENT "Force commit uncommitted changes"
+	    )
+
 	ADD_CUSTOM_TARGET(tag
 	    DEPENDS ${_MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}
 	    )
+
+	ADD_DEPENDENCIES(tag force_commit)
 
 	ADD_CUSTOM_COMMAND(OUTPUT ${_MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}
 	    COMMAND git tag -a -m "${CHANGE_SUMMARY}" "${PRJ_VER}" HEAD
 	    COMMENT "Tagging the source as ver ${PRJ_VER}"
 	    VERBATIM
 	    )
+
 
 	MANAGE_SOURCE_VERSION_CONTROL_COMMON()
     ENDMACRO(MANAGE_SOURCE_VERSION_CONTROL_GIT)
@@ -75,7 +88,7 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	    VERBATIM
 	    )
 
-	ADD_CUSTOM_TARGET(push_post_build
+	ADD_CUSTOM_TARGET(push_post_release
 	    COMMAND hg push
 	    COMMENT "Mercurial push tags"
 	    VERBATIM
@@ -97,7 +110,7 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	    VERBATIM
 	    )
 
-	ADD_CUSTOM_TARGET(push_post_build
+	ADD_CUSTOM_TARGET(push_post_release
 	    COMMENT "SVN push is done at commit"
 	    VERBATIM
 	    )
@@ -118,7 +131,7 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	    VERBATIM
 	    )
 
-	ADD_CUSTOM_TARGET(push_post_build
+	ADD_CUSTOM_TARGET(push_post_release
 	    COMMENT "SVN push is done at commit"
 	    VERBATIM
 	    )
