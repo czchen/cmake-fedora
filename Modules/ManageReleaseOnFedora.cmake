@@ -186,8 +186,6 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		    "${FEDPKG} push"
 		    "fi")
 
-		MESSAGE("_fedpkg_import_cmd=${_fedpkg_import_cmd}")
-
 		# import primary branch
 		ADD_CUSTOM_COMMAND(OUTPUT ${_first_tag_path}
 		    COMMAND eval "${_fedpkg_import_cmd}"
