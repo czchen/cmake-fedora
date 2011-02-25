@@ -61,8 +61,9 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	    "fi")
 
 	ADD_CUSTOM_TARGET(force_commit
-	    COMMAND ${_force_commit_cmd}
+	    COMMAND eval "${_force_commit_cmd}"
 	    COMMENT "Force commit uncommitted changes"
+	    VERBATIM
 	    )
 
 	ADD_CUSTOM_TARGET(tag
