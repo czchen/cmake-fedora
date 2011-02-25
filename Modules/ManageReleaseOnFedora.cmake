@@ -126,7 +126,9 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	LIST(GET _tags 0 _first_tag)
 	# bodhi tags is used as tag file name
 	_use_bodhi_convert_tag(_first_bodhi_tag ${_first_tag})
-	SET(_first_tag_path  ${FEDPKG_DIR}/${PROJECT_NAME}/.git/refs/tags/${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE_NO}.${_first_bodhi_tag})
+	SET(_first_tag_name ${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE_NO}.${_first_bodhi_tag})
+	SET(_first_tag_relative_path  .git/refs/tags/${_first_tag_name})
+	SET(_first_tag_path  ${FEDPKG_DIR}/${PROJECT_NAME}/${_first_tag_relative_path})
 	# MESSAGE("_first_tag_path=${_first_tag_path}")
 
 	FOREACH(_tag ${_tags})
@@ -136,59 +138,80 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		SET(_branch "${_tag}")
 	    ENDIF(_tag STREQUAL "${FEDORA_RAWHIDE_TAG}")
 
-	    ADD_CUSTOM_TARGET(fedpkg_scratch_build_${_tag}
+	    ADD_CUSTOM_TARGET(fedpkg_git_pull_${_tag}
 		COMMAND ${FEDPKG} switch-branch ${_branch}
 		COMMAND git pull
+		DEPENDS ${FEDPKG_DIR}/${PROJECT_NAME}
+		WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
+		COMMENT "fedpkg: switching to ${_branch} and pulling changes"
+		)
+
+	    ADD_CUSTOM_TARGET(fedpkg_scratch_build_${_tag}
 		COMMAND ${FEDPKG} scratch-build --srpm ${srpm}
 		DEPENDS ${srpm}
 		WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
 		COMMENT "fedpkg scratch build on ${_branch} with ${srpm}"
 		)
+	    ADD_DEPENDENCIES(fedpkg_scratch_build_${_tag} fedpkg_git_pull_${_tag})
 	    ADD_DEPENDENCIES(fedpkg_scratch_build fedpkg_scratch_build_${_tag})
 	    ADD_DEPENDENCIES(fedpkg_scratch_build_${_tag} rpmlint)
 
 	    ADD_CUSTOM_TARGET(fedpkg_build_${_tag}
-		COMMAND ${FEDPKG} switch-branch ${_branch}
-		COMMAND git pull
 		COMMAND ${FEDPKG} build
+		DEPENDS ${_first_tag_path}
 		WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
 		COMMENT "fedpkg build on ${_branch} with ${srpm}"
 		)
+	    ADD_DEPENDENCIES(fedpkg_build_${_tag} fedpkg_git_pull_${_tag})
 	    ADD_DEPENDENCIES(fedpkg_build fedpkg_build_${_branch})
 
 	    ADD_CUSTOM_TARGET(fedpkg_update_${_tag}
-		COMMAND ${FEDPKG} switch-branch ${_branch}
-		COMMAND git pull
 		COMMAND ${FEDPKG} update
 		WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
 		DEPENDS ${_first_tag_path}
 		COMMENT "fedpkg update on ${_branch} with ${srpm}"
 		)
+	    ADD_DEPENDENCIES(fedpkg_update_${_tag} fedpkg_git_pull_${_tag})
 	    ADD_DEPENDENCIES(fedpkg_update fedpkg_update_${_tag})
 
 	    IF(_first_branch STREQUAL "")
 		SET(_first_branch ${_branch})
 
-		# import first
+		SET(_fedpkg_import_cmd "${FEDPKG} switch-branch ${_branch}"
+		    "git-pull"
+		    "if [ ! -e ${_first_tag_relative_path} ]"
+		    "then ${FEDPKG} import  ${srpm}"
+		    "${FEDPKG} commit -m 'Release version ${PRJ_VER}'"
+		    "git tag -a -m 'Release version ${PRJ_VER}' ${_first_tag_name}"
+		    "${FEDPKG} push"
+		    "fi")
+
+		MESSAGE("_fedpkg_import_cmd=${_fedpkg_import_cmd}")
+
+		# import primary branch
 		ADD_CUSTOM_COMMAND(OUTPUT ${_first_tag_path}
-		    COMMAND COMMAND ${FEDPKG} switch-branch ${_branch}
-		    COMMAND git pull
-		    COMMAND ${FEDPKG} import  ${srpm}
-		    COMMAND ${FEDPKG} commit -t -m "Release version ${PRJ_VER}" -p
+		    COMMAND eval "${_fedpkg_import_cmd}"
 		    WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
 		    COMMENT "fedpkg import on ${_branch} with ${srpm}"
 		    VERBATIM
 		    )
 
+		#		ADD_CUSTOM_COMMAND(OUTPUT ${_first_tag_path}
+		#    COMMAND ${FEDPKG} import  ${srpm}
+		#    COMMAND ${FEDPKG} commit -t -m "Release version ${PRJ_VER}" -p
+		#    DEPENDS fedpkg_git_pull_${_tag}
+		#    WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
+		#    COMMENT "fedpkg import on ${_branch} with ${srpm}"
+		#    VERBATIM
+		#    )
+
 		ADD_CUSTOM_TARGET(fedpkg_commit_${_tag}
-		    DEPENDS fedpkg_clone ${_first_tag_path}
+		    DEPENDS ${_first_tag_path}
 		    COMMENT "fedpkg commit on ${_branch} with ${srpm}"
 		    )
 
 	    ELSE(_first_branch STREQUAL "")
 		ADD_CUSTOM_TARGET(fedpkg_commit_${_tag}
-		    COMMAND ${FEDPKG} switch-branch ${_branch}
-		    COMMAND git pull
 		    COMMAND git merge ${_first_branch}
 		    COMMAND ${FEDPKG} push
 		    DEPENDS ${_first_tag_path}
@@ -196,6 +219,8 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		    COMMENT "fedpkg commit on ${_branch} with ${srpm}"
 		    )
 	    ENDIF(_first_branch STREQUAL "")
+	    ADD_DEPENDENCIES(fedpkg_commit_${_tag} fedpkg_git_pull_${_tag})
+
 	    IF(_no_koji_scratch_build EQUAL 0)
 		ADD_DEPENDENCIES(fedpkg_commit_${_tag} koji_scratch_build_${_tag})
 	    ENDIF(_no_koji_scratch_build EQUAL 0)

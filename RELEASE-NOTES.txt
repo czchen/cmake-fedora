@@ -1,4 +1,4 @@
-PRJ_VER=0.4.9991
+PRJ_VER=0.4.9992
 SUMMARY=Fixed 670079,671063; Fixed UseUninstall;More informative error message
 BODHI_UPDATE_TYPE=enhancement
 REDHAT_BUGZILLA=670079,671063
