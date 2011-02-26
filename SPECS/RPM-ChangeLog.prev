@@ -1,3 +1,20 @@
+* Sun Feb 27 2011 Ding-Yi Chen <dchen at redhat.com> - 0.4.9996-1
+- Macro: RELEASE_ON_FEDORA added.
+- Target: release_on_fedora added.
+- Now has more informative error message, when cmake-fedora is not installed.
+- Fixed UseUninstall
+- Fixed Bug 670079 - [cmake-fedora] target "release"
+  will not stop when koji build failed
+- Fixed Bug 671063 - [cmake-fedora] target "rpmlint"
+  should not depend on "koji_scratch_build"
+- Protocol for hosting server should now be specified as "[Hosting]_PROTOCOL".
+- Refactoring ManageMaintainerTargets.
+- fedpkg and koji build for every tags are revealed.
+- Now set rawhide as f16, release dists are f15,f14,f13.
+- rpm build process is now refined, no unnecessary build.
+- Renamed target push_svc_tag to push_post_release.
+- Renamed module UseFedpkg to ManageReleaseOnFedora
+
 * Fri Feb 25 2011 Ding-Yi Chen <dchen at redhat.com> - 0.4.9994-1
 - Macro: RELEASE_ON_FEDORA added.
 - Target: release_on_fedora added.
