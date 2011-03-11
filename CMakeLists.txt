@@ -84,7 +84,7 @@ ENDIF(NOT MOCK_CMD STREQUAL "MOCK_CMD-NOTFOUND")
 
 IF(EXISTS ${MAINTAINER_SETTING})
     RELEASE_ON_FEDORA("${RPM_BUILD_SRPMS}/${PRJ_SRPM_FILE_NAME}"
-	${FEDORA_CURRENT_RELEASE_TAGS} el6 el5)
+	TAGS ${FEDORA_CURRENT_RELEASE_TAGS} el6 el5)
 ENDIF(EXISTS ${MAINTAINER_SETTING})
 
 ####################################################################
@@ -101,7 +101,7 @@ MAINTAINER_SETTING_READ_FILE("${MAINTAINER_SETTING}"
 # Module-only tarballs
 ADD_CUSTOM_COMMAND(OUTPUT ${PROJECT_NAME}-${PRJ_VER}-modules-only.tar.gz
     ${PROJECT_NAME}-modules-only-latest.tar.gz
-    COMMAND tar --exclude=.* -czvf  ${PROJECT_NAME}-${PRJ_VER}-modules-only.tar.gz Modules
+    COMMAND tar --exclude=.* -czvf  ${PROJECT_NAME}-${PRJ_VER}-modules-only.tar.gz Modules/*.cmake Modules/*.cmake.in
     COMMAND ln -sf ${PROJECT_NAME}-${PRJ_VER}-modules-only.tar.gz ${PROJECT_NAME}-modules-only-latest.tar.gz
     )
 

@@ -1,8 +1,10 @@
-PRJ_VER=0.5.1
+PRJ_VER=0.5.0.99
 SUMMARY=
-BODHI_UPDATE_TYPE=enhancement
-REDHAT_BUGZILLA=
+BODHI_UPDATE_TYPE=bugfix
+REDHAT_BUGZILLA=684107
 [Changes]
-- TODO: Clean up Modules.
-- TODO: Check why f13, el6, el5 are not showing up in bodhi.
+- Clean up Modules: No unrelated files under Modules/
+- Removed debug message of _cmake_uninstall_in, CMAKE_MAJOR_VERSION,
+  CMAKE_MINOR_VERSION. CMAKE_PATCH_VERSION
+- Fixed Bug 684107 - [cmake-fedora] TAGS in USE_FEDPKG is ineffective.
 
