@@ -3,6 +3,7 @@ SUMMARY=
 BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=684107
 [Changes]
+- New: Zanata support
 - Clean up Modules: No unrelated files under Modules/
 - Removed debug message of _cmake_uninstall_in, CMAKE_MAJOR_VERSION,
   CMAKE_MINOR_VERSION. CMAKE_PATCH_VERSION

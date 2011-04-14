@@ -1,10 +1,12 @@
-# - Gettext support: Create/Update pot file and translation files.
-# This module creates gettext related targets.
-# Most part of this module is from FindGettext.cmake of cmake,
+# - Software Translation support
+# This module supports software translation by:
+#   1) Creates gettext related targets.
+#   2) Communicate to Zanata servers.
+#
+# The Gettext part of this module is from FindGettext.cmake of cmake,
 # but it is included here because:
-#  1. Some system like RHEL5 does not have FindGettext.cmake
-#  2. Bug of GETTEXT_CREATE_TRANSLATIONS make it unable to be include in 'All'
-#  3. It does not support xgettext
+#  1. Bug of GETTEXT_CREATE_TRANSLATIONS make it unable to be include in 'All'
+#  2. It does not support xgettext
 #
 # Defines following variables:
 #   GETTEXT_MSGMERGE_EXECUTABLE: the full path to the msgmerge tool.
@@ -41,8 +43,8 @@
 #     + translations: Converts input po files into the binary output mo files.
 #
 
-IF(NOT DEFINED _USE_GETTEXT_CMAKE_)
-    SET(_USE_GETTEXT_CMAKE_ "DEFINED")
+IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
+    SET(_MANAGE_TRANSLATION_CMAKE_ "DEFINED")
     FIND_PROGRAM(XGETTEXT_EXECUTABLE xgettext)
     IF(XGETTEXT_EXECUTABLE STREQUAL "XGETTEXT_EXECUTABLE-NOTFOUND")
 	MESSAGE(FATAL_ERROR "xgettext not found!")
@@ -150,5 +152,54 @@ IF(NOT DEFINED _USE_GETTEXT_CMAKE_)
 	ADD_CUSTOM_TARGET(translations ${_addToAll} DEPENDS ${_gmoFiles} COMMENT "${_comment}")
     ENDMACRO(GETTEXT_CREATE_TRANSLATIONS potFile _firstLang)
 
-ENDIF(NOT DEFINED _USE_GETTEXT_CMAKE_)
+    #========================================
+    # ZANATA support
+    MACRO(MANAGE_ZANATA serverUrl)
+	FIND_PROGRAM(ZANATA_CMD zanata)
+	SET(_failed 0)
+	IF(ZANATA_CMD STREQUAL "ZANATA_CMD-NOTFOUND)
+	    SET(_failed 1)
+	    MESSAGE("Program zanata is not found! Disable Zanata support.")
+	    MESSAGE("  Install zanata-python-client to enable.")
+	ENDIF(ZANATA_CMD STREQUAL "ZANATA_CMD-NOTFOUND)
+
+	IF(EXISTS ${CMAKE_SOURCE_DIR}/zanata.xml.in)
+	    SET(ZANATA_SERVER ${serverUrl})
+	    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/zanata.xml.in
+		${CMAKE_BINARY_DIR}/zanata.xml @ONLY)
+	ENDIF(EXISTS ${CMAKE_SOURCE_DIR}/zanata.xml.in)
+
+	IF(EXISTS ${CMAKE_BINARY_DIR}/zanata.xml)
+	    SET(_zanata_xml ${CMAKE_BINARY_DIR}/zanata.xml)
+	ELSEIF(EXISTS ${CMAKE_SOURCE_DIR}/zanata.xml)
+	    SET(_zanata_xml ${CMAKE_SOURCE_DIR}/zanata.xml)
+	ELSE(EXISTS ${CMAKE_BINARY_DIR}/zanata.xml)
+	    SET(_failed 1)
+	    SET(_zanata_xml "")
+	    MESSAGE("zanata.xml is not found! Disable Zanata support")
+	ENDIF(EXISTS ${CMAKE_SOURCE_DIR}/zanata.xml)
+
+	IF(NOT EXISTS $ENV{HOME}/.config/zanata.ini)
+	    SET(_failed 1)
+	    MESSAGE("~/.config/zanata.in  is not found! Disable Zanata support")
+	ENDIF(NOT EXISTS $ENV{HOME}/.zanata.ini)
+
+	IF(_failed EQUAL 0)
+	    ADD_CUSTOM_TARGET(zanata_project_create
+		COMMAND ${ZANATA_CMD} project create ${PROJECT_NAME} --url ${serverURL}
+		--project-name "${PROJECT_NAME}" --project-desc	"${PRJ_SUMMARY}"
+		COMMENT "Create project translation on Zanata server ${serverUrl}"
+		VERBATIM
+		)
+	    ADD_CUSTOM_TARGET(zanata_version_create
+		COMMAND ${ZANATA_CMD} project create ${PRJ_VER} --url ${serverURL}
+		--project-id ${PROJECT_NAME}"
+		COMMENT "Create project translation on Zanata server ${serverUrl}"
+		VERBATIM
+		)
+
+	ENDIF(_failed EQUAL 0)
+    ENDMACRO(MANAGE_ZANATA serverUrl)
+
+ENDIF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 
