@@ -9,9 +9,6 @@
 #  2. It does not support xgettext
 #
 # Defines following variables:
-#   + GETTEXT_MSGMERGE_EXECUTABLE: the full path to the msgmerge tool.
-#   + GETTEXT_MSGFMT_EXECUTABLE: the full path to the msgfmt tool.
-#   + XGETTEXT_EXECUTABLE: the full path to the xgettext.
 #   + XGETTEXT_OPTIONS_C: Usual xgettext options for C programs.
 #
 # Defines following macros:
@@ -46,10 +43,10 @@
 #     + translations: Converts input po files into the binary output mo files.
 #
 #   USE_GETTEXT [ALL] SRC src1 [src2 [...]]
-#	LOCALE locale1 [locale2 [locale3 [...]]]
+#	LOCALE locale1 [locale2 [...]]
 #	[POTFILE potfile]
 #	[XGETTEXTOPT xgettextOpt]]
-#	[COMMENT comment])
+#	)
 #   - Provide Gettext support like generate .pot file and
 #     a target "translations" which converts given input po
 #     files into the binary output mo files. If the "ALL" option is used, the
@@ -57,9 +54,20 @@
 #     Arguments:
 #     + ALL: (Optional) target "translations" is included when building with
 #       "make all"
-#     + potFile: pot file to be referred.
+#     + SRC src1 [src2 [...]]: File list of source code that contains msgid.
+#     + LOCALE locale1 [local2 [...]]: Locale list to be generated.
+#       Currently, only the format: lang_Region (such as fr_FR) is supported.
+#     + POTFILE potFile: (optional) pot file to be referred.
 #       Default: ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pot
-#
+#     + XGETTEXTOPT xgettextOpt: (optional) xgettext_options.
+#       Default: ${XGETTEXT_OPTIONS_C}
+#     Defines following variables:
+#     + GETTEXT_MSGMERGE_EXECUTABLE: the full path to the msgmerge tool.
+#     + GETTEXT_MSGFMT_EXECUTABLE: the full path to the msgfmt tool.
+#     + XGETTEXT_EXECUTABLE: the full path to the xgettext.
+#     Targets:
+#     + pot_file: Generate the pot_file.
+#     + translations: Converts input po files into the binary output mo files.
 #
 
 
@@ -155,6 +163,10 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 	    COMMENT "Extract translatable messages to ${_potFile}"
 	    )
 
+	ADD_CUSTOM_TARGET(pot_file ${_all}
+	    DEPENDS ${_potFile}
+	    )
+
 	### Generating translation
 	SET(_gmoFile_list)
 	GET_FILENAME_COMPONENT(_potBasename ${_potFile} NAME_WE)
@@ -164,11 +176,10 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 	FOREACH (_locale ${locale_list})
 	    SET(_gmoFile ${_absPotDir}/${_locale}.gmo)
 	    SET(_absFile ${_absPotDir}/${_locale}.po)
-	    ADD_CUSTOM_COMMAND(
-		OUTPUT ${_gmoFile}
-		COMMAND ${GETTEXT_MSGMERGE_EXECUTABLE} --quiet --update --backup=none -s ${_absFile} ${_absPotFile}
+	    ADD_CUSTOM_COMMAND(	OUTPUT ${_gmoFile}
+		COMMAND ${GETTEXT_MSGMERGE_EXECUTABLE} --quiet --update --backup=none -s ${_absFile} ${_potFile}
 		COMMAND ${GETTEXT_MSGFMT_EXECUTABLE} -o ${_gmoFile} ${_absFile}
-		DEPENDS ${_absPotFile} ${_absFile}
+		DEPENDS ${_potFile} ${_absFile}
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		COMMENT "Generating ${_locale} translation"
 		)
