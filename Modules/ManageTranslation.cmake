@@ -69,6 +69,24 @@
 #     + pot_file: Generate the pot_file.
 #     + translations: Converts input po files into the binary output mo files.
 #
+#   USE_ZANATA(serverUrl [ALL] [SRCDIR srcdir] [TRANSDIR transdir] [DSTDIR dstdir])
+#   - Use Zanata (was flies) as translation service.
+#     Arguments:
+#     + serverUrl: The URL of Zanata server
+#     + ALL: (Optional) Do "zanata po pull" for "make all
+#     + SRCDIR srcdir: (Optional) Directory that contain the source text file
+#       to be translated. Usually the directory that contains
+#       <ProjectName>.pot, message.pot or message.po
+#       Passed as --srcDir of zanata command line option.
+#     + TRANSDIR transdir: (Optional) Directory that contain the translated
+#       text. Usually the directory that contains *.po,
+#       message.pot or message.po
+#       Passed as --transDir of zanata command line option.
+#     + DSTDIR dstdir: (Optional) Directory that contain the translated
+#       text. Usually the directory that contains *.po,
+#       message.pot or message.po
+#       Passed as --dstDir of zanata command line option.
+#
 
 
 IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
@@ -148,7 +166,7 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 
 	# Default values
 	IF(_xgettext_option_list STREQUAL "")
-	    SET(_xgettext_option_list XGETTEXT_OPTIONS_C
+	    SET(_xgettext_option_list ${XGETTEXT_OPTIONS_C})
 	ENDIF(_xgettext_option_list STREQUAL "")
 
 	IF("${_potFile}" STREQUAL "")
@@ -177,17 +195,17 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 	    SET(_gmoFile ${_absPotDir}/${_locale}.gmo)
 	    SET(_absFile ${_absPotDir}/${_locale}.po)
 	    ADD_CUSTOM_COMMAND(	OUTPUT ${_gmoFile}
-		COMMAND ${GETTEXT_MSGMERGE_EXECUTABLE} --quiet --update --backup=none -s ${_absFile} ${_potFile}
+		COMMAND ${GETTEXT_MSGMERGE_EXECUTABLE} --quiet --update --backup=none
+	       	  -s ${_absFile} ${_potFile}
 		COMMAND ${GETTEXT_MSGFMT_EXECUTABLE} -o ${_gmoFile} ${_absFile}
 		DEPENDS ${_potFile} ${_absFile}
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		COMMENT "Generating ${_locale} translation"
 		)
 
-		#MESSAGE("_absFile=${_absFile} _absPotDir=${_absPotDir} _lang=${_lang} curr_bin=${CMAKE_CURRENT_BINARY_DIR}")
-		INSTALL(FILES ${_gmoFile} DESTINATION share/locale/${_locale}/LC_MESSAGES RENAME ${_potBasename}.mo)
-		LIST(APPEND _gmoFile_list ${_gmoFile})
-	    ENDIF(_currentLang STREQUAL "ALL")
+	    #MESSAGE("_absFile=${_absFile} _absPotDir=${_absPotDir} _lang=${_lang} curr_bin=${CMAKE_CURRENT_BINARY_DIR}")
+	    INSTALL(FILES ${_gmoFile} DESTINATION share/locale/${_locale}/LC_MESSAGES RENAME ${_potBasename}.mo)
+	    LIST(APPEND _gmoFile_list ${_gmoFile})
 	ENDFOREACH (_locale)
 
 	ADD_CUSTOM_TARGET(translations ${_all}
@@ -199,16 +217,14 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 
     #========================================
     # ZANATA support
-    MACRO(USE_ZANATA serverUrl [ALL]
-	    [SRCDIR srcdir] [TRANSDIR transdir] [DSTDIR
-	    dstdir])
+    MACRO(USE_ZANATA serverUrl)
 	FIND_PROGRAM(ZANATA_CMD zanata)
 	SET(_failed 0)
-	IF(ZANATA_CMD STREQUAL "ZANATA_CMD-NOTFOUND)
+	IF(ZANATA_CMD STREQUAL "ZANATA_CMD-NOTFOUND")
 	    SET(_failed 1)
 	    MESSAGE("Program zanata is not found! Disable Zanata support.")
 	    MESSAGE("  Install zanata-python-client to enable.")
-	ENDIF(ZANATA_CMD STREQUAL "ZANATA_CMD-NOTFOUND)
+	ENDIF(ZANATA_CMD STREQUAL "ZANATA_CMD-NOTFOUND")
 
 	IF(EXISTS ${CMAKE_SOURCE_DIR}/zanata.xml.in)
 	    SET(ZANATA_SERVER ${serverUrl})
@@ -228,8 +244,8 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 
 	IF(NOT EXISTS $ENV{HOME}/.config/zanata.ini)
 	    SET(_failed 1)
-	    MESSAGE("~/.config/zanata.in  is not found! Disable Zanata support")
-	ENDIF(NOT EXISTS $ENV{HOME}/.zanata.ini)
+	    MESSAGE("~/.config/zanata.ini is not found! Disable Zanata support")
+	ENDIF(NOT EXISTS $ENV{HOME}/.config/zanata.ini)
 
 	IF(_failed EQUAL 0)
 	    # Parsing arguments
@@ -267,7 +283,6 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 		)
 	    ADD_CUSTOM_TARGET(zanata_version_create ${_all}
 		COMMAND ${ZANATA_CMD} project create ${PRJ_VER} ${_zanata_args}
-		"
 		COMMENT "Create version ${PRJ_VER} on Zanata server ${serverUrl}"
 		VERBATIM
 		)
@@ -294,8 +309,6 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 		)
 	ENDIF(_failed EQUAL 0)
     ENDMACRO(USE_ZANATA serverUrl)
-
-    MACRO(MANAGE_TRANSLATION LANG
 
 ENDIF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 
