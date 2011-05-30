@@ -42,10 +42,10 @@
 #     Targets:
 #     + translations: Converts input po files into the binary output mo files.
 #
-#   USE_GETTEXT [ALL] SRC src1 [src2 [...]]
-#	LOCALE locale1 [locale2 [...]]
+#   USE_GETTEXT [ALL] SRCS src1 [src2 [...]]
+#	LOCALES locale1 [locale2 [...]]
 #	[POTFILE potfile]
-#	[XGETTEXTOPT xgettextOpt]]
+#	[XGETTEXT_OPTIONS xgettextOpt]]
 #	)
 #   - Provide Gettext support like generate .pot file and
 #     a target "translations" which converts given input po
@@ -54,12 +54,12 @@
 #     Arguments:
 #     + ALL: (Optional) target "translations" is included when building with
 #       "make all"
-#     + SRC src1 [src2 [...]]: File list of source code that contains msgid.
+#     + SRCS src1 [src2 [...]]: File list of source code that contains msgid.
 #     + LOCALE locale1 [local2 [...]]: Locale list to be generated.
 #       Currently, only the format: lang_Region (such as fr_FR) is supported.
 #     + POTFILE potFile: (optional) pot file to be referred.
 #       Default: ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pot
-#     + XGETTEXTOPT xgettextOpt: (optional) xgettext_options.
+#     + XGETTEXT_OPTIONS xgettextOpt: (optional) xgettext_options.
 #       Default: ${XGETTEXT_OPTIONS_C}
 #     Defines following variables:
 #     + GETTEXT_MSGMERGE_EXECUTABLE: the full path to the msgmerge tool.
@@ -127,42 +127,36 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 	SET(_locale_list)
 	SET(_potFile)
 	SET(_xgettext_option_list)
-	#   USE_GETTEXT [ALL] SRC src1 [src2 [...]]
-	#	LOCALE locale1 [locale2 [locale3 [...]]]
-	#	[XGETTEXTOPT xgettextOpt [opt1 [opt2 [...]]]]
-	#	[POTFILE potfile]
 	FOREACH(_arg ${ARGN})
 	    IF(_arg STREQUAL "ALL")
 		SET(_all "ALL")
-	    ELSEIF(_arg STREQUAL "SRC")
-		SET(_stage "SRC")
-	    ELSEIF(_arg STREQUAL "LOCALE")
-		SET(_stage "LOCALE")
-	    ELSEIF(_arg STREQUAL "XGETTEXTOPT")
-		SET(_stage "XGETTEXTOPT")
+	    ELSEIF(_arg STREQUAL "SRCS")
+		SET(_stage "SRCS")
+	    ELSEIF(_arg STREQUAL "LOCALES")
+		SET(_stage "LOCALES")
+	    ELSEIF(_arg STREQUAL "XGETTEXT_OPTIONS")
+		SET(_stage "XGETTEXT_OPTIONS")
 	    ELSEIF(_arg STREQUAL "POTFILE")
 		SET(_stage "POTFILE")
 	    ELSE(_arg STREQUAL "ALL")
 		IF(_stage STREQUAL "SRCS")
 		    FILE(RELATIVE_PATH _relFile ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/${_arg})
 		    LIST(APPEND _src_list ${_relFile})
-
 		    GET_FILENAME_COMPONENT(_absFile ${_arg} ABSOLUTE)
 		    LIST(APPEND _src_list_abs ${_absFile})
-		ELSEIF(_stage STREQUAL "LOCALE")
+		ELSEIF(_stage STREQUAL "LOCALES")
 		    LIST(APPEND _locale_list ${_arg})
-		ELSEIF(_stage STREQUAL "LOCALE")
-		    LIST(APPEND _locale_list ${_arg})
-		ELSEIF(_stage STREQUAL "XGETEXTOPT")
-		    LIST(APPEND _xgetttext_option_list ${_arg})
+		ELSEIF(_stage STREQUAL "XGETTEXT_OPTIONS")
+		    LIST(APPEND _xgettext_option_list ${_arg})
 		ELSEIF(_stage STREQUAL "POTFILE")
 		    SET(_potFile "${_arg}")
 		ELSE(_stage STREQUAL "SRCS")
 		    MESSAGE("[Warning] USE_GETTEXT: not recognizing arg	${_arg}")
 		    SET(_potFile ${_arg})
-		ENDIF(_stage STREQUAL "OPTIONS")
-	    ENDIF(_arg STREQUAL "OPTIONS")
+		ENDIF(_stage STREQUAL "SRCS")
+	    ENDIF(_arg STREQUAL "ALL")
 	ENDFOREACH(_arg ${_args} ${ARGN})
+
 
 	# Default values
 	IF(_xgettext_option_list STREQUAL "")
@@ -173,7 +167,7 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 	    SET(_potFile "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pot")
 	ENDIF("${_potFile}" STREQUAL "")
 
-	#MESSAGE("${XGETTEXT_EXECUTABLE} ${_xgettext_option_list} -o ${_potFile} ${_src_list}")
+	#MESSAGE("XGETTEXT=${XGETTEXT_EXECUTABLE} ${_xgettext_option_list} -o ${_potFile} ${_src_list}")
 	ADD_CUSTOM_COMMAND(OUTPUT ${_potFile}
 	    COMMAND ${XGETTEXT_EXECUTABLE} ${_xgettext_option_list} -o ${_potFile} ${_src_list}
 	    DEPENDS ${_src_list_abs}
@@ -191,7 +185,7 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 	GET_FILENAME_COMPONENT(_potDir ${_potFile} PATH)
 	GET_FILENAME_COMPONENT(_absPotFile ${_potFile} ABSOLUTE)
 	GET_FILENAME_COMPONENT(_absPotDir ${_absPotFile} PATH)
-	FOREACH (_locale ${locale_list})
+	FOREACH (_locale ${_locale_list})
 	    SET(_gmoFile ${_absPotDir}/${_locale}.gmo)
 	    SET(_absFile ${_absPotDir}/${_locale}.po)
 	    ADD_CUSTOM_COMMAND(	OUTPUT ${_gmoFile}
@@ -207,9 +201,10 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 	    INSTALL(FILES ${_gmoFile} DESTINATION share/locale/${_locale}/LC_MESSAGES RENAME ${_potBasename}.mo)
 	    LIST(APPEND _gmoFile_list ${_gmoFile})
 	ENDFOREACH (_locale)
+	MESSAGE("_gmoFile_list=${_gmoFile_list}")
 
 	ADD_CUSTOM_TARGET(translations ${_all}
-	    DEPENDS ${_gmoFiles}
+	    DEPENDS ${_gmoFile_list}
 	    COMMENT "Generate translation"
 	    )
     ENDMACRO(USE_GETTEXT)

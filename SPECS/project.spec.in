@@ -47,13 +47,13 @@ Requires:   cmake >= 2.4
 %{_datadir}/cmake/Modules/ManageReleaseOnFedora.cmake
 %{_datadir}/cmake/Modules/ManageSourceVersionControl.cmake
 %{_datadir}/cmake/Modules/ManageString.cmake
+%{_datadir}/cmake/Modules/ManageTranslation.cmake
 %{_datadir}/cmake/Modules/ManageVariable.cmake
 %{_datadir}/cmake/Modules/ManageVersion.cmake
 %{_datadir}/cmake/Modules/PackRPM.cmake
 %{_datadir}/cmake/Modules/PackSource.cmake
 %{_datadir}/cmake/Modules/UseDoxygen.cmake
 %{_datadir}/cmake/Modules/UseGConf.cmake
-%{_datadir}/cmake/Modules/UseGettext.cmake
 %{_datadir}/cmake/Modules/UseUninstall.cmake
 %{_datadir}/cmake/Modules/cmake_uninstall.cmake.in
 %{_datadir}/cmake/Templates/fedora

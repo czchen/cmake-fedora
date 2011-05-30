@@ -64,8 +64,7 @@ INCLUDE(PackRPM)
 INCLUDE(ManageReleaseOnFedora)
 
 SET(PRJ_IGNORE_FILES_COMMON
-    "\\\\.spec$" "messages.po$" "\\\\.orig$"
-)
+    "\\\\.spec$" "messages.po$" "\\\\.orig$")
 
 SET(PACK_SOURCE_IGNORE_FILES ${PACK_SOURCE_IGNORE_FILES}
     ${PRJ_IGNORE_FILES_COMMON} "/bin/")
@@ -75,14 +74,15 @@ PACK_RPM(PRJ_SRPM_FILE_NAME "${RPM_BUILD_SPECS}/project.spec.in" "${PACK_SOURCE_
 
 # If mock exists, then add mock related targets.
 FIND_PROGRAM(MOCK_CMD mock)
-IF(NOT MOCK_CMD STREQUAL "MOCK_CMD-NOTFOUND")
+    IF(NOT MOCK_CMD STREQUAL "MOCK_CMD-NOTFOUND")
     USE_MOCK("${RPM_BUILD_SPECS}/project.spec.in")
-ENDIF(NOT MOCK_CMD STREQUAL "MOCK_CMD-NOTFOUND")
+    ENDIF(NOT MOCK_CMD STREQUAL "MOCK_CMD-NOTFOUND")
 
 IF(EXISTS ${MAINTAINER_SETTING})
     RELEASE_ON_FEDORA("${RPM_BUILD_SRPMS}/${PRJ_SRPM_FILE_NAME}"
-	    TAGS ${FEDORA_CURRENT_RELEASE_TAGS})
+	    TAGS ${FEDORA_CURRENT_RELEASE_TAGS} el6 el5)
 ENDIF(EXISTS ${MAINTAINER_SETTING})
+
 
 ####################################################################
 # Hosting
