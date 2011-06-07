@@ -102,7 +102,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 
     MACRO(_use_fedpkg_make_targets srpm)
 	SET(_tags ${ARGN})
-	MESSAGE("_tags=${_tags}")
+	#MESSAGE("_tags=${_tags}")
 	#commit
 	IF (DEFINED CHANGE_SUMMARY)
 	    SET (COMMIT_MSG  "-m \"${CHANGE_SUMMARY}\"")
@@ -251,7 +251,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		ENDIF("${_arg}" STREQUAL "NORAWHIDE")
 	    ENDFOREACH(_arg)
 
-	    MESSAGE("_koji_dist_tags=${_koji_dist_tags}")
+	    #MESSAGE("_koji_dist_tags=${_koji_dist_tags}")
 	    IF("${_koji_dist_tags}" STREQUAL "")
 		SET(_koji_dist_tags ${FEDORA_CURRENT_RELEASE_TAGS})
 	    ENDIF("${_koji_dist_tags}" STREQUAL "")
