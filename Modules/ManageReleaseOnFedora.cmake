@@ -19,7 +19,7 @@
 #       such as making source file tarballs, source rpms, build with fedpkg
 #       and upload to bodhi.
 #
-#   USE_FEDPKG(srpm [NORAWHIDE] [tag1 [tag2 ...])
+#   USE_FEDPKG(srpm [NORAWHIDE] [NOKOJI_SCRATCH_BUILD] [tag1 [tag2 ...])
 #   - Use fedpkg targets if ~/.fedora-upload-ca.cert exists.
 #     If ~/.fedora-upload-ca.cert does not exists, this marcos run as an empty
 #     macro.
@@ -42,7 +42,7 @@
 #     + fedpkg_submit: Submit build with fedpkg.
 #     + fedpkg_build: Perform build with fedpkg.
 #     + fedpkg_update: Update with fedpkg.
-#     + koji_scratch_build: Sent srpm for scratch build
+#     + koji_scratch_build: Sent srpm to Koji for scratch build
 #   USE_BODHI([TAGS [tag1 [tag2 ...]] [KARMA karmaValue] )
 #   - Use bodhi targets with bodhi command line client.
 #     Argument:
@@ -63,6 +63,7 @@
 IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
     SET(_MANAGE_RELEASE_ON_FEDORA_ "DEFINED")
     SET(FEDORA_CURRENT_RELEASE_TAGS f15 f14 f13)
+    SET(FEDORA_EPEL_RELEASE_TAGS el6 el5)
     SET(FEDORA_RAWHIDE_TAG f16)
     IF(NOT DEFINED FEDPKG_DIR)
 	SET(FEDPKG_DIR "FedPkg")
@@ -95,6 +96,8 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		COMMENT "koji scratch build on ${_tag} with ${srpm}"
 		)
 
+	    SET_TARGET_PROPERTIES(koji_scratch_build_${_tag}
+		PROPERTIES EXISTS "true")
 	    ADD_DEPENDENCIES(koji_scratch_build_${_tag} rpmlint)
 	    ADD_DEPENDENCIES(koji_scratch_build koji_scratch_build_${_tag})
 	ENDFOREACH(_tag ${_tags})
@@ -119,6 +122,8 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	ADD_CUSTOM_TARGET(fedpkg_build
 	    COMMENT "fedpkg build"
 	    )
+	SET_TARGET_PROPERTIES(fedpkg_build
+	    PROPERTIES EXISTS "true")
 	ADD_CUSTOM_TARGET(fedpkg_update
 	    COMMENT "fedpkg update"
 	    )
@@ -130,7 +135,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	SET(_first_tag_name ${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE_NO}.${_first_bodhi_tag})
 	SET(_first_tag_relative_path  .git/refs/tags/${_first_tag_name})
 	SET(_first_tag_path  ${FEDPKG_DIR}/${PROJECT_NAME}/${_first_tag_relative_path})
-	#MESSAGE("_first_tag_path=${_first_tag_path}")
+	# MESSAGE("_first_tag_path=${_first_tag_path}")
 
 	FOREACH(_tag ${_tags})
 	    IF(_tag STREQUAL "${FEDORA_RAWHIDE_TAG}")
@@ -139,45 +144,21 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		SET(_branch "${_tag}")
 	    ENDIF(_tag STREQUAL "${FEDORA_RAWHIDE_TAG}")
 
-	    ADD_CUSTOM_TARGET(fedpkg_git_pull_${_tag}
-		COMMAND ${FEDPKG} switch-branch ${_branch}
-		COMMAND git pull
-		DEPENDS ${FEDPKG_DIR}/${PROJECT_NAME}
-		WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
-		COMMENT "fedpkg: switching to ${_branch} and pulling changes"
-		)
-
 	    ADD_CUSTOM_TARGET(fedpkg_scratch_build_${_tag}
 		COMMAND ${FEDPKG} scratch-build --srpm ${srpm}
 		DEPENDS ${srpm}
 		WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
 		COMMENT "fedpkg scratch build on ${_branch} with ${srpm}"
 		)
+	    ADD_DEPENDENCIES(fedpkg_scratch_build_${_tag} rpmlint)
 	    ADD_DEPENDENCIES(fedpkg_scratch_build_${_tag} fedpkg_git_pull_${_tag})
 	    ADD_DEPENDENCIES(fedpkg_scratch_build fedpkg_scratch_build_${_tag})
-	    ADD_DEPENDENCIES(fedpkg_scratch_build_${_tag} rpmlint)
 
-	    ADD_CUSTOM_TARGET(fedpkg_build_${_tag}
-		COMMAND ${FEDPKG} build
-		DEPENDS ${_first_tag_path}
-		WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
-		COMMENT "fedpkg build on ${_branch} with ${srpm}"
-		)
-	    ADD_DEPENDENCIES(fedpkg_build_${_tag} fedpkg_git_pull_${_tag})
-	    ADD_DEPENDENCIES(fedpkg_build fedpkg_build_${_branch})
-
-	    ADD_CUSTOM_TARGET(fedpkg_update_${_tag}
-		COMMAND ${FEDPKG} update
-		WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
-		DEPENDS ${_first_tag_path}
-		COMMENT "fedpkg update on ${_branch} with ${srpm}"
-		)
-	    ADD_DEPENDENCIES(fedpkg_update_${_tag} fedpkg_git_pull_${_tag})
-	    ADD_DEPENDENCIES(fedpkg_update fedpkg_update_${_tag})
-
+	    ## fedpkg commit
 	    IF(_first_branch STREQUAL "")
 		SET(_first_branch ${_branch})
 
+		# import primary branch
 		SET(_fedpkg_import_cmd "${FEDPKG} switch-branch ${_branch}"
 		    "git-pull"
 		    "if [ ! -e ${_first_tag_relative_path} ]"
@@ -187,22 +168,12 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		    "${FEDPKG} push"
 		    "fi")
 
-		# import primary branch
 		ADD_CUSTOM_COMMAND(OUTPUT ${_first_tag_path}
 		    COMMAND eval "${_fedpkg_import_cmd}"
 		    WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
 		    COMMENT "fedpkg import on ${_branch} with ${srpm}"
 		    VERBATIM
 		    )
-
-		#		ADD_CUSTOM_COMMAND(OUTPUT ${_first_tag_path}
-		#    COMMAND ${FEDPKG} import  ${srpm}
-		#    COMMAND ${FEDPKG} commit -t -m "Release version ${PRJ_VER}" -p
-		#    DEPENDS fedpkg_git_pull_${_tag}
-		#    WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
-		#    COMMENT "fedpkg import on ${_branch} with ${srpm}"
-		#    VERBATIM
-		#    )
 
 		ADD_CUSTOM_TARGET(fedpkg_commit_${_tag}
 		    DEPENDS ${_first_tag_path}
@@ -211,22 +182,41 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 
 	    ELSE(_first_branch STREQUAL "")
 		ADD_CUSTOM_TARGET(fedpkg_commit_${_tag}
+		    COMMAND ${FEDPKG} switch-branch ${_branch}
+		    COMMAND git pull
 		    COMMAND git merge ${_first_branch}
 		    COMMAND ${FEDPKG} push
 		    DEPENDS ${_first_tag_path}
 		    WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
 		    COMMENT "fedpkg commit on ${_branch} with ${srpm}"
 		    )
+
+		ADD_DEPENDENCIES(fedpkg_commit_${_tag} fedpkg_commit_${_first_tag})
 	    ENDIF(_first_branch STREQUAL "")
-	    ADD_DEPENDENCIES(fedpkg_commit_${_tag} fedpkg_git_pull_${_tag})
+	    GET_TARGET_PROPERTY(_target_exists koji_scratch_build_${_tag} EXISTS)
+	    IF("${_target_exists}" STREQUAL "true")
+		ADD_DEPENDENCIES(fedpkg_commit_${_tag}  koji_scratch_build_${_tag})
+	    ELSE("${_target_exists}" STREQUAL "true")
+		ADD_DEPENDENCIES(fedpkg_commit_${_tag}  fedpkg_scratch_build_${_tag})
+	    ENDIF("${_target_exists}" STREQUAL "true")
 
-	    IF(_no_koji_scratch_build EQUAL 0)
-		ADD_DEPENDENCIES(fedpkg_commit_${_tag} koji_scratch_build_${_tag})
-	    ENDIF(_no_koji_scratch_build EQUAL 0)
-	    ADD_DEPENDENCIES(fedpkg_commit_${_tag} rpmlint)
-	    ADD_DEPENDENCIES(fedpkg_commit fedpkg_commit_${_tag})
+	    ADD_CUSTOM_TARGET(fedpkg_build_${_tag}
+		COMMAND ${FEDPKG} build
+		DEPENDS ${_first_tag_path}
+		WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
+		COMMENT "fedpkg build on ${_branch} with ${srpm}"
+		)
 	    ADD_DEPENDENCIES(fedpkg_build_${_tag} fedpkg_commit_${_tag})
+	    ADD_DEPENDENCIES(fedpkg_build fedpkg_build_${_branch})
 
+	    ADD_CUSTOM_TARGET(fedpkg_update_${_tag}
+		COMMAND ${FEDPKG} update
+		WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
+		DEPENDS ${_first_tag_path}
+		COMMENT "fedpkg update on ${_branch} with ${srpm}"
+		)
+	    ADD_DEPENDENCIES(fedpkg_update_${_tag} fedpkg_build_${_tag})
+	    ADD_DEPENDENCIES(fedpkg_update fedpkg_update_${_tag})
 	ENDFOREACH(_tag ${_tags})
     ENDMACRO(_use_fedpkg_make_targets srpm)
 
@@ -251,19 +241,33 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		ENDIF("${_arg}" STREQUAL "NORAWHIDE")
 	    ENDFOREACH(_arg)
 
-	    #MESSAGE("_koji_dist_tags=${_koji_dist_tags}")
+	    # Koji targets
 	    IF("${_koji_dist_tags}" STREQUAL "")
 		SET(_koji_dist_tags ${FEDORA_CURRENT_RELEASE_TAGS})
 	    ENDIF("${_koji_dist_tags}" STREQUAL "")
-
 	    IF(_rawhide EQUAL 1)
 		LIST(INSERT _koji_dist_tags 0 ${FEDORA_RAWHIDE_TAG})
 	    ENDIF(_rawhide EQUAL 1)
 	    LIST(REMOVE_DUPLICATES _koji_dist_tags)
+	    #MESSAGE("_koji_dist_tags=${_koji_dist_tags}")
+
+	    IF(_no_koji_scratch_build EQUAL 0)
+		FIND_PROGRAM(KOJI koji)
+		IF(KOJI STREQUAL "KOJI-NOTFOUND")
+		    MESSAGE("Program koji is not found! Koji support disabled.")
+		ELSE(KOJI STREQUAL "KOJI-NOTFOUND")
+		    ## Make target commands for the released dist
+		    ADD_CUSTOM_TARGET(koji_scratch_build
+			COMMENT "Koji scratch build"
+			)
+		    _use_koji_make_targets("${srpm}" ${_koji_dist_tags})
+		ENDIF(KOJI STREQUAL "KOJI-NOTFOUND")
+	    ENDIF(_no_koji_scratch_build EQUAL 0)
+
 
 	    FIND_PROGRAM(FEDPKG fedpkg)
 	    IF(FEDPKG STREQUAL "FEDPKG-NOTFOUND")
-		MESSAGE("Program fedpkg is not found!")
+		MESSAGE("Program fedpkg is not found! fedpkg support disabled.")
 	    ELSE(FEDPKG STREQUAL "FEDPKG-NOTFOUND")
 		ADD_CUSTOM_COMMAND(OUTPUT ${FEDPKG_DIR}
 		    COMMAND mkdir -p ${FEDPKG_DIR}
@@ -279,22 +283,9 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		    WORKING_DIRECTORY ${FEDPKG_DIR}
 		    )
 
-
 		## Make target commands for the released dist
 		_use_fedpkg_make_targets("${srpm}" ${_koji_dist_tags})
-
 	    ENDIF(FEDPKG STREQUAL "FEDPKG-NOTFOUND")
-	    FIND_PROGRAM(KOJI koji)
-	    IF(KOJI STREQUAL "KOJI-NOTFOUND")
-		MESSAGE("Program koji is not found!")
-	    ELSE(KOJI STREQUAL "KOJI-NOTFOUND")
-		## Make target commands for the released dist
-		ADD_CUSTOM_TARGET(koji_scratch_build
-		    COMMENT "Koji scratch build"
-		    )
-		_use_koji_make_targets("${srpm}" ${_koji_dist_tags})
-
-	    ENDIF(KOJI STREQUAL "KOJI-NOTFOUND")
 
 	ENDIF(EXISTS $ENV{HOME}/.fedora-upload-ca.cert)
     ENDMACRO(USE_FEDPKG srpm)
@@ -396,11 +387,11 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		    VERBATIM
 		    )
 
-		GET_TARGET_PROPERTY(_target_location fedpkg_build LOCATION)
-		IF(NOT "${_target_location}" STREQUAL "NOTFOUND")
+		GET_TARGET_PROPERTY(_target_exists fedpkg_build EXISTS)
+		IF("${_target_exists}" STREQUAL "true")
 		    # Has target: fedpkg_build
 		    ADD_DEPENDENCIES(bodhi_new fedpkg_build)
-		ENDIF(NOT "${_target_location}" STREQUAL "NOTFOUND")
+		ENDIF("${_target_exists}" STREQUAL "true")
 	    ENDIF(BODHI STREQUAL "BODHI-NOTFOUND")
 	ENDIF(EXISTS $ENV{HOME}/.fedora-upload-ca.cert)
     ENDMACRO(USE_BODHI)
