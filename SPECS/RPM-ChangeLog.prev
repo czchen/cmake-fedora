@@ -13,6 +13,21 @@
   CMAKE_MAJOR_VERSION, CMAKE_MINOR_VERSION. CMAKE_PATCH_VERSION,
   _cmake_uninstall_in, _koji_tags, _tags.
 
+* Wed Jun 08 2011 Ding-Yi Chen <dchen at redhat.com> - 0.6.0-1
+- Fixed Bug 684107 - [cmake-fedora] TAGS in USE_FEDPKG is ineffective.
+- ManageTranslation:
+  + Renamed from UseGettext
+  + New Macro: USE_ZANATA() - Zanata support (experiential).
+  + New Macro: USE_GETTEXT() - Gettext support.
+    This macro merges GETTEXT_CREATE_POT and GETTEXT_CREATE_TRANSLATIONS,
+    to simplified the usage and make the macro names more consistent.
+- ManageReleaseOnFedora:
+  + New Variable: FEDORA_EPEL_RELEASE_TAGS
+- Clean up Modules: No unrelated files under Modules/
+- Removed debug messages of:
+  CMAKE_MAJOR_VERSION, CMAKE_MINOR_VERSION. CMAKE_PATCH_VERSION,
+  _cmake_uninstall_in, _koji_tags, _tags.
+
 * Sun Feb 27 2011 Ding-Yi Chen <dchen at redhat.com> - 0.5.0-1
 - Macro: RELEASE_ON_FEDORA added.
 - Target: release_on_fedora added.
