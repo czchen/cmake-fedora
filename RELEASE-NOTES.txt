@@ -1,4 +1,4 @@
-PRJ_VER=0.5.992
+PRJ_VER=0.6.0
 SUMMARY=Fixed Bug 684107; Rename UseGettext to ManageTranslation
 BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=684107
