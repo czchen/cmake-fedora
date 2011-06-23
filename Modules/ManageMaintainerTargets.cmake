@@ -252,6 +252,9 @@ IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
 		MANAGE_SOURCE_VERSION_CONTROL_CVS()
 	    ENDIF(SOURCE_VERSION_CONTROL STREQUAL "git")
 
+	    #
+	    ADD_DEPENDENCIES(upload tag)
+
 	    # Setting for each hosting service
 	    FOREACH(_hostService ${HOSTING_SERVICES})
 		ADD_CUSTOM_TARGET(upload_${_hostService})
