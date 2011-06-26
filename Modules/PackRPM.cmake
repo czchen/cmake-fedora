@@ -1,6 +1,11 @@
 # - RPM generation, maintaining (remove old rpm) and verification (rpmlint).
 # This module provides macros that provides various rpm building and
 # verification targets.
+#
+# Includes:
+#   ManageVariable
+#   PackSource
+#
 # Reads following variables:
 #   RPM_DIST_TAG: (optional) Current distribution tag such as el5, fc10.
 #     Default: Distribution tag from rpm --showrc
@@ -76,6 +81,7 @@
 IF(NOT DEFINED _PACK_RPM_CMAKE_)
     SET (_PACK_RPM_CMAKE_ "DEFINED")
 
+    INCLUDE(ManageVariable)
     INCLUDE(PackSource)
     SET (SPEC_FILE_WARNING "This file is generated, please modified the .spec.in file instead!")
 
@@ -150,7 +156,6 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 	    GET_FILENAME_COMPONENT(_specInDir "${spec_in}" PATH)
 	    # Get release number from spec_in
 	    SET(fileDependencies ${ARGN})
-	    INCLUDE(ManageVariable)
 	    SETTING_FILE_GET_VARIABLE(_releaseStr Release ${spec_in} ":")
 	    STRING(REPLACE "%{?dist}" ".${RPM_DIST_TAG}" PRJ_RELEASE ${_releaseStr})
 	    STRING(REPLACE "%{?dist}" "" PRJ_RELEASE_NO ${_releaseStr})

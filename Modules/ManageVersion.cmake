@@ -1,5 +1,12 @@
 # - Targets and macros that related to versioning.
 #
+# Includes:
+#   ManageVariable
+#   DateTimeFormat
+#
+# Included by:
+#   PackSource
+#
 # Defines following macros:
 #   LOAD_RELEASE_FILE(releaseFile)
 #   - Load release file information.

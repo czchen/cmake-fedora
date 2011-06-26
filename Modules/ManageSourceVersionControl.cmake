@@ -4,6 +4,11 @@
 # However, thes macros provides following targets which may be useful:
 #  - tag: Tag the release using the selected source version control.
 #
+# Included by:
+#    ManageMaintainerTargets
+#    ManageReleaseOnFedora
+#
+#
 # Define following macros:
 #   MANAGE_SOURCE_VERSION_CONTROL_GIT()
 #   - Use Git as source version control.

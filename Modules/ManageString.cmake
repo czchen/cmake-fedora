@@ -1,4 +1,8 @@
 # - Collection of String utility macros.
+#
+# Included by:
+#   ManageVarible
+#
 # Defines the following macros:
 #   STRING_TRIM(var str [NOUNQUOTE])
 #   - Trim a string by removing the leading and trailing spaces,

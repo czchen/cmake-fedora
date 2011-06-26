@@ -1,4 +1,13 @@
 # - Get or set variables from various sources.
+#
+# Includes:
+#   ManageString
+#
+# Included by:
+#   ManageVersion
+#   PackRPM
+#
+#
 # Defines the following macros:
 #   COMMAND_OUTPUT_TO_VARIABLE(var cmd)
 #     - Store command output to a variable, without new line characters (\n and \r).

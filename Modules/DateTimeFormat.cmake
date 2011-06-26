@@ -1,4 +1,8 @@
 # - Date/time format module.
+#
+# Included by:
+#   ManageVersion
+#
 # Defines the following macros:
 #    TODAY(date_var format [locale])
 #      - Get date of today in specified format and locale.
@@ -7,7 +11,7 @@
 #          format: date format for date(1)
 #          locale: locale of the string. Use current locale setting if
 #            locale is not given.
-
+#
 # Provides the following variables:
 #    TODAY_CHANGELOG: Today in the format that is used in RPM Changelog.
 #     e.g. Wed 08 Aug 2010

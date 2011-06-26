@@ -2,6 +2,13 @@
 # By default CPack pack everything under the source directory, this is usually
 # undesirable. We avoid this by using the sane default ignore list.
 #
+# Includes:
+#   ManageVersion
+#   CPack
+#
+# Included by:
+#   PackRPM
+#
 # Read and Defines following variable:
 #   PACK_SOURCE_IGNORE_FILES_DEFAULT: Default list of file patterns
 #     that are normally exclude from the source package.

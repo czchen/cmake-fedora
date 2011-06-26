@@ -6,6 +6,13 @@
 # Since this module is mainly for Fedora developers/maintainers,
 # This module checks ~/.fedora-upload-ca.cert
 #
+# Includes:
+#   ManageSourceVersionControl
+#   ManageMaintainerTargets
+#
+# Included by:
+#    ManageReleaseOnFedora
+#
 # Defines following variable:
 #   FEDORA_RAWHIDE_TAG: Koji tags for rawhide
 #   FEDORA_CURRENT_RELEASE_TAGS: Current tags of fedora releases.
@@ -72,6 +79,9 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
     ENDIF(NOT DEFINED FEDPKG_DIR)
     SET(_bodhi_template_file "bodhi.NO_PACK.template")
     SET(PACK_SOURCE_IGNORE_FILES ${PACK_SOURCE_IGNORE_FILES} "/${FEDPKG_DIR}/")
+
+    # Need the definition of source version control first, as we need to check tag file.
+    INCLUDE(ManageSourceVersionControl)
 
     MACRO(_use_koji_make_targets srpm)
 	SET(_tags ${ARGN})
@@ -171,9 +181,11 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		ADD_CUSTOM_COMMAND(OUTPUT ${_first_tag_path}
 		    COMMAND eval "${_fedpkg_import_cmd}"
 		    WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
+		    DEPENDS ${_MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}
 		    COMMENT "fedpkg import on ${_branch} with ${srpm}"
 		    VERBATIM
 		    )
+
 
 		ADD_CUSTOM_TARGET(fedpkg_commit_${_tag}
 		    DEPENDS ${_first_tag_path}
@@ -261,6 +273,9 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 			COMMENT "Koji scratch build"
 			)
 		    _use_koji_make_targets("${srpm}" ${_koji_dist_tags})
+
+		    # Ensure package build in koji before tag
+		    ADD_DEPENDENCIES(tag koji_scratch_build)
 		ENDIF(KOJI STREQUAL "KOJI-NOTFOUND")
 	    ENDIF(_no_koji_scratch_build EQUAL 0)
 

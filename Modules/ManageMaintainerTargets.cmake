@@ -4,6 +4,12 @@
 # This is normally done by checking the existence of a developer
 # setting file.
 #
+# Includes:
+#    ManageSourceVersionControl
+#
+# Included by:
+#    ManageReleaseOnFedora
+#
 # Defines following Macros:
 #   MANAGE_MAINTAINER_TARGETS_UPLOAD(hostService fileLocalPath [file2LocalPath ..]
 #   [DEST_PATH destPath] [FILE_ALIAS fileAlias])
@@ -266,12 +272,6 @@ IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
 	    IF(NOT DEFINED RELEASE_TARGETS)
 		SET(RELEASE_TARGETS release_on_fedora)
 	    ENDIF(NOT DEFINED RELEASE_TARGETS)
-
-	    GET_TARGET_PROPERTY(_koji_scratch_build_target_location koji_scratch_build LOCATION)
-
-	    IF(NOT "${_koji_scratch_build_target_location}" STREQUAL "NOTFOUND")
-		ADD_DEPENDENCIES(tag koji_scratch_build)
-	    ENDIF(NOT "${_koji_scratch_build_target_location}" STREQUAL "NOTFOUND")
 
 	    ADD_CUSTOM_TARGET(release
 		COMMENT "Sent release"
