@@ -9,6 +9,7 @@
 # Includes:
 #   ManageSourceVersionControl
 #   ManageMaintainerTargets
+#   ManageRelease
 #
 # Included by:
 #    ManageReleaseOnFedora
@@ -82,6 +83,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 
     # Need the definition of source version control first, as we need to check tag file.
     INCLUDE(ManageSourceVersionControl)
+    INCLUDE(ManageRelease)
 
     MACRO(_use_koji_make_targets srpm)
 	SET(_tags ${ARGN})

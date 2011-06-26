@@ -8,7 +8,7 @@
 #    ManageSourceVersionControl
 #
 # Included by:
-#    ManageReleaseOnFedora
+#    ManageRelease
 #
 # Defines following Macros:
 #   MANAGE_MAINTAINER_TARGETS_UPLOAD(hostService fileLocalPath [file2LocalPath ..]
@@ -267,21 +267,6 @@ IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
 		MANAGE_MAINTAINER_TARGETS_UPLOAD(${_hostService} ${packedSourcePath} FILE_ALIAS "source_tarball")
 		ADD_DEPENDENCIES(upload upload_${_hostService})
 	    ENDFOREACH(_hostService ${HOSTING_SERVICES})
-
-	    ## Target: release
-	    IF(NOT DEFINED RELEASE_TARGETS)
-		SET(RELEASE_TARGETS release_on_fedora)
-	    ENDIF(NOT DEFINED RELEASE_TARGETS)
-
-	    ADD_CUSTOM_TARGET(release
-		COMMENT "Sent release"
-		)
-
-	    ADD_DEPENDENCIES(release push_post_release)
-	    ADD_DEPENDENCIES(push_post_release ${RELEASE_TARGETS})
-	    FOREACH(_release_target ${RELEASE_TARGETS})
-		ADD_DEPENDENCIES(${_release_target} upload)
-	    ENDFOREACH(_release_target ${RELEASE_TARGETS})
 
 	ENDIF(EXISTS "${filename}")
 

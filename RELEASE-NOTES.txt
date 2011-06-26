@@ -3,6 +3,7 @@ SUMMARY=
 BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=
 [Changes]
+- ManageRelease: New module.
 - Now manageReleaseOnFedora include ManageMaintainerTargets
 - Modules are shown what they include and included by.
 - Now tag depends on koji_scratch_build, while fedpkg_commit master

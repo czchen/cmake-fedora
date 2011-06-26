@@ -82,17 +82,17 @@ IF(NOT MOCK_CMD STREQUAL "MOCK_CMD-NOTFOUND")
     USE_MOCK("${RPM_BUILD_SPECS}/project.spec.in")
 ENDIF(NOT MOCK_CMD STREQUAL "MOCK_CMD-NOTFOUND")
 
+####################################################################
+# Hosting and Release
+#
 IF(EXISTS ${MAINTAINER_SETTING})
+    MAINTAINER_SETTING_READ_FILE("${MAINTAINER_SETTING}"
+	"${RPM_BUILD_SOURCES}/${PACK_SOURCE_FILE_NAME}")
+
     RELEASE_ON_FEDORA("${RPM_BUILD_SRPMS}/${PRJ_SRPM_FILE_NAME}"
 	TAGS ${FEDORA_CURRENT_RELEASE_TAGS} ${FEDORA_EPEL_RELEASE_TAGS})
 ENDIF(EXISTS ${MAINTAINER_SETTING})
 
-####################################################################
-# Hosting
-#
-INCLUDE(ManageMaintainerTargets)
-MAINTAINER_SETTING_READ_FILE("${MAINTAINER_SETTING}"
-    "${RPM_BUILD_SOURCES}/${PACK_SOURCE_FILE_NAME}")
 
 ####################################################################
 # Custom
