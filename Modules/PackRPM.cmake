@@ -3,6 +3,7 @@
 # verification targets.
 #
 # Includes:
+#   ManageMessages
 #   ManageVariable
 #   PackSource
 #
@@ -81,6 +82,7 @@
 IF(NOT DEFINED _PACK_RPM_CMAKE_)
     SET (_PACK_RPM_CMAKE_ "DEFINED")
 
+    INCLUDE(MangaeMessages)
     INCLUDE(ManageVariable)
     INCLUDE(PackSource)
     SET (SPEC_FILE_WARNING "This file is generated, please modified the .spec.in file instead!")

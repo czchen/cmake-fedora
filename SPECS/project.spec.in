@@ -44,6 +44,8 @@ Requires:   cmake >= 2.4
 %{_datadir}/cmake/Modules/CompileEnv.cmake
 %{_datadir}/cmake/Modules/DateTimeFormat.cmake
 %{_datadir}/cmake/Modules/ManageMaintainerTargets.cmake
+%{_datadir}/cmake/Modules/ManageMessage.cmake
+%{_datadir}/cmake/Modules/ManageRelease.cmake
 %{_datadir}/cmake/Modules/ManageReleaseOnFedora.cmake
 %{_datadir}/cmake/Modules/ManageSourceVersionControl.cmake
 %{_datadir}/cmake/Modules/ManageString.cmake

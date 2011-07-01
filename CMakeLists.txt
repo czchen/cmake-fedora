@@ -23,6 +23,8 @@ IF(CMAKE_VERSION)
     CMAKE_POLICY(SET CMP0005 OLD)
 ENDIF(CMAKE_VERSION)
 
+INCLUDE(CMakeVersion)
+
 INCLUDE(ManageVersion)
 LOAD_RELEASE_FILE("RELEASE-NOTES.txt")
 INCLUDE(UseUninstall)
@@ -30,7 +32,6 @@ INCLUDE(UseUninstall)
 INCLUDE(CompileEnv)
 SET_USUAL_COMPILE_ENVS()
 
-INCLUDE(CMakeVersion)
 
 ####################################################################
 # Building
