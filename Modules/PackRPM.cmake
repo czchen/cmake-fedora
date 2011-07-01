@@ -3,7 +3,7 @@
 # verification targets.
 #
 # Includes:
-#   ManageMessages
+#   ManageMessage
 #   ManageVariable
 #   PackSource
 #
@@ -82,7 +82,7 @@
 IF(NOT DEFINED _PACK_RPM_CMAKE_)
     SET (_PACK_RPM_CMAKE_ "DEFINED")
 
-    INCLUDE(MangaeMessages)
+    INCLUDE(ManageMessage)
     INCLUDE(ManageVariable)
     INCLUDE(PackSource)
     SET (SPEC_FILE_WARNING "This file is generated, please modified the .spec.in file instead!")
@@ -148,12 +148,12 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 
     MACRO(PACK_RPM var spec_in sourcePackage)
 	IF(NOT EXISTS ${spec_in})
-	    MESSAGE(FATAL_ERROR "File ${spec_in} not found!")
+	    M_MSG(${M_FATAL} "File ${spec_in} not found!")
 	ENDIF(NOT EXISTS ${spec_in})
 
 	FIND_PROGRAM(RPMBUILD NAMES "rpmbuild")
 	IF(${RPMBUILD} STREQUAL "RPMBUILD-NOTFOUND")
-	    MESSAGE("rpmbuild is not found in PATH, rpm build support is disabled.")
+	    M_MSG(${M_OFF} "rpmbuild is not found in PATH, rpm build support is disabled.")
 	ELSE(${RPMBUILD} STREQUAL "RPMBUILD-NOTFOUND")
 	    GET_FILENAME_COMPONENT(_specInDir "${spec_in}" PATH)
 	    # Get release number from spec_in
@@ -174,10 +174,6 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 
 	    # Generate spec
 	    CONFIGURE_FILE(${spec_in} ${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec)
-	    #SET_SOURCE_FILES_PROPERTIES(${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec
-	    #	${RPM_BUILD_SPECS}/RPM-ChangeLog
-	    #	PROPERTIES GENERATED TRUE
-	    #	)
 
 	    SET(${var} "${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE}.src.rpm")
 	    SET(_prj_srpm_path "${RPM_BUILD_SRPMS}/${${var}}")
@@ -278,7 +274,7 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
     MACRO(USE_MOCK spec_in)
 	FIND_PROGRAM(MOCK mock)
 	IF(MOCK STREQUAL "MOCK-NOTFOUND")
-	    MESSAGE("mock is not found in PATH, mock support disabled.")
+	    M_MSG(${M_WARN} "mock is not found in PATH, mock support disabled.")
 	ELSE(MOCK STREQUAL "MOCK-NOTFOUND")
 	    PACK_RPM_GET_ARCH(_archStr ${spec_in})
 	    IF(NOT _archStr STREQUAL "noarch")

@@ -7,6 +7,7 @@
 # This module checks ~/.fedora-upload-ca.cert
 #
 # Includes:
+#   ManageMessage
 #   ManageSourceVersionControl
 #   ManageMaintainerTargets
 #   ManageRelease
@@ -84,6 +85,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
     # Need the definition of source version control first, as we need to check tag file.
     INCLUDE(ManageSourceVersionControl)
     INCLUDE(ManageRelease)
+    INCLUDE(ManageMessage)
 
     MACRO(_use_koji_make_targets srpm)
 	SET(_tags ${ARGN})
@@ -235,7 +237,20 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
     ENDMACRO(_use_fedpkg_make_targets srpm)
 
     MACRO(USE_FEDPKG srpm)
+	SET(_disabled 0)
 	IF(EXISTS $ENV{HOME}/.fedora-upload-ca.cert)
+	    FIND_PROGRAM(FEDPKG fedpkg)
+	    IF(FEDPKG STREQUAL "FEDPKG-NOTFOUND")
+		M_MSG(${M_OFF} "Program fedpkg is not found! fedpkg support disabled.")
+		SET(_disabled 1)
+	    ENDIF(FEDPKG STREQUAL "FEDPKG-NOTFOUND")
+	ELSE(EXISTS $ENV{HOME}/.fedora-upload-ca.cert)
+	    M_MSG(${M_OFF}
+		"\$HOME/.fedora-upload-ca.cert not found, fedpkg support disabled")
+	    SET(_disabled 1)
+	ENDIF(EXISTS $ENV{HOME}/.fedora-upload-ca.cert)
+
+	IF(_disabled EQUAL 0)
 	    SET(_rawhide 1)
 	    SET(_koji_dist_tags "")
 	    SET(_stage "")
@@ -268,7 +283,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	    IF(_no_koji_scratch_build EQUAL 0)
 		FIND_PROGRAM(KOJI koji)
 		IF(KOJI STREQUAL "KOJI-NOTFOUND")
-		    MESSAGE("Program koji is not found! Koji support disabled.")
+		    M_MSG(${M_OFF} "Program koji is not found! Koji support disabled.")
 		ELSE(KOJI STREQUAL "KOJI-NOTFOUND")
 		    ## Make target commands for the released dist
 		    ADD_CUSTOM_TARGET(koji_scratch_build
@@ -281,30 +296,23 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		ENDIF(KOJI STREQUAL "KOJI-NOTFOUND")
 	    ENDIF(_no_koji_scratch_build EQUAL 0)
 
+	    ADD_CUSTOM_COMMAND(OUTPUT ${FEDPKG_DIR}
+		COMMAND mkdir -p ${FEDPKG_DIR}
+		)
 
-	    FIND_PROGRAM(FEDPKG fedpkg)
-	    IF(FEDPKG STREQUAL "FEDPKG-NOTFOUND")
-		MESSAGE("Program fedpkg is not found! fedpkg support disabled.")
-	    ELSE(FEDPKG STREQUAL "FEDPKG-NOTFOUND")
-		ADD_CUSTOM_COMMAND(OUTPUT ${FEDPKG_DIR}
-		    COMMAND mkdir -p ${FEDPKG_DIR}
-		    )
+	    ADD_CUSTOM_TARGET(fedpkg_clone
+		DEPENDS ${FEDPKG_DIR}/${PROJECT_NAME}
+		)
 
-		ADD_CUSTOM_TARGET(fedpkg_clone
-		    DEPENDS ${FEDPKG_DIR}/${PROJECT_NAME}
-		    )
+	    ADD_CUSTOM_COMMAND(OUTPUT ${FEDPKG_DIR}/${PROJECT_NAME}
+		COMMAND ${FEDPKG} clone ${PROJECT_NAME}
+		DEPENDS ${FEDPKG_DIR}
+		WORKING_DIRECTORY ${FEDPKG_DIR}
+		)
 
-		ADD_CUSTOM_COMMAND(OUTPUT ${FEDPKG_DIR}/${PROJECT_NAME}
-		    COMMAND ${FEDPKG} clone ${PROJECT_NAME}
-		    DEPENDS ${FEDPKG_DIR}
-		    WORKING_DIRECTORY ${FEDPKG_DIR}
-		    )
-
-		## Make target commands for the released dist
-		_use_fedpkg_make_targets("${srpm}" ${_koji_dist_tags})
-	    ENDIF(FEDPKG STREQUAL "FEDPKG-NOTFOUND")
-
-	ENDIF(EXISTS $ENV{HOME}/.fedora-upload-ca.cert)
+	    ## Make target commands for the released dist
+	    _use_fedpkg_make_targets("${srpm}" ${_koji_dist_tags})
+	ENDIF(_disabled EQUAL 0)
     ENDMACRO(USE_FEDPKG srpm)
 
     MACRO(_use_bodhi_convert_tag tag_out tag_in)
@@ -325,93 +333,102 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	# Bodhi does not really require .fedora-upload-ca.cert
 	# But since this macro is meant for package maintainers,
 	# so..
-	SET(_autokarma "True")
-	SET(_stable_karma 3)
-	SET(_unstable_karma -3)
-	SET(_tags "")
+	SET(_disabled 0)
 	IF(EXISTS $ENV{HOME}/.fedora-upload-ca.cert)
 	    FIND_PROGRAM(BODHI bodhi)
 	    IF(BODHI STREQUAL "BODHI-NOTFOUND")
-		MESSAGE("Program bodhi is not found!")
-	    ELSE(BODHI STREQUAL "BODHI-NOTFOUND")
-		SET(_stage "NONE")
-		FOREACH(_arg ${ARGN})
-		    IF(_arg STREQUAL "TAGS")
-			SET(_stage "TAGS")
-		    ELSEIF(_arg STREQUAL "KARMA")
-			SET(_stage "KARMA")
-		    ELSE(_arg STREQUAL "TAGS")
-			# option values
-			IF(_stage STREQUAL "TAGS")
-			    SET(_tags ${_tags} ${_arg})
-			ELSEIF(_stage STREQUAL "KARMA")
-			    IF(_arg STREQUAL "0")
-				SET(_autokarma "False")
-			    ELSE(_arg STREQUAL "0")
-				SET(_autokarma "True")
-			    ENDIF(_arg STREQUAL "0")
-			    SET(_stable_karma "${_arg}")
-			    SET(_unstable_karma "-${_arg}")
-			    SET(_tags ${_arg})
-			ENDIF(_stage STREQUAL "TAGS")
-		    ENDIF(_arg STREQUAL "TAGS")
-		ENDFOREACH(_arg ${ARGN})
-
-		IF(NOT _tags)
-		    SET(_tags ${FEDORA_CURRENT_RELEASE_TAGS})
-		ENDIF(NOT _tags)
-
-		IF(NOT "${FEDORA_RELEASE_TAGS}" STREQUAL "")
-		    SET(_tags ${FEDORA_RELEASE_TAGS})
-		ENDIF(NOT "${FEDORA_RELEASE_TAGS}" STREQUAL "")
-
-		FILE(REMOVE ${_bodhi_template_file})
-		FOREACH(_tag ${_tags})
-		    _use_bodhi_convert_tag(_bodhi_tag ${_tag})
-
-		    FILE(APPEND ${_bodhi_template_file} "[${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE_NO}.${_bodhi_tag}]\n\n")
-
-		    IF(BODHI_UPDATE_TYPE)
-			FILE(APPEND ${_bodhi_template_file} "type=${BODHI_UPDATE_TYPE}\n\n")
-		    ELSE(BODHI_UPDATE_TYPE)
-			FILE(APPEND ${_bodhi_template_file} "type=bugfix\n\n")
-		    ENDIF(BODHI_UPDATE_TYPE)
-
-		    FILE(APPEND ${_bodhi_template_file} "request=testing\n")
-		    FILE(APPEND ${_bodhi_template_file} "bugs=${REDHAT_BUGZILLA}\n")
-
-		    _append_notes(${_bodhi_template_file})
-
-		    FILE(APPEND ${_bodhi_template_file} "autokarma=${_autokarma}\n")
-		    FILE(APPEND ${_bodhi_template_file} "stable_karma=${_stable_karma}\n")
-		    FILE(APPEND ${_bodhi_template_file} "unstable_karma=${_unstable_karma}\n")
-		    FILE(APPEND ${_bodhi_template_file} "close_bugs=True\n")
-
-		    IF(SUGGEST_REBOOT)
-			FILE(APPEND ${_bodhi_template_file} "suggest_reboot=True\n")
-		    ELSE(SUGGEST_REBOOT)
-			FILE(APPEND ${_bodhi_template_file} "suggest_reboot=False\n\n")
-		    ENDIF(SUGGEST_REBOOT)
-		ENDFOREACH(_tag ${_tags})
-
-		IF(BODHI_USER)
-		    SET(_bodhi_login "-u ${BODHI_USER}")
-		ENDIF(BODHI_USER)
-
-		ADD_CUSTOM_TARGET(bodhi_new
-		    COMMAND bodhi --new ${_bodhi_login} --file ${_bodhi_template_file}
-		    COMMENT "Send new package to bodhi"
-		    VERBATIM
-		    )
-
-		GET_TARGET_PROPERTY(_target_exists fedpkg_build EXISTS)
-		IF("${_target_exists}" STREQUAL "true")
-		    # Has target: fedpkg_build
-		    ADD_DEPENDENCIES(bodhi_new fedpkg_build)
-		ENDIF("${_target_exists}" STREQUAL "true")
+		IF(FEDPKG STREQUAL "FEDPKG-NOTFOUND")
+		M_MSG(${M_OFF} "Program bodhi is not found! bodhi support disabled.")
+		SET(_disabled 1)
 	    ENDIF(BODHI STREQUAL "BODHI-NOTFOUND")
+	ELSE(EXISTS $ENV{HOME}/.fedora-upload-ca.cert)
+	    M_MSG(${M_OFF}
+		"\$HOME/.fedora-upload-ca.cert not found, bodhi support disabled")
+	    SET(_disabled 1)
 	ENDIF(EXISTS $ENV{HOME}/.fedora-upload-ca.cert)
-    ENDMACRO(USE_BODHI)
+
+	IF(_disabled EQUAL 0)
+	    SET(_autokarma "True")
+	    SET(_stable_karma 3)
+	    SET(_unstable_karma -3)
+	    SET(_tags "")
+	    SET(_stage "NONE")
+	    FOREACH(_arg ${ARGN})
+		IF(_arg STREQUAL "TAGS")
+		    SET(_stage "TAGS")
+		ELSEIF(_arg STREQUAL "KARMA")
+		    SET(_stage "KARMA")
+		ELSE(_arg STREQUAL "TAGS")
+		    # option values
+		    IF(_stage STREQUAL "TAGS")
+			SET(_tags ${_tags} ${_arg})
+		    ELSEIF(_stage STREQUAL "KARMA")
+			IF(_arg STREQUAL "0")
+			    SET(_autokarma "False")
+			ELSE(_arg STREQUAL "0")
+			    SET(_autokarma "True")
+			ENDIF(_arg STREQUAL "0")
+			SET(_stable_karma "${_arg}")
+			SET(_unstable_karma "-${_arg}")
+			SET(_tags ${_arg})
+		    ENDIF(_stage STREQUAL "TAGS")
+		ENDIF(_arg STREQUAL "TAGS")
+	    ENDFOREACH(_arg ${ARGN})
+
+	    IF(NOT _tags)
+		SET(_tags ${FEDORA_CURRENT_RELEASE_TAGS})
+	    ENDIF(NOT _tags)
+
+	    IF(NOT "${FEDORA_RELEASE_TAGS}" STREQUAL "")
+		SET(_tags ${FEDORA_RELEASE_TAGS})
+	    ENDIF(NOT "${FEDORA_RELEASE_TAGS}" STREQUAL "")
+
+	    FILE(REMOVE ${_bodhi_template_file})
+	    FOREACH(_tag ${_tags})
+		_use_bodhi_convert_tag(_bodhi_tag ${_tag})
+
+		FILE(APPEND ${_bodhi_template_file} "[${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE_NO}.${_bodhi_tag}]\n\n")
+
+		IF(BODHI_UPDATE_TYPE)
+		    FILE(APPEND ${_bodhi_template_file} "type=${BODHI_UPDATE_TYPE}\n\n")
+		ELSE(BODHI_UPDATE_TYPE)
+		    FILE(APPEND ${_bodhi_template_file} "type=bugfix\n\n")
+		ENDIF(BODHI_UPDATE_TYPE)
+
+		FILE(APPEND ${_bodhi_template_file} "request=testing\n")
+		FILE(APPEND ${_bodhi_template_file} "bugs=${REDHAT_BUGZILLA}\n")
+
+		_append_notes(${_bodhi_template_file})
+
+		FILE(APPEND ${_bodhi_template_file} "autokarma=${_autokarma}\n")
+		FILE(APPEND ${_bodhi_template_file} "stable_karma=${_stable_karma}\n")
+		FILE(APPEND ${_bodhi_template_file} "unstable_karma=${_unstable_karma}\n")
+		FILE(APPEND ${_bodhi_template_file} "close_bugs=True\n")
+
+		IF(SUGGEST_REBOOT)
+		    FILE(APPEND ${_bodhi_template_file} "suggest_reboot=True\n")
+		ELSE(SUGGEST_REBOOT)
+		    FILE(APPEND ${_bodhi_template_file} "suggest_reboot=False\n\n")
+		ENDIF(SUGGEST_REBOOT)
+	    ENDFOREACH(_tag ${_tags})
+
+	    IF(BODHI_USER)
+		SET(_bodhi_login "-u ${BODHI_USER}")
+	    ENDIF(BODHI_USER)
+
+	    ADD_CUSTOM_TARGET(bodhi_new
+		COMMAND bodhi --new ${_bodhi_login} --file ${_bodhi_template_file}
+		COMMENT "Send new package to bodhi"
+		VERBATIM
+		)
+
+	    GET_TARGET_PROPERTY(_target_exists fedpkg_build EXISTS)
+	    IF("${_target_exists}" STREQUAL "true")
+		# Has target: fedpkg_build
+		ADD_DEPENDENCIES(bodhi_new fedpkg_build)
+	    ENDIF("${_target_exists}" STREQUAL "true")
+	ENDIF(_disabled EQUAL 0)
+ENDMACRO(USE_BODHI)
 
     MACRO(RELEASE_ON_FEDORA srpm)
 	USE_FEDPKG(${srpm} ${ARGN})

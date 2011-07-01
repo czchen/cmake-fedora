@@ -17,29 +17,31 @@ SET(LICENSE "<PRJ_LICENSE>")
 ####################################################################
 # Includes
 #
+#####################################################################
+# Includes
+#
 SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/Modules ${CMAKE_ROOT}/Modules )
-MESSAGE("CMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}")
 
-MESSAGE("CMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}")
+IF(CMAKE_VERSION)
+    CMAKE_POLICY(SET CMP0005 OLD)
+ENDIF(CMAKE_VERSION)
 
 INCLUDE(ManageVariable RESULT_VARIABLE MANAGE_VARIABLE)
 IF(MANAGE_VARIABLE STREQUAL "NOTFOUND")
     MESSAGE(FATAL_ERROR "ManageVariable is not found in CMAKE_MODULE_PATH,
-    please:
-        1) install cmake-fedora, or;
-        2) wget -P SOURCES https://fedorahosted.org/releases/c/m/cmake-fedora/cmake-fedora-modules-only-latest.tar.gz
-	   tar zxvf SOURCES/cmake-fedora-modules-only-latest.tar.gz")
+	    please:
+	    1) install cmake-fedora, or;
+    2) wget -P SOURCES https://fedorahosted.org/releases/c/m/cmake-fedora/cmake-fedora-modules-only-latest.tar.gz
+    tar zxvf SOURCES/cmake-fedora-modules-only-latest.tar.gz")
 ENDIF(MANAGE_VARIABLE STREQUAL "NOTFOUND")
 
+INCLUDE(CMakeVersion)
 
 INCLUDE(ManageVersion)
 LOAD_RELEASE_FILE("RELEASE-NOTES.txt")
 INCLUDE(UseUninstall)
-
 INCLUDE(CompileEnv)
 SET_USUAL_COMPILE_ENVS()
-
-INCLUDE(CMakeVersion)
 
 ####################################################################
 # Building
@@ -72,24 +74,22 @@ SET(PACK_SOURCE_IGNORE_FILES ${PACK_SOURCE_IGNORE_FILES}
 PACK_SOURCE(PACK_SOURCE_FILE_NAME "${RPM_BUILD_SOURCES}")
 PACK_RPM(PRJ_SRPM_FILE_NAME "${RPM_BUILD_SPECS}/project.spec.in" "${PACK_SOURCE_FILE_NAME}")
 
-# If mock exists, then add mock related targets.
-FIND_PROGRAM(MOCK_CMD mock)
-    IF(NOT MOCK_CMD STREQUAL "MOCK_CMD-NOTFOUND")
-    USE_MOCK("${RPM_BUILD_SPECS}/project.spec.in")
-    ENDIF(NOT MOCK_CMD STREQUAL "MOCK_CMD-NOTFOUND")
-
-IF(EXISTS ${MAINTAINER_SETTING})
-    RELEASE_ON_FEDORA("${RPM_BUILD_SRPMS}/${PRJ_SRPM_FILE_NAME}"
-	    TAGS ${FEDORA_CURRENT_RELEASE_TAGS} el6 el5)
-ENDIF(EXISTS ${MAINTAINER_SETTING})
+# Warning is displayed if mock is not installed.
+USE_MOCK("${RPM_BUILD_SPECS}/project.spec.in")
 
 
 ####################################################################
-# Hosting
+# Hosting and Release
 #
-INCLUDE(ManageMaintainerTargets)
-MAINTAINER_SETTING_READ_FILE("${MAINTAINER_SETTING}"
-    "${RPM_BUILD_SOURCES}/${PACK_SOURCE_FILE_NAME}")
+IF(EXISTS ${CMAKE_SOURCE_DIR}/${MAINTAINER_SETTING})
+    MAINTAINER_SETTING_READ_FILE("${CMAKE_SOURCE_DIR}/${MAINTAINER_SETTING})"
+	"${RPM_BUILD_SOURCES}/${PACK_SOURCE_FILE_NAME}")
+
+    RELEASE_ON_FEDORA("${RPM_BUILD_SRPMS}/${PRJ_SRPM_FILE_NAME}"
+	TAGS ${FEDORA_CURRENT_RELEASE_TAGS} ${FEDORA_EPEL_RELEASE_TAGS})
+ELSE(EXISTS ${MAINTAINER_SETTING})
+    M_MSG(${M_INFO1} "${MAINTAINER_SETTING} is not found, maintainer targets disabled.")
+ENDIF(EXISTS ${MAINTAINER_SETTING})
 
 
 ####################################################################

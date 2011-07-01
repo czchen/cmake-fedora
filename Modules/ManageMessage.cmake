@@ -5,18 +5,19 @@
 # Defined variables that represent verbose levels:
 #   1: M_FATAL - Critical error,Should stop immediately
 #   2: M_ERROR - Error that will Eventually fail
-#   3: M_WARN  - Warning.
-#   4: M_INFO1 - Info/debug message
-#   5: M_INFO2 - Info/debug message
-#   6: M_INFO3 - Info/debug message
+#   3: M_WARN  - General Warning.
+#   4: M_OFF   - Optional functionalities are turned-off because requirement is not met.
+#   5: M_INFO1 - Info/debug message
+#   6: M_INFO2 - Info/debug message
+#   7: M_INFO3 - Info/debug message
 #
 # Read following variable:
 #   + MANAGE_MESSAGE_LEVEL: Message level in integer.
 #     Messages with greater level will be suppressed.
-#     Default is ${M_WARN}
+#     Default is ${M_OFF}
 #   + MANAGE_MESSAGE_LABELS: Labels that printed in front of the message for
 #     corresponding message level.
-#     Default is "[Fatal] ;[Error] ;[Warn] ;[Info1] ;[Info2] ;[Info3] "
+#     Default is "[Fatal] ;[Error] ;[Warn] ;[Off] ;[Info1] ;[Info2] ;[Info3] ")
 #
 # Define following macros:
 #   M_MSG(level msg)
@@ -33,12 +34,13 @@ IF(NOT DEFINED _MANAGE_MESSAGE_CMAKE_)
     SET(M_FATAL 1)
     SET(M_ERROR 2)
     SET(M_WARN 3)
-    SET(M_INFO1 4)
-    SET(M_INFO2 5)
-    SET(M_INFO3 6)
+    SET(M_OFF  4)
+    SET(M_INFO1 5)
+    SET(M_INFO2 6)
+    SET(M_INFO3 7)
     IF(NOT DEFINED MANAGE_MESSAGE_LABELS)
 	SET(MANAGE_MESSAGE_LABELS
-	    "[Fatal] ;[Error] ;[Warn] ;[Info1] ;[Info2] ;[Info3] ")
+	    "[Fatal] ;[Error] ;[Warn] ;[Off] ;[Info1] ;[Info2] ;[Info3] ")
     ENDIF(NOT DEFINED MANAGE_MESSAGE_LABELS)
 
     MACRO(M_MSG level msg)
