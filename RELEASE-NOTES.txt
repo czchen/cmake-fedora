@@ -13,5 +13,5 @@ REDHAT_BUGZILLA=
 - MAINTAINER_SETTING_READ_FILE now can either use MAINTAINER_SETTING, or take
   one argument that define maintainer setting file.
 - MANAGE_MAINTAINER_TARGETS_UPLOAD no longer require argument hostService,
-  It now relies on HOST_SERVICES from maintainer setting file.
+  It now relies on HOSTING_SERVICES from maintainer setting file.
 

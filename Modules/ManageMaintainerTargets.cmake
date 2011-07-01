@@ -107,7 +107,7 @@
 IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
     SET(_MANAGE_MAINTAINER_TARGETS_CMAKE_ "DEFINED")
     INCLUDE(ManageMessage)
-    SET(_maintain_setting_file_read 0)
+    SET(_maintainer_setting_file_read 0)
 
     MACRO(MANAGE_MAINTAINER_TARGETS_SFTP
 	    hostService remoteBasePath destPath fileAlias fileLocalPath )
@@ -244,7 +244,7 @@ IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
 	    SET(_disabled 1)
 	ENDIF(_file STREQUAL "")
 
-	IF (_maintain_setting_file_read EQUAL 1)
+	IF (_maintainer_setting_file_read EQUAL 1)
 	    M_MSG(${M_INFO1} "Maintain setting file ${_file} has been loaded before")
 	    SET(_disabled 1)
 	ENDIF(NOT EXISTS ${_file})
@@ -282,7 +282,7 @@ IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
 		MANAGE_MAINTAINER_TARGETS_UPLOAD(${_hostService} ${packedSourcePath} FILE_ALIAS "source_tarball")
 		ADD_DEPENDENCIES(upload upload_${_hostService})
 	    ENDFOREACH(_hostService ${HOSTING_SERVICES})
-
+	    SET(_maintainer_setting_file_read 1)
 	ENDIF(_disabled EQUAL 0)
     ENDMACRO(MAINTAINER_SETTING_READ_FILE filename)
 
