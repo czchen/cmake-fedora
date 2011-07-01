@@ -62,7 +62,7 @@ INSTALL(PROGRAMS scripts/cmake-fedora-newprj.sh
 ####################################################################
 # Packing
 #
-SET(MAINTAINER_SETTING "MAINTAINER_SETTING_NO_PACK")
+SET(MAINTAINER_SETTING "${CMAKE_SOURCE_DIR}/MAINTAINER_SETTING_NO_PACK")
 INCLUDE(PackSource)
 INCLUDE(PackRPM)
 INCLUDE(ManageReleaseOnFedora)
@@ -80,27 +80,17 @@ PACK_RPM(PRJ_SRPM_FILE_NAME "${RPM_BUILD_SPECS}/project.spec.in" "${PACK_SOURCE_
 # Warning is displayed if mock is not installed.
 USE_MOCK("${RPM_BUILD_SPECS}/project.spec.in")
 
-
-# If mock exists, then add mock related targets.
-FIND_PROGRAM(MOCK_CMD mock)
-IF(MOCK_CMD STREQUAL "MOCK_CMD-NOTFOUND")
-    M_MSG(${M_INFO1} "mock is not found, mock support disabled.)
-    USE_MOCK("${RPM_BUILD_SPECS}/project.spec.in")
-ELSE(MOCK_CMD STREQUAL "MOCK_CMD-NOTFOUND")
-    USE_MOCK("${RPM_BUILD_SPECS}/project.spec.in")
-ENDIF(MOCK_CMD STREQUAL "MOCK_CMD-NOTFOUND")
-
 ####################################################################
 # Hosting and Release
 #
-IF(EXISTS ${CMAKE_SOURCE_DIR}/${MAINTAINER_SETTING})
-    MAINTAINER_SETTING_READ_FILE("${CMAKE_SOURCE_DIR}/${MAINTAINER_SETTING})"
+IF(EXISTS ${MAINTAINER_SETTING})
+    MAINTAINER_SETTING_READ_FILE(${MAINTAINER_SETTING}
 	"${RPM_BUILD_SOURCES}/${PACK_SOURCE_FILE_NAME}")
 
     RELEASE_ON_FEDORA("${RPM_BUILD_SRPMS}/${PRJ_SRPM_FILE_NAME}"
 	TAGS ${FEDORA_CURRENT_RELEASE_TAGS} ${FEDORA_EPEL_RELEASE_TAGS})
 ELSE(EXISTS ${MAINTAINER_SETTING})
-    M_MSG(${M_INFO1} "${MAINTAINER_SETTING} is not found, maintainer targets disabled.")
+    M_MSG(${M_OFF} "${MAINTAINER_SETTING} is not found, maintainer targets disabled.")
 ENDIF(EXISTS ${MAINTAINER_SETTING})
 
 

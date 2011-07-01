@@ -49,7 +49,7 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	    VERBATIM
 	    )
 
-	ADD_CUSTOM_TARGET(push_post_release
+	ADD_CUSTOM_TARGET(push_after_release
 	    COMMAND git push
 	    COMMAND git push --tags
 	    COMMENT "Git push tags"
@@ -90,7 +90,7 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	    VERBATIM
 	    )
 
-	ADD_CUSTOM_TARGET(push_post_release
+	ADD_CUSTOM_TARGET(push_after_release
 	    COMMAND hg push
 	    COMMENT "Mercurial push tags"
 	    VERBATIM
@@ -112,7 +112,7 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	    VERBATIM
 	    )
 
-	ADD_CUSTOM_TARGET(push_post_release
+	ADD_CUSTOM_TARGET(push_after_release
 	    COMMENT "SVN push is done at commit"
 	    VERBATIM
 	    )
@@ -133,7 +133,7 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	    VERBATIM
 	    )
 
-	ADD_CUSTOM_TARGET(push_post_release
+	ADD_CUSTOM_TARGET(push_after_release
 	    COMMENT "SVN push is done at commit"
 	    VERBATIM
 	    )

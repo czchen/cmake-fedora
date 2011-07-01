@@ -11,20 +11,25 @@
 #    ManageRelease
 #
 # Defines following Macros:
-#   MANAGE_MAINTAINER_TARGETS_UPLOAD(hostService fileLocalPath [file2LocalPath ..]
+#   MANAGE_MAINTAINER_TARGETS_UPLOAD(fileLocalPath [file2LocalPath ..]
 #   [DEST_PATH destPath] [FILE_ALIAS fileAlias])
 #   - Upload a file to hosting services
+#       By default, it will sent to all hosting services defined in
+#       HOST_SERVICES
 #     Arguments:
-#     + hostService: The name of the hosting services.
-#       Some properties will get preset if hostSevice is recognized.
 #     + fileLocalPath: Local path of the file to be uploaded.
 #     + file2LocalPath: (Optional) Local path of 2nd (3rd and so on) file to be uploaded.
 #     + DEST_PATH destPath: (Optional) Destination path.
 #       Default is "." if DEST_PATH is not used.
+#     + HOST_SERVICE hostService: Only sent files to this hosting service.
+#       Some properties will get preset if hostSevice is recognized.
 #     + FILE_ALIAS fileAlias: (Optional) Alias to be appeared as part of make target.
 #       Default: file name is used.
+#     Reads following variables:
+#     + HOST_SERVICES: list of hosting services to for uploading project
+#       files.
 #
-#   MAINTAINER_SETTING_READ_FILE(filename packedSourcePath)
+#   MAINTAINER_SETTING_READ_FILE([filename])
 #   - Read the maintainer setting file.
 #     It checks the existence of setting file.
 #     If it does not exist, this macro acts as a no-op;
@@ -32,24 +37,13 @@
 #     and set relevant targets.
 #     See the "Setting File Format" section for description of file format.
 #     Arguments:
-#     + filename: Filename of the setting file.
-#     + packedSourcePath: Source tarball.
+#     + filename: (Optional) Filename of the setting file.
 #     Reads following variables:
 #     + PRJ_VER: Project version.
 #     + CHANGE_SUMMARY: Change summary.
-#     Reads or define following variables:
-#     + RELEASE_TARGETS: Depended targets for release.
-#       Note that the sequence of the target does not guarantee the
-#       sequence of execution.
 #     Defines following targets:
-#     + changelog_update: Update changelog by copying ChangeLog to ChangeLog.prev
-#       and RPM-ChangeLog to RPM-ChangeLog. This target should be execute before
-#       starting a new version.
-#     + tag: tag the latest commit with the ${PRJ_VER} and ${CHANGE_SUMMARY} as comment.
-#       Note that this target is actually included through ManageSourceVersionControl.
 #     + upload: upload the source packages to hosting services.
-#     + release: Do the release chores.
-#       The actual depended target to be done for release is defined via RELEASE_TARGETS.
+#
 #
 # Setting File Format
 #
@@ -112,6 +106,8 @@
 
 IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
     SET(_MANAGE_MAINTAINER_TARGETS_CMAKE_ "DEFINED")
+    INCLUDE(ManageMessage)
+    SET(_maintain_setting_file_read 0)
 
     MACRO(MANAGE_MAINTAINER_TARGETS_SFTP
 	    hostService remoteBasePath destPath fileAlias fileLocalPath )
@@ -186,7 +182,7 @@ IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
 	ENDIF(CURL_CMD STREQUAL "CURL_CMD-NOTFOUND")
     ENDMACRO(MANAGE_MAINTAINER_TARGETS_GOOGLE_UPLOAD)
 
-    MACRO(MANAGE_MAINTAINER_TARGETS_UPLOAD hostService fileLocalPath)
+    MACRO(MANAGE_MAINTAINER_TARGETS_UPLOAD fileLocalPath)
 	SET(_destPath ".")
 	SET(_remoteBasePath ".")
 	GET_FILENAME_COMPONENT(_fileAlias "${fileLocalPath}" NAME)
@@ -208,44 +204,61 @@ IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
 	    ENDIF("${_arg}" STREQUAL "FILE_ALIAS")
 	ENDFOREACH(_arg ${ARGN})
 
-	IF("${hostService}" MATCHES "[Ss][Oo][Uu][Rr][Cc][Ee][Ff][Oo][Rr][Gg][Ee]")
-	    SET(${hostService}_PROTOCOL sftp)
-	    SET(${hostService}_SITE frs.sourceforge.net)
-	ELSEIF("${hostService}" MATCHES "[Ff][Ee][Dd][Oo][Rr][Aa][Hh][Oo][Ss][Tt][Ee][Dd]")
-	    SET(${hostService}_PROTOCOL scp)
-	    SET(${hostService}_SITE fedorahosted.org)
-	    SET(_remoteBasePath "${PROJECT_NAME}")
-	ELSE("${hostService}" MATCHES "[Ss][Oo][Uu][Rr][Cc][Ee][Ff][Oo][Rr][Gg][Ee]")
-	ENDIF("${hostService}" MATCHES "[Ss][Oo][Uu][Rr][Cc][Ee][Ff][Oo][Rr][Gg][Ee]")
+	FOREACH(_hostService ${HOSTING_SERVICES})
+	    IF("${_hostService}" MATCHES "[Ss][Oo][Uu][Rr][Cc][Ee][Ff][Oo][Rr][Gg][Ee]")
+		SET(${_hostService}_PROTOCOL sftp)
+		SET(${_hostService}_SITE frs.sourceforge.net)
+	    ELSEIF("${_hostService}" MATCHES "[Ff][Ee][Dd][Oo][Rr][Aa][Hh][Oo][Ss][Tt][Ee][Dd]")
+		SET(${_hostService}_PROTOCOL scp)
+		SET(${_hostService}_SITE fedorahosted.org)
+		SET(_remoteBasePath "${PROJECT_NAME}")
+	    ELSE("${_hostService}" MATCHES "[Ss][Oo][Uu][Rr][Cc][Ee][Ff][Oo][Rr][Gg][Ee]")
+	    ENDIF("${_hostService}" MATCHES "[Ss][Oo][Uu][Rr][Cc][Ee][Ff][Oo][Rr][Gg][Ee]")
 
-	IF(${hostService}_PROTOCOL STREQUAL "sftp")
-	    MANAGE_MAINTAINER_TARGETS_SFTP(${hostService} "${_remoteBasePath}"
-		"${_destPath}" "${_fileAlias}" "${_fileLocalPathList}")
-	ELSEIF(${hostService}_PROTOCOL STREQUAL "scp")
-	    MANAGE_MAINTAINER_TARGETS_SCP(${hostService} "${_remoteBasePath}"
-		"${_destPath}" "${_fileAlias}" "${_fileLocalPathList}")
-	ENDIF(${hostService}_PROTOCOL STREQUAL "sftp")
-	ADD_DEPENDENCIES(upload_${hostService} upload_${hostService}_${_fileAlias})
+	    IF(${_hostService}_PROTOCOL STREQUAL "sftp")
+		MANAGE_MAINTAINER_TARGETS_SFTP(${_hostService} "${_remoteBasePath}"
+		    "${_destPath}" "${_fileAlias}" "${_fileLocalPathList}")
+	    ELSEIF(${_hostService}_PROTOCOL STREQUAL "scp")
+		MANAGE_MAINTAINER_TARGETS_SCP(${_hostService} "${_remoteBasePath}"
+		    "${_destPath}" "${_fileAlias}" "${_fileLocalPathList}")
+	    ENDIF(${_hostService}_PROTOCOL STREQUAL "sftp")
+	    ADD_DEPENDENCIES(upload_${_hostService} upload_${_hostService}_${_fileAlias})
+
+	ENDFOREACH(_hostService ${HOSTING_SERVICES})
     ENDMACRO(MANAGE_MAINTAINER_TARGETS_UPLOAD hostService fileLocalPath)
 
-    MACRO(MAINTAINER_SETTING_READ_FILE filename packedSourcePath)
-	IF(EXISTS "${filename}")
+    MACRO(MAINTAINER_SETTING_READ_FILE)
+	SET(_disabled 0)
+	MESSAGE("ARG1=${ARG1}")
+	IF(ARG1 STREQUAL "")
+	    SET(_file ${MAINTAINER_SETTING})
+	ELSE(ARG1 STREQUAL "")
+	    SET(_file ${ARG1})
+	ENDIF(ARG1 STREQUAL "")
+
+	IF(_file STREQUAL "")
+	    M_MSG(${M_OFF} "Maintain setting file is not given,  disable maintainer targets")
+	    SET(_disabled 1)
+	ELSEIF(NOT EXISTS ${_file})
+	    M_MSG(${M_OFF} "Maintain setting file ${_file} is not found,  disable maintainer targets")
+	    SET(_disabled 1)
+	ENDIF(_file STREQUAL "")
+
+	IF (_maintain_setting_file_read EQUAL 1)
+	    M_MSG(${M_INFO1} "Maintain setting file ${_file} has been loaded before")
+	    SET(_disabled 1)
+	ENDIF(NOT EXISTS ${_file})
+
+	IF(_disabled EQUAL 0)
 	    INCLUDE(ManageVariable)
 	    INCLUDE(ManageVersion)
 	    INCLUDE(ManageSourceVersionControl)
-	    SETTING_FILE_GET_ALL_VARIABLES("${filename}" UNQUOTED)
+	    SETTING_FILE_GET_ALL_VARIABLES("${_file}" UNQUOTED)
 
 	    #===================================================================
 	    # Targets:
 	    ADD_CUSTOM_TARGET(upload
 		COMMENT "Uploading source to hosting services"
-		)
-
-	    ADD_CUSTOM_TARGET(changelog_update
-		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/ChangeLog ${CMAKE_SOURCE_DIR}/ChangeLog.prev
-		COMMAND ${CMAKE_COMMAND} -E copy ${RPM_BUILD_SPECS}/RPM-ChangeLog ${RPM_BUILD_SPECS}/RPM-ChangeLog.prev
-		DEPENDS ${CMAKE_SOURCE_DIR}/ChangeLog ${RPM_BUILD_SPECS}/RPM-ChangeLog
-		COMMENT "Changelogs are updated for next version."
 		)
 
 	    IF(SOURCE_VERSION_CONTROL STREQUAL "git")
@@ -256,6 +269,8 @@ IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
 		MANAGE_SOURCE_VERSION_CONTROL_SVN()
 	    ELSEIF(SOURCE_VERSION_CONTROL STREQUAL "cvs")
 		MANAGE_SOURCE_VERSION_CONTROL_CVS()
+	    ELSE(SOURCE_VERSION_CONTROL STREQUAL "cvs")
+		M_MSG(${M_OFF} "SOURCE_VERSION_CONTROL is not valid, Source verion control support disabled.")
 	    ENDIF(SOURCE_VERSION_CONTROL STREQUAL "git")
 
 	    #
@@ -268,9 +283,8 @@ IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
 		ADD_DEPENDENCIES(upload upload_${_hostService})
 	    ENDFOREACH(_hostService ${HOSTING_SERVICES})
 
-	ENDIF(EXISTS "${filename}")
-
-    ENDMACRO(MAINTAINER_SETTING_READ_FILE filename packedSourcePath)
+	ENDIF(_disabled EQUAL 0)
+    ENDMACRO(MAINTAINER_SETTING_READ_FILE filename)
 
 ENDIF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
 
