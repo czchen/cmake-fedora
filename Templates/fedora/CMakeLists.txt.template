@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 2.4)
+cmake_minimum_required(VERSION 2.6)
+SET(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "Install path prefix")
 ####################################################################
 # Project specific information
 #
@@ -78,18 +79,14 @@ PACK_RPM(PRJ_SRPM_FILE_NAME "${RPM_BUILD_SPECS}/project.spec.in" "${PACK_SOURCE_
 USE_MOCK("${RPM_BUILD_SPECS}/project.spec.in")
 
 
-####################################################################
+#####################################################################
 # Hosting and Release
 #
-IF(EXISTS ${MAINTAINER_SETTING})
-    MAINTAINER_SETTING_READ_FILE(${MAINTAINER_SETTING}
-	"${RPM_BUILD_SOURCES}/${PACK_SOURCE_FILE_NAME}")
 
-    RELEASE_ON_FEDORA("${RPM_BUILD_SRPMS}/${PRJ_SRPM_FILE_NAME}"
-	TAGS ${FEDORA_CURRENT_RELEASE_TAGS} ${FEDORA_EPEL_RELEASE_TAGS})
-ELSE(EXISTS ${MAINTAINER_SETTING})
-    M_MSG(${M_INFO1} "${MAINTAINER_SETTING} is not found, maintainer targets disabled.")
-ENDIF(EXISTS ${MAINTAINER_SETTING})
+# "Off" Warning is displayed if ${MAINTAINER_SETTING} does not exist.
+MANAGE_RELEASE(${MAINTAINER_SETTING} UPLOAD src ${RPM_BUILD_SOURCES}/${PACK_SOURCE_FILE_NAME})
+RELEASE_ON_FEDORA("${RPM_BUILD_SRPMS}/${PRJ_SRPM_FILE_NAME}"
+	    TAGS ${FEDORA_CURRENT_RELEASE_TAGS} ${FEDORA_EPEL_RELEASE_TAGS})
 
 
 ####################################################################

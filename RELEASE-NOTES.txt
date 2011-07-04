@@ -5,7 +5,9 @@ REDHAT_BUGZILLA=
 [Changes]
 - Remove f13 from FEDORA_CURRENT_RELEASE_TAGS, as Fedora 13 is end of life.
 - ManageMessage: New module.
+  + M_MSG: Controllable verbose output
 - ManageRelease: New module.
+  + MANAGE_RELEASE: Make release by uploading files to hosting services
 - Now ManageReleaseOnFedora includes ManageMaintainerTargets
 - Modules are shown what they include and included by.
 - Now tag depends on koji_scratch_build, while fedpkg_commit master

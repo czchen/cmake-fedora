@@ -33,7 +33,7 @@
 
 IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
     SET(_MANAGE_SOURCE_VERSION_CONTROL_CMAKE_ "DEFINED")
-    SET(_after_release_message "After version ${PRJ_VER}")
+    SET(after_release_message "After version ${PRJ_VER}")
 
     ## Common action
     MACRO(MANAGE_SOURCE_VERSION_CONTROL_COMMON)
@@ -43,13 +43,13 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
     MACRO(MANAGE_SOURCE_VERSION_CONTROL_GIT)
 	SET(_MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE ${CMAKE_SOURCE_DIR}/.git/refs/tags/${PRJ_VER})
 
-	ADD_CUSTOM_TARGET(commit_after_release
-	    COMMAND git commit -a -m "${_after_release_message}"
+	ADD_CUSTOM_TARGET(after_release_commit
+	    COMMAND git commit -a -m "${after_release__message}"
 	    COMMENT "After release ${PRJ_VER}"
 	    VERBATIM
 	    )
 
-	ADD_CUSTOM_TARGET(push_after_release
+	ADD_CUSTOM_TARGET(after_release_push
 	    COMMAND git push
 	    COMMAND git push --tags
 	    COMMENT "Git push tags"
@@ -84,13 +84,13 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
     ENDMACRO(MANAGE_SOURCE_VERSION_CONTROL_GIT)
 
     MACRO(MANAGE_SOURCE_VERSION_CONTROL_HG)
-	ADD_CUSTOM_TARGET(commit_after_release
-	    COMMAND hg commit --m "${_after_release_message}"
+	ADD_CUSTOM_TARGET(after_release_commit
+	    COMMAND hg commit --m "${after_release__message}"
 	    COMMENT "Afer release ${PRJ_VER}"
 	    VERBATIM
 	    )
 
-	ADD_CUSTOM_TARGET(push_after_release
+	ADD_CUSTOM_TARGET(after_release_push
 	    COMMAND hg push
 	    COMMENT "Mercurial push tags"
 	    VERBATIM
@@ -106,13 +106,13 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
     ENDMACRO(MANAGE_SOURCE_VERSION_CONTROL_HG)
 
     MACRO(MANAGE_SOURCE_VERSION_CONTROL_SVN)
-	ADD_CUSTOM_TARGET(commit_after_release
-	    COMMAND svn commit -m "${_after_release_message}"
+	ADD_CUSTOM_TARGET(after_release_commit
+	    COMMAND svn commit -m "${after_release_message}"
 	    COMMENT "Afer release ${PRJ_VER}"
 	    VERBATIM
 	    )
 
-	ADD_CUSTOM_TARGET(push_after_release
+	ADD_CUSTOM_TARGET(after_release_push
 	    COMMENT "SVN push is done at commit"
 	    VERBATIM
 	    )
@@ -127,13 +127,13 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
     ENDMACRO(MANAGE_SOURCE_VERSION_CONTROL_SVN)
 
     MACRO(MANAGE_SOURCE_VERSION_CONTROL_CVS)
-	ADD_CUSTOM_TARGET(commit_after_release
-	    COMMAND svn commit -m "${_after_release_message}"
+	ADD_CUSTOM_TARGET(after_release_commit
+	    COMMAND svn commit -m "${after_release__message}"
 	    COMMENT "Afer release ${PRJ_VER}"
 	    VERBATIM
 	    )
 
-	ADD_CUSTOM_TARGET(push_after_release
+	ADD_CUSTOM_TARGET(after_release_push
 	    COMMENT "SVN push is done at commit"
 	    VERBATIM
 	    )

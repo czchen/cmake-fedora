@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 2.4)
+cmake_minimum_required(VERSION 2.6)
+SET(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "Install path prefix")
 ####################################################################
 # Project specific information
 #
@@ -65,6 +66,7 @@ INSTALL(PROGRAMS scripts/cmake-fedora-newprj.sh
 SET(MAINTAINER_SETTING "${CMAKE_SOURCE_DIR}/MAINTAINER_SETTING_NO_PACK")
 INCLUDE(PackSource)
 INCLUDE(PackRPM)
+INCLUDE(ManageRelease)
 INCLUDE(ManageReleaseOnFedora)
 
 SET(PRJ_IGNORE_FILES_COMMON
@@ -77,21 +79,17 @@ SET(PACK_SOURCE_IGNORE_FILES ${PACK_SOURCE_IGNORE_FILES}
 PACK_SOURCE(PACK_SOURCE_FILE_NAME "${RPM_BUILD_SOURCES}")
 PACK_RPM(PRJ_SRPM_FILE_NAME "${RPM_BUILD_SPECS}/project.spec.in" "${PACK_SOURCE_FILE_NAME}")
 
-# Warning is displayed if mock is not installed.
+# "Off" Warning is displayed if mock is not installed.
 USE_MOCK("${RPM_BUILD_SPECS}/project.spec.in")
 
 ####################################################################
 # Hosting and Release
 #
-IF(EXISTS ${MAINTAINER_SETTING})
-    MAINTAINER_SETTING_READ_FILE(${MAINTAINER_SETTING}
-	"${RPM_BUILD_SOURCES}/${PACK_SOURCE_FILE_NAME}")
 
-    RELEASE_ON_FEDORA("${RPM_BUILD_SRPMS}/${PRJ_SRPM_FILE_NAME}"
-	TAGS ${FEDORA_CURRENT_RELEASE_TAGS} ${FEDORA_EPEL_RELEASE_TAGS})
-ELSE(EXISTS ${MAINTAINER_SETTING})
-    M_MSG(${M_OFF} "${MAINTAINER_SETTING} is not found, maintainer targets disabled.")
-ENDIF(EXISTS ${MAINTAINER_SETTING})
+# "Off" Warning is displayed if ${MAINTAINER_SETTING} does not exist.
+MANAGE_RELEASE(${MAINTAINER_SETTING} UPLOAD src ${RPM_BUILD_SOURCES}/${PACK_SOURCE_FILE_NAME})
+RELEASE_ON_FEDORA("${RPM_BUILD_SRPMS}/${PRJ_SRPM_FILE_NAME}"
+    TAGS ${FEDORA_CURRENT_RELEASE_TAGS} ${FEDORA_EPEL_RELEASE_TAGS})
 
 
 ####################################################################
@@ -110,7 +108,7 @@ ADD_CUSTOM_TARGET(module_only
     )
 
 IF(EXISTS "${MAINTAINER_SETTING}")
-    MANAGE_MAINTAINER_TARGETS_UPLOAD(FedoraHosted
+    MANAGE_MAINTAINER_TARGETS_UPLOAD(
 	${PROJECT_NAME}-${PRJ_VER}-modules-only.tar.gz
 	${PROJECT_NAME}-modules-only-latest.tar.gz
 	FILE_ALIAS module_only )

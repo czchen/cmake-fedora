@@ -9,11 +9,7 @@
 # Includes:
 #   ManageMessage
 #   ManageSourceVersionControl
-#   ManageMaintainerTargets
-#   ManageRelease
 #
-# Included by:
-#    ManageReleaseOnFedora
 #
 # Defines following variable:
 #   FEDORA_RAWHIDE_TAG: Koji tags for rawhide
@@ -429,11 +425,16 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
     ENDMACRO(USE_BODHI)
 
     MACRO(RELEASE_ON_FEDORA srpm)
-	INCLUDE(ManageRelease)
-	USE_FEDPKG(${srpm} ${ARGN})
-	USE_BODHI(${ARGN})
-	ADD_CUSTOM_TARGET(release_on_fedora)
-	ADD_DEPENDENCIES(release_on_fedora bodhi_new)
+	GET_TARGET_PROPERTY(_target_exists release EXISTS)
+	IF(NOT _target_exists EQUAL 1)
+	    M_MSG(${M_OFF} "ManageReleaseOnFedora: maintainer file is invalid,   disable release targets" )
+	ELSE(NOT _target_exists EQUAL 1)
+	    USE_FEDPKG(${srpm} ${ARGN})
+	    USE_BODHI(${ARGN})
+	    ADD_CUSTOM_TARGET(release_on_fedora)
+	    ADD_DEPENDENCIES(release_on_fedora bodhi_new)
+	ENDIF(NOT _target_exists EQUAL 1)
+
     ENDMACRO(RELEASE_ON_FEDORA srpm)
 
 ENDIF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)

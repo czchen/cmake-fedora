@@ -42,7 +42,8 @@
 #     + PRJ_VER: Project version.
 #     + CHANGE_SUMMARY: Change summary.
 #     Defines following targets:
-#     + upload: upload the source packages to hosting services.
+#     + upload: Upload files to all hosting services.
+#     + upload_<hostService>: Upload files to <hostService>.
 #
 #
 # Setting File Format
@@ -107,7 +108,6 @@
 IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
     SET(_MANAGE_MAINTAINER_TARGETS_CMAKE_ "DEFINED")
     INCLUDE(ManageMessage)
-    SET(_maintainer_setting_file_read 0)
 
     MACRO(MANAGE_MAINTAINER_TARGETS_SFTP
 	    hostService remoteBasePath destPath fileAlias fileLocalPath )
@@ -229,12 +229,11 @@ IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
 
     MACRO(MAINTAINER_SETTING_READ_FILE)
 	SET(_disabled 0)
-	MESSAGE("ARG1=${ARG1}")
-	IF(ARG1 STREQUAL "")
+	IF(ARGV0 STREQUAL "")
 	    SET(_file ${MAINTAINER_SETTING})
-	ELSE(ARG1 STREQUAL "")
-	    SET(_file ${ARG1})
-	ENDIF(ARG1 STREQUAL "")
+	ELSE(ARGV0 STREQUAL "")
+	    SET(_file ${ARGV0})
+	ENDIF(ARGV0 STREQUAL "")
 
 	IF(_file STREQUAL "")
 	    M_MSG(${M_OFF} "Maintain setting file is not given,  disable maintainer targets")
@@ -244,10 +243,11 @@ IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
 	    SET(_disabled 1)
 	ENDIF(_file STREQUAL "")
 
-	IF (_maintainer_setting_file_read EQUAL 1)
+	GET_TARGET_PROPERTY(_target_exists upload EXISTS)
+	IF(_target_exists EQUAL 1)
 	    M_MSG(${M_INFO1} "Maintain setting file ${_file} has been loaded before")
 	    SET(_disabled 1)
-	ENDIF(NOT EXISTS ${_file})
+	ENDIF(_target_exists EQUAL 1)
 
 	IF(_disabled EQUAL 0)
 	    INCLUDE(ManageVariable)
@@ -260,6 +260,8 @@ IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
 	    ADD_CUSTOM_TARGET(upload
 		COMMENT "Uploading source to hosting services"
 		)
+
+	    SET_TARGET_PROPERTIES(upload PROPERTIES EXISTS 1)
 
 	    IF(SOURCE_VERSION_CONTROL STREQUAL "git")
 		MANAGE_SOURCE_VERSION_CONTROL_GIT()
@@ -279,10 +281,8 @@ IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
 	    # Setting for each hosting service
 	    FOREACH(_hostService ${HOSTING_SERVICES})
 		ADD_CUSTOM_TARGET(upload_${_hostService})
-		MANAGE_MAINTAINER_TARGETS_UPLOAD(${_hostService} ${packedSourcePath} FILE_ALIAS "source_tarball")
 		ADD_DEPENDENCIES(upload upload_${_hostService})
 	    ENDFOREACH(_hostService ${HOSTING_SERVICES})
-	    SET(_maintainer_setting_file_read 1)
 	ENDIF(_disabled EQUAL 0)
     ENDMACRO(MAINTAINER_SETTING_READ_FILE filename)
 
