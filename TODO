@@ -1,33 +1,48 @@
+# Note: This file may contain obsolete information,
+# Please refer the latest TODO: https://fedorahosted.org/cmake-fedora/#TODO
+
+= TODO =
  * Documentation
-   * Wiki
    * README
+
  * Targets:
-   * release: all in one step
-   * install_rpm: install as rpm
    * clean_all
- * Debug message level
+
  * Project generate script
-  * Generate the SCM ignore files.
-  * Import spec template.
-  * Import old spec.
-  * GUI
+   * Generate the version control ignore files
+   * Import old spec
+   * GUI
+
+ * Version control support
+   * Exclude version control ignore from packing as well (Except ChangeLog)
 
  * spec file: file section
-  * Auto generate
-  * Auto update
-  * i18n/l10n relative setting
+   * Auto generate
+   * Auto update
+   * i18n/l10n relative setting
 
  * Hosting support
-  * GoogleCode
-  * GitHub
+   * `SourceForge`
+   * `GoogleCode`
+   * `GitHub`
 
  * Support other distribution
   * Debian/Ubuntu
 
-==Done=
- * Project generate script
-  * Command line
-  * Import spec template.
+= Done =
+ * Documentation
+   * Wiki
+
+ * Targets:
+   * release: all in one step
+   * install_rpm: install as RPM
+
+* Version control support
+   * Tag
+
+* Project generate script
+  * Command line interface
+  * Import spec template
 
  * Hosting support
   * FedoraHosted

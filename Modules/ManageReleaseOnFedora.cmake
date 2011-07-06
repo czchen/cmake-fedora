@@ -206,6 +206,8 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	    ENDIF(_first_branch STREQUAL "")
 	    GET_TARGET_PROPERTY(_target_exists koji_scratch_build_${_tag} EXISTS)
 	    IF("${_target_exists}" STREQUAL "true")
+		# Since tag depends on koji_scratch_build_ ${_tag}
+		# fedpkg_commit depends on tag should be sufficient.
 		ADD_DEPENDENCIES(fedpkg_commit_${_tag}  koji_scratch_build_${_tag})
 	    ELSE("${_target_exists}" STREQUAL "true")
 		ADD_DEPENDENCIES(fedpkg_commit_${_tag}  fedpkg_scratch_build_${_tag})

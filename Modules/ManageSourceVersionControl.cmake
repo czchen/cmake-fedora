@@ -44,7 +44,7 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	SET(_MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE ${CMAKE_SOURCE_DIR}/.git/refs/tags/${PRJ_VER})
 
 	ADD_CUSTOM_TARGET(after_release_commit
-	    COMMAND git commit -a -m "${after_release__message}"
+	    COMMAND git commit -a -m "${after_release_message}"
 	    COMMENT "After release ${PRJ_VER}"
 	    VERBATIM
 	    )
@@ -85,7 +85,7 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 
     MACRO(MANAGE_SOURCE_VERSION_CONTROL_HG)
 	ADD_CUSTOM_TARGET(after_release_commit
-	    COMMAND hg commit --m "${after_release__message}"
+	    COMMAND hg commit --m "${after_release_message}"
 	    COMMENT "Afer release ${PRJ_VER}"
 	    VERBATIM
 	    )
@@ -128,7 +128,7 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 
     MACRO(MANAGE_SOURCE_VERSION_CONTROL_CVS)
 	ADD_CUSTOM_TARGET(after_release_commit
-	    COMMAND svn commit -m "${after_release__message}"
+	    COMMAND svn commit -m "${after_release_message}"
 	    COMMENT "Afer release ${PRJ_VER}"
 	    VERBATIM
 	    )
