@@ -14,22 +14,6 @@
   It now relies on HOSTING_SERVICES from maintainer setting file.
 - Minimum cmake requirement is now raise to 2.6
 
-* Wed Jul 06 2011 Ding-Yi Chen <dchen at redhat.com> - 0.6.1
-- Remove f13 from FEDORA_CURRENT_RELEASE_TAGS, as Fedora 13 is end of life.
-- ManageMessage: New module.
-  + M_MSG: Controllable verbose output
-- ManageRelease: New module.
-  + MANAGE_RELEASE: Make release by uploading files to hosting services
-- Now ManageReleaseOnFedora includes ManageMaintainerTargets
-- Modules are shown what they include and included by.
-- Now tag depends on koji_scratch_build, while fedpkg_commit master
-  (or other primary branch) depends directly on tag.
-- MAINTAINER_SETTING_READ_FILE now can either use MAINTAINER_SETTING, or take
-  one argument that define maintainer setting file.
-- MANAGE_MAINTAINER_TARGETS_UPLOAD no longer require argument hostService,
-  It now relies on HOSTING_SERVICES from maintainer setting file.
-- Minimum cmake requirement is now raise to 2.6
-
 * Wed Jun 08 2011 Ding-Yi Chen <dchen at redhat.com> - 0.6.0
 - Fixed Bug 684107 - [cmake-fedora] TAGS in USE_FEDPKG is ineffective.
 - ManageTranslation:
@@ -134,6 +118,3 @@ just showing it.
 
 * Mon Oct 04 2010 Ding-Yi Chen <dchen at redhat.com> - 0.1.0
 - Initial package.
-
-
-
