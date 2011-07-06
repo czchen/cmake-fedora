@@ -86,10 +86,10 @@ IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
 	    )
 
 	ADD_CUSTOM_TARGET(changelog ALL
-	    DEPENDS ${CMAKE_SOURCE_DIR}/ChangeLog
+	    DEPENDS ChangeLog
 	    )
 
-	#ADD_CUSTOM_COMMAND(OUTPUT ${CMAKE_SOURCE_DIR}/ChangeLog
+	#ADD_CUSTOM_COMMAND(OUTPUT ChangeLog
 	#    COMMAND ${CMAKE_COMMAND} -E echo "* ${TODAY_CHANGELOG} ${MAINTAINER} - ${PRJ_VER}" > ChangeLog
 	#    COMMAND cat ${releaseFile}_NO_PACK_CHANGELOG_ITEM  >> ChangeLog
 	#    COMMAND echo -e "\\n" >> ChangeLog
