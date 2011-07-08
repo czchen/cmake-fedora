@@ -1,3 +1,11 @@
+* Fri Jul 08 2011 Ding-Yi Chen <dchen at redhat.com> - 0.7.0-1
+- Fixed target: after_release_commit.
+- Add "INCLUDE(ManageRelease)" in template
+  so new project will not get CMake command "MANAGE_RELEASE"
+- Corrected TODO.
+- Corrected ChangeLog.prev and SPECS/RPM-ChangeLog.prev.
+- By default, the CMAKE_INSTALL_PREFIX is set as '/usr'.
+
 * Wed Jul 06 2011 Ding-Yi Chen <dchen at redhat.com> - 0.6.1-1
 - Remove f13 from FEDORA_CURRENT_RELEASE_TAGS, as Fedora 13 is end of life.
 - ManageMessage: New module.
