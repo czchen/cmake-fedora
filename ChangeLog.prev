@@ -1,3 +1,6 @@
+* Fri Jul 08 2011 Ding-Yi Chen <dchen at redhat.com> - 0.7.1
+- Target release now depends on upload.
+
 * Fri Jul 08 2011 Ding-Yi Chen <dchen at redhat.com> - 0.7.0
 - Fixed target: after_release_commit.
 - Add "INCLUDE(ManageRelease)" in template
@@ -127,4 +130,5 @@ just showing it.
 
 * Mon Oct 04 2010 Ding-Yi Chen <dchen at redhat.com> - 0.1.0
 - Initial package.
+
 
