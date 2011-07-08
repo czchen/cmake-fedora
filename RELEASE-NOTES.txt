@@ -1,12 +1,6 @@
-PRJ_VER=0.7.0
-SUMMARY=Fixed target: after_release_commit
+PRJ_VER=0.7.1
+SUMMARY=Target release now depends on upload
 BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=
 [Changes]
-- Fixed target: after_release_commit.
-- Add "INCLUDE(ManageRelease)" in template
-  so new project will not get CMake command "MANAGE_RELEASE"
-- Corrected TODO.
-- Corrected ChangeLog.prev and SPECS/RPM-ChangeLog.prev.
-- By default, the CMAKE_INSTALL_PREFIX is set as '/usr'.
-
+- Target release now depends on upload.

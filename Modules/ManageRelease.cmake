@@ -12,6 +12,7 @@
 #      will upload the file to hostingService.
 #    Defines following targets:
 #    + release: Do the release chores.
+#      Depends: upload, and any targets defined in RELEASE_TARGETS.
 #      Reads or define following variables:
 #      + RELEASE_TARGETS: Depended targets for release.
 #        Note that the sequence of the target does not guarantee the
@@ -48,6 +49,8 @@ IF(NOT DEFINED _MANAGE_RELEASE_CMAKE_)
 		COMMENT "Release a new version"
 		)
 	    SET_TARGET_PROPERTIES(release PROPERTIES EXISTS 1)
+
+	    ADD_DEPENDENCIES(release upload)
 
 	    IF(RELEASE_TARGETS)
 		ADD_DEPENDENCIES(release ${RELEASE_TARGETS})
