@@ -3,5 +3,5 @@ SUMMARY=
 BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=
 [Changes]
-- Renamed MANAGE_VARIABLE with MANAGE_VARIABLE_PATH, because it is what the
-  variable actually store.
+- Renamed MANAGE_VARIABLE with MANAGE_VARIABLE_PATH,
+  because it is what the variable actually store.
