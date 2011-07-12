@@ -1,6 +1,7 @@
-PRJ_VER=0.7.1
-SUMMARY=Target release now depends on upload
+PRJ_VER=0.7.1.99
+SUMMARY=
 BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=
 [Changes]
-- Target release now depends on upload.
+- Renamed MANAGE_VARIABLE with MANAGE_VARIABLE_PATH, because it is what the
+  variable actually store.

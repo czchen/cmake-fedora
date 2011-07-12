@@ -18,23 +18,20 @@ SET(LICENSE "<PRJ_LICENSE>")
 ####################################################################
 # Includes
 #
-#####################################################################
-# Includes
-#
 SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/Modules ${CMAKE_ROOT}/Modules )
 
 IF(CMAKE_VERSION)
     CMAKE_POLICY(SET CMP0005 OLD)
 ENDIF(CMAKE_VERSION)
 
-INCLUDE(ManageVariable RESULT_VARIABLE MANAGE_VARIABLE)
-IF(MANAGE_VARIABLE STREQUAL "NOTFOUND")
+INCLUDE(ManageVariable RESULT_VARIABLE MANAGE_VARIABLE_PATH)
+IF(MANAGE_VARIABLE_PATH STREQUAL "NOTFOUND")
     MESSAGE(FATAL_ERROR "ManageVariable is not found in CMAKE_MODULE_PATH,
 	    please:
 	    1) install cmake-fedora, or;
     2) wget -P SOURCES https://fedorahosted.org/releases/c/m/cmake-fedora/cmake-fedora-modules-only-latest.tar.gz
     tar zxvf SOURCES/cmake-fedora-modules-only-latest.tar.gz")
-ENDIF(MANAGE_VARIABLE STREQUAL "NOTFOUND")
+ENDIF(MANAGE_VARIABLE_PATH STREQUAL "NOTFOUND")
 
 INCLUDE(CMakeVersion)
 
