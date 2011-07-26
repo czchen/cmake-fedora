@@ -94,6 +94,7 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
     SET(XGETTEXT_OPTIONS_C
 	--language=C --keyword=_ --keyword=N_ --keyword=C_:1c,2 --keyword=NC_:1c,2 -s
 	--package-name=${PROJECT_NAME} --package-version=${PRJ_VER})
+    INCLUDE(ManageMessage)
 
 
     #========================================
@@ -102,111 +103,114 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
     MACRO(USE_GETTEXT_INIT)
 	FIND_PROGRAM(XGETTEXT_EXECUTABLE xgettext)
 	IF(XGETTEXT_EXECUTABLE STREQUAL "XGETTEXT_EXECUTABLE-NOTFOUND")
-	    MESSAGE(FATAL_ERROR "xgettext not found!")
+	    SET(_gettext_dependency_missing 1)
+	    M_MSG(${M_OFF} "xgettext not found! gettext support disabled.")
 	ENDIF(XGETTEXT_EXECUTABLE STREQUAL "XGETTEXT_EXECUTABLE-NOTFOUND")
 
 	FIND_PROGRAM(GETTEXT_MSGMERGE_EXECUTABLE msgmerge)
 	IF(GETTEXT_MSGMERGE_EXECUTABLE STREQUAL "GETTEXT_MSGMERGE_EXECUTABLE-NOTFOUND")
-	    MESSAGE(FATAL_ERROR "msgmerge not found!")
+	    SET(_gettext_dependency_missing 1)
+	    M_MSG(${M_OFF} "msgmerge not found! gettext support disabled.")
 	ENDIF(GETTEXT_MSGMERGE_EXECUTABLE STREQUAL "GETTEXT_MSGMERGE_EXECUTABLE-NOTFOUND")
 
 	FIND_PROGRAM(GETTEXT_MSGFMT_EXECUTABLE msgfmt)
 	IF(GETTEXT_MSGFMT_EXECUTABLE STREQUAL "GETTEXT_MSGFMT_EXECUTABLE-NOTFOUND")
-	    MESSAGE(FATAL_ERROR "msgfmt not found!")
+	    SET(_gettext_dependency_missing 1)
+	    M_MSG(${M_OFF} "msgfmt not found! gettext support disabled.")
 	ENDIF(GETTEXT_MSGFMT_EXECUTABLE STREQUAL "GETTEXT_MSGFMT_EXECUTABLE-NOTFOUND")
 
     ENDMACRO(USE_GETTEXT_INIT)
 
     MACRO(USE_GETTEXT)
+	SET(_gettext_dependency_missing 0)
 	USE_GETTEXT_INIT()
-	SET(_failed 0)
-	SET(_stage)
-	SET(_all)
-	SET(_src_list)
-	SET(_src_list_abs)
-	SET(_locale_list)
-	SET(_potFile)
-	SET(_xgettext_option_list)
-	FOREACH(_arg ${ARGN})
-	    IF(_arg STREQUAL "ALL")
-		SET(_all "ALL")
-	    ELSEIF(_arg STREQUAL "SRCS")
-		SET(_stage "SRCS")
-	    ELSEIF(_arg STREQUAL "LOCALES")
-		SET(_stage "LOCALES")
-	    ELSEIF(_arg STREQUAL "XGETTEXT_OPTIONS")
-		SET(_stage "XGETTEXT_OPTIONS")
-	    ELSEIF(_arg STREQUAL "POTFILE")
-		SET(_stage "POTFILE")
-	    ELSE(_arg STREQUAL "ALL")
-		IF(_stage STREQUAL "SRCS")
-		    FILE(RELATIVE_PATH _relFile ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/${_arg})
-		    LIST(APPEND _src_list ${_relFile})
-		    GET_FILENAME_COMPONENT(_absFile ${_arg} ABSOLUTE)
-		    LIST(APPEND _src_list_abs ${_absFile})
-		ELSEIF(_stage STREQUAL "LOCALES")
-		    LIST(APPEND _locale_list ${_arg})
-		ELSEIF(_stage STREQUAL "XGETTEXT_OPTIONS")
-		    LIST(APPEND _xgettext_option_list ${_arg})
-		ELSEIF(_stage STREQUAL "POTFILE")
-		    SET(_potFile "${_arg}")
-		ELSE(_stage STREQUAL "SRCS")
-		    MESSAGE("[Warning] USE_GETTEXT: not recognizing arg	${_arg}")
-		    SET(_potFile ${_arg})
-		ENDIF(_stage STREQUAL "SRCS")
-	    ENDIF(_arg STREQUAL "ALL")
-	ENDFOREACH(_arg ${_args} ${ARGN})
+	IF(${_gettext_dependency_missing} EQUAL 0)
+	    SET(_stage)
+	    SET(_all)
+	    SET(_src_list)
+	    SET(_src_list_abs)
+	    SET(_locale_list)
+	    SET(_potFile)
+	    SET(_xgettext_option_list)
+	    FOREACH(_arg ${ARGN})
+		IF(_arg STREQUAL "ALL")
+		    SET(_all "ALL")
+		ELSEIF(_arg STREQUAL "SRCS")
+		    SET(_stage "SRCS")
+		ELSEIF(_arg STREQUAL "LOCALES")
+		    SET(_stage "LOCALES")
+		ELSEIF(_arg STREQUAL "XGETTEXT_OPTIONS")
+		    SET(_stage "XGETTEXT_OPTIONS")
+		ELSEIF(_arg STREQUAL "POTFILE")
+		    SET(_stage "POTFILE")
+		ELSE(_arg STREQUAL "ALL")
+		    IF(_stage STREQUAL "SRCS")
+			FILE(RELATIVE_PATH _relFile ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/${_arg})
+			LIST(APPEND _src_list ${_relFile})
+			GET_FILENAME_COMPONENT(_absFile ${_arg} ABSOLUTE)
+			LIST(APPEND _src_list_abs ${_absFile})
+		    ELSEIF(_stage STREQUAL "LOCALES")
+			LIST(APPEND _locale_list ${_arg})
+		    ELSEIF(_stage STREQUAL "XGETTEXT_OPTIONS")
+			LIST(APPEND _xgettext_option_list ${_arg})
+		    ELSEIF(_stage STREQUAL "POTFILE")
+			SET(_potFile "${_arg}")
+		    ELSE(_stage STREQUAL "SRCS")
+			M_MSG(${M_WARN} "USE_GETTEXT: not recognizing arg ${_arg}")
+		    ENDIF(_stage STREQUAL "SRCS")
+		ENDIF(_arg STREQUAL "ALL")
+	    ENDFOREACH(_arg ${_args} ${ARGN})
 
+	    # Default values
+	    IF(_xgettext_option_list STREQUAL "")
+		SET(_xgettext_option_list ${XGETTEXT_OPTIONS_C})
+	    ENDIF(_xgettext_option_list STREQUAL "")
 
-	# Default values
-	IF(_xgettext_option_list STREQUAL "")
-	    SET(_xgettext_option_list ${XGETTEXT_OPTIONS_C})
-	ENDIF(_xgettext_option_list STREQUAL "")
+	    IF("${_potFile}" STREQUAL "")
+		SET(_potFile "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pot")
+	    ENDIF("${_potFile}" STREQUAL "")
 
-	IF("${_potFile}" STREQUAL "")
-	    SET(_potFile "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pot")
-	ENDIF("${_potFile}" STREQUAL "")
-
-	#MESSAGE("XGETTEXT=${XGETTEXT_EXECUTABLE} ${_xgettext_option_list} -o ${_potFile} ${_src_list}")
-	ADD_CUSTOM_COMMAND(OUTPUT ${_potFile}
-	    COMMAND ${XGETTEXT_EXECUTABLE} ${_xgettext_option_list} -o ${_potFile} ${_src_list}
-	    DEPENDS ${_src_list_abs}
-	    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-	    COMMENT "Extract translatable messages to ${_potFile}"
-	    )
-
-	ADD_CUSTOM_TARGET(pot_file ${_all}
-	    DEPENDS ${_potFile}
-	    )
-
-	### Generating translation
-	SET(_gmoFile_list)
-	GET_FILENAME_COMPONENT(_potBasename ${_potFile} NAME_WE)
-	GET_FILENAME_COMPONENT(_potDir ${_potFile} PATH)
-	GET_FILENAME_COMPONENT(_absPotFile ${_potFile} ABSOLUTE)
-	GET_FILENAME_COMPONENT(_absPotDir ${_absPotFile} PATH)
-	FOREACH (_locale ${_locale_list})
-	    SET(_gmoFile ${_absPotDir}/${_locale}.gmo)
-	    SET(_absFile ${_absPotDir}/${_locale}.po)
-	    ADD_CUSTOM_COMMAND(	OUTPUT ${_gmoFile}
-		COMMAND ${GETTEXT_MSGMERGE_EXECUTABLE} --quiet --update --backup=none
-	       	  -s ${_absFile} ${_potFile}
-		COMMAND ${GETTEXT_MSGFMT_EXECUTABLE} -o ${_gmoFile} ${_absFile}
-		DEPENDS ${_potFile} ${_absFile}
+	    M_MSG(${M_INFO2} "XGETTEXT=${XGETTEXT_EXECUTABLE} ${_xgettext_option_list} -o ${_potFile} ${_src_list}")
+	    ADD_CUSTOM_COMMAND(OUTPUT ${_potFile}
+		COMMAND ${XGETTEXT_EXECUTABLE} ${_xgettext_option_list} -o ${_potFile} ${_src_list}
+		DEPENDS ${_src_list_abs}
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-		COMMENT "Generating ${_locale} translation"
+		COMMENT "Extract translatable messages to ${_potFile}"
 		)
 
-	    #MESSAGE("_absFile=${_absFile} _absPotDir=${_absPotDir} _lang=${_lang} curr_bin=${CMAKE_CURRENT_BINARY_DIR}")
-	    INSTALL(FILES ${_gmoFile} DESTINATION share/locale/${_locale}/LC_MESSAGES RENAME ${_potBasename}.mo)
-	    LIST(APPEND _gmoFile_list ${_gmoFile})
-	ENDFOREACH (_locale)
-	MESSAGE("_gmoFile_list=${_gmoFile_list}")
+	    ADD_CUSTOM_TARGET(pot_file ${_all}
+		DEPENDS ${_potFile}
+		)
 
-	ADD_CUSTOM_TARGET(translations ${_all}
-	    DEPENDS ${_gmoFile_list}
-	    COMMENT "Generate translation"
-	    )
+	    ### Generating translation
+	    SET(_gmoFile_list)
+	    GET_FILENAME_COMPONENT(_potBasename ${_potFile} NAME_WE)
+	    GET_FILENAME_COMPONENT(_potDir ${_potFile} PATH)
+	    GET_FILENAME_COMPONENT(_absPotFile ${_potFile} ABSOLUTE)
+	    GET_FILENAME_COMPONENT(_absPotDir ${_absPotFile} PATH)
+	    FOREACH(_locale ${_locale_list})
+		SET(_gmoFile ${_absPotDir}/${_locale}.gmo)
+		SET(_absFile ${_absPotDir}/${_locale}.po)
+		ADD_CUSTOM_COMMAND(	OUTPUT ${_gmoFile}
+		    COMMAND ${GETTEXT_MSGMERGE_EXECUTABLE} --quiet --update --backup=none
+		    -s ${_absFile} ${_potFile}
+		    COMMAND ${GETTEXT_MSGFMT_EXECUTABLE} -o ${_gmoFile} ${_absFile}
+		    DEPENDS ${_potFile} ${_absFile}
+		    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+		    COMMENT "Generating ${_locale} translation"
+		    )
+
+		#MESSAGE("_absFile=${_absFile} _absPotDir=${_absPotDir} _lang=${_lang} curr_bin=${CMAKE_CURRENT_BINARY_DIR}")
+		INSTALL(FILES ${_gmoFile} DESTINATION share/locale/${_locale}/LC_MESSAGES RENAME ${_potBasename}.mo)
+		LIST(APPEND _gmoFile_list ${_gmoFile})
+	    ENDFOREACH(_locale ${_locale_list})
+	    MESSAGE("_gmoFile_list=${_gmoFile_list}")
+
+	    ADD_CUSTOM_TARGET(translations ${_all}
+		DEPENDS ${_gmoFile_list}
+		COMMENT "Generate translation"
+		)
+	ENDIF(${_gettext_dependency_missing} EQUAL 0)
     ENDMACRO(USE_GETTEXT)
 
 
@@ -217,30 +221,34 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 	SET(_failed 0)
 	IF(ZANATA_CMD STREQUAL "ZANATA_CMD-NOTFOUND")
 	    SET(_failed 1)
-	    MESSAGE("Program zanata is not found! Disable Zanata support.")
-	    MESSAGE("  Install zanata-python-client to enable.")
+	    M_MSG(${M_OFF} "zanata (python client) not found! zanata support disabled.")
 	ENDIF(ZANATA_CMD STREQUAL "ZANATA_CMD-NOTFOUND")
-
-	IF(EXISTS ${CMAKE_SOURCE_DIR}/zanata.xml.in)
-	    SET(ZANATA_SERVER ${serverUrl})
-	    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/zanata.xml.in
-		${CMAKE_BINARY_DIR}/zanata.xml @ONLY)
-	ENDIF(EXISTS ${CMAKE_SOURCE_DIR}/zanata.xml.in)
-
-	IF(EXISTS ${CMAKE_BINARY_DIR}/zanata.xml)
-	    SET(_zanata_xml ${CMAKE_BINARY_DIR}/zanata.xml)
-	ELSEIF(EXISTS ${CMAKE_SOURCE_DIR}/zanata.xml)
-	    SET(_zanata_xml ${CMAKE_SOURCE_DIR}/zanata.xml)
-	ELSE(EXISTS ${CMAKE_BINARY_DIR}/zanata.xml)
-	    SET(_failed 1)
-	    SET(_zanata_xml "")
-	    MESSAGE("zanata.xml is not found! Disable Zanata support")
-	ENDIF(EXISTS ${CMAKE_SOURCE_DIR}/zanata.xml)
 
 	IF(NOT EXISTS $ENV{HOME}/.config/zanata.ini)
 	    SET(_failed 1)
-	    MESSAGE("~/.config/zanata.ini is not found! Disable Zanata support")
+	    M_MSG(${M_OFF} "~/.config/zanata.ini is not found! Zanata support disabled.")
 	ENDIF(NOT EXISTS $ENV{HOME}/.config/zanata.ini)
+
+	SET(_zanata_xml "")
+	FIND_PATH(_zanata_xml_in "zanata.xml.in" PATHS
+	    ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+	M_MSG(${M_INFO1} "USE_ZANATA:_zanata_xml_in=${_zanata_xml_in}")
+	IF(NOT ${_zanata_xml_in} MATCHES "NOTFOUND")
+	    SET(ZANATA_SERVER ${serverUrl})
+	    GET_FILENAME_COMPONENT(_zanata_xml_in_dir ${_zanata_xml_in}	PATH)
+	    SET(_zanata_xml ${_zanata_xml_in_dir}/zanata.xml)
+	    CONFIGURE_FILE(${_zanata_xml_in} ${_zanata_xml} @ONLY)
+	ENDIF(NOT ${_zanata_xml_in} MATCHES "NOTFOUND")
+
+	IF(_zanata_xml STREQUAL "")
+	    FIND_PATH(_zanata_xml "zanata.xml" PATHS
+		${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+	    IF(${_zanata_xml} MATCHES "NOTFOUND")
+		SET(_failed 1)
+		M_MSG(${M_OFF} "zanata.xml not found in ${CMAKE_CURRENT_SOURCE_DIR} or ${CMAKE_SOURCE_DIR}! zanata support disabled.")
+	    ENDIF(${_zanata_xml} MATCHES "NOTFOUND")
+	ENDIF(_zanata_xml STREQUAL "")
+	M_MSG(${M_INFO1} "USE_ZANATA:_zanata_xml=${_zanata_xml_in}")
 
 	IF(_failed EQUAL 0)
 	    # Parsing arguments

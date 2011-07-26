@@ -5,4 +5,6 @@ REDHAT_BUGZILLA=
 [Changes]
 - Renamed MANAGE_VARIABLE with MANAGE_VARIABLE_PATH,
   because it is what the variable actually store.
-- Move the cmake policies to the front
+- Move the cmake policies to the front.
+- Revised ManageTranslation, now zanata.xml.in can be put to either
+  CMAKE_SOURCE_DIR} or CMAKE_CURRENT_SOURCE_DIR.
