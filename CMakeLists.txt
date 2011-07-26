@@ -1,6 +1,24 @@
 cmake_minimum_required(VERSION 2.6)
 SET(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "Install path prefix")
 ####################################################################
+# Recommended policy setting
+#
+CMAKE_POLICY(VERSION 2.6)
+# CMP0005: Preprocessor definition values are now escaped automatically.
+# OLD:Preprocessor definition values are not escaped.
+CMAKE_POLICY(SET CMP0005 OLD)
+
+# CMP0009: FILE GLOB_RECURSE calls should not follow symlinks by default.
+# OLD: FILE GLOB_RECURSE calls follow symlinks
+CMAKE_POLICY(SET CMP0009 NEW)
+
+IF(NOT ${CMAKE_VERSION} VERSION_LESS 2.8.4)
+    # CMP0017: Prefer files from the CMake module directory when including from there.
+    # OLD: Prefer files from CMAKE_MODULE_PATH regardless
+    CMAKE_POLICY(SET CMP0017 OLD)
+ENDIF(NOT ${CMAKE_VERSION} VERSION_LESS 2.8.4)
+
+####################################################################
 # Project specific information
 #
 PROJECT(cmake-fedora NONE)
@@ -19,10 +37,6 @@ SET(LICENSE BSD)
 # Includes
 #
 SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/Modules ${CMAKE_ROOT}/Modules )
-
-IF(CMAKE_VERSION)
-    CMAKE_POLICY(SET CMP0005 OLD)
-ENDIF(CMAKE_VERSION)
 
 INCLUDE(CMakeVersion)
 
