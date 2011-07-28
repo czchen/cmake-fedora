@@ -1,10 +1,12 @@
 PRJ_VER=0.7.1.99
-SUMMARY=
+SUMMARY=Fixed Bug 725617;Remove fedpkg_commit, use fedpkg_import instead; Improved Zanata Support.
 BODHI_UPDATE_TYPE=bugfix
-REDHAT_BUGZILLA=
+REDHAT_BUGZILLA=725617
 [Changes]
 - Renamed MANAGE_VARIABLE with MANAGE_VARIABLE_PATH,
   because it is what the variable actually store.
 - Move the cmake policies to the front.
 - Revised ManageTranslation, now zanata.xml.in can be put to either
   CMAKE_SOURCE_DIR} or CMAKE_CURRENT_SOURCE_DIR.
+- Remove fedpkg_commit_*, use fedpkg_import instead.
+- Fixed Bug 725617 - cmake-fedora: target 'tag' should stop when tag file exists.
