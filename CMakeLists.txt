@@ -12,11 +12,11 @@ CMAKE_POLICY(SET CMP0005 OLD)
 # OLD: FILE GLOB_RECURSE calls follow symlinks
 CMAKE_POLICY(SET CMP0009 NEW)
 
-IF(NOT ${CMAKE_VERSION} VERSION_LESS 2.8.4)
+IF(POLICY CMP0017)
     # CMP0017: Prefer files from the CMake module directory when including from there.
     # OLD: Prefer files from CMAKE_MODULE_PATH regardless
     CMAKE_POLICY(SET CMP0017 OLD)
-ENDIF(NOT ${CMAKE_VERSION} VERSION_LESS 2.8.4)
+ENDIF(POLICY CMP0017)
 
 ####################################################################
 # Project specific information
