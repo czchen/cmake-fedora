@@ -11,10 +11,10 @@
 #   ManageSourceVersionControl
 #
 # Read or defines following variable:
-#   FEDORA_KOJI_TAG_POSTFIX: Postfix of Fedora koji tag, such as "-updates", "-updates-testing"
-#     Default is ""
-#   EPEL_KOJI_TAG_POSTFIX: Postfix of EPEL koji tag, such as "-testing", "-testing-candidate"
-#     Default is "-testing-candidate"
+#   FEDORA_CANDIDATE_PREFERRED:
+#     Set to build against updates-candidate if possible.
+#   EPEL_CANDIDATE_PREFERRED:
+#     Set to build against testing-candidate if possible.
 # Defines following variable:
 #   FEDORA_RAWHIDE_TAG: Koji tags for rawhide
 #   FEDORA_CURRENT_RELEASE_TAGS: Current tags of fedora releases.
@@ -72,9 +72,9 @@
 
 IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
     SET(_MANAGE_RELEASE_ON_FEDORA_ "DEFINED")
-    SET(FEDORA_CURRENT_RELEASE_TAGS f15 f14)
+    SET(FEDORA_CURRENT_RELEASE_TAGS f16 f15 f14)
     SET(FEDORA_EPEL_RELEASE_TAGS el6 el5)
-    SET(FEDORA_RAWHIDE_TAG f16)
+    SET(FEDORA_RAWHIDE_TAG rawhide)
     IF("${FEDPKG_DIR}" STREQUAL "")
 	SET(FEDPKG_DIR "FedPkg")
     ENDIF("${FEDPKG_DIR}" STREQUAL "")
@@ -98,19 +98,29 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 
     MACRO(_manange_release_on_fedora_dist_convert_to_koji_target
 	    var dist)
-	IF(dist MATCHES "^el")
-	    STRING(REGEX REPLACE "el\([0-9]+\)"
-		"dist-\\1E-epel${EPEL_KOJI_TAG_POSTFIX}" ${var}  "${dist}")
-	ELSE(dist MATCHES "^el")
+	IF("${dist}" MATCHES "^el")
+	    STRING(REGEX REPLACE "el\([0-9]+\)" "\\1" _relver  "${dist}")
+	    IF(DEFINED EPEL_CANDIDATE_PREFERRED)
+		SET(${var} "dist-${_relver}E-epel-testing-candidate")
+	    ELSE(DEFINED EPEL_CANDIDATE_PREFERRED)
+		SET(${var} "dist-${_relver}E-epel")
+	    ENDIF(DEFINED EPEL_CANDIDATE_PREFERRED)
+	ELSE("${dist}" MATCHES "^el")
 	    # Fedora dists
-	    STRING(REGEX REPLACE "f[c-]\([0-9]+\)" _relver "${dist}")
-	    IF(_relver GREATER 15)
+	    STRING(REGEX REPLACE "f[c-]?\([0-9]+\)" "\\1" _relver "${dist}")
+	    IF(DEFINED EPEL_CANDIDATE_PREFERRED)
+		SET(${var} "dist-${_relver}E-epel-testing-candidate")
+	    ELSE(DEFINED EPEL_CANDIDATE_PREFERRED)
+		SET(${var} "dist-${_relver}E-epel")
+	    ENDIF(DEFINED EPEL_CANDIDATE_PREFERRED)
+
+	    SET(${var} "f${_relver}${FEDORA_KOJI_TAG_POSTFIX}")
+	    IF(_relver GREATER 16)
 		SET(${var} "f${_relver}${FEDORA_KOJI_TAG_POSTFIX}")
 	    ELSE(_relver GREATER 15)
 		SET(${var} "dist-f${_relver}${FEDORA_KOJI_TAG_POSTFIX}")
 	    ENDIF(_relver GREATER 15)
-
-	ENDIF(dist MATCHES "^el")
+	ENDIF("${dist}" MATCHES "^el")
     ENDMACRO(_manange_release_on_fedora_dist_convert_to_koji_target
 	kojiTarget dist)
 
@@ -119,53 +129,48 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	SET(_FEDORA_DIST_TAGS "")
 	SET(_FEDORA_KARMA "3")
 	SET(_FEDORA_AUTO_KARMA "True")
+	SET(_FEDORA_KOJI_SCRATCH 1)
+	SET(_FEDORA_DIST_TAGS "")
 
 	SET(_stage "")
 	FOREACH(_arg ${ARGN})
-	    IF ("${_arg}" STREQUAL "NORAWHIDE")
+	    IF (_arg STREQUAL "NORAWHIDE")
 		SET(_FEDORA_RAWHIDE 0)
-	    ELSEIF("${_arg}" STREQUAL "NOKOJI_SCRATCH_BUILD")
+	    ELSEIF(_arg STREQUAL "NOKOJI_SCRATCH_BUILD")
 		SET(_FEDORA_KOJI_SCRATCH 0)
-
-	    ELSEIF("${_arg}" STREQUAL "KARMA")
+	    ELSEIF(_arg STREQUAL "KARMA")
 		SET(_stage "KARMA")
-	    ELSEIF("${_arg}" STREQUAL "TAGS")
+	    ELSEIF(_arg STREQUAL "TAGS")
 		# No need to further parsing TAGS, as FEDORA_RELEASE_TAGS
 		# override whatever specified after TAGS
-		IF(NOT FEDORA_RELEASE_TAGS STREQUAL "")
-		    BREAK()
-		ENDIF(NOT FEDORA_RELEASE_TAGS STREQUAL "")
 		SET(_stage "TAGS")
-	    ELSE("${_arg}" STREQUAL "NORAWHIDE")
+	    ELSE(_arg STREQUAL "NORAWHIDE")
 		IF(_stage STREQUAL "KARMA")
-		    IF("${_arg}" STREQUAL "0")
+		    IF(_arg STREQUAL "0")
 			SET(_FEDORA_AUTO_KARMA "False")
-		    ENDIF("${_arg}" STREQUAL "0")
+		    ENDIF(_arg STREQUAL "0")
 		    SET(_FEDORA_KARMA ${_arg})
 		ELSEIF(_stage STREQUAL "TAGS")
-		    LIST(APPEND _FEDORA_DIST_TAGS ${_arg})
+		    LIST(APPEND _FEDORA_DIST_TAGS "${_arg}")
 		ELSE(_stage STREQUAL "TAGS")
 		    SET(_FEDORA_SRPM ${_arg})
-		ENDIF(_stage STREQUAL "TAGS")
-   	    ENDIF("${_arg}" STREQUAL "NORAWHIDE")
+		ENDIF(_stage STREQUAL "KARMA")
+   	    ENDIF(_arg STREQUAL "NORAWHIDE")
 	ENDFOREACH(_arg ${ARGN})
-	IF(NOT FEDORA_RELEASE_TAGS STREQUAL "")
-	    LIST(APPEND _FEDORA_DIST_TAGS ${FEDORA_RELEASE_TAGS})
+	IF(NOT "${FEDORA_RELEASE_TAGS}" STREQUAL "")
+	    SET(_FEDORA_DIST_TAGS ${FEDORA_RELEASE_TAGS})
 	ELSEIF(_FEDORA_DIST_TAGS STREQUAL "")
 	    LIST(APPEND _FEDORA_DIST_TAGS ${FEDORA_CURRENT_RELEASE_TAGS})
-	ENDIF(NOT FEDORA_RELEASE_TAGS STREQUAL "")
+	ENDIF(NOT "${FEDORA_RELEASE_TAGS}" STREQUAL "")
 
 	IF(_FEDORA_RAWHIDE EQUAL 1)
-	    LIST(INSERT ${_tags} 0 ${FEDORA_RAWHIDE_TAG})
+	    LIST(INSERT _FEDORA_DIST_TAGS 0 ${FEDORA_RAWHIDE_TAG})
 	ENDIF(_FEDORA_RAWHIDE EQUAL 1)
-	LIST(REMOVE_DUPLICATES ${_FEDORA_DIST_TAGS})
+	LIST(REMOVE_DUPLICATES _FEDORA_DIST_TAGS)
 
 	SET(_FEDORA_STABLE_KARMA "${_FEDORA_KARMA}")
 	SET(_FEDORA_UNSTABLE_KARMA "-${_FEDORA_KARMA}")
 
-	MESSAGE("_FEDORA_RAWHIDE=${_FEDORA_RAWHIDE}")
-	MESSAGE("_FEDORA_KOJI_SCRATCH=${_FEDORA_KOJI_SCRATCH}")
-	MESSAGE("_FEDORA_DIST_TAGS=${_FEDORA_DIST_TAGS}")
     ENDMACRO(_manange_release_on_fedora_parse_args)
 
     MACRO(USE_KOJI srpm)
@@ -194,8 +199,8 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		_manange_release_on_fedora_dist_convert_to_koji_target(_branch ${_tag})
 		IF(_FEDORA_KOJI_SCRATCH EQUAL 1)
 		    ADD_CUSTOM_TARGET(koji_scratch_build_${_tag}
-			COMMAND ${KOJI} build --scratch dist-${_branch} ${srpm}
-			COMMENT "koji scratch build on ${_tag} with ${srpm}"
+			COMMAND ${KOJI} build --scratch ${_branch} ${srpm}
+			COMMENT "koji scratch build on ${_branch} with ${srpm}"
 			)
 		    ADD_DEPENDENCIES(koji_scratch_build_${_tag} rpmlint)
 		    ADD_DEPENDENCIES(koji_scratch_build koji_scratch_build_${_tag})
@@ -231,11 +236,11 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	SET(_fedpkg_tag_path_abs_prefix
 	    "${FEDPKG_WORKDIR}/.git/refs/tags")
 	FOREACH(_tag ${_FEDORA_DIST_TAGS})
-	    IF(_tag STREQUAL "${FEDORA_RAWHIDE_TAG}")
+	    IF(_tag STREQUAL FEDORA_RAWHIDE_TAG)
 		SET(_branch "master")
-	    ELSE(_tag STREQUAL "${FEDORA_RAWHIDE_TAG}")
+	    ELSE(_tag STREQUAL FEDORA_RAWHIDE_TAG)
 		SET(_branch "${_tag}")
-	    ENDIF(_tag STREQUAL "${FEDORA_RAWHIDE_TAG}")
+	    ENDIF(_tag STREQUAL FEDORA_RAWHIDE_TAG)
 	    SET(_fedpkg_tag_name_prefix "${PRJ_VER}-${PRJ_RELEASE_NO}.${_tag}")
 
 	    ADD_CUSTOM_TARGET(fedpkg_scratch_build_${_tag}
@@ -255,9 +260,9 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 
 	    ## fedpkg import
 	    SET(_import_opt "")
-	    IF(NOT ${_tag} STREQUAL ${FEDORA_RAWHIDE_TAG})
+	    IF(NOT _tag STREQUAL FEDORA_RAWHIDE_TAG)
 		SET(_import_opt "-b ${_tag}")
-	    ENDIF(NOT ${_tag} STREQUAL ${FEDORA_RAWHIDE_TAG})
+	    ENDIF(NOT _tag STREQUAL FEDORA_RAWHIDE_TAG)
 
 	    SET(_fedpkg_tag_name_imported
 		"${_fedpkg_tag_name_prefix}.imported")
@@ -276,8 +281,8 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	    ADD_CUSTOM_TARGET(fedpkg_import_${_tag}
 		DEPENDS ${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_imported}
 		)
-	    ADD_DEPENDENCIES(fedpkg_import_${_tags} tag)
-	    ADD_DEPENDENCIES(fedpkg_import fedpkg_import_${_tags})
+	    ADD_DEPENDENCIES(fedpkg_import_${_tag} tag)
+	    ADD_DEPENDENCIES(fedpkg_import fedpkg_import_${_tag})
 
 	    ## fedpkg build
 	    SET(_fedpkg_tag_name_built
@@ -298,17 +303,8 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		DEPENDS ${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_built}
 		)
 
-	    ADD_DEPENDENCIES(fedpkg_build_${_tags} fedpkg_import_${_tag})
-	    ADD_DEPENDENCIES(fedpkg_build fedpkg_build_${_tags})
-
-	    ADD_CUSTOM_TARGET(fedpkg_build_${_tag}
-		COMMAND ${FEDPKG} build
-		DEPENDS ${_first_tag_path}
-		WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
-		COMMENT "fedpkg build on ${_branch} with ${srpm}"
-		)
-	    ADD_DEPENDENCIES(fedpkg_build_${_tag} fedpkg_commit_${_tag})
-	    ADD_DEPENDENCIES(fedpkg_build fedpkg_build_${_branch})
+	    ADD_DEPENDENCIES(fedpkg_build_${_tag} fedpkg_import_${_tag})
+	    ADD_DEPENDENCIES(fedpkg_build fedpkg_build_${_tag})
 
 	    ADD_CUSTOM_TARGET(fedpkg_update_${_tag}
 		COMMAND ${FEDPKG} update
@@ -385,7 +381,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	    M_MSG(${M_OFF}
 		"\$HOME/.fedora-upload-ca.cert not found, bodhi support disabled")
 	    SET(_dependencies_missing 1)
-	ENDIF(NT EXISTS $ENV{HOME}/.fedora-upload-ca.cert)
+	ENDIF(NOT EXISTS $ENV{HOME}/.fedora-upload-ca.cert)
 	FIND_PROGRAM(BODHI bodhi)
 	IF(BODHI STREQUAL "BODHI-NOTFOUND")
 	    M_MSG(${M_OFF} "Program bodhi is not found! bodhi support disabled.")
@@ -424,7 +420,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		ELSE(SUGGEST_REBOOT)
 		    FILE(APPEND ${_bodhi_template_file} "suggest_reboot=False\n\n")
 		ENDIF(SUGGEST_REBOOT)
-	    ENDFOREACH(_tag ${_tags})
+	    ENDFOREACH(_tag ${_FEDORA_DIST_TAGS})
 
 	    IF(BODHI_USER)
 		SET(_bodhi_login "-u ${BODHI_USER}")
