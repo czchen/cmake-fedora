@@ -16,10 +16,14 @@
 #   EPEL_CANDIDATE_PREFERRED:
 #     Set to build against testing-candidate if possible.
 # Defines following variable:
-#   FEDORA_RAWHIDE_TAG: Koji tags for rawhide
-#   FEDORA_CURRENT_RELEASE_TAGS: Current tags of fedora releases.
+#   FEDORA_RAWHIDE_TAG: Koji tag for rawhide.
+#   FEDORA_NEXT_RELEASE_TAG: Fedora's upcoming release.
+#   FEDORA_SUPPORTED_RELEASE_TAGS: Releases that are currently supported.
+#   FEDORA_CURRENT_RELEASE_TAGS: Releases that are recommend to build against.
+#     It is essentially FEDORA_RAWHIDE_TAG + FEDORA_NEXT_RELEASE_TAG
+#                       + FEDORA_SUPPORTED_RELEASE_TAGS.
 # Defines following macros:
-#   RELEASE_ON_FEDORA(srpm [NORAWHIDE] [TAGS [tag1 [tag2 ...]])
+#   RELEASE_ON_FEDORA(srpm [TAGS [tag1 [tag2 ...]])
 #   - This call USE_FEDPKG and USE_BODHI and set the corresponding
 #     dependencies. This macro is recommended than calling USE_FEDPKG and
 #     USE_BODHI directly.
@@ -28,13 +32,12 @@
 #       such as making source file tarballs, source rpms, build with fedpkg
 #       and upload to bodhi.
 #
-#   USE_FEDPKG(srpm [NORAWHIDE] [NOKOJI_SCRATCH_BUILD] [TAGS [tag1 [tag2 ...]])
+#   USE_FEDPKG(srpm [NOKOJI_SCRATCH_BUILD] [TAGS [tag1 [tag2 ...]])
 #   - Use fedpkg targets if ~/.fedora-upload-ca.cert exists.
 #     If ~/.fedora-upload-ca.cert does not exists, this marcos run as an empty
 #     macro.
 #     Argument:
 #     + srpm: srpm file with path.
-#     + NORAWHIDE: Don't build on rawhide.
 #     + NOKOJI_SCRATCH_BUILD: Don't use koji_scratch_build before commit with
 #       fedpkg.
 #     + tag1, tag2...: Dist tags such as f14, f13, el5.
@@ -72,9 +75,12 @@
 
 IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
     SET(_MANAGE_RELEASE_ON_FEDORA_ "DEFINED")
-    SET(FEDORA_CURRENT_RELEASE_TAGS f16 f15 f14)
     SET(FEDORA_EPEL_RELEASE_TAGS el6 el5)
     SET(FEDORA_RAWHIDE_TAG rawhide)
+    SET(FEDORA_NEXT_RELEASE_TAGS f16)
+    SET(FEDORA_SUPPORTED_RELEASE_TAGS f15 f14)
+    SET(FEDORA_CURRENT_RELEASE_TAGS ${FEDORA_RAWHIDE_TAG}
+	${FEDORA_NEXT_RELEASE_TAGS} ${FEDORA_SUPPORTED_RELEASE_TAGS})
     IF("${FEDPKG_DIR}" STREQUAL "")
 	SET(FEDPKG_DIR "FedPkg")
     ENDIF("${FEDPKG_DIR}" STREQUAL "")
@@ -98,34 +104,31 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 
     MACRO(_manange_release_on_fedora_dist_convert_to_koji_target
 	    var dist)
-	IF("${dist}" MATCHES "^el")
+	SET(_dist_postfix "")
+	IF(dist MATCHES "^el")
+	    # EPEL dists
 	    STRING(REGEX REPLACE "el\([0-9]+\)" "\\1" _relver  "${dist}")
 	    IF(DEFINED EPEL_CANDIDATE_PREFERRED)
-		SET(${var} "dist-${_relver}E-epel-testing-candidate")
-	    ELSE(DEFINED EPEL_CANDIDATE_PREFERRED)
-		SET(${var} "dist-${_relver}E-epel")
+		SET(_dist_postfix "-testing-candidate")
 	    ENDIF(DEFINED EPEL_CANDIDATE_PREFERRED)
-	ELSE("${dist}" MATCHES "^el")
+	    SET(${var} "dist-${_relver}E-epel${_dist_postfix}")
+	ELSEIF(dist MATCHES "^f")
 	    # Fedora dists
-	    STRING(REGEX REPLACE "f[c-]?\([0-9]+\)" "\\1" _relver "${dist}")
-	    IF(DEFINED EPEL_CANDIDATE_PREFERRED)
-		SET(${var} "dist-${_relver}E-epel-testing-candidate")
-	    ELSE(DEFINED EPEL_CANDIDATE_PREFERRED)
-		SET(${var} "dist-${_relver}E-epel")
-	    ENDIF(DEFINED EPEL_CANDIDATE_PREFERRED)
-
-	    SET(${var} "f${_relver}${FEDORA_KOJI_TAG_POSTFIX}")
-	    IF(_relver GREATER 16)
-		SET(${var} "f${_relver}${FEDORA_KOJI_TAG_POSTFIX}")
-	    ELSE(_relver GREATER 15)
-		SET(${var} "dist-f${_relver}${FEDORA_KOJI_TAG_POSTFIX}")
-	    ENDIF(_relver GREATER 15)
-	ENDIF("${dist}" MATCHES "^el")
+	    IF(DEFINED FEDORA_CANDIDATE_PREFERRED)
+		LIST(FIND FEDORA_SUPPORTED_RELEASE_TAGS "${dist}" _index)
+		IF(_index GREATER -1)
+		    SET(_dist_postfix "-updates-candidate")
+		ENDIF(_index GREATER -1)
+	    ENDIF(DEFINED FEDORA_CANDIDATE_PREFERRED)
+	    SET(${var} "dist-${dist}${_dist_postfix}")
+	ELSE(dist MATCHES "^el")
+	    # Perhaps rawhide, or other custom targets
+	    SET(${var} "dist-${dist}")
+	ENDIF(dist MATCHES "^el")
     ENDMACRO(_manange_release_on_fedora_dist_convert_to_koji_target
 	kojiTarget dist)
 
     MACRO(_manange_release_on_fedora_parse_args)
-	SET(_FEDORA_RAWHIDE 1)
 	SET(_FEDORA_DIST_TAGS "")
 	SET(_FEDORA_KARMA "3")
 	SET(_FEDORA_AUTO_KARMA "True")
@@ -134,17 +137,16 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 
 	SET(_stage "")
 	FOREACH(_arg ${ARGN})
-	    IF (_arg STREQUAL "NORAWHIDE")
-		SET(_FEDORA_RAWHIDE 0)
-	    ELSEIF(_arg STREQUAL "NOKOJI_SCRATCH_BUILD")
+	    IF(_arg STREQUAL "NOKOJI_SCRATCH_BUILD")
 		SET(_FEDORA_KOJI_SCRATCH 0)
 	    ELSEIF(_arg STREQUAL "KARMA")
 		SET(_stage "KARMA")
 	    ELSEIF(_arg STREQUAL "TAGS")
 		# No need to further parsing TAGS, as FEDORA_RELEASE_TAGS
 		# override whatever specified after TAGS
+		BREAK()
 		SET(_stage "TAGS")
-	    ELSE(_arg STREQUAL "NORAWHIDE")
+	    ELSE(_arg STREQUAL "NOKOJI_SCRATCH_BUILD")
 		IF(_stage STREQUAL "KARMA")
 		    IF(_arg STREQUAL "0")
 			SET(_FEDORA_AUTO_KARMA "False")
@@ -155,18 +157,13 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		ELSE(_stage STREQUAL "TAGS")
 		    SET(_FEDORA_SRPM ${_arg})
 		ENDIF(_stage STREQUAL "KARMA")
-   	    ENDIF(_arg STREQUAL "NORAWHIDE")
+	    ENDIF(_arg STREQUAL "NOKOJI_SCRATCH_BUILD")
 	ENDFOREACH(_arg ${ARGN})
 	IF(NOT "${FEDORA_RELEASE_TAGS}" STREQUAL "")
 	    SET(_FEDORA_DIST_TAGS ${FEDORA_RELEASE_TAGS})
 	ELSEIF(_FEDORA_DIST_TAGS STREQUAL "")
 	    LIST(APPEND _FEDORA_DIST_TAGS ${FEDORA_CURRENT_RELEASE_TAGS})
 	ENDIF(NOT "${FEDORA_RELEASE_TAGS}" STREQUAL "")
-
-	IF(_FEDORA_RAWHIDE EQUAL 1)
-	    LIST(INSERT _FEDORA_DIST_TAGS 0 ${FEDORA_RAWHIDE_TAG})
-	ENDIF(_FEDORA_RAWHIDE EQUAL 1)
-	LIST(REMOVE_DUPLICATES _FEDORA_DIST_TAGS)
 
 	SET(_FEDORA_STABLE_KARMA "${_FEDORA_KARMA}")
 	SET(_FEDORA_UNSTABLE_KARMA "-${_FEDORA_KARMA}")
@@ -395,31 +392,33 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 
 	    FILE(REMOVE ${_bodhi_template_file})
 	    FOREACH(_tag ${_FEDORA_DIST_TAGS})
-		_use_bodhi_convert_tag(_bodhi_tag ${_tag})
+		IF(NOT _tag STREQUAL ${FEDORA_RAWHIDE_TAG})
+		    _use_bodhi_convert_tag(_bodhi_tag ${_tag})
 
-		FILE(APPEND ${_bodhi_template_file} "[${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE_NO}.${_bodhi_tag}]\n\n")
+		    FILE(APPEND ${_bodhi_template_file} "[${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE_NO}.${_bodhi_tag}]\n\n")
 
-		IF(BODHI_UPDATE_TYPE)
-		    FILE(APPEND ${_bodhi_template_file} "type=${BODHI_UPDATE_TYPE}\n\n")
-		ELSE(BODHI_UPDATE_TYPE)
-		    FILE(APPEND ${_bodhi_template_file} "type=bugfix\n\n")
-		ENDIF(BODHI_UPDATE_TYPE)
+		    IF(BODHI_UPDATE_TYPE)
+			FILE(APPEND ${_bodhi_template_file} "type=${BODHI_UPDATE_TYPE}\n\n")
+		    ELSE(BODHI_UPDATE_TYPE)
+			FILE(APPEND ${_bodhi_template_file} "type=bugfix\n\n")
+		    ENDIF(BODHI_UPDATE_TYPE)
 
-		FILE(APPEND ${_bodhi_template_file} "request=testing\n")
-		FILE(APPEND ${_bodhi_template_file} "bugs=${REDHAT_BUGZILLA}\n")
+		    FILE(APPEND ${_bodhi_template_file} "request=testing\n")
+		    FILE(APPEND ${_bodhi_template_file} "bugs=${REDHAT_BUGZILLA}\n")
 
-		_append_notes(${_bodhi_template_file})
+		    _append_notes(${_bodhi_template_file})
 
-		FILE(APPEND ${_bodhi_template_file} "autokarma=${_FEDORA_AUTO_KARMA}\n")
-		FILE(APPEND ${_bodhi_template_file} "stable_karma=${_FEDORA_STABLE_KARMA}\n")
-		FILE(APPEND ${_bodhi_template_file} "unstable_karma=${_FEDORA_UNSTABLE_KARMA}\n")
-		FILE(APPEND ${_bodhi_template_file} "close_bugs=True\n")
+		    FILE(APPEND ${_bodhi_template_file} "autokarma=${_FEDORA_AUTO_KARMA}\n")
+		    FILE(APPEND ${_bodhi_template_file} "stable_karma=${_FEDORA_STABLE_KARMA}\n")
+		    FILE(APPEND ${_bodhi_template_file} "unstable_karma=${_FEDORA_UNSTABLE_KARMA}\n")
+		    FILE(APPEND ${_bodhi_template_file} "close_bugs=True\n")
 
-		IF(SUGGEST_REBOOT)
-		    FILE(APPEND ${_bodhi_template_file} "suggest_reboot=True\n")
-		ELSE(SUGGEST_REBOOT)
-		    FILE(APPEND ${_bodhi_template_file} "suggest_reboot=False\n\n")
-		ENDIF(SUGGEST_REBOOT)
+		    IF(SUGGEST_REBOOT)
+			FILE(APPEND ${_bodhi_template_file} "suggest_reboot=True\n")
+		    ELSE(SUGGEST_REBOOT)
+			FILE(APPEND ${_bodhi_template_file} "suggest_reboot=False\n\n")
+		    ENDIF(SUGGEST_REBOOT)
+		ENDIF(NOT _tag STREQUAL ${FEDORA_RAWHIDE_TAG})
 	    ENDFOREACH(_tag ${_FEDORA_DIST_TAGS})
 
 	    IF(BODHI_USER)

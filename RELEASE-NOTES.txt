@@ -3,10 +3,14 @@ SUMMARY=Fixed Bug 725617;Remove fedpkg_commit, use fedpkg_import instead; Improv
 BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=725617
 [Changes]
+- Fixed Bug 725617 - cmake-fedora: target 'tag' should stop when tag file exists.
 - Renamed MANAGE_VARIABLE with MANAGE_VARIABLE_PATH,
   because it is what the variable actually store.
 - Move the cmake policies to the front.
 - Revised ManageTranslation, now zanata.xml.in can be put to either
-  CMAKE_SOURCE_DIR} or CMAKE_CURRENT_SOURCE_DIR.
+  CMAKE_SOURCE_DIR or CMAKE_CURRENT_SOURCE_DIR.
 - Remove fedpkg_commit_*, use fedpkg_import instead.
-- Fixed Bug 725617 - cmake-fedora: target 'tag' should stop when tag file exists.
+- ManageReleaseOnFedora:
+  + New Constant: FEDORA_NEXT_RELEASE_TAGS, FEDORA_SUPPORTED_RELEASE_TAGS.
+  + Remove NORAWHIDE, as user can use TAGS to achieve the same.
+
