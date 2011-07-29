@@ -212,7 +212,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	IF (DEFINED CHANGE_SUMMARY)
 	    SET (COMMIT_MSG  "-m \"${CHANGE_SUMMARY}\"")
 	ELSE(DEFINED CHANGE_SUMMARY)
-	    SET (COMMIT_MSG  "")
+	    SET (COMMIT_MSG  "-m \"On releasing ${PRJ_VER}-${PRJ_RELEASE_NO}\"")
 	ENDIF(DEFINED CHANGE_SUMMARY)
 
 	ADD_CUSTOM_TARGET(fedpkg_scratch_build
@@ -280,6 +280,28 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		)
 	    ADD_DEPENDENCIES(fedpkg_import_${_tag} tag)
 	    ADD_DEPENDENCIES(fedpkg_import fedpkg_import_${_tag})
+
+	    ## fedpkg commit and push
+	    SET(_fedpkg_tag_name_committed
+		"${_fedpkg_tag_name_prefix}.committed")
+	    ADD_CUSTOM_COMMAND(OUTPUT
+		${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_committed}
+		COMMAND ${FEDPKG} switch-branch ${_branch}
+		COMMAND ${FEDPKG} ${_commit_opt} commit ${srpm}
+		COMMAND git tag -a -m "${PRJ_VER}-${PRJ_RELEASE_NO}.${_tag} committed"
+		${_fedpkg_tag_name_committed}
+		COMMAND git push --tags
+		WORKING_DIRECTORY ${FEDPKG_WORKDIR}
+		COMMENT "fedpkg commit on ${_branch} with ${srpm}"
+		VERBATIM
+		)
+
+	    ADD_CUSTOM_TARGET(fedpkg_commit_${_tag}
+		DEPENDS ${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_committed}
+		)
+	    ADD_DEPENDENCIES(fedpkg_commit_${_tag} tag)
+	    ADD_DEPENDENCIES(fedpkg_commit fedpkg_commit_${_tag})
+
 
 	    ## fedpkg build
 	    SET(_fedpkg_tag_name_built
