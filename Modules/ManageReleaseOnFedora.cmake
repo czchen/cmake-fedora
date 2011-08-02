@@ -17,7 +17,10 @@
 #     Set to "True" to build against testing-candidate if possible.
 # Defines following variable:
 #   FEDORA_RAWHIDE_TAG: Koji tag for rawhide.
-#   FEDORA_NEXT_RELEASE_TAG: Fedora's upcoming release.
+#   FEDORA_NEXT_RELEASE: Number of Fedora upcoming release, e.g. 16
+#   FEDORA_NEXT_RELEASE_TAG: Fedora's upcoming release. e.g. f16
+#   FEDORA_LATEST_RELEASE: Number of Fedora latest release, e.g. 15
+#   FEDORA_PREVIOUS_RELEASE: Number of Fedora latest release, e.g. 14
 #   FEDORA_SUPPORTED_RELEASE_TAGS: Releases that are currently supported.
 #   FEDORA_CURRENT_RELEASE_TAGS: Releases that are recommend to build against.
 #     It is essentially FEDORA_RAWHIDE_TAG + FEDORA_NEXT_RELEASE_TAG
@@ -77,8 +80,11 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
     SET(_MANAGE_RELEASE_ON_FEDORA_ "DEFINED")
     SET(FEDORA_EPEL_RELEASE_TAGS el6 el5)
     SET(FEDORA_RAWHIDE_TAG rawhide)
-    SET(FEDORA_NEXT_RELEASE_TAGS f16)
-    SET(FEDORA_SUPPORTED_RELEASE_TAGS f15 f14)
+    SET(FEDORA_NEXT_RELEASE 16)
+    SET(FEDORA_NEXT_RELEASE_TAGS f${FEDORA_NEXT_RELEASE})
+    MATH(EXPR FEDORA_LATEST_RELEASE ${FEDORA_NEXT_RELEASE}-1)
+    MATH(EXPR FEDORA_PREVIOUS_RELEASE ${FEDORA_LATEST_RELEASE}-1)
+    SET(FEDORA_SUPPORTED_RELEASE_TAGS "f${FEDORA_LATEST_RELEASE};f${FEDORA_PREVIOUS_RELEASE}")
     SET(FEDORA_CURRENT_RELEASE_TAGS ${FEDORA_RAWHIDE_TAG}
 	${FEDORA_NEXT_RELEASE_TAGS} ${FEDORA_SUPPORTED_RELEASE_TAGS})
     IF("${FEDPKG_DIR}" STREQUAL "")
@@ -104,6 +110,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 
     MACRO(_manange_release_on_fedora_dist_convert_to_koji_target
 	    var dist)
+	SET(_dist_prefix "dist-")
 	SET(_dist_postfix "")
 	IF("${dist}" MATCHES "^el")
 	    # EPEL dists
@@ -111,19 +118,23 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	    IF(EPEL_CANDIDATE_PREFERRED)
 		SET(_dist_postfix "-testing-candidate")
 	    ENDIF(EPEL_CANDIDATE_PREFERRED)
-	    SET(${var} "dist-${_relver}E-epel${_dist_postfix}")
+	    SET(${var} "${_dist_prefix}${_relver}E-epel${_dist_postfix}")
 	ELSEIF("${dist}" MATCHES "^f")
 	    # Fedora dists
+	    STRING(REGEX REPLACE "f\([0-9]+\)" "\\1" _relver  "${dist}")
+	    IF(_relver GREATER 15)
+		SET(_dist_prefix "")
+	    ENDIF(_relver GREATER 15)
 	    IF(FEDORA_CANDIDATE_PREFERRED)
 		LIST(FIND FEDORA_SUPPORTED_RELEASE_TAGS "${dist}" _index)
 		IF(_index GREATER -1)
 		    SET(_dist_postfix "-updates-candidate")
 		ENDIF(_index GREATER -1)
 	    ENDIF(FEDORA_CANDIDATE_PREFERRED)
-	    SET(${var} "dist-${dist}${_dist_postfix}")
+	    SET(${var} "${_dist_prefix}${dist}${_dist_postfix}")
 	ELSE("${dist}" MATCHES "^el")
 	    # Perhaps rawhide, or other custom targets
-	    SET(${var} "dist-${dist}")
+	    SET(${var} "${_dist_prefix}${dist}")
 	ENDIF("${dist}" MATCHES "^el")
     ENDMACRO(_manange_release_on_fedora_dist_convert_to_koji_target
 	kojiTarget dist)
