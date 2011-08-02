@@ -10,11 +10,11 @@
 #   ManageMessage
 #   ManageSourceVersionControl
 #
-# Read or defines following variable:
+# Reads following variables:
 #   FEDORA_CANDIDATE_PREFERRED:
-#     Set to build against updates-candidate if possible.
+#     Set to "True" to build against updates-candidate if possible.
 #   EPEL_CANDIDATE_PREFERRED:
-#     Set to build against testing-candidate if possible.
+#     Set to "True" to build against testing-candidate if possible.
 # Defines following variable:
 #   FEDORA_RAWHIDE_TAG: Koji tag for rawhide.
 #   FEDORA_NEXT_RELEASE_TAG: Fedora's upcoming release.
@@ -105,26 +105,26 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
     MACRO(_manange_release_on_fedora_dist_convert_to_koji_target
 	    var dist)
 	SET(_dist_postfix "")
-	IF(dist MATCHES "^el")
+	IF("${dist}" MATCHES "^el")
 	    # EPEL dists
 	    STRING(REGEX REPLACE "el\([0-9]+\)" "\\1" _relver  "${dist}")
-	    IF(DEFINED EPEL_CANDIDATE_PREFERRED)
+	    IF(EPEL_CANDIDATE_PREFERRED)
 		SET(_dist_postfix "-testing-candidate")
-	    ENDIF(DEFINED EPEL_CANDIDATE_PREFERRED)
+	    ENDIF(EPEL_CANDIDATE_PREFERRED)
 	    SET(${var} "dist-${_relver}E-epel${_dist_postfix}")
-	ELSEIF(dist MATCHES "^f")
+	ELSEIF("${dist}" MATCHES "^f")
 	    # Fedora dists
-	    IF(DEFINED FEDORA_CANDIDATE_PREFERRED)
+	    IF(FEDORA_CANDIDATE_PREFERRED)
 		LIST(FIND FEDORA_SUPPORTED_RELEASE_TAGS "${dist}" _index)
 		IF(_index GREATER -1)
 		    SET(_dist_postfix "-updates-candidate")
 		ENDIF(_index GREATER -1)
-	    ENDIF(DEFINED FEDORA_CANDIDATE_PREFERRED)
+	    ENDIF(FEDORA_CANDIDATE_PREFERRED)
 	    SET(${var} "dist-${dist}${_dist_postfix}")
-	ELSE(dist MATCHES "^el")
+	ELSE("${dist}" MATCHES "^el")
 	    # Perhaps rawhide, or other custom targets
 	    SET(${var} "dist-${dist}")
-	ENDIF(dist MATCHES "^el")
+	ENDIF("${dist}" MATCHES "^el")
     ENDMACRO(_manange_release_on_fedora_dist_convert_to_koji_target
 	kojiTarget dist)
 
@@ -144,7 +144,9 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	    ELSEIF(_arg STREQUAL "TAGS")
 		# No need to further parsing TAGS, as FEDORA_RELEASE_TAGS
 		# override whatever specified after TAGS
-		BREAK()
+		IF(NOT "${FEDORA_RELEASE_TAGS}" STREQUAL "")
+		    BREAK()
+		ENDIF(NOT "${FEDORA_RELEASE_TAGS}" STREQUAL "")
 		SET(_stage "TAGS")
 	    ELSE(_arg STREQUAL "NOKOJI_SCRATCH_BUILD")
 		IF(_stage STREQUAL "KARMA")
@@ -221,6 +223,9 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	ADD_CUSTOM_TARGET(fedpkg_import
 	    COMMENT "fedpkg import"
 	    )
+	ADD_CUSTOM_TARGET(fedpkg_commit
+	    COMMENT "fedpkg commit and push"
+	    )
 	ADD_CUSTOM_TARGET(fedpkg_build
 	    COMMENT "fedpkg build"
 	    )
@@ -234,105 +239,111 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	    "${FEDPKG_WORKDIR}/.git/refs/tags")
 	FOREACH(_tag ${_FEDORA_DIST_TAGS})
 	    IF(_tag STREQUAL FEDORA_RAWHIDE_TAG)
+		SET(_branch "")
+	    ELSEIF(_tag STREQUAL FEDORA_NEXT_RELEASE_TAG)
 		SET(_branch "master")
 	    ELSE(_tag STREQUAL FEDORA_RAWHIDE_TAG)
 		SET(_branch "${_tag}")
 	    ENDIF(_tag STREQUAL FEDORA_RAWHIDE_TAG)
-	    SET(_fedpkg_tag_name_prefix "${PRJ_VER}-${PRJ_RELEASE_NO}.${_tag}")
 
-	    ADD_CUSTOM_TARGET(fedpkg_scratch_build_${_tag}
-		COMMAND ${FEDPKG} scratch-build --srpm ${srpm}
-		DEPENDS ${srpm}
-		WORKING_DIRECTORY ${FEDPKG_WORKDIR}
-		COMMENT "fedpkg scratch build on ${_branch} with ${srpm}"
-		)
-	    ADD_DEPENDENCIES(fedpkg_scratch_build_${_tag} rpmlint)
-	    ADD_DEPENDENCIES(fedpkg_scratch_build fedpkg_scratch_build_${_tag})
+	    IF(NOT _branch STREQUAL "")
+		_use_bodhi_convert_tag(_bodhi_tag "${_tag}")
+		SET(_fedpkg_tag_name_prefix "${PRJ_VER}-${PRJ_RELEASE_NO}.${_bodhi_tag}")
+		#MESSAGE("_fedpkg_tag_name_prefix=${_fedpkg_tag_name_prefix}")
 
-	    # koji_scratch_build is preferred before tag,
-	    # otherwise, use fedpkg_scratch_build instead
-	    IF(NOT TARGET koji_scratch_build)
-		ADD_DEPENDENCIES(tag fedpkg_scratch_build)
-	    ENDIF(NOT TARGET koji_scratch_build)
+		ADD_CUSTOM_TARGET(fedpkg_scratch_build_${_tag}
+		    COMMAND ${FEDPKG} scratch-build --srpm ${srpm}
+		    DEPENDS ${srpm}
+		    WORKING_DIRECTORY ${FEDPKG_WORKDIR}
+		    COMMENT "fedpkg scratch build on ${_branch} with ${srpm}"
+		    )
+		ADD_DEPENDENCIES(fedpkg_scratch_build_${_tag} rpmlint)
+		ADD_DEPENDENCIES(fedpkg_scratch_build fedpkg_scratch_build_${_tag})
 
-	    ## fedpkg import
-	    SET(_import_opt "")
-	    IF(NOT _tag STREQUAL FEDORA_RAWHIDE_TAG)
-		SET(_import_opt "-b ${_tag}")
-	    ENDIF(NOT _tag STREQUAL FEDORA_RAWHIDE_TAG)
+		# koji_scratch_build is preferred before tag,
+		# otherwise, use fedpkg_scratch_build instead
+		IF(NOT TARGET koji_scratch_build)
+		    ADD_DEPENDENCIES(tag fedpkg_scratch_build)
+		ENDIF(NOT TARGET koji_scratch_build)
 
-	    SET(_fedpkg_tag_name_imported
-		"${_fedpkg_tag_name_prefix}.imported")
-	    ADD_CUSTOM_COMMAND(OUTPUT
-		${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_imported}
-		COMMAND ${FEDPKG} switch-branch ${_branch}
-		COMMAND ${FEDPKG} ${_import_opt} import ${srpm}
-		COMMAND git tag -a -m "${PRJ_VER}-${PRJ_RELEASE_NO}.${_tag} imported"
-		${_fedpkg_tag_name_imported}
-		COMMAND git push --tags
-		WORKING_DIRECTORY ${FEDPKG_WORKDIR}
-		COMMENT "fedpkg import on ${_branch} with ${srpm}"
-		VERBATIM
-	    )
+		## fedpkg import
+		SET(_import_opt "")
+		IF(NOT _tag STREQUAL FEDORA_RAWHIDE_TAG)
+		    SET(_import_opt "-b ${_tag}")
+		ENDIF(NOT _tag STREQUAL FEDORA_RAWHIDE_TAG)
 
-	    ADD_CUSTOM_TARGET(fedpkg_import_${_tag}
-		DEPENDS ${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_imported}
-		)
-	    ADD_DEPENDENCIES(fedpkg_import_${_tag} tag)
-	    ADD_DEPENDENCIES(fedpkg_import fedpkg_import_${_tag})
+		SET(_fedpkg_tag_name_imported
+		    "${_fedpkg_tag_name_prefix}.imported")
+		ADD_CUSTOM_COMMAND(OUTPUT
+		    ${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_imported}
+		    COMMAND ${FEDPKG} switch-branch ${_branch}
+		    COMMAND ${FEDPKG} pull
+		    COMMAND ${FEDPKG} ${_import_opt} import ${srpm}
+		    COMMAND git tag -a -m "${_fedpkg_tag_name_prefix} imported"
+		    ${_fedpkg_tag_name_imported}
+		    COMMAND git push --tags
+		    WORKING_DIRECTORY ${FEDPKG_WORKDIR}
+		    COMMENT "fedpkg import on ${_branch} with ${srpm}"
+		    VERBATIM
+		    )
 
-	    ## fedpkg commit and push
-	    SET(_fedpkg_tag_name_committed
-		"${_fedpkg_tag_name_prefix}.committed")
-	    ADD_CUSTOM_COMMAND(OUTPUT
-		${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_committed}
-		COMMAND ${FEDPKG} switch-branch ${_branch}
-		COMMAND ${FEDPKG} ${_commit_opt} commit ${srpm}
-		COMMAND git tag -a -m "${PRJ_VER}-${PRJ_RELEASE_NO}.${_tag} committed"
-		${_fedpkg_tag_name_committed}
-		COMMAND git push --tags
-		WORKING_DIRECTORY ${FEDPKG_WORKDIR}
-		COMMENT "fedpkg commit on ${_branch} with ${srpm}"
-		VERBATIM
-		)
+		ADD_CUSTOM_TARGET(fedpkg_import_${_tag}
+		    DEPENDS ${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_imported}
+		    )
+		ADD_DEPENDENCIES(fedpkg_import_${_tag} tag)
+		ADD_DEPENDENCIES(fedpkg_import fedpkg_import_${_tag})
 
-	    ADD_CUSTOM_TARGET(fedpkg_commit_${_tag}
-		DEPENDS ${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_committed}
-		)
-	    ADD_DEPENDENCIES(fedpkg_commit_${_tag} tag)
-	    ADD_DEPENDENCIES(fedpkg_commit fedpkg_commit_${_tag})
+		## fedpkg commit and push
+		SET(_commit_opt "--push --tag ${COMMIT_MSG}")
+		SET(_fedpkg_tag_name_committed
+		    "${_fedpkg_tag_name_prefix}.committed")
+		ADD_CUSTOM_COMMAND(OUTPUT
+		    ${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_committed}
+		    COMMAND ${FEDPKG} switch-branch ${_branch}
+		    COMMAND ${FEDPKG} commit ${_commit_opt}
+		    COMMAND git push --tags
+		    WORKING_DIRECTORY ${FEDPKG_WORKDIR}
+		    COMMENT "fedpkg commit on ${_branch} with ${srpm}"
+		    VERBATIM
+		    )
 
+		ADD_CUSTOM_TARGET(fedpkg_commit_${_tag}
+		    DEPENDS ${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_committed}
+		    )
+		ADD_DEPENDENCIES(fedpkg_commit_${_tag} fedpkg_import_${_tag})
+		ADD_DEPENDENCIES(fedpkg_commit fedpkg_commit_${_tag})
 
-	    ## fedpkg build
-	    SET(_fedpkg_tag_name_built
-		"${_fedpkg_tag_name_prefix}.built")
-	    ADD_CUSTOM_COMMAND(OUTPUT
-		${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_built}
-		COMMAND ${FEDPKG} switch-branch ${_branch}
-		COMMAND ${FEDPKG} build
-		COMMAND git tag -a -m "${PRJ_VER}-${PRJ_RELEASE_NO}.${_tag} built"
-		${_fedpkg_tag_name_built}
-		COMMAND git push --tags
-		WORKING_DIRECTORY ${FEDPKG_WORKDIR}
-		COMMENT "fedpkg build on ${_branch}"
-		VERBATIM
-		)
+		## fedpkg build
+		SET(_fedpkg_tag_name_built
+		    "${_fedpkg_tag_name_prefix}.built")
+		ADD_CUSTOM_COMMAND(OUTPUT
+		    ${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_built}
+		    COMMAND ${FEDPKG} switch-branch ${_branch}
+		    COMMAND ${FEDPKG} build
+		    COMMAND git tag -a -m "${_fedpkg_tag_name_prefix} built"
+		    ${_fedpkg_tag_name_built}
+		    COMMAND git push --tags
+		    WORKING_DIRECTORY ${FEDPKG_WORKDIR}
+		    COMMENT "fedpkg build on ${_branch}"
+		    VERBATIM
+		    )
 
-	    ADD_CUSTOM_TARGET(fedpkg_build_${_tag}
-		DEPENDS ${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_built}
-		)
+		ADD_CUSTOM_TARGET(fedpkg_build_${_tag}
+		    DEPENDS ${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_built}
+		    )
 
-	    ADD_DEPENDENCIES(fedpkg_build_${_tag} fedpkg_import_${_tag})
-	    ADD_DEPENDENCIES(fedpkg_build fedpkg_build_${_tag})
+		ADD_DEPENDENCIES(fedpkg_build_${_tag} fedpkg_commit_${_tag})
+		ADD_DEPENDENCIES(fedpkg_build fedpkg_build_${_tag})
 
-	    ADD_CUSTOM_TARGET(fedpkg_update_${_tag}
-		COMMAND ${FEDPKG} update
-		WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
-		DEPENDS ${_first_tag_path}
-		COMMENT "fedpkg update on ${_branch} with ${srpm}"
-		)
-	    ADD_DEPENDENCIES(fedpkg_update_${_tag} fedpkg_build_${_tag})
-	    ADD_DEPENDENCIES(fedpkg_update fedpkg_update_${_tag})
+		ADD_CUSTOM_TARGET(fedpkg_update_${_tag}
+		    COMMAND ${FEDPKG} update
+		    WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
+		    DEPENDS ${_first_tag_path}
+		    COMMENT "fedpkg update on ${_branch} with ${srpm}"
+		    )
+		ADD_DEPENDENCIES(fedpkg_update_${_tag} fedpkg_build_${_tag})
+		ADD_DEPENDENCIES(fedpkg_update fedpkg_update_${_tag})
+	    ENDIF(NOT _branch STREQUAL "")
 	ENDFOREACH(_tag ${_FEDORA_DIST_TAGS})
     ENDMACRO(_use_fedpkg_make_targets srpm)
 
