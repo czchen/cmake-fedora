@@ -273,7 +273,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		    ${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_imported}
 		    COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
 		    COMMAND ${FEDPKG_CMD} pull
-		    COMMAND ${FEDPKG_CMD} ${_import_opt} import ${srpm}
+		    COMMAND ${FEDPKG_CMD} import ${_import_opt} ${srpm}
 		    COMMAND git tag -a -m "${_fedpkg_tag_name_prefix} imported"
 		    ${_fedpkg_tag_name_imported}
 		    COMMAND git push --tags
