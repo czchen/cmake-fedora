@@ -228,24 +228,6 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	    SET (COMMIT_MSG  "-m \"On releasing ${PRJ_VER}-${PRJ_RELEASE_NO}\"")
 	ENDIF(DEFINED CHANGE_SUMMARY)
 
-	ADD_CUSTOM_TARGET(fedpkg_scratch_build
-	    COMMENT "fedpkg scratch build"
-	    )
-	ADD_CUSTOM_TARGET(fedpkg_import
-	    COMMENT "fedpkg import"
-	    )
-	ADD_CUSTOM_TARGET(fedpkg_commit
-	    COMMENT "fedpkg commit and push"
-	    )
-	ADD_CUSTOM_TARGET(fedpkg_build
-	    COMMENT "fedpkg build"
-	    )
-	SET_TARGET_PROPERTIES(fedpkg_build
-	    PROPERTIES EXISTS "true")
-	ADD_CUSTOM_TARGET(fedpkg_update
-	    COMMENT "fedpkg update"
-	    )
-
 	SET(_fedpkg_tag_path_abs_prefix
 	    "${FEDPKG_WORKDIR}/.git/refs/tags")
 	FOREACH(_tag ${_FEDORA_DIST_TAGS})
@@ -350,7 +332,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 
 		ADD_CUSTOM_TARGET(fedpkg_update_${_tag}
 		    COMMAND ${FEDPKG_CMD} update
-		    WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
+		    WORKING_DIRECTORY ${FEDPKG_WORKDIR}/${PROJECT_NAME}
 		    DEPENDS ${_first_tag_path}
 		    COMMENT "fedpkg update on ${_branch} with ${srpm}"
 		    )
@@ -386,16 +368,32 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		COMMAND mkdir -p ${FEDPKG_DIR_ABS}
 		)
 
-	    ADD_CUSTOM_TARGET(fedpkg_clone
-		DEPENDS ${FEDPKG_WORKDIR}
-		)
-
-	    ADD_CUSTOM_COMMAND(OUTPUT $${FEDPKG_WORKDIR}
+	    ADD_CUSTOM_COMMAND(OUTPUT ${FEDPKG_WORKDIR}
 		COMMAND ${FEDPKG_CMD} clone ${PROJECT_NAME}
 		DEPENDS ${FEDPKG_DIR_ABS}
 		WORKING_DIRECTORY ${FEDPKG_DIR_ABS}
 		)
 
+	    ADD_CUSTOM_TARGET(fedpkg_clone
+		DEPENDS ${FEDPKG_WORKDIR}
+		)
+
+	    ADD_CUSTOM_TARGET(fedpkg_scratch_build
+		COMMENT "fedpkg scratch build"
+		)
+	    ADD_CUSTOM_TARGET(fedpkg_import
+		COMMENT "fedpkg import"
+		)
+	    ADD_CUSTOM_TARGET(fedpkg_commit
+		COMMENT "fedpkg commit and push"
+		)
+	    ADD_CUSTOM_TARGET(fedpkg_build
+		COMMENT "fedpkg build"
+		)
+
+	    ADD_CUSTOM_TARGET(fedpkg_update
+		COMMENT "fedpkg update"
+		)
 	    ## Make target commands for the released dist
 	    _use_fedpkg_make_targets("${srpm}")
 	ENDIF(_dependencies_missing EQUAL 0)
