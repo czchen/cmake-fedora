@@ -185,11 +185,11 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 
     MACRO(USE_KOJI srpm)
 	SET(_dependencies_missing 0)
-	FIND_PROGRAM(KOJI koji)
-	IF(KOJI STREQUAL "KOJI-NOTFOUND")
+	FIND_PROGRAM(KOJI_CMD koji)
+	IF(KOJI_CMD STREQUAL "KOJI_CMD-NOTFOUND")
 	    M_MSG(${M_OFF} "Program koji is not found! Koji support disabled.")
 	    SET(_dependencies_missing 1)
-	ENDIF(KOJI STREQUAL "KOJI-NOTFOUND")
+	ENDIF(KOJI_CMD STREQUAL "KOJI_CMD-NOTFOUND")
 
 	IF(_dependencies_missing EQUAL 0)
 	    IF(_FEDORA_DIST_TAGS STREQUAL "")
@@ -209,7 +209,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		_manange_release_on_fedora_dist_convert_to_koji_target(_branch ${_tag})
 		IF(_FEDORA_KOJI_SCRATCH EQUAL 1)
 		    ADD_CUSTOM_TARGET(koji_scratch_build_${_tag}
-			COMMAND ${KOJI} build --scratch ${_branch} ${srpm}
+			COMMAND ${KOJI_CMD} build --scratch ${_branch} ${srpm}
 			COMMENT "koji scratch build on ${_branch} with ${srpm}"
 			)
 		    ADD_DEPENDENCIES(koji_scratch_build_${_tag} rpmlint)
@@ -263,7 +263,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		#MESSAGE("_fedpkg_tag_name_prefix=${_fedpkg_tag_name_prefix}")
 
 		ADD_CUSTOM_TARGET(fedpkg_scratch_build_${_tag}
-		    COMMAND ${FEDPKG} scratch-build --srpm ${srpm}
+		    COMMAND ${FEDPKG_CMD} scratch-build --srpm ${srpm}
 		    DEPENDS ${srpm}
 		    WORKING_DIRECTORY ${FEDPKG_WORKDIR}
 		    COMMENT "fedpkg scratch build on ${_branch} with ${srpm}"
@@ -285,14 +285,17 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 
 		SET(_fedpkg_tag_name_imported
 		    "${_fedpkg_tag_name_prefix}.imported")
+		# Depends on tag file instead of target "tag"
+		# To avoid excessive scratch build and rpmlint
 		ADD_CUSTOM_COMMAND(OUTPUT
 		    ${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_imported}
-		    COMMAND ${FEDPKG} switch-branch ${_branch}
-		    COMMAND ${FEDPKG} pull
-		    COMMAND ${FEDPKG} ${_import_opt} import ${srpm}
+		    COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
+		    COMMAND ${FEDPKG_CMD} pull
+		    COMMAND ${FEDPKG_CMD} ${_import_opt} import ${srpm}
 		    COMMAND git tag -a -m "${_fedpkg_tag_name_prefix} imported"
 		    ${_fedpkg_tag_name_imported}
 		    COMMAND git push --tags
+		    DEPENDS ${FEDPKG_WORKDIR} ${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}
 		    WORKING_DIRECTORY ${FEDPKG_WORKDIR}
 		    COMMENT "fedpkg import on ${_branch} with ${srpm}"
 		    VERBATIM
@@ -301,7 +304,6 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		ADD_CUSTOM_TARGET(fedpkg_import_${_tag}
 		    DEPENDS ${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_imported}
 		    )
-		ADD_DEPENDENCIES(fedpkg_import_${_tag} tag)
 		ADD_DEPENDENCIES(fedpkg_import fedpkg_import_${_tag})
 
 		## fedpkg commit and push
@@ -310,8 +312,8 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		    "${_fedpkg_tag_name_prefix}.committed")
 		ADD_CUSTOM_COMMAND(OUTPUT
 		    ${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_committed}
-		    COMMAND ${FEDPKG} switch-branch ${_branch}
-		    COMMAND ${FEDPKG} commit ${_commit_opt}
+		    COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
+		    COMMAND ${FEDPKG_CMD} commit ${_commit_opt}
 		    COMMAND git push --tags
 		    WORKING_DIRECTORY ${FEDPKG_WORKDIR}
 		    COMMENT "fedpkg commit on ${_branch} with ${srpm}"
@@ -329,8 +331,8 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		    "${_fedpkg_tag_name_prefix}.built")
 		ADD_CUSTOM_COMMAND(OUTPUT
 		    ${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_built}
-		    COMMAND ${FEDPKG} switch-branch ${_branch}
-		    COMMAND ${FEDPKG} build
+		    COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
+		    COMMAND ${FEDPKG_CMD} build
 		    COMMAND git tag -a -m "${_fedpkg_tag_name_prefix} built"
 		    ${_fedpkg_tag_name_built}
 		    COMMAND git push --tags
@@ -347,7 +349,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		ADD_DEPENDENCIES(fedpkg_build fedpkg_build_${_tag})
 
 		ADD_CUSTOM_TARGET(fedpkg_update_${_tag}
-		    COMMAND ${FEDPKG} update
+		    COMMAND ${FEDPKG_CMD} update
 		    WORKING_DIRECTORY ${FEDPKG_DIR}/${PROJECT_NAME}
 		    DEPENDS ${_first_tag_path}
 		    COMMENT "fedpkg update on ${_branch} with ${srpm}"
@@ -367,11 +369,11 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	    SET(_dependencies_missing 1)
 	ENDIF(NOT EXISTS $ENV{HOME}/.fedora-upload-ca.cert)
 
-	FIND_PROGRAM(FEDPKG fedpkg)
-	IF(FEDPKG STREQUAL "FEDPKG-NOTFOUND")
+	FIND_PROGRAM(FEDPKG_CMD fedpkg)
+	IF(FEDPKG_CMD STREQUAL "FEDPKG_CMD-NOTFOUND")
 	    M_MSG(${M_OFF} "Program fedpkg is not found! fedpkg support disabled.")
 	    SET(_dependencies_missing 1)
-	ENDIF(FEDPKG STREQUAL "FEDPKG-NOTFOUND")
+	ENDIF(FEDPKG_CMD STREQUAL "FEDPKG_CMD-NOTFOUND")
 
 	IF(_dependencies_missing EQUAL 0)
 	    IF(_FEDORA_DIST_TAGS STREQUAL "")
@@ -389,7 +391,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		)
 
 	    ADD_CUSTOM_COMMAND(OUTPUT $${FEDPKG_WORKDIR}
-		COMMAND ${FEDPKG} clone ${PROJECT_NAME}
+		COMMAND ${FEDPKG_CMD} clone ${PROJECT_NAME}
 		DEPENDS ${FEDPKG_DIR_ABS}
 		WORKING_DIRECTORY ${FEDPKG_DIR_ABS}
 		)
@@ -423,11 +425,11 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		"\$HOME/.fedora-upload-ca.cert not found, bodhi support disabled")
 	    SET(_dependencies_missing 1)
 	ENDIF(NOT EXISTS $ENV{HOME}/.fedora-upload-ca.cert)
-	FIND_PROGRAM(BODHI bodhi)
-	IF(BODHI STREQUAL "BODHI-NOTFOUND")
+	FIND_PROGRAM(BODHI_CMD bodhi)
+	IF(BODHI_CMD STREQUAL "BODHI_CMD-NOTFOUND")
 	    M_MSG(${M_OFF} "Program bodhi is not found! bodhi support disabled.")
 	    SET(_dependencies_missing 1)
-	ENDIF(BODHI STREQUAL "BODHI-NOTFOUND")
+	ENDIF(BODHI_CMD STREQUAL "BODHI_CMD-NOTFOUND")
 
 	IF(_dependencies_missing EQUAL 0)
 	    IF(_FEDORA_STABLE_KARMA STREQUAL "")
@@ -470,7 +472,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	    ENDIF(BODHI_USER)
 
 	    ADD_CUSTOM_TARGET(bodhi_new
-		COMMAND bodhi --new ${_bodhi_login} --file ${_bodhi_template_file}
+		COMMAND ${BODHI_CMD} --new ${_bodhi_login} --file ${_bodhi_template_file}
 		COMMENT "Send new package to bodhi"
 		VERBATIM
 		)

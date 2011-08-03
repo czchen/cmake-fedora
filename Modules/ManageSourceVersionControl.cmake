@@ -14,6 +14,8 @@
 #   - Use Git as source version control.
 #     Reads following variables:
 #     + PRJ_VER: Project version.
+#     Defines following variables:
+#     + MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE: File to be generated after tag.
 #
 #   MANAGE_SOURCE_VERSION_CONTROL_HG()
 #   - Use Mercurial as source version control.
@@ -41,7 +43,7 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
     ENDMACRO(MANAGE_SOURCE_VERSION_CONTROL_COMMON)
 
     MACRO(MANAGE_SOURCE_VERSION_CONTROL_GIT)
-	SET(_MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE ${CMAKE_SOURCE_DIR}/.git/refs/tags/${PRJ_VER})
+	SET(MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE ${CMAKE_SOURCE_DIR}/.git/refs/tags/${PRJ_VER})
 
 	ADD_CUSTOM_TARGET(after_release_commit
 	    COMMAND git commit -a -m "${after_release_message}"
@@ -68,12 +70,12 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	    )
 
 	ADD_CUSTOM_TARGET(tag
-	    DEPENDS ${_MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}
+	    DEPENDS ${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}
 	    )
 
 	#	ADD_DEPENDENCIES(tag force_commit)
 
-	ADD_CUSTOM_COMMAND(OUTPUT ${_MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}
+	ADD_CUSTOM_COMMAND(OUTPUT ${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}
 	    COMMAND git tag -a -m "${CHANGE_SUMMARY}" "${PRJ_VER}" HEAD
 	    COMMENT "Tagging the source as ver ${PRJ_VER}"
 	    VERBATIM
