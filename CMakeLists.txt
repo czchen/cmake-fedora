@@ -1,23 +1,7 @@
-cmake_minimum_required(VERSION 2.6)
-SET(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "Install path prefix")
-####################################################################
-# Recommended policy setting
-#
-CMAKE_POLICY(VERSION 2.6)
-# CMP0005: Preprocessor definition values are now escaped automatically.
-# OLD:Preprocessor definition values are not escaped.
-CMAKE_POLICY(SET CMP0005 OLD)
-
-# CMP0009: FILE GLOB_RECURSE calls should not follow symlinks by default.
-# OLD: FILE GLOB_RECURSE calls follow symlinks
-CMAKE_POLICY(SET CMP0009 NEW)
-
-IF(POLICY CMP0017)
-    # CMP0017: Prefer files from the CMake module directory when including from there.
-    # OLD: Prefer files from CMAKE_MODULE_PATH regardless
-    CMAKE_POLICY(SET CMP0017 OLD)
-ENDIF(POLICY CMP0017)
-
+cmake_minimum_required(VERSION 2.6.2)
+# CMP0011 should be set here, otherwise policy set in module won't affect
+# here.
+CMAKE_POLICY(SET CMP0011 OLD)
 ####################################################################
 # Project specific information
 #
@@ -37,16 +21,10 @@ SET(LICENSE BSD)
 # Includes
 #
 SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/Modules ${CMAKE_ROOT}/Modules )
-
-INCLUDE(CMakeVersion)
-
+INCLUDE(ManageEnvironment RESULT_VARIABLE MANAGE_ENVIRONMENT_PATH)
 INCLUDE(ManageVersion)
 LOAD_RELEASE_FILE("RELEASE-NOTES.txt")
 INCLUDE(UseUninstall)
-
-INCLUDE(CompileEnv)
-SET_USUAL_COMPILE_ENVS()
-
 
 ####################################################################
 # Building

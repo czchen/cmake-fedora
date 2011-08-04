@@ -277,7 +277,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		    COMMAND git tag -a -m "${_fedpkg_tag_name_prefix} imported"
 		    ${_fedpkg_tag_name_imported}
 		    COMMAND git push --tags
-		    DEPENDS ${FEDPKG_WORKDIR} ${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}
+		    DEPENDS ${FEDPKG_WORKDIR} ${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE} ${srpm}
 		    WORKING_DIRECTORY ${FEDPKG_WORKDIR}
 		    COMMENT "fedpkg import on ${_branch} with ${srpm}"
 		    VERBATIM
@@ -289,14 +289,17 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		ADD_DEPENDENCIES(fedpkg_import fedpkg_import_${_tag})
 
 		## fedpkg commit and push
-		SET(_commit_opt "--push --tag ${COMMIT_MSG}")
+		SET(_commit_opt "--push --tag -m '${COMMIT_MSG}'")
 		SET(_fedpkg_tag_name_committed
 		    "${_fedpkg_tag_name_prefix}.committed")
 		ADD_CUSTOM_COMMAND(OUTPUT
 		    ${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_committed}
 		    COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
+		    COMMAND ${FEDPKG_CMD} pull
+		    COMMAND ${FEDPKG_CMD} import ${_import_opt} ${srpm}
 		    COMMAND ${FEDPKG_CMD} commit ${_commit_opt}
 		    COMMAND git push --tags
+		    DEPENDS ${FEDPKG_WORKDIR} ${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE} ${srpm}
 		    WORKING_DIRECTORY ${FEDPKG_WORKDIR}
 		    COMMENT "fedpkg commit on ${_branch} with ${srpm}"
 		    VERBATIM
