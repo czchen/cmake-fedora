@@ -20,11 +20,6 @@
 #    + LIBEXEC_DIR: Executables that are not meant to be executed by user directly.
 #      Default: ${CMAKE_INSTALL_PREFIX}/libexec
 #    + PROJECT_NAME: Project name
-#    + PRJ_VER: Project version
-#    + PRJ_DATA_DIR: Data directory for the project.
-#      Default: ${DATA_DIR}/${PROJECT_NAME}
-#    + PRJ_DOC_DIR: Documentation for the project.
-#      Default: ${DOC_DIR}/${PROJECT_NAME}-${PRJ_VER}
 #
 # Defines following macros:
 #   SET_COMPILE_ENV(var default_value [ENV_NAME env_name]
@@ -170,12 +165,9 @@ IF(NOT DEFINED _MANAGE_ENVIRONMENT_CMAKE_)
 
     IF(DEFINED PROJECT_NAME)
 	ADD_DEFINITIONS(-DPROJECT_NAME='"${PROJECT_NAME}"')
-
 	SET_COMPILE_ENV(PRJ_DATA_DIR "${DATA_DIR}/${PROJECT_NAME}")
 
 	IF(DEFINED PRJ_VER)
-	    ADD_DEFINITIONS(-DPRJ_VER="${PRJ_VER}")
-	    SET_COMPILE_ENV(PRJ_DOC_DIR "${DOC_DIR}/${PROJECT_NAME}-${PRJ_VER}")
 	ENDIF(DEFINED PRJ_VER)
     ENDIF(DEFINED PROJECT_NAME)
 

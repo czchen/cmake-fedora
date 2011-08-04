@@ -30,6 +30,8 @@
 #     + CHANGE_SUMMARY: Summary of changes.
 #     + CHANGELOG_ITEMS: Lines below the [Changes] tag.
 #     + RELEASE_FILE: The loaded release file.
+#     + PRJ_DOC_DIR: Documentation for the project.
+#       Default: ${DOC_DIR}/${PROJECT_NAME}-${PRJ_VER}
 #
 
 IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
@@ -98,6 +100,10 @@ IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
 	#    COMMENT "Building ChangeLog"
 	#    VERBATIM
 	#    )
+
+	# By this time,
+	ADD_DEFINITIONS(-DPRJ_VER="${PRJ_VER}")
+	SET_COMPILE_ENV(PRJ_DOC_DIR "${DOC_DIR}/${PROJECT_NAME}-${PRJ_VER}")
     ENDMACRO(LOAD_RELEASE_FILE releaseFile)
 
 ENDIF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
