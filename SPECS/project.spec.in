@@ -41,8 +41,8 @@ Requires:   cmake >= 2.4
 %doc @PRJ_DOC_LIST@
 %{_bindir}/cmake-fedora-newprj.sh
 %{_datadir}/cmake/Modules/CMakeVersion.cmake
-%{_datadir}/cmake/Modules/CompileEnv.cmake
 %{_datadir}/cmake/Modules/DateTimeFormat.cmake
+%{_datadir}/cmake/Modules/ManageEnvironment.cmake
 %{_datadir}/cmake/Modules/ManageMaintainerTargets.cmake
 %{_datadir}/cmake/Modules/ManageMessage.cmake
 %{_datadir}/cmake/Modules/ManageRelease.cmake

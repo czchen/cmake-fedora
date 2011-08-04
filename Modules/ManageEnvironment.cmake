@@ -102,7 +102,6 @@ IF(NOT DEFINED _MANAGE_ENVIRONMENT_CMAKE_)
 	ENDFOREACH(_arg ${ARGN})
 
 	# Set the variable
-	MESSAGE("1: type=${_type} ${var}=${${var}}")
 	IF(DEFINED ${var})
 	    SET(${var} "${${var}}" CACHE ${_type} "${_docstring}")
 	ELSEIF(NOT "$ENV{${_env}}" STREQUAL "")
@@ -111,7 +110,6 @@ IF(NOT DEFINED _MANAGE_ENVIRONMENT_CMAKE_)
 	    # Default value
 	    SET(${var} "${default_value}" CACHE ${_type} "${_docstring}")
 	ENDIF(DEFINED ${var})
-	MESSAGE("2: type=${_type} ${var}=${${var}}")
 	ADD_DEFINITIONS(-D${_env}='"${${var}}"')
     ENDMACRO(SET_COMPILE_ENV var default_value)
 
