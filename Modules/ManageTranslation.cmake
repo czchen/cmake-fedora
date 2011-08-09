@@ -217,6 +217,8 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
     #========================================
     # ZANATA support
     MACRO(USE_ZANATA serverUrl)
+	SET(ZANATA_SERVER "${serverUrl}")
+	SET(ZANATA_XML_SEARCH_PATH ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR})
 	FIND_PROGRAM(ZANATA_CMD zanata)
 	SET(_failed 0)
 	IF(ZANATA_CMD STREQUAL "ZANATA_CMD-NOTFOUND")
@@ -230,27 +232,26 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 	ENDIF(NOT EXISTS $ENV{HOME}/.config/zanata.ini)
 
 	SET(_zanata_xml "")
-	FIND_PATH(_zanata_xml_in "zanata.xml.in" PATHS
-	    ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
-	M_MSG(${M_INFO1} "USE_ZANATA:_zanata_xml_in=${_zanata_xml_in}")
-	IF(NOT ${_zanata_xml_in} MATCHES "NOTFOUND")
-	    SET(ZANATA_SERVER ${serverUrl})
-	    GET_FILENAME_COMPONENT(_zanata_xml_in_dir ${_zanata_xml_in}	PATH)
+	FIND_PATH(_zanata_xml_in_dir "zanata.xml.in" PATHS ${ZANATA_XML_SEARCH_PATH})
+	IF(NOT "${_zanata_xml_in_dir}" MATCHES "NOTFOUND")
+	    SET(_zanata_xml_in ${_zanata_xml_in_dir}/zanata.xml.in)
+	    M_MSG(${M_INFO1} "USE_ZANATA:_zanata_xml_in=${_zanata_xml_in}")
 	    SET(_zanata_xml ${_zanata_xml_in_dir}/zanata.xml)
 	    CONFIGURE_FILE(${_zanata_xml_in} ${_zanata_xml} @ONLY)
-	ENDIF(NOT ${_zanata_xml_in} MATCHES "NOTFOUND")
+	ENDIF(NOT "${_zanata_xml_in_dir}" MATCHES "NOTFOUND")
 
-	IF(_zanata_xml STREQUAL "")
-	    FIND_PATH(_zanata_xml "zanata.xml" PATHS
-		${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
-	    IF(${_zanata_xml} MATCHES "NOTFOUND")
+	IF(NOT "${_zanata_xml}" STREQUAL "")
+	    FIND_PATH(_zanata_xml_dir "zanata.xml" PATHS ${ZANATA_XML_SEARCH_PATH})
+	    IF(NOT "${_zanata_xml_dir}" MATCHES "NOTFOUND")
+		SET(_zanata_xml "${_zanata_xml_dir}/zanata.xml")
+	    ELSE(NOT "${_zanata_xml_dir}" MATCHES "NOTFOUND")
 		SET(_failed 1)
-		M_MSG(${M_OFF} "zanata.xml not found in ${CMAKE_CURRENT_SOURCE_DIR} or ${CMAKE_SOURCE_DIR}! zanata support disabled.")
-	    ENDIF(${_zanata_xml} MATCHES "NOTFOUND")
-	ENDIF(_zanata_xml STREQUAL "")
-	M_MSG(${M_INFO1} "USE_ZANATA:_zanata_xml=${_zanata_xml_in}")
+		M_MSG(${M_OFF} "zanata.xml not found in ${ZANATA_XML_SEARCH_PATH}! zanata support disabled.")
+	    ENDIF(NOT "${_zanata_xml_dir}" MATCHES "NOTFOUND")
+	ENDIF(NOT "${_zanata_xml}" STREQUAL "")
 
 	IF(_failed EQUAL 0)
+	    M_MSG(${M_INFO1} "USE_ZANATA:_zanata_xml=${_zanata_xml}")
 	    # Parsing arguments
 	    SET(_srcDir)
 	    SET(_transDir)
@@ -277,9 +278,10 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 		ENDIF(_arg STREQUAL "SRCDIR")
 	    ENDFOREACH(_arg ${ARGN})
 
-	    SET(_zanata_args --url=${serverURL} --project-id=${PROJECT_NAME})
+	    SET(_zanata_args --url=${ZANATA_SERVER} --project-id=${PROJECT_NAME}
+		--project-config=${_zanata_xml})
 	    ADD_CUSTOM_TARGET(zanata_project_create
-		COMMAND ${ZANATA_CMD} project create ${PROJECT_NAME} --url=${serverURL}
+		COMMAND ${ZANATA_CMD} project create ${PROJECT_NAME} ${_zanata_args}
 		--project-name="${PROJECT_NAME}" --project-desc="${PRJ_SUMMARY}"
 		COMMENT "Create project translation on Zanata server ${serverUrl}"
 		VERBATIM
