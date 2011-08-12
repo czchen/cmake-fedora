@@ -271,9 +271,9 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 		    IF(_stage STREQUAL "SRCDIR")
 			SET(_srcDir "--srcdir=${_arg}")
 		    ELSEIF(_stage STREQUAL "TRANSDIR")
-			SET(_transDir "--transDir=${_arg}")
+			SET(_transDir "--transdir=${_arg}")
 		    ELSEIF(_stage STREQUAL "DSTDIR")
-			SET(_dstDir "--dstDir=${_arg}")
+			SET(_dstDir "--dstdir=${_arg}")
 		    ENDIF(_stage STREQUAL "SRCDIR")
 		ENDIF(_arg STREQUAL "SRCDIR")
 	    ENDFOREACH(_arg ${ARGN})
@@ -282,12 +282,12 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 		--project-config=${_zanata_xml})
 	    ADD_CUSTOM_TARGET(zanata_project_create
 		COMMAND ${ZANATA_CMD} project create ${PROJECT_NAME} ${_zanata_args}
-		--project-name="${PROJECT_NAME}" --project-desc="${PRJ_SUMMARY}"
+		"--project-name=${PROJECT_NAME}" "--project-desc=${PRJ_SUMMARY}"
 		COMMENT "Create project translation on Zanata server ${serverUrl}"
 		VERBATIM
 		)
 	    ADD_CUSTOM_TARGET(zanata_version_create ${_all}
-		COMMAND ${ZANATA_CMD} project create ${PRJ_VER} ${_zanata_args}
+		COMMAND ${ZANATA_CMD} version create ${PRJ_VER} ${_zanata_args}
 		COMMENT "Create version ${PRJ_VER} on Zanata server ${serverUrl}"
 		VERBATIM
 		)
@@ -299,7 +299,8 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 		)
 	    ADD_DEPENDENCIES(zanata_po_push pot_file)
 	    ADD_CUSTOM_TARGET(zanata_po_push_import_po ${_all}
-		COMMAND ${ZANATA_CMD} po push ${_zanata_args} --project-version=${PRJ_VER}
+		COMMAND yes |
+	       	${ZANATA_CMD} po push ${_zanata_args} --project-version=${PRJ_VER}
 		${_srcDir} ${_transDir} --import-po
 		COMMENT "Push the pot and po files for version ${PRJ_VER}"
 		VERBATIM
