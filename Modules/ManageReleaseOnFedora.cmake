@@ -208,8 +208,15 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	    FOREACH(_tag ${_FEDORA_DIST_TAGS})
 		_manange_release_on_fedora_dist_convert_to_koji_target(_branch ${_tag})
 		IF(_FEDORA_KOJI_SCRATCH EQUAL 1)
+		    SET(_scratch_build_stamp
+			"${CMAKE_FEDORA_TMP_DIR}/${PRJ_VER}_koji_scratch_build_${_tag}")
 		    ADD_CUSTOM_TARGET(koji_scratch_build_${_tag}
+			DEPENDS ${_scratch_build_stamp}
+			)
+
+		    ADD_CUSTOM_COMMAND(OUTPUT ${_scratch_build_stamp}
 			COMMAND ${KOJI_CMD} build --scratch ${_branch} ${srpm}
+			DEPENDS ${CMAKE_FEDORA_TMP_DIR} ${srpm}
 			COMMENT "koji scratch build on ${_branch} with ${srpm}"
 			)
 		    ADD_DEPENDENCIES(koji_scratch_build_${_tag} rpmlint)
@@ -243,10 +250,18 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		_use_bodhi_convert_tag(_bodhi_tag "${_tag}")
 		SET(_fedpkg_tag_name_prefix "${PRJ_VER}-${PRJ_RELEASE_NO}.${_bodhi_tag}")
 		#MESSAGE("_fedpkg_tag_name_prefix=${_fedpkg_tag_name_prefix}")
+		SET(_scratch_build_stamp
+		    "${CMAKE_FEDORA_TMP_DIR}/${PRJ_VER}_scratch_build_${_tag}")
+
 
 		ADD_CUSTOM_TARGET(fedpkg_scratch_build_${_tag}
+		    DEPENDS ${_scratch_build_stamp}
+		    )
+
+		ADD_CUSTOM_COMMAND(OUTPUT ${_scratch_build_stamp}
+		    COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
 		    COMMAND ${FEDPKG_CMD} scratch-build --srpm ${srpm}
-		    DEPENDS ${srpm}
+		    DEPENDS ${CMAKE_FEDORA_TMP_DIR} ${srpm}
 		    WORKING_DIRECTORY ${FEDPKG_WORKDIR}
 		    COMMENT "fedpkg scratch build on ${_branch} with ${srpm}"
 		    )

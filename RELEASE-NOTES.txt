@@ -13,4 +13,4 @@ REDHAT_BUGZILLA=725615, 725617
   + New Constants: FEDORA_NEXT_RELEASE_TAGS, FEDORA_SUPPORTED_RELEASE_TAGS.
   + Remove NORAWHIDE, as user can use TAGS to achieve the same.
   + Actually mkdir and clone project if the FedPkg directory is missing.
-
+- ManageTranslation: Fix zanata.xml path problem
