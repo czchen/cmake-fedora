@@ -54,16 +54,18 @@ IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
 
 
 	# Read header
+	SET(_release_file_header "${CMAKE_FEDORA_TMP_DIR}/${releaseFile}_HEADER")
 	MATH(EXPR _setting_line_num ${_line_num}-1)
 	COMMAND_OUTPUT_TO_VARIABLE(_releaseFile_head head -n ${_setting_line_num} ${releaseFile})
-	FILE(WRITE "${releaseFile}_NO_PACK_HEAD" "${_releaseFile_head}")
-	SETTING_FILE_GET_ALL_VARIABLES("${releaseFile}_NO_PACK_HEAD")
+	FILE(WRITE "${_release_file_header}" "${_releaseFile_head}")
+	SETTING_FILE_GET_ALL_VARIABLES("${_release_file_header}")
 	SET(CHANGE_SUMMARY "${SUMMARY}")
 
 	# Read [Changes] Section
+	SET(_release_file_changes "${CMAKE_FEDORA_TMP_DIR}/${releaseFile}_CHANGES")
 	MATH(EXPR _line_num ${_line_num}+1)
 	COMMAND_OUTPUT_TO_VARIABLE(CHANGELOG_ITEMS tail -n +${_line_num} ${releaseFile})
-	FILE(WRITE "${releaseFile}_NO_PACK_CHANGELOG_ITEM" "${CHANGELOG_ITEMS}")
+	FILE(WRITE "${_release_file_changes}" "${CHANGELOG_ITEMS}")
 
 	INCLUDE(DateTimeFormat)
 	FILE(READ "ChangeLog.prev" CHANGELOG_PREV)

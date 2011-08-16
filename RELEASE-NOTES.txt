@@ -16,4 +16,6 @@ REDHAT_BUGZILLA=725615, 725617
 - ManageTranslation:
   + Fixed zanata.xml path problem
   + Fixed zanata related targets.
+- New Variable: CMAKE_FEDORA_TMP_DIR for holding cmake-fedora files.
+  + ChangeLog temporary files have moved to this directory.
 
