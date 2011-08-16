@@ -286,7 +286,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		## fedpkg commit and push
 		# Depends on tag file instead of target "tag"
 		# To avoid excessive scratch build and rpmlint
-		SET(_commit_opt --push --tag ${COMMIT_MSG})
+		SET(_commit_opt --push --tag "${COMMIT_MSG}")
 		SET(_fedpkg_tag_name_committed
 		    "${_fedpkg_tag_name_prefix}.committed")
 		ADD_CUSTOM_COMMAND(OUTPUT
