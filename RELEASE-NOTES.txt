@@ -1,5 +1,5 @@
-PRJ_VER=0.7.992
-SUMMARY=Fixed Bug 725615, 725617;Remove fedpkg_commit, use fedpkg_import instead; Improved Zanata Support.
+PRJ_VER=0.7.994
+SUMMARY=Fixed Bug 725615, 725617;Improved fedpkg_commit; Improved Zanata Support.
 BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=725615, 725617
 [Changes]

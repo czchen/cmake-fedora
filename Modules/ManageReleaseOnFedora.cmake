@@ -282,31 +282,11 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		    SET(_import_opt "-b ${_tag}")
 		ENDIF(NOT _tag STREQUAL FEDORA_RAWHIDE_TAG)
 
-		SET(_fedpkg_tag_name_imported
-		    "${_fedpkg_tag_name_prefix}.imported")
-		# Depends on tag file instead of target "tag"
-		# To avoid excessive scratch build and rpmlint
-		ADD_CUSTOM_COMMAND(OUTPUT
-		    ${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_imported}
-		    COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
-		    COMMAND ${FEDPKG_CMD} pull
-		    COMMAND ${FEDPKG_CMD} import ${_import_opt} ${srpm}
-		    COMMAND git tag -a -m "${_fedpkg_tag_name_prefix} imported"
-		    ${_fedpkg_tag_name_imported}
-		    COMMAND git push --tags
-		    DEPENDS ${FEDPKG_WORKDIR} ${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE} ${srpm}
-		    WORKING_DIRECTORY ${FEDPKG_WORKDIR}
-		    COMMENT "fedpkg import on ${_branch} with ${srpm}"
-		    VERBATIM
-		    )
-
-		ADD_CUSTOM_TARGET(fedpkg_import_${_tag}
-		    DEPENDS ${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_imported}
-		    )
-		ADD_DEPENDENCIES(fedpkg_import fedpkg_import_${_tag})
 
 		## fedpkg commit and push
-		SET(_commit_opt "--push --tag -m '${COMMIT_MSG}'")
+		# Depends on tag file instead of target "tag"
+		# To avoid excessive scratch build and rpmlint
+		SET(_commit_opt --push --tag ${COMMIT_MSG})
 		SET(_fedpkg_tag_name_committed
 		    "${_fedpkg_tag_name_prefix}.committed")
 		ADD_CUSTOM_COMMAND(OUTPUT
@@ -325,7 +305,6 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		ADD_CUSTOM_TARGET(fedpkg_commit_${_tag}
 		    DEPENDS ${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_committed}
 		    )
-		ADD_DEPENDENCIES(fedpkg_commit_${_tag} fedpkg_import_${_tag})
 		ADD_DEPENDENCIES(fedpkg_commit fedpkg_commit_${_tag})
 
 		## fedpkg build
