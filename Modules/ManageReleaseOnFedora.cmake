@@ -216,6 +216,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 
 		    ADD_CUSTOM_COMMAND(OUTPUT ${_scratch_build_stamp}
 			COMMAND ${KOJI_CMD} build --scratch ${_branch} ${srpm}
+			COMMAND ${CMAKE_COMMAND} -E touch ${_scratch_build_stamp}
 			DEPENDS ${CMAKE_FEDORA_TMP_DIR} ${srpm}
 			COMMENT "koji scratch build on ${_branch} with ${srpm}"
 			)
@@ -261,7 +262,8 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		ADD_CUSTOM_COMMAND(OUTPUT ${_scratch_build_stamp}
 		    COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
 		    COMMAND ${FEDPKG_CMD} scratch-build --srpm ${srpm}
-		    DEPENDS ${CMAKE_FEDORA_TMP_DIR} ${srpm}
+		    COMMAND ${CMAKE_COMMAND} -E touch ${_scratch_build_stamp}
+	    	    DEPENDS ${CMAKE_FEDORA_TMP_DIR} ${srpm}
 		    WORKING_DIRECTORY ${FEDPKG_WORKDIR}
 		    COMMENT "fedpkg scratch build on ${_branch} with ${srpm}"
 		    )
