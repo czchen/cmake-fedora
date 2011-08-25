@@ -5,6 +5,8 @@ SETTING_FILE_GET_VARIABLE(var_q_1 "VAR_Q_1" ${CTEST_SCRIPT_DIRECTORY}/sample-set
 TEST_STR_MATCH(var_q_1 "Kudo")
 SETTING_FILE_GET_VARIABLE(var_q_4 "VAR_Q_4" test/sample-setting.txt )
 TEST_STR_MATCH(var_q_4 "Kudo\;Good")
+SETTING_FILE_GET_VARIABLE(var_q_5 "VAR_Q_5" test/sample-setting.txt )
+TEST_STR_MATCH(var_q_5 "")
 
 SETTING_FILE_GET_VARIABLE(var_q_4_noescape_sc "VAR_Q_4" test/sample-setting.txt
     NOESCAPE_SEMICOLON)
@@ -19,6 +21,7 @@ TEST_STR_MATCH(VAR_Q_1 "Kudo")
 TEST_STR_MATCH(VAR_Q_2 "Kudo")
 TEST_STR_MATCH(VAR_Q_3 "Kudo ")
 TEST_STR_MATCH(VAR_Q_4 "Kudo\;Good")
+TEST_STR_MATCH(VAR_Q_5 "")
 
 # Test whether back-slash is well handled
 TEST_STR_MATCH(VAR_SLASH_2 "TestSLASH")

@@ -3,6 +3,7 @@ VAR_Q_1= Kudo
 VAR_Q_2= "Kudo"
 VAR_Q_3= "Kudo "
 VAR_Q_4= "Kudo;Good"
+VAR_Q_5= ""
 
 # String with ;
 VAR_SC_1 = "ASD;FGH"
