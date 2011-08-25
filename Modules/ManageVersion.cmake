@@ -36,10 +36,11 @@
 
 IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
     SET(_MANAGE_VERSION_CMAKE_ "DEFINED")
-    MESSAGE("CMAKE_HOST_SYSTEM=${CMAKE_HOST_SYSTEM}")
-    MESSAGE("CMAKE_HOST_SYSTEM_NAME=${CMAKE_HOST_SYSTEM_NAME}")
-    MESSAGE("CMAKE_HOST_SYSTEM_PROCESSOR=${CMAKE_HOST_SYSTEM_PROCESSOR}")
-    MESSAGE("CMAKE_HOST_SYSTEM_VERSION=${CMAKE_HOST_SYSTEM_VERSION}")
+    INCLUDE(ManageMessage)
+    M_MSG(${M_INFO1} "CMAKE_HOST_SYSTEM=${CMAKE_HOST_SYSTEM}")
+    M_MSG(${M_INFO1} "CMAKE_HOST_SYSTEM_NAME=${CMAKE_HOST_SYSTEM_NAME}")
+    M_MSG(${M_INFO1} "CMAKE_HOST_SYSTEM_PROCESSOR=${CMAKE_HOST_SYSTEM_PROCESSOR}")
+    M_MSG(${M_INFO1} "CMAKE_HOST_SYSTEM_VERSION=${CMAKE_HOST_SYSTEM_VERSION}")
     INCLUDE(ManageVariable)
 
     MACRO(LOAD_RELEASE_FILE releaseFile)
@@ -54,41 +55,50 @@ IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
 
 
 	# Read header
+	SET(_release_file_header "${CMAKE_FEDORA_TMP_DIR}/${releaseFile}_HEADER")
 	MATH(EXPR _setting_line_num ${_line_num}-1)
 	COMMAND_OUTPUT_TO_VARIABLE(_releaseFile_head head -n ${_setting_line_num} ${releaseFile})
-	FILE(WRITE "${releaseFile}_NO_PACK_HEAD" "${_releaseFile_head}")
-	SETTING_FILE_GET_ALL_VARIABLES("${releaseFile}_NO_PACK_HEAD")
+	FILE(WRITE "${_release_file_header}" "${_releaseFile_head}")
+	SETTING_FILE_GET_ALL_VARIABLES("${_release_file_header}")
 	SET(CHANGE_SUMMARY "${SUMMARY}")
 
+	ADD_DEFINITIONS(-DPRJ_VER="${PRJ_VER}")
+	SET_COMPILE_ENV(PRJ_DOC_DIR "${DOC_DIR}/${PROJECT_NAME}-${PRJ_VER}"
+	    DISPLAY PATH "Project docdir prefix")
+
 	# Read [Changes] Section
+	SET(_release_file_changes "${CMAKE_FEDORA_TMP_DIR}/${releaseFile}_CHANGES")
 	MATH(EXPR _line_num ${_line_num}+1)
 	COMMAND_OUTPUT_TO_VARIABLE(CHANGELOG_ITEMS tail -n +${_line_num} ${releaseFile})
-	FILE(WRITE "${releaseFile}_NO_PACK_CHANGELOG_ITEM" "${CHANGELOG_ITEMS}")
+	FILE(WRITE "${_release_file_changes}" "${CHANGELOG_ITEMS}")
 
 	INCLUDE(DateTimeFormat)
 	FILE(READ "ChangeLog.prev" CHANGELOG_PREV)
 
-
-	# PRJ_VER won't be updated until the execution of cmake .
+	SET(CMAKE_CACHE_TXT "CMakeCache.txt")
+	# PRJ_VER won't be updated until the removal of CMAKE_CACHE_TXT
+	# and execution of cmake .
 	SET(_version_check_cmd grep -e 'PRJ_VER=' ${RELEASE_FILE} |  tr -d '\\r\\n' | sed -e s/PRJ_VER=//)
 	ADD_CUSTOM_TARGET(version_check
 	    COMMAND ${CMAKE_COMMAND} -E echo "PRJ_VER=${PRJ_VER}"
 	    COMMAND ${CMAKE_COMMAND} -E echo "Release file="`eval \"${_version_check_cmd}\"`
 	    COMMAND test \"`${_version_check_cmd}`\" = \"\" -o \"`${_version_check_cmd}`\" = "${PRJ_VER}"
-	    || echo Inconsistent version detected. Fixing.. && ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR}
-	    )
+	   || echo Inconsistent version detected. Fixing..
+	   && ${CMAKE_COMMAND} -E remove -f ${CMAKE_CACHE_TXT}
+	   && ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR}
+	   )
 
 	CONFIGURE_FILE(ChangeLog.in ChangeLog)
-
-	ADD_CUSTOM_COMMAND(OUTPUT ChangeLog
+	ADD_CUSTOM_COMMAND(OUTPUT ChangeLog  ${CMAKE_CACHE_TXT}
+	    COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CACHE_TXT}
 	    COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR}
 	    DEPENDS ${releaseFile} ChangeLog.prev
-	    COMMENT "ChangeLog is older than ${releaseFile}. Rebuilding"
+	    COMMENT "ChangeLog or ${CMAKE_CACHE_TXT} is older than ${releaseFile}. Rebuilding"
 	    VERBATIM
 	    )
 
 	ADD_CUSTOM_TARGET(changelog ALL
-	    DEPENDS ChangeLog
+	    DEPENDS ChangeLog ${CMAKE_CACHE_TXT}
 	    )
 
 	#ADD_CUSTOM_COMMAND(OUTPUT ChangeLog
@@ -102,8 +112,6 @@ IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
 	#    )
 
 	# By this time,
-	ADD_DEFINITIONS(-DPRJ_VER="${PRJ_VER}")
-	SET_COMPILE_ENV(PRJ_DOC_DIR "${DOC_DIR}/${PROJECT_NAME}-${PRJ_VER}")
     ENDMACRO(LOAD_RELEASE_FILE releaseFile)
 
 ENDIF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
