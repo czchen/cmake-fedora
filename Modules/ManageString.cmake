@@ -17,7 +17,7 @@
 #
 #   STRING_UNQUOTE(var str)
 #   - Remove double quote marks and quote marks around a string.
-#     If the string is not quoted, then it returns an empty string.
+#     If the string is not quoted, then content of str is copied to var
 #     * Parameters:
 #       + var: A variable that stores the result.
 #       + str: A string.
@@ -42,7 +42,9 @@
 IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
     SET(_MANAGE_STRING_CMAKE_ "DEFINED")
 
-    MACRO(STRING_TRIM_LEFT_INDEX var str regex)
+    # Return (index of lefttmost non match character) +1
+    # Return _strLen if all characters are trimmable
+    MACRO(STRING_LEFTMOST_NOTMATCH_INDEX var str regex)
 	STRING(LENGTH "${str}" _strLen)
 	SET(_index 0)
 	SET(_ret ${_strLen})
@@ -57,54 +59,53 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 	    MATH(EXPR _index ${_index}+1)
 	ENDWHILE(_index LESS _strLen)
 	SET(${var} ${_ret})
-    ENDMACRO(STRING_TRIM_LEFT_INDEX var str)
+    ENDMACRO(STRING_LEFTMOST_NOTMATCH_INDEX var str)
 
-    MACRO(STRING_TRIM_RIGHT_INDEX var str regex)
+    # Return (index of rightmost non match character) +1
+    # Return 0 if all characters are trimmable
+    #
+    MACRO(STRING_RIGHTMOST_NOTMATCH_INDEX var str regex)
 	STRING(LENGTH "${str}" _strLen)
 	MATH(EXPR _index ${_strLen})
-	SET(_ret -1)
+	SET(_ret 0)
 	WHILE(_index GREATER 0)
 	    MATH(EXPR _index_1 ${_index}-1)
 	    STRING(SUBSTRING "${str}" ${_index_1} 1 _strCursor)
 	    #MESSAGE("***STRING_UNQUOTE: _i=${_index} _strCursor=${_strCursor}")
 
 	    IF(NOT "${_strCursor}" MATCHES "${regex}")
-		SET(_ret ${_index_1})
+		SET(_ret ${_index})
 		SET(_index 0)
 	    ENDIF(NOT "${_strCursor}" MATCHES "${regex}")
 	    MATH(EXPR _index ${_index}-1)
 	ENDWHILE(_index GREATER 0)
 	SET(${var} ${_ret})
-    ENDMACRO(STRING_TRIM_RIGHT_INDEX var str)
+    ENDMACRO(STRING_RIGHTMOST_NOTMATCH_INDEX var str)
 
     MACRO(STRING_TRIM var str)
-	STRING_ESCAPE(_ret "${str}" ${ARGN})
-	STRING_TRIM_LEFT_INDEX(_leftIndex "${str}" "[ \t\n\r]")
-	STRING_TRIM_RIGHT_INDEX(_rightIndex "${str}" "[ \t\n\r]")
-	MATH(EXPR _subLen ${_rightIndex}-${_leftIndex}+1)
+	#STRING_ESCAPE(_ret "${str}" ${ARGN})
+	STRING_LEFTMOST_NOTMATCH_INDEX(_leftIndex "${str}" "[ \t\n\r]")
+	STRING_RIGHTMOST_NOTMATCH_INDEX(_rightIndex "${str}" "[ \t\n\r]")
+	#MESSAGE("_left=${_leftIndex} _rightIndex=${_rightIndex} str=|${str}|")
+	MATH(EXPR _subLen ${_rightIndex}-${_leftIndex})
 
 	IF(_subLen GREATER 0)
 	    STRING(SUBSTRING "${str}" ${_leftIndex} ${_subLen} _ret)
-	    IF(NOT "${ARGN}" STREQUAL "NOUNQUOTE" AND _subLen GREATER 1)
-		STRING(SUBSTRING "${_ret}" 0 1 _lCh)
-		MATH(EXPR _subLen_1 ${_subLen}-1)
-		STRING(SUBSTRING "${_ret}" _subLen_1 1 _rCh)
-		MESSAGE("_lCh=${_lCh} _rCh=${_rCh} _ret=${_ret}")
-		IF("${_lCh}" STREQUAL "\"" AND "${_rCh}" STREQUAL "\"")
-		    MATH(EXPR _subLen_2 ${_subLen_1}-1)
-		    STRING(SUBSTRING "${_ret}" 1 ${_subLen_2} _ret)
-		ELSEIF("${_lCh}" STREQUAL "'" AND "${_rCh}" STREQUAL "'")
-		    MATH(EXPR _subLen_2 ${_subLen_1}-1)
-		    STRING(SUBSTRING "${_ret}" 1 ${_subLen_2} _ret)
-		ENDIF("${_lCh}" STREQUAL "\"" AND "${_rCh}" STREQUAL "\"")
-	    ENDIF(NOT "${ARGN}" STREQUAL "NOUNQUOTE" AND _subLen GREATER 1)
+	    # IF _subLen > 1
+	    #   IF UNQUOTE; then unquote
+	    # Otherwise don't touch
+	    IF (_subLen GREATER 1)
+		IF(NOT "${ARGN}" STREQUAL "NOUNQUOTE")
+		    STRING_UNQUOTE(_ret "${_ret}")
+		ENDIF(NOT "${ARGN}" STREQUAL "NOUNQUOTE")
+	    ENDIF (_subLen GREATER 1)
 	ELSE(_subLen GREATER 0)
 	    SET(_ret "")
 	ENDIF(_subLen GREATER 0)
-
+	SET(${var} "${_ret}")
 
 	# Unencoding
-	STRING_UNESCAPE(${var} "${_ret}" ${ARGN})
+	#STRING_UNESCAPE(${var} "${_ret}" ${ARGN})
 
     ENDMACRO(STRING_TRIM var str)
 
@@ -157,70 +158,50 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 		STRING(REGEX REPLACE "#D" "$" _ret "${_ret}")
 	    ENDIF(${_arg} STREQUAL "NOESCAPE_SEMICOLON")
 	ENDFOREACH(_arg)
-	#MESSAGE("var=${var} _ret=${_ret} _NOESCAPE_SEMICOLON=${_NOESCAPE_SEMICOLON}	ESCAPE_VARIABLE=${_ESCAPE_VARIABLE}")
+	#MESSAGE("###STRING_UNESCAPE: var=${var} _ret=${_ret} _NOESCAPE_SEMICOLON=${_NOESCAPE_SEMICOLON} ESCAPE_VARIABLE=${_ESCAPE_VARIABLE}")
 
 	STRING(REGEX REPLACE "#B" "\\\\" _ret "${_ret}")
-	IF(_NOESCAPE_SEMICOLON STREQUAL "")
-	    # ';' => '#S'
+	IF("${_NOESCAPE_SEMICOLON}" STREQUAL "")
+	    # ESCAPE_SEMICOLON
 	    STRING(REGEX REPLACE "#S" "\\\\;" _ret "${_ret}")
-	ELSE(_NOESCAPE_SEMICOLON STREQUAL "")
+	ELSE("${_NOESCAPE_SEMICOLON}" STREQUAL "")
+	    # Don't ESCAPE_SEMICOLON
 	    STRING(REGEX REPLACE "#S" ";" _ret "${_ret}")
-	ENDIF(_NOESCAPE_SEMICOLON STREQUAL "")
-	#MESSAGE("***STRING_UNESCAPE:var=${var} _ret=${_ret}")
+	ENDIF("${_NOESCAPE_SEMICOLON}" STREQUAL "")
 
 	IF(NOT _ESCAPE_VARIABLE STREQUAL "")
 	    # '#D' => '$'
 	    STRING(REGEX REPLACE "#D" "$" _ret "${_ret}")
 	ENDIF(NOT _ESCAPE_VARIABLE STREQUAL "")
 	STRING(REGEX REPLACE "#H" "#" _ret "${_ret}")
-	#MESSAGE("***STRING_UNESCAPE 2:_ret=${_ret}")
 	SET(${var} "${_ret}")
+	#MESSAGE("*** STRING_UNESCAPE: ${var}=${${var}}")
     ENDMACRO(STRING_UNESCAPE var str)
 
 
     MACRO(STRING_UNQUOTE var str)
-	STRING_ESCAPE(_ret "${str}" ${ARGN})
+	SET(_ret "${str}")
+	STRING(LENGTH "${str}" _strLen)
 
-	STRING(LENGTH "${_ret}" _strLen)
-	SET(_index 0)
-	SET(_startIndex 0)
-	SET(_endIndex 0)
-	SET(_quotCh "")
-	WHILE(_index LESS _strLen)
-	    STRING(SUBSTRING "${_ret}" ${_index} 1 _strCursor)
-	    #MESSAGE("***STRING_UNQUOTE: _i=${_index} _strCursor=${_strCursor}")
-	    IF("${_quotCh}" STREQUAL "\"")
-		IF("${_strCursor}" STREQUAL "${_quotCh}")
-		    MATH(EXPR _endIndex ${_index})
-		ENDIF("${_strCursor}" STREQUAL "${_quotCh}")
-	    ELSEIF("${_quotCh}" STREQUAL "'")
-		IF("${_strCursor}" STREQUAL "${_quotCh}")
-		    MATH(EXPR _endIndex ${_index})
-		ENDIF("${_strCursor}" STREQUAL "${_quotCh}")
-	    ELSE("${_quotCh}" STREQUAL "\"")
-		IF("${_strCursor}" STREQUAL "\"")
-		    # Double quote
-		    SET(_quotCh "\"")
-		    MATH(EXPR _startIndex ${_index}+1)
-		ELSEIF("${_strCursor}" STREQUAL "'")
-		    # Single quote
-		    SET(_quotCh "'")
-		    MATH(EXPR _startIndex ${_index}+1)
-		ENDIF("${_strCursor}" STREQUAL "\"")
-	    ENDIF("${_quotCh}" STREQUAL "\"")
-	    MATH(EXPR _index ${_index}+1)
-	ENDWHILE(_index LESS _strLen)
-
-	MATH(EXPR _subLen ${_endIndex}-${_startIndex})
-	#MESSAGE("***STRING_UNQUOTE: _start=${_startIndex} _end=${_endIndex} _subLen=${_subLen} q=${_quotCh}")
-	IF(_subLen GREATER 0)
-	    STRING(SUBSTRING "${_ret}" ${_startIndex} ${_subLen} _ret1)
-	ELSE(_subLen GREATER 0)
-	    SET(_ret1 "")
-	ENDIF(_subLen GREATER 0)
-
-	# Unencoding
-	STRING_UNESCAPE(${var} "${_ret1}" ${ARGN})
+	# IF _strLen > 1
+	#   IF lCh and rCh are both "\""
+	#      Remove _lCh and _rCh
+	#   ELSEIF lCh and rCh are both "'"
+	#      Remove _lCh and _rCh
+	# Otherwise don't touch
+	IF(_strLen GREATER 1)
+	    STRING(SUBSTRING "${str}" 0 1 _lCh)
+	    MATH(EXPR _strLen_1 ${_strLen}-1)
+	    MATH(EXPR _strLen_2 ${_strLen_1}-1)
+	    STRING(SUBSTRING "${str}" ${_strLen_1} 1 _rCh)
+	    #MESSAGE("_lCh=${_lCh} _rCh=${_rCh} _ret=|${_ret}|")
+	    IF("${_lCh}" STREQUAL "\"" AND "${_rCh}" STREQUAL "\"")
+		STRING(SUBSTRING "${_ret}" 1 ${_strLen_2} _ret)
+	    ELSEIF("${_lCh}" STREQUAL "'" AND "${_rCh}" STREQUAL "'")
+		STRING(SUBSTRING "${_ret}" 1 ${_strLen_2} _ret)
+	    ENDIF("${_lCh}" STREQUAL "\"" AND "${_rCh}" STREQUAL "\"")
+	ENDIF (_strLen GREATER 1)
+	SET(${var} "${_ret}")
     ENDMACRO(STRING_UNQUOTE var str)
 
     #    MACRO(STRING_ESCAPE_SEMICOLON var str)
@@ -315,11 +296,11 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 		    SET(_str "${_str_remain}")
 		ENDIF("${_str_remain}" STREQUAL "")
 	    ENDIF(_token_count EQUAL _max_tokens)
-	    #MESSAGE("***STRING_SPLIT:  _token_count=${_token_count}/_max_tokens=${_max_tokens}  _str_list=${_str_list}")
 	ENDWHILE(NOT _token_count EQUAL _max_tokens)
 
 	# Unencoding
 	STRING_UNESCAPE(${var} "${_str_list}" ${_NOESCAPE_SEMICOLON} ${_ESCAPE_VARIABLE})
+	#MESSAGE("***STRING_SPLIT: tokens=${${var}}")
     ENDMACRO(STRING_SPLIT var delimiter str)
 
 ENDIF(NOT DEFINED _MANAGE_STRING_CMAKE_)

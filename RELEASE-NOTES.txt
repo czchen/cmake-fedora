@@ -1,10 +1,14 @@
-PRJ_VER=0.7.994
-SUMMARY=Fixed Bug 725615, 725617;Improved fedpkg_commit; Improved Zanata Support.
+PRJ_VER=0.7.995
+SUMMARY=Fixed Bug 725615, 725617, 733540;Improved fedpkg_commit; Improved Zanata Support.
 BODHI_UPDATE_TYPE=bugfix
-REDHAT_BUGZILLA=725615, 725617
+REDHAT_BUGZILLA=725615, 725617, 733540
 [Changes]
 - Fixed Bug 725615 - cmake-fedora: Use UTC for changelog
 - Fixed Bug 725617 - cmake-fedora: target 'tag' should stop when tag file exists.
+- Fixed Bug 733540 - cmake-fedora: "" should be read as empty string
+- Change behavior
+  + STRING_UNQUOTE is now merely remove quote marks in the beginning and
+    end of string. The string will not be changed otherwise.
 - Module CompileEnv.cmake is obsoleted by ManageEnvironment.cmake
   because it is what the variable actually store.
 - Revised ManageTranslation, now zanata.xml.in can be put to either
