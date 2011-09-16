@@ -71,10 +71,6 @@
 #    + PRJ_DOC_DIR: DocuFILEPATH = File chooser dialog.
 #      Default: ${DOC_DIR}/${PROJECT_NAME}-${PRJ_VER}
 
-# This module
-
-# This module supports software translation by:
-
 IF(NOT DEFINED _MANAGE_ENVIRONMENT_CMAKE_)
     SET(_MANAGE_ENVIRONMENT_CMAKE_ "DEFINED")
     SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS ON)
