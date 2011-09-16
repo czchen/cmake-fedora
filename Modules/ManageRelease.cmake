@@ -30,18 +30,17 @@ IF(NOT DEFINED _MANAGE_RELEASE_CMAKE_)
     INCLUDE(ManageMaintainerTargets)
     MACRO(MANAGE_RELEASE maintainerSetting)
 	SET(_disabled 0)
-	GET_TARGET_PROPERTY(_target_exists upload EXISTS)
-	IF(NOT _target_exists EQUAL 1)
+
+	IF(NOT TARGET load)
 	    MAINTAINER_SETTING_READ_FILE(${maintainerSetting})
-	    # What if maintainer file is invalid...
-	    GET_TARGET_PROPERTY(_target_exists upload EXISTS)
-	    IF(NOT _target_exists EQUAL 1)
-		M_MSG(${M_OFF} "ManageRelease: maintainer file is invalid,
-		    disable release targets" )
+	    # If maintainer file is invalid,
+	    # then target upload does not exist
+	    IF(NOT TARGET upload)
+		M_MSG(${M_OFF} "ManageRelease: maintainer file is invalid, disable release targets" )
 		MAINTAINER_SETTING_READ_FILE()
 		SET(_disabled 1)
-	    ENDIF(NOT _target_exists EQUAL 1)
-	ENDIF(NOT _target_exists EQUAL 1)
+	    ENDIF(NOT TARGET upload)
+	ENDIF(NOT TARGET load)
 
 	IF(_disabled EQUAL 0)
 	    ## Target: release

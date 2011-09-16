@@ -5,8 +5,8 @@ REDHAT_BUGZILLA=733540, 738958
 [Changes]
 - Fixed Bug 738958 - cmake-fedora: remove excessive quotation marks for Precompile definition
 - Fixed Bug 733540 - cmake-fedora: "" should be read as empty string
-- Change behavior
-  + STRING_UNQUOTE is now merely remove quote marks in the beginning and
+- ManageEnvironment: Now defined cmake_policy won't get overridden.
+- ManageString: STRING_UNQUOTE is now merely remove quote marks in the beginning and
     end of string. The string will not be changed otherwise.
 
 

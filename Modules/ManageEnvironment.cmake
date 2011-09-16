@@ -106,12 +106,22 @@ IF(NOT DEFINED _MANAGE_ENVIRONMENT_CMAKE_)
 	    # Default value
 	    SET(${var} "${default_value}" CACHE ${_type} "${_docstring}")
 	ENDIF(DEFINED ${var})
-	ADD_DEFINITIONS(-D${_env}='"${${var}}"')
+
+	# Enforce CMP0005 to new, yet pop after ADD_DEFINITION
+	CMAKE_POLICY(PUSH)
+	CMAKE_POLICY(SET CMP0005 NEW)
+	#	ADD_DEFINITIONS(-D${_env}='"${${var}}"')
+	ADD_DEFINITIONS(-D${_env}=${${var}})
+	CMAKE_POLICY(POP)
     ENDMACRO(SET_COMPILE_ENV var default_value)
 
     MACRO(MANAGE_CMAKE_POLICY policyName defaultValue)
 	IF(POLICY ${policyName})
-	    CMAKE_POLICY(SET "${policyName}" "${defaultValue}")
+	    CMAKE_POLICY(GET "${policyName}" _cmake_policy_value)
+	    IF(_cmake_policy_value STREQUAL "")
+		# Policy not defined yet
+		CMAKE_POLICY(SET "${policyName}" "${defaultValue}")
+	    ENDIF(_cmake_policy_value STREQUAL "")
 	ENDIF(POLICY ${policyName})
     ENDMACRO(MANAGE_CMAKE_POLICY policyName defaultValue)
 

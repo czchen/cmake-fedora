@@ -243,17 +243,16 @@ IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
 	    SET(_disabled 1)
 	ENDIF(_file STREQUAL "")
 
-	GET_TARGET_PROPERTY(_target_exists upload EXISTS)
-	IF(_target_exists EQUAL 1)
+	IF(TARGET upload)
 	    M_MSG(${M_INFO1} "Maintain setting file ${_file} has been loaded before")
 	    SET(_disabled 1)
-	ENDIF(_target_exists EQUAL 1)
+	ENDIF(TARGET upload)
 
 	IF(_disabled EQUAL 0)
 	    INCLUDE(ManageVariable)
 	    INCLUDE(ManageVersion)
 	    INCLUDE(ManageSourceVersionControl)
-	    SETTING_FILE_GET_ALL_VARIABLES("${_file}" UNQUOTED)
+	    SETTING_FILE_GET_ALL_VARIABLES("${_file}")
 
 	    #===================================================================
 	    # Targets:
@@ -261,9 +260,7 @@ IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
 		COMMENT "Uploading source to hosting services"
 		)
 
-	    SET_TARGET_PROPERTIES(upload PROPERTIES EXISTS 1)
-
-	    IF(SOURCE_VERSION_CONTROL STREQUAL "git")
+	    IF("${SOURCE_VERSION_CONTROL}" STREQUAL "git")
 		MANAGE_SOURCE_VERSION_CONTROL_GIT()
 	    ELSEIF(SOURCE_VERSION_CONTROL STREQUAL "hg")
 		MANAGE_SOURCE_VERSION_CONTROL_HG()
@@ -271,9 +268,9 @@ IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
 		MANAGE_SOURCE_VERSION_CONTROL_SVN()
 	    ELSEIF(SOURCE_VERSION_CONTROL STREQUAL "cvs")
 		MANAGE_SOURCE_VERSION_CONTROL_CVS()
-	    ELSE(SOURCE_VERSION_CONTROL STREQUAL "cvs")
-		M_MSG(${M_OFF} "SOURCE_VERSION_CONTROL is not valid, Source verion control support disabled.")
-	    ENDIF(SOURCE_VERSION_CONTROL STREQUAL "git")
+	    ELSE("${SOURCE_VERSION_CONTROL}" STREQUAL "cvs")
+		M_MSG(${M_OFF} "SOURCE_VERSION_CONTROL=${SOURCE_VERSION_CONTROL} is not valid, Source verion control support disabled.")
+	    ENDIF("${SOURCE_VERSION_CONTROL}" STREQUAL "git")
 
 	    #
 	    ADD_DEPENDENCIES(upload tag)
