@@ -1,3 +1,20 @@
+* Thu Aug 18 2011 Ding-Yi Chen <dchen at redhat.com> - 0.7.994-1
+- Fixed Bug 725615 - cmake-fedora: Use UTC for changelog
+- Fixed Bug 725617 - cmake-fedora: target 'tag' should stop when tag file exists.
+- Module CompileEnv.cmake is obsoleted by ManageEnvironment.cmake
+  because it is what the variable actually store.
+- Revised ManageTranslation, now zanata.xml.in can be put to either
+  CMAKE_SOURCE_DIR or CMAKE_CURRENT_SOURCE_DIR.
+- ManageReleaseOnFedora:
+  + New Constants: FEDORA_NEXT_RELEASE_TAGS, FEDORA_SUPPORTED_RELEASE_TAGS.
+  + Remove NORAWHIDE, as user can use TAGS to achieve the same.
+  + Actually mkdir and clone project if the FedPkg directory is missing.
+- ManageTranslation:
+  + Fixed zanata.xml path problem
+  + Fixed zanata related targets.
+- New Variable: CMAKE_FEDORA_TMP_DIR for holding cmake-fedora files.
+  + ChangeLog temporary files have moved to this directory.
+
 * Fri Jul 08 2011 Ding-Yi Chen <dchen at redhat.com> - 0.7.1-1
 - Target release now depends on upload.
 
