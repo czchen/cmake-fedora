@@ -1,3 +1,19 @@
+* Tue Sep 20 2011 Ding-Yi Chen <dchen at redhat.com> - 0.8.1-1
+- Fixed Bug 738958 - cmake-fedora: remove excessive quotation marks for Precompile definition
+- Fixed Bug 733540 - cmake-fedora: "" should be read as empty string
+- ManageEnvironment: Now defined cmake_policy won't get overridden.
+- ManageString: STRING_UNQUOTE is now merely remove quote marks in the beginning and
+    end of string. The string will not be changed otherwise.
+- UseUninstall has renamed as ManageUninstall
+- ManageMaintainerTargets: Reveal MAINTAINER_UPLOAD_COMMAND
+- ManageTranslation: Adopt zanata python client 1.3, arguments are redesigned.
+  + Change target: from "translations" to "gmo_files"
+  + Add targets: zanata_push, zanata_push_trans, zanata_pull_trans
+  + Add argument: ALL_FOR_PUSH, ALL_FOR_PUSH_TRANS and ALL_FOR_PULL
+  + Add argument: OPTIONS for passing arguments.
+- ManageReleaseOnFedora: Now default to build against candidate repos,
+  unless _CANDIDATE_PREFERRED is set to "0".
+
 * Thu Aug 18 2011 Ding-Yi Chen <dchen at redhat.com> - 0.7.994-1
 - Fixed Bug 725615 - cmake-fedora: Use UTC for changelog
 - Fixed Bug 725617 - cmake-fedora: target 'tag' should stop when tag file exists.
