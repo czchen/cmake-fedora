@@ -69,23 +69,20 @@
 #     + pot_file: Generate the pot_file.
 #     + translations: Converts input po files into the binary output mo files.
 #
-#   USE_ZANATA(serverUrl [ALL] [SRCDIR srcdir] [TRANSDIR transdir] [DSTDIR dstdir])
+#   USE_ZANATA(serverUrl [ALL_FOR_PUSH] [ALL_FOR_PUSH_TRANS] [ALL_FOR_PULL]
+#     [OPTIONS options])
 #   - Use Zanata (was flies) as translation service.
+#     Note that value for --project-id, --project-version, --project-name,
+#     --project-version, --url, --project-config, --push-trans
+#     are automatically generated.
 #     Arguments:
 #     + serverUrl: The URL of Zanata server
-#     + ALL: (Optional) Do "zanata po pull" for "make all
-#     + SRCDIR srcdir: (Optional) Directory that contain the source text file
-#       to be translated. Usually the directory that contains
-#       <ProjectName>.pot, message.pot or message.po
-#       Passed as --srcDir of zanata command line option.
-#     + TRANSDIR transdir: (Optional) Directory that contain the translated
-#       text. Usually the directory that contains *.po,
-#       message.pot or message.po
-#       Passed as --transDir of zanata command line option.
-#     + DSTDIR dstdir: (Optional) Directory that contain the translated
-#       text. Usually the directory that contains *.po,
-#       message.pot or message.po
-#       Passed as --dstDir of zanata command line option.
+#     + ALL_FOR_PUSH: (Optional) "make all" invokes targets "zanata_push"
+#     + ALL_FOR_PUSH_TRANS: (Optional) "make all" invokes targets "zanata_push_trans"
+#     + ALL_FOR_PULL: (Optional) "make all" invokes targets "zanata_pull"
+#     + OPTIONS options: (Optional) Options to be pass to zanata.
+#       Note that PROJECT_NAME is passed as --project-id,
+#       and PRJ_VER is passed as --project-version
 #
 
 
@@ -218,7 +215,8 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
     # ZANATA support
     MACRO(USE_ZANATA serverUrl)
 	SET(ZANATA_SERVER "${serverUrl}")
-	SET(ZANATA_XML_SEARCH_PATH ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR})
+	SET(ZANATA_XML_SEARCH_PATH ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR}
+	    ${CMAKE_CURRENT_SOURCE_DIR}/po ${CMAKE_SOURCE_DIR}/po)
 	FIND_PROGRAM(ZANATA_CMD zanata)
 	SET(_failed 0)
 	IF(ZANATA_CMD STREQUAL "ZANATA_CMD-NOTFOUND")
@@ -253,33 +251,48 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 	IF(_failed EQUAL 0)
 	    M_MSG(${M_INFO1} "USE_ZANATA:_zanata_xml=${_zanata_xml}")
 	    # Parsing arguments
-	    SET(_srcDir)
-	    SET(_transDir)
-	    SET(_dstDir)
-	    SET(_all)
+	    SET(_miscOpts "")
+	    SET(_pushOpts "")
+	    SET(_pullOpts "")
+	    SET(_projTypeOpt "")
+	    SET(_stage "")
+	    SET(_allForPush "")
+	    SET(_allForPushTrans "")
+	    SET(_allForPull "")
 	    FOREACH(_arg ${ARGN})
-		IF(_arg STREQUAL "SRCDIR")
-		    SET(_stage "SRCDIR")
-		ELSEIF(_arg STREQUAL "TRANSDIR")
-		    SET(_stage "TRANSDIR")
-		ELSEIF(_arg STREQUAL "DSTDIR")
-		    SET(_stage "DSTDIR")
-		ELSEIF(_arg STREQUAL "ALL")
-		    SET(_stage "ALL")
-		    SET(_all "ALL")
-		ELSE(_arg STREQUAL "SRCDIR")
-		    IF(_stage STREQUAL "SRCDIR")
-			SET(_srcDir "--srcdir=${_arg}")
-		    ELSEIF(_stage STREQUAL "TRANSDIR")
-			SET(_transDir "--transdir=${_arg}")
-		    ELSEIF(_stage STREQUAL "DSTDIR")
-			SET(_dstDir "--dstdir=${_arg}")
-		    ENDIF(_stage STREQUAL "SRCDIR")
+		IF(_arg STREQUAL "OPTIONS")
+		    SET(_stage "${_arg}")
+		ELSEIF(_arg STREQUAL "ALL_FOR_PUSH")
+		    SET(_allForPush "ALL")
+		ELSEIF(_arg STREQUAL "ALL_FOR_PUSH_TRANS")
+		    SET(_allForPushTrans "ALL")
+		ELSEIF(_arg STREQUAL "ALL_FOR_PUSH")
+		    SET(_allForPull "ALL")
+		ELSE(_arg STREQUAL "OPTIONS")
+		    IF(_stage STREQUAL "OPTIONS")
+			IF(_arg MATCHES "^--project-type=")
+			    SET(_projTypeOpt ${_arg})
+			ELSEIF(_arg MATCHES "^--.*dir=")
+			    LIST(APPEND _pushOpts ${_arg})
+			    LIST(APPEND _pullOpts ${_arg})
+			ELSEIF(_arg MATCHES "^--merge")
+			    LIST(APPEND _pushOpts ${_arg})
+			ELSEIF(_arg MATCHES "^--no-copytrans")
+			    LIST(APPEND _pushOpts ${_arg})
+			ELSE(_arg MATCHES "^--project-type=")
+			    LIST(APPEND _miscOpts ${_arg})
+			ENDIF(_arg MATCHES "^--project-type=")
+		    ENDIF(_stage STREQUAL "OPTIONS")
 		ENDIF(_arg STREQUAL "SRCDIR")
 	    ENDFOREACH(_arg ${ARGN})
 
-	    SET(_zanata_args --url=${ZANATA_SERVER} --project-id=${PROJECT_NAME}
+	    IF(_projTypeOpt STREQUAL "")
+		SET(_projTypeOpt "--project-type=gettext")
+	    ENDIF(_projTypeOpt STREQUAL "")
+
+	    SET(_zanata_args --url=${ZANATA_SERVER}
 		--project-config=${_zanata_xml})
+
 	    ADD_CUSTOM_TARGET(zanata_project_create
 		COMMAND ${ZANATA_CMD} project create ${PROJECT_NAME} ${_zanata_args}
 		"--project-name=${PROJECT_NAME}" "--project-desc=${PRJ_SUMMARY}"
@@ -287,32 +300,57 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 		VERBATIM
 		)
 	    ADD_CUSTOM_TARGET(zanata_version_create ${_all}
-		COMMAND ${ZANATA_CMD} version create ${PRJ_VER} ${_zanata_args}
+		COMMAND ${ZANATA_CMD} version create
+		${PRJ_VER} ${_zanata_args} --project-id=${PROJECT_NAME}
 		COMMENT "Create version ${PRJ_VER} on Zanata server ${serverUrl}"
 		VERBATIM
 		)
-	    ADD_CUSTOM_TARGET(zanata_po_push ${_all}
-		COMMAND ${ZANATA_CMD} po push ${_zanata_args} --project-version=${PRJ_VER}
-		${_srcDir} ${_transDir}
-		COMMENT "Push the pot files for version ${PRJ_VER}"
-		VERBATIM
-		)
-	    ADD_DEPENDENCIES(zanata_po_push pot_file)
-	    ADD_CUSTOM_TARGET(zanata_po_push_import_po ${_all}
-		COMMAND yes |
-	       	${ZANATA_CMD} po push ${_zanata_args} --project-version=${PRJ_VER}
-		${_srcDir} ${_transDir} --import-po
-		COMMENT "Push the pot and po files for version ${PRJ_VER}"
-		VERBATIM
-		)
-	    ADD_DEPENDENCIES(zanata_po_push pot_file)
 
-	    ADD_CUSTOM_TARGET(zanata_po_pull
-		COMMAND ${ZANATA_CMD} po pull ${_zanata_args} --project-version=${PRJ_VER}
-		${_dstDir}
-		COMMENT "Pull the pot files for version ${PRJ_VER}"
+	    # Zanata push
+	    ADD_CUSTOM_TARGET(zanata_push ${_allForPush}
+		COMMAND yes |
+		${ZANATA_CMD} push ${_zanata_args}
+		--project-id=${PROJECT_NAME}
+		--project-version=${PRJ_VER}
+		${_pushOpts}
+		${_projTypeOpt}
+		${_miscOpts}
+		COMMENT "Push source messages of version ${PRJ_VER}"
+	       	"to zanata server ${ZANATA_SERVER}"
 		VERBATIM
 		)
+	    ADD_DEPENDENCIES(zanata_push pot_file)
+
+	    # Zanata push with translation
+	    ADD_CUSTOM_TARGET(zanata_push_trans ${_allForPushTrans}
+		COMMAND yes |
+		${ZANATA_CMD} push ${_zanata_args}
+		--project-id=${PROJECT_NAME}
+		--project-version=${PRJ_VER}
+		--push-trans
+		${_pushOpts}
+		${_projTypeOpt}
+		${_miscOpts}
+		COMMENT "Push source messages and translations of version ${PRJ_VER}"
+		"to zanata server ${ZANATA_SERVER}"
+		VERBATIM
+		)
+
+	    ADD_DEPENDENCIES(zanata_push_trans pot_file)
+
+	    # Zanata pull
+	    ADD_CUSTOM_TARGET(zanata_pull ${_allForPull}
+		COMMAND yes |
+		${ZANATA_CMD} pull ${_zanata_args}
+		--project-id=${PROJECT_NAME}
+		--project-version=${PRJ_VER}
+		${_projTypeOpt}
+		${_miscOpts}
+		COMMENT "Pull translations of version ${PRJ_VER}"
+		"from zanata server ${ZANATA_SERVER}"
+		VERBATIM
+		)
+
 	ENDIF(_failed EQUAL 0)
     ENDMACRO(USE_ZANATA serverUrl)
 
