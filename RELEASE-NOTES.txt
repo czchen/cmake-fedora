@@ -9,4 +9,6 @@ REDHAT_BUGZILLA=733540, 738958
 - ManageString: STRING_UNQUOTE is now merely remove quote marks in the beginning and
     end of string. The string will not be changed otherwise.
 - UseUninstall has renamed as ManageUninstall
+- ManageMaintainerTargets: Reveal MAINTAINER_UPLOAD_COMMAND
+
 

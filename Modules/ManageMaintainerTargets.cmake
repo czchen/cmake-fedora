@@ -15,7 +15,7 @@
 #   [DEST_PATH destPath] [FILE_ALIAS fileAlias])
 #   - Upload a file to hosting services
 #       By default, it will sent to all hosting services defined in
-#       HOST_SERVICES
+#       HOSTING_SERVICES
 #     Arguments:
 #     + fileLocalPath: Local path of the file to be uploaded.
 #     + file2LocalPath: (Optional) Local path of 2nd (3rd and so on) file to be uploaded.
@@ -26,8 +26,11 @@
 #     + FILE_ALIAS fileAlias: (Optional) Alias to be appeared as part of make target.
 #       Default: file name is used.
 #     Reads following variables:
-#     + HOST_SERVICES: list of hosting services to for uploading project
+#     + HOSTING_SERVICES: list of hosting services to for uploading project
 #       files.
+#     Defines following variables:
+#     + MAINTAINER_UPLOAD_COMMAND: Full path of command that upload tarball to
+#       hosting services
 #
 #   MAINTAINER_SETTING_READ_FILE([filename])
 #   - Read the maintainer setting file.
@@ -111,10 +114,10 @@ IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
 
     MACRO(MANAGE_MAINTAINER_TARGETS_SFTP
 	    hostService remoteBasePath destPath fileAlias fileLocalPath )
-	FIND_PROGRAM(_developer_upload_cmd sftp)
-	IF(_developer_upload_cmd STREQUAL "_developer_upload_cmd-NOTFOUND")
+	FIND_PROGRAM(MAINTAINER_UPLOAD_COMMAND sftp)
+	IF(MAINTAINER_UPLOAD_COMMAND STREQUAL "MAINTAINER_UPLOAD_COMMAND-NOTFOUND")
 	    MESSAGE(FATAL_ERROR "Program sftp is not found!")
-	ENDIF(_developer_upload_cmd STREQUAL "_developer_upload_cmd-NOTFOUND")
+	ENDIF(MAINTAINER_UPLOAD_COMMAND STREQUAL "MAINTAINER_UPLOAD_COMMAND-NOTFOUND")
 
 	IF(NOT "${${hostService}_BATCH_TEMPLATE}" STREQUAL "")
 	    IF(NOT "${hostService}_BATCH" STREQUAL "")
@@ -126,17 +129,17 @@ IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
 	ENDIF(NOT "${${hostService}_BATCH_TEMPLATE}" STREQUAL "")
 
 	IF(NOT "${hostService}_BATCH" STREQUAL "")
-	    SET(_developer_upload_cmd "${_developer_upload_cmd} -b ${hostService}_BATCH" )
+	    SET(MAINTAINER_UPLOAD_COMMAND "${MAINTAINER_UPLOAD_COMMAND} -b ${hostService}_BATCH" )
 	ENDIF(NOT "${hostService}_BATCH" STREQUAL "")
 
 	IF(NOT "${hostService}_OPTIONS" STREQUAL "")
-	    SET(_developer_upload_cmd "${_developer_upload_cmd} -F ${hostService}_OPTIONS" )
+	    SET(MAINTAINER_UPLOAD_COMMAND "${MAINTAINER_UPLOAD_COMMAND} -F ${hostService}_OPTIONS" )
 	ENDIF(NOT "${hostService}_OPTIONS" STREQUAL "")
 
-	SET(_developer_upload_cmd "${_developer_upload_cmd} ${${hostService}_USER}@${${hostService}_SITE}")
+	SET(MAINTAINER_UPLOAD_COMMAND "${MAINTAINER_UPLOAD_COMMAND} ${${hostService}_USER}@${${hostService}_SITE}")
 
 	ADD_CUSTOM_TARGET(upload_${hostService}_${fileAlias}
-	    COMMAND ${_developer_upload_cmd}
+	    COMMAND ${MAINTAINER_UPLOAD_COMMAND}
 	    DEPENDS ${fileLocalPath} ${DEVELOPER_DEPENDS}
 	    COMMENT "Uploading the ${fileLocalPath} to ${hostService}..."
 	    VERBATIM
@@ -146,10 +149,10 @@ IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
 
     MACRO(MANAGE_MAINTAINER_TARGETS_SCP
 	    hostService remoteBasePath destPath fileAlias fileLocalPath)
-	FIND_PROGRAM(_developer_upload_cmd scp)
-	IF(_developer_upload_cmd STREQUAL "_developer_upload_cmd-NOTFOUND")
+	FIND_PROGRAM(MAINTAINER_UPLOAD_COMMAND scp)
+	IF(MAINTAINER_UPLOAD_COMMAND STREQUAL "MAINTAINER_UPLOAD_COMMAND-NOTFOUND")
 	    MESSAGE(FATAL_ERROR "Program scp is not found!")
-	ENDIF(_developer_upload_cmd STREQUAL "_developer_upload_cmd-NOTFOUND")
+	ENDIF(MAINTAINER_UPLOAD_COMMAND STREQUAL "MAINTAINER_UPLOAD_COMMAND-NOTFOUND")
 
 	IF("${remoteBasePath}" STREQUAL ".")
 	    IF("${destPath}" STREQUAL ".")
@@ -166,7 +169,7 @@ IF(NOT DEFINED _MANAGE_MAINTAINER_TARGETS_CMAKE_)
 	ENDIF("${remoteBasePath}" STREQUAL ".")
 
 	ADD_CUSTOM_TARGET(upload_${hostService}_${fileAlias}
-	    COMMAND ${_developer_upload_cmd} ${${hostService}_OPTIONS} ${fileLocalPath}
+	    COMMAND ${MAINTAINER_UPLOAD_COMMAND} ${${hostService}_OPTIONS} ${fileLocalPath}
 	      ${${hostService}_USER}@${${hostService}_SITE}${_dest}
 	    DEPENDS ${fileLocalPath} ${DEVELOPER_DEPENDS}
 	    COMMENT "Uploading the ${fileLocalPath} to ${hostService}..."
