@@ -12,9 +12,9 @@
 #
 # Reads following variables:
 #   FEDORA_CANDIDATE_PREFERRED:
-#     Set to "True" to build against updates-candidate if possible.
+#     Set to "0" to build against original repo (without update).
 #   EPEL_CANDIDATE_PREFERRED:
-#     Set to "True" to build against testing-candidate if possible.
+#     Set to "0" to build against original repo (without update).
 # Defines following variable:
 #   FEDORA_RAWHIDE_TAG: Koji tag for rawhide.
 #   FEDORA_NEXT_RELEASE: Number of Fedora upcoming release, e.g. 16
@@ -115,9 +115,9 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	IF("${dist}" MATCHES "^el")
 	    # EPEL dists
 	    STRING(REGEX REPLACE "el\([0-9]+\)" "\\1" _relver  "${dist}")
-	    IF(EPEL_CANDIDATE_PREFERRED)
+	    IF(NOT "${EPEL_CANDIDATE_PREFERRED}" STREQUAL "0")
 		SET(_dist_postfix "-testing-candidate")
-	    ENDIF(EPEL_CANDIDATE_PREFERRED)
+	    ENDIF(NOT "${EPEL_CANDIDATE_PREFERRED}" STREQUAL "0")
 	    SET(${var} "${_dist_prefix}${_relver}E-epel${_dist_postfix}")
 	ELSEIF("${dist}" MATCHES "^f")
 	    # Fedora dists
@@ -125,12 +125,12 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	    IF(_relver GREATER 15)
 		SET(_dist_prefix "")
 	    ENDIF(_relver GREATER 15)
-	    IF(FEDORA_CANDIDATE_PREFERRED)
+	    IF(NOT "${FEDORA_CANDIDATE_PREFERRED}" STREQUAL "0")
 		LIST(FIND FEDORA_SUPPORTED_RELEASE_TAGS "${dist}" _index)
 		IF(_index GREATER -1)
 		    SET(_dist_postfix "-updates-candidate")
 		ENDIF(_index GREATER -1)
-	    ENDIF(FEDORA_CANDIDATE_PREFERRED)
+	    ENDIF(NOT "${FEDORA_CANDIDATE_PREFERRED}" STREQUAL "0")
 	    SET(${var} "${_dist_prefix}${dist}${_dist_postfix}")
 	ELSE("${dist}" MATCHES "^el")
 	    # Perhaps rawhide, or other custom targets

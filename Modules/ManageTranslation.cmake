@@ -67,7 +67,7 @@
 #     + XGETTEXT_EXECUTABLE: the full path to the xgettext.
 #     Targets:
 #     + pot_file: Generate the pot_file.
-#     + translations: Converts input po files into the binary output mo files.
+#     + gmo_files: Converts input po files into the binary output mo files.
 #
 #   USE_ZANATA(serverUrl [ALL_FOR_PUSH] [ALL_FOR_PUSH_TRANS] [ALL_FOR_PULL]
 #     [OPTIONS options])
@@ -83,6 +83,13 @@
 #     + OPTIONS options: (Optional) Options to be pass to zanata.
 #       Note that PROJECT_NAME is passed as --project-id,
 #       and PRJ_VER is passed as --project-version
+#     Targets:
+#     + zanata_project_create: Create project with PROJECT_NAME in zanata
+#       server.
+#     + zanata_version_create: Create version PRJ_VER in zanata server.
+#     + zanata_push: Push source messages to zanata server
+#     + zanata_push_trans: Push source messages and translations to zanata server.
+#     + zanata_pull: Pull translations from zanata server.
 #
 
 
@@ -179,7 +186,7 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 		DEPENDS ${_potFile}
 		)
 
-	    ### Generating translation
+	    ### Generating gmo files
 	    SET(_gmoFile_list)
 	    GET_FILENAME_COMPONENT(_potBasename ${_potFile} NAME_WE)
 	    GET_FILENAME_COMPONENT(_potDir ${_potFile} PATH)
@@ -201,11 +208,11 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 		INSTALL(FILES ${_gmoFile} DESTINATION share/locale/${_locale}/LC_MESSAGES RENAME ${_potBasename}.mo)
 		LIST(APPEND _gmoFile_list ${_gmoFile})
 	    ENDFOREACH(_locale ${_locale_list})
-	    MESSAGE("_gmoFile_list=${_gmoFile_list}")
+	    M_MSG(${M_INFO2} "_gmoFile_list=${_gmoFile_list}")
 
-	    ADD_CUSTOM_TARGET(translations ${_all}
+	    ADD_CUSTOM_TARGET(gmo_files ${_all}
 		DEPENDS ${_gmoFile_list}
-		COMMENT "Generate translation"
+		COMMENT "Generate gmo files for translation"
 		)
 	ENDIF(${_gettext_dependency_missing} EQUAL 0)
     ENDMACRO(USE_GETTEXT)
@@ -299,7 +306,7 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 		COMMENT "Create project translation on Zanata server ${serverUrl}"
 		VERBATIM
 		)
-	    ADD_CUSTOM_TARGET(zanata_version_create ${_all}
+	    ADD_CUSTOM_TARGET(zanata_version_create
 		COMMAND ${ZANATA_CMD} version create
 		${PRJ_VER} ${_zanata_args} --project-id=${PROJECT_NAME}
 		COMMENT "Create version ${PRJ_VER} on Zanata server ${serverUrl}"
