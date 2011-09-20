@@ -40,7 +40,7 @@ ENDIF(MANAGE_ENVIRONMENT_PATH STREQUAL "NOTFOUND")
 
 INCLUDE(ManageVersion)
 LOAD_RELEASE_FILE("RELEASE-NOTES.txt")
-INCLUDE(UseUninstall)
+INCLUDE(ManageUninstall)
 
 ####################################################################
 # Building

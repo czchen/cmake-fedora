@@ -29,7 +29,7 @@ SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/Modules ${CMAKE_ROOT}/Modules )
 INCLUDE(ManageEnvironment RESULT_VARIABLE MANAGE_ENVIRONMENT_PATH)
 INCLUDE(ManageVersion)
 LOAD_RELEASE_FILE("RELEASE-NOTES.txt")
-INCLUDE(UseUninstall)
+INCLUDE(ManageUninstall)
 
 ####################################################################
 # Building

@@ -8,4 +8,5 @@ REDHAT_BUGZILLA=733540, 738958
 - ManageEnvironment: Now defined cmake_policy won't get overridden.
 - ManageString: STRING_UNQUOTE is now merely remove quote marks in the beginning and
     end of string. The string will not be changed otherwise.
+- UseUninstall has renamed as ManageUninstall
 
