@@ -143,7 +143,6 @@ IF(NOT DEFINED _MANAGE_ENVIRONMENT_CMAKE_)
     ####################################################################
     # CMake Variables
     #
-    SET(CMAKE_INSTALL_PREFIX "/usr")
     SET_COMPILE_ENV(CMAKE_INSTALL_PREFIX "/usr"
 	DISPLAY PATH "Install dir prefix")
     SET_COMPILE_ENV(BIN_DIR  "${CMAKE_INSTALL_PREFIX}/bin"

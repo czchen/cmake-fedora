@@ -1,7 +1,11 @@
 cmake_minimum_required(VERSION 2.6)
+
 # CMP0011 should be set here, otherwise policy set in module won't affect
 # here.
 CMAKE_POLICY(SET CMP0011 OLD)
+
+# Default CMAKE_INSTALL_PREFIX should be set before PROJECT()
+SET(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "Install dir prefix")
 
 ####################################################################
 # Project specific information
