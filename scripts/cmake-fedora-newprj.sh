@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/sh
 #
 CMAKE_TEMPLATES_PATH="/usr/share/cmake/Templates;Templates"
 
