@@ -55,7 +55,10 @@ INSTALL(DIRECTORY Modules/
 INSTALL(DIRECTORY Templates/
     DESTINATION ${DATA_DIR}/cmake/Templates)
 
-INSTALL(PROGRAMS scripts/cmake-fedora-newprj.sh
+SET(EXECUTABLES scripts/cmake-fedora-newprj.sh scripts/koji-build-scratch.sh)
+STRING_JOIN(PRJ_EXECUTABLES " " ${EXECUTABLES})
+
+INSTALL(PROGRAMS ${PRJ_EXECUTABLES}
     DESTINATION ${BIN_DIR})
 ####################################################################
 # Packing
