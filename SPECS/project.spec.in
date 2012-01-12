@@ -60,6 +60,7 @@ Requires:   cmake >= 2.4
 %{_datadir}/cmake/Modules/UseGConf.cmake
 %{_datadir}/cmake/Modules/cmake_uninstall.cmake.in
 %{_datadir}/cmake/Templates/fedora
+%config %{_sysconfdir}/cmake-fedora.conf
 
 %changelog
 * @TODAY_CHANGELOG@ @MAINTAINER@ - @PRJ_VER@-@PRJ_RELEASE_NO@

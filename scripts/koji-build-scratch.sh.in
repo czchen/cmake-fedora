@@ -3,8 +3,18 @@ if [ -e /etc/cmake-fedora.conf ]; then
     source /etc/cmake-fedora.conf
 fi
 
-FEDORA_CURRENT_RELEASE_TAGS=${FEDORA_CURRENT_RELEASE_TAGS:-"f17 f16 f15"}
-EPEL_CURRENT_RELEASE_TAGS=${EPEL_CURRENT_RELEASE_TAGS:-"el6 el5"}
+FEDORA_RAWHIDE_VERSION=${FEDORA_RAWHIDE_VERSION:-"@FEDORA_RAWHIDE_VERSION@"}
+FEDORA_SUPPORTED_VERSIONS=${FEDORA_SUPPORTED_VERSIONS:-"@FEDORA_SUPPORTED_VERSIONS@"}
+EPEL_SUPPORTED_VERSIONS=${EPEL_SUPPORTED_VERSIONS:-"@EPEL_SUPPORTED_VERSIONS@"}
+
+FEDORA_CURRENT_RELEASE_TAGS="f${FEDORA_RAWHIDE_VERSION}"
+for f in ${FEDORA_SUPPORTED_VERSIONS}; do
+    FEDORA_CURRENT_RELEASE_TAGS="${FEDORA_CURRENT_RELEASE_TAGS} f${f}"
+done
+
+for e in ${EPEL_SUPPORTED_VERSIONS}; do
+    EPEL_CURRENT_RELEASE_TAGS="${EPEL_CURRENT_RELEASE_TAGS} el${e}"
+done
 
 function print_usage(){
     cat <<END
@@ -37,22 +47,24 @@ shift
 _SUFFIX="-candidate"
 TARGETS=
 
-if [ "$1" == "fedora" ]; then
-    TARGETS=$FEDORA_CURRENT_RELEASE_TAGS
-    shift
-fi
+for i in $@; do
+    case $i in
+	fedora )
+	    TARGETS+=" $FEDORA_CURRENT_RELEASE_TAGS"
+	    ;;
+	epel )
+	    TARGETS+=" $EPEL_CURRENT_RELEASE_TAGS"
+	    ;;
+	* )
+	    TARGETS+=" $i"
+	    ;;
+    esac
+done
 
-if [ "$1" == "epel" ]; then
-    TARGETS="$TARGETS $EPEL_CURRENT_RELEASE_TAGS"
-    shift
-fi
-
-TARGETS="$TARGETS $*"
-
-[ -z "${TARGETS}" ] && TARGETS="$FEDORA_CURRENT_RELEASE_TAGS $EPEL_CURRENT_RELEASE_TAGS"
+TARGETS=${TARGETS:-"$FEDORA_CURRENT_RELEASE_TAGS $EPEL_CURRENT_RELEASE_TAGS"}
 
 for t in $TARGETS; do
-    echo "koji build --scratch $t$_SUFFIX $srpm"
-#    koji build --scratch "$t$_SUFFIX" "$srpm"
+#    echo "koji build --scratch $t$_SUFFIX $srpm"
+    koji build --scratch "$t$_SUFFIX" "$srpm"
 done
 

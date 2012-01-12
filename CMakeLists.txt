@@ -34,16 +34,23 @@ INCLUDE(ManageUninstall)
 ####################################################################
 # Building
 #
+SETTING_FILE_GET_ALL_VARIABLES(cmake-fedora.conf)
+CONFIGURE_FILE(scripts/koji-build-scratch.sh.in scripts/koji-build-scratch.sh
+    @ONLY)
 
 ####################################################################
 # Installing
 #
+
 
 SET(INSTALL_DOCS ${RELEASE_FILE} AUTHORS README ChangeLog COPYING TODO)
 STRING_JOIN(PRJ_DOC_LIST " " ${INSTALL_DOCS})
 
 INSTALL(FILES ${INSTALL_DOCS}
     DESTINATION "${PRJ_DOC_DIR}")
+
+INSTALL(FILES cmake-fedora.conf
+    DESTINATION "${SYSCONF_DIR}")
 
 INSTALL(FILES CMakeLists.txt ${RELEASE_FILE} SPECS/project.spec.in
     DESTINATION "${PRJ_DOC_DIR}/examples")
@@ -73,8 +80,7 @@ SET(PRJ_IGNORE_FILES_COMMON
     "/doc/"  "\\\\.spec$" "messages.po$" "\\\\.orig$"
 )
 
-SET(PACK_SOURCE_IGNORE_FILES ${PACK_SOURCE_IGNORE_FILES}
-    ${PRJ_IGNORE_FILES_COMMON} "/bin/")
+LIST(APPEND PACK_SOURCE_IGNORE_FILES ${PRJ_IGNORE_FILES_COMMON} "/bin/")
 
 PACK_SOURCE(PACK_SOURCE_FILE_NAME "${RPM_BUILD_SOURCES}")
 PACK_RPM(PRJ_SRPM_FILE_NAME "${RPM_BUILD_SPECS}/project.spec.in" "${PACK_SOURCE_FILE_NAME}")
