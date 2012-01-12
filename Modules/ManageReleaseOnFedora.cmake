@@ -111,7 +111,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	    SET(EPEL_KOJI_TAG_POSTFIX "-testing-candidate")
 	ENDIF(NOT DEFINED EPEL_KOJI_TAG_POSTFIX)
 
-	SET(_bodhi_template_file "NO_PACK/bodhi.template")
+	SET(_bodhi_template_file "${CMAKE_FEDORA_TMP_DIR}/bodhi.template")
 	LIST(APPEND PACK_SOURCE_IGNORE_FILES "/${FEDPKG_DIR}/")
 
 	# Need the definition of source version control first, as we need to check tag file.
@@ -120,44 +120,13 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	IF("${FEDPKG_DIR}" STREQUAL "")
 	    SET(FEDPKG_DIR "FedPkg")
 	ENDIF("${FEDPKG_DIR}" STREQUAL "")
-	SET(_FEDORA_DIST_TAGS "")
-
-	MACRO(_manange_release_on_fedora_dist_convert_to_koji_target
-		var dist)
-	    SET(_dist_prefix "dist-")
-	    SET(_dist_postfix "")
-	    IF("${dist}" MATCHES "^el")
-		# EPEL dists
-		STRING(REGEX REPLACE "el\([0-9]+\)" "\\1" _relver  "${dist}")
-		IF(NOT "${EPEL_CANDIDATE_PREFERRED}" STREQUAL "0")
-		    SET(_dist_postfix "-testing-candidate")
-		ENDIF(NOT "${EPEL_CANDIDATE_PREFERRED}" STREQUAL "0")
-		SET(${var} "${_dist_prefix}${_relver}E-epel${_dist_postfix}")
-	    ELSEIF("${dist}" MATCHES "^f")
-		# Fedora dists
-		STRING(REGEX REPLACE "f\([0-9]+\)" "\\1" _relver  "${dist}")
-		IF(_relver GREATER 15)
-		    SET(_dist_prefix "")
-		ENDIF(_relver GREATER 15)
-		IF(NOT "${FEDORA_CANDIDATE_PREFERRED}" STREQUAL "0")
-		    LIST(FIND FEDORA_SUPPORTED_RELEASE_TAGS "${dist}" _index)
-		    IF(_index GREATER -1)
-			SET(_dist_postfix "-updates-candidate")
-		    ENDIF(_index GREATER -1)
-		ENDIF(NOT "${FEDORA_CANDIDATE_PREFERRED}" STREQUAL "0")
-		SET(${var} "${_dist_prefix}${dist}${_dist_postfix}")
-	    ELSE("${dist}" MATCHES "^el")
-		# Perhaps rawhide, or other custom targets
-		SET(${var} "${_dist_prefix}${dist}")
-	    ENDIF("${dist}" MATCHES "^el")
-	ENDMACRO(_manange_release_on_fedora_dist_convert_to_koji_target
-	    kojiTarget dist)
+	SET(_FEDORA_BUILD_TAGS "")
 
 	MACRO(_manange_release_on_fedora_parse_args)
 	    SET(_FEDORA_KARMA "3")
 	    SET(_FEDORA_AUTO_KARMA "True")
 	    SET(_FEDORA_KOJI_SCRATCH 1)
-	    SET(_FEDORA_DIST_TAGS "")
+	    SET(_FEDORA_BUILD_TAGS "")
 
 	    SET(_stage "")
 	    FOREACH(_arg ${ARGN})
@@ -166,9 +135,9 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		ELSEIF(_arg STREQUAL "KARMA")
 		    SET(_stage "KARMA")
 		ELSEIF(_arg STREQUAL "TAGS")
-		    # No need to further parsing TAGS, as FEDORA_RELEASE_TAGS
-		    # override whatever specified after TAGS
 		    IF(NOT "${FEDORA_RELEASE_TAGS}" STREQUAL "")
+			# No need to further parsing TAGS, as FEDORA_RELEASE_TAGS
+			# override whatever specified after TAGS
 			BREAK()
 		    ENDIF(NOT "${FEDORA_RELEASE_TAGS}" STREQUAL "")
 		    SET(_stage "TAGS")
@@ -179,16 +148,16 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 			ENDIF(_arg STREQUAL "0")
 			SET(_FEDORA_KARMA ${_arg})
 		    ELSEIF(_stage STREQUAL "TAGS")
-			LIST(APPEND _FEDORA_DIST_TAGS "${_arg}")
+			LIST(APPEND _FEDORA_BUILD_TAGS "${_arg}")
 		    ELSE(_stage STREQUAL "TAGS")
 			SET(_FEDORA_SRPM ${_arg})
 		    ENDIF(_stage STREQUAL "KARMA")
 		ENDIF(_arg STREQUAL "NOKOJI_SCRATCH_BUILD")
 	    ENDFOREACH(_arg ${ARGN})
 	    IF(NOT "${FEDORA_RELEASE_TAGS}" STREQUAL "")
-		SET(_FEDORA_DIST_TAGS ${FEDORA_RELEASE_TAGS})
-	    ELSEIF(_FEDORA_DIST_TAGS STREQUAL "")
-		LIST(APPEND _FEDORA_DIST_TAGS ${FEDORA_CURRENT_RELEASE_TAGS})
+		SET(_FEDORA_BUILD_TAGS ${FEDORA_RELEASE_TAGS})
+	    ELSEIF(_FEDORA_BUILD_TAGS STREQUAL "")
+		LIST(APPEND _FEDORA_BUILD_TAGS ${FEDORA_CURRENT_RELEASE_TAGS})
 	    ENDIF(NOT "${FEDORA_RELEASE_TAGS}" STREQUAL "")
 
 	    SET(_FEDORA_STABLE_KARMA "${_FEDORA_KARMA}")
@@ -203,45 +172,42 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		M_MSG(${M_OFF} "Program koji is not found! Koji support disabled.")
 		SET(_dependencies_missing 1)
 	    ENDIF(KOJI_CMD STREQUAL "KOJI_CMD-NOTFOUND")
+	    FIND_PROGRAM(KOJI_BUILD_SCRATCH_CMD koji-build-scratch.sh
+		"${CMAKE_BINARY_DIR}/scripts" "${CMAKE_SOURCE_DIR}/scripts")
+	    IF(KOJI_BUILD_SCRATCH_CMD STREQUAL "KOJI_BUILD_SCRATCH_CMD-NOTFOUND")
+		M_MSG(${M_OFF} "Program koji-build-scratch.sh is not found! Koji support disabled.")
+		SET(_dependencies_missing 1)
+	    ENDIF(KOJI_BUILD_SCRATCH_CMD STREQUAL "KOJI_BUILD_SCRATCH_CMD-NOTFOUND")
+
 
 	    IF(_dependencies_missing EQUAL 0)
-		IF(_FEDORA_DIST_TAGS STREQUAL "")
+		IF(_FEDORA_BUILD_TAGS STREQUAL "")
 		    _manange_release_on_fedora_parse_args(${ARGN})
-		ENDIF(_FEDORA_DIST_TAGS STREQUAL "")
+		ENDIF(_FEDORA_BUILD_TAGS STREQUAL "")
+
 
 		IF(_FEDORA_KOJI_SCRATCH EQUAL 1)
 		    ADD_CUSTOM_TARGET(koji_scratch_build
+			COMMAND ${KOJI_BUILD_SCRATCH_CMD} ${srpm} ${_FEDORA_BUILD_TAGS}
 			COMMENT "koji scratch builds"
 			)
 
+		    ADD_DEPENDENCIES(koji_scratch_build rpmlint)
 		    # Ensure package build in koji before tag
 		    ADD_DEPENDENCIES(tag koji_scratch_build)
-		ENDIF(_FEDORA_KOJI_SCRATCH EQUAL 1)
 
-		FOREACH(_tag ${_FEDORA_DIST_TAGS})
-		    _manange_release_on_fedora_dist_convert_to_koji_target(_branch ${_tag})
-		    IF(_FEDORA_KOJI_SCRATCH EQUAL 1)
-			SET(_scratch_build_stamp
-			    "${CMAKE_FEDORA_TMP_DIR}/${PRJ_VER}_koji_scratch_build_${_tag}")
+		    FOREACH(_tag ${_FEDORA_BUILD_TAGS})
 			ADD_CUSTOM_TARGET(koji_scratch_build_${_tag}
-			    DEPENDS ${_scratch_build_stamp}
+			    COMMAND ${KOJI_BUILD_SCRATCH_CMD} ${srpm} ${_tag}
+			    COMMENT "koji scratch builds on ${_tag}"
 			    )
-
-			ADD_CUSTOM_COMMAND(OUTPUT ${_scratch_build_stamp}
-			    COMMAND ${KOJI_CMD} build --scratch ${_branch} ${srpm}
-			    COMMAND ${CMAKE_COMMAND} -E touch ${_scratch_build_stamp}
-			    DEPENDS ${CMAKE_FEDORA_TMP_DIR} ${srpm}
-			    COMMENT "koji scratch build on ${_branch} with ${srpm}"
-			    )
-			ADD_DEPENDENCIES(koji_scratch_build_${_tag} rpmlint)
-			ADD_DEPENDENCIES(koji_scratch_build koji_scratch_build_${_tag})
-		    ENDIF(_FEDORA_KOJI_SCRATCH EQUAL 1)
-		ENDFOREACH(_tag ${_FEDORA_DIST_TAGS})
+		    ENDFOREACH(_tag ${_FEDORA_BUILD_TAGS})
+		ENDIF(_FEDORA_KOJI_SCRATCH EQUAL 1)
 	    ENDIF(_dependencies_missing EQUAL 0)
 	ENDMACRO(USE_KOJI srpm)
 
 	MACRO(_use_fedpkg_make_targets srpm)
-	    #MESSAGE("_FEDORA_DIST_TAGS=${_FEDORA_DIST_TAGS}")
+	    #MESSAGE("_FEDORA_BUILD_TAGS=${_FEDORA_BUILD_TAGS}")
 	    #Commit summary
 	    IF (DEFINED CHANGE_SUMMARY)
 		SET (COMMIT_MSG  "-m \"${CHANGE_SUMMARY}\"")
@@ -251,7 +217,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 
 	    SET(_fedpkg_tag_path_abs_prefix
 		"${FEDPKG_WORKDIR}/.git/refs/tags")
-	    FOREACH(_tag ${_FEDORA_DIST_TAGS})
+	    FOREACH(_tag ${_FEDORA_BUILD_TAGS})
 		IF(_tag STREQUAL FEDORA_RAWHIDE_TAG)
 		    SET(_branch "")
 		ELSEIF(_tag STREQUAL FEDORA_NEXT_RELEASE_TAG)
@@ -351,7 +317,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		    ADD_DEPENDENCIES(fedpkg_update_${_tag} fedpkg_build_${_tag})
 		    ADD_DEPENDENCIES(fedpkg_update fedpkg_update_${_tag})
 		ENDIF(NOT _branch STREQUAL "")
-	    ENDFOREACH(_tag ${_FEDORA_DIST_TAGS})
+	    ENDFOREACH(_tag ${_FEDORA_BUILD_TAGS})
 	ENDMACRO(_use_fedpkg_make_targets srpm)
 
 	MACRO(USE_FEDPKG srpm)
@@ -370,9 +336,9 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	    ENDIF(FEDPKG_CMD STREQUAL "FEDPKG_CMD-NOTFOUND")
 
 	    IF(_dependencies_missing EQUAL 0)
-		IF(_FEDORA_DIST_TAGS STREQUAL "")
+		IF(_FEDORA_BUILD_TAGS STREQUAL "")
 		    _manange_release_on_fedora_parse_args(${ARGN})
-		ENDIF(_FEDORA_DIST_TAGS STREQUAL "")
+		ENDIF(_FEDORA_BUILD_TAGS STREQUAL "")
 
 		SET(FEDPKG_DIR_ABS ${CMAKE_BINARY_DIR}/${FEDPKG_DIR})
 		SET(FEDPKG_WORKDIR ${FEDPKG_DIR_ABS}/${PROJECT_NAME})
@@ -447,7 +413,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		ENDIF(_FEDORA_STABLE_KARMA STREQUAL "")
 
 		FILE(REMOVE ${_bodhi_template_file})
-		FOREACH(_tag ${_FEDORA_DIST_TAGS})
+		FOREACH(_tag ${_FEDORA_BUILD_TAGS})
 		    IF(NOT _tag STREQUAL ${FEDORA_RAWHIDE_TAG})
 			_use_bodhi_convert_tag(_bodhi_tag ${_tag})
 
@@ -475,7 +441,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 			    FILE(APPEND ${_bodhi_template_file} "suggest_reboot=False\n\n")
 			ENDIF(SUGGEST_REBOOT)
 		    ENDIF(NOT _tag STREQUAL ${FEDORA_RAWHIDE_TAG})
-		ENDFOREACH(_tag ${_FEDORA_DIST_TAGS})
+		ENDFOREACH(_tag ${_FEDORA_BUILD_TAGS})
 
 		IF(BODHI_USER)
 		    SET(_bodhi_login "-u ${BODHI_USER}")

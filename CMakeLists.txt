@@ -35,8 +35,8 @@ INCLUDE(ManageUninstall)
 # Building
 #
 SETTING_FILE_GET_ALL_VARIABLES(cmake-fedora.conf)
-CONFIGURE_FILE(scripts/koji-build-scratch.sh.in scripts/koji-build-scratch.sh
-    @ONLY)
+CONFIGURE_FILE(scripts/koji-build-scratch.sh.in
+    scripts/koji-build-scratch.sh @ONLY)
 
 ####################################################################
 # Installing
@@ -65,7 +65,7 @@ INSTALL(DIRECTORY Templates/
 SET(EXECUTABLES scripts/cmake-fedora-newprj.sh scripts/koji-build-scratch.sh)
 STRING_JOIN(PRJ_EXECUTABLES " " ${EXECUTABLES})
 
-INSTALL(PROGRAMS ${PRJ_EXECUTABLES}
+INSTALL(PROGRAMS ${EXECUTABLES}
     DESTINATION ${BIN_DIR})
 ####################################################################
 # Packing
