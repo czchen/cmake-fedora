@@ -1,4 +1,4 @@
-PRJ_VER=0.8.2
+PRJ_VER=0.8.3
 SUMMARY=Release version are now defined in
 BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=
