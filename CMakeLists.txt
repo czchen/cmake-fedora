@@ -96,7 +96,7 @@ USE_MOCK("${RPM_BUILD_SPECS}/project.spec.in")
 MANAGE_RELEASE(${MAINTAINER_SETTING} UPLOAD src ${RPM_BUILD_SOURCES}/${PACK_SOURCE_FILE_NAME})
 
 RELEASE_ON_FEDORA("${RPM_BUILD_SRPMS}/${PRJ_SRPM_FILE_NAME}"
-    TAGS ${FEDORA_CURRENT_RELEASE_TAGS} ${FEDORA_EPEL_RELEASE_TAGS})
+    TAGS fedora epel)
 
 ####################################################################
 # Custom

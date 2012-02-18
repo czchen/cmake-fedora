@@ -28,7 +28,7 @@ Requires:   cmake >= 2.4
 %install
 %__rm -rf $RPM_BUILD_ROOT
 %__make install DESTDIR=$RPM_BUILD_ROOT
-# We install document using %doc
+# We install document using doc
 (cd $RPM_BUILD_ROOT/@PRJ_DOC_DIR@
     %__rm -rf @PRJ_DOC_LIST@
 )

@@ -68,15 +68,13 @@ INCLUDE(ManageReleaseOnFedora)
 SET(PRJ_IGNORE_FILES_COMMON
     "\\\\.spec$" "messages.po$" "\\\\.orig$")
 
-SET(PACK_SOURCE_IGNORE_FILES ${PACK_SOURCE_IGNORE_FILES}
-    ${PRJ_IGNORE_FILES_COMMON} "/bin/")
+LIST(APPEND PACK_SOURCE_IGNORE_FILES ${PRJ_IGNORE_FILES_COMMON} "/bin/")
 
 PACK_SOURCE(PACK_SOURCE_FILE_NAME "${RPM_BUILD_SOURCES}")
 PACK_RPM(PRJ_SRPM_FILE_NAME "${RPM_BUILD_SPECS}/project.spec.in" "${PACK_SOURCE_FILE_NAME}")
 
-# Warning is displayed if mock is not installed.
+# "Off" Warning is displayed if mock is not installed.
 USE_MOCK("${RPM_BUILD_SPECS}/project.spec.in")
-
 
 #####################################################################
 # Hosting and Release
@@ -85,13 +83,11 @@ USE_MOCK("${RPM_BUILD_SPECS}/project.spec.in")
 # "Off" Warning is displayed if ${MAINTAINER_SETTING} does not exist.
 MANAGE_RELEASE(${MAINTAINER_SETTING} UPLOAD src ${RPM_BUILD_SOURCES}/${PACK_SOURCE_FILE_NAME})
 
-RELEASE_ON_FEDORA("${RPM_BUILD_SRPMS}/${PRJ_SRPM_FILE_NAME}"
-    TAGS ${FEDORA_CURRENT_RELEASE_TAGS})
+RELEASE_ON_FEDORA("${RPM_BUILD_SRPMS}/${PRJ_SRPM_FILE_NAME}" TAGS fedora epel)
 
 ####################################################################
 # Test Suites.
 #
 #ENABLE_TESTING()
 #ADD_TEST("Test" test_cmd1)
-
 
