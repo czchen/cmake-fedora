@@ -6,6 +6,12 @@
 # Since this module is mainly for Fedora developers/maintainers,
 # This module checks ~/.fedora-upload-ca.cert
 #
+# This module read the supported release information from cmake-fedora.conf
+# It finds cmake-fedora.conf in following order:
+# 1. Current directory
+# 2. Path as defined CMAKE_SOURCE_DIR
+# 3. /etc/cmake-fedora.conf
+#
 # Includes:
 #   ManageMessage
 #   ManageSourceVersionControl
