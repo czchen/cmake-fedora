@@ -5,6 +5,7 @@ REDHAT_BUGZILLA=
 [Changes]
 - New command: koji-build-scratch for scratch build on all supported
   releases.
+- New function: SETTING_STRING_GET_VARIABLE
 - Release versions are now defined in configuration file for easy
   maintenance.
 - RELEASE_ON_FEDORA: support new tags: "fedora" for current fedora,

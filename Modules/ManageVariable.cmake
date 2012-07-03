@@ -7,8 +7,23 @@
 #   ManageVersion
 #   PackRPM
 #
+# Defines following functions:
+#   SETTING_STRING_GET_VARIABLE(var value str [NOUNQUOTE] [NOREPLACE] [setting_sign])
+#     - Get a variable and a value from a setting in string format.
+#       i.e.  VAR=Value
+#       pattern. '#' is used for comment.
+#       * Parameters:
+#         + var: Variable name extracted from str.
+#         + value: Value extracted from str
+#         + str: String to be extracted variable and value from.
+#         + NOUNQUOTE: (Optional) do not remove the double quote mark around the string.
+#         + NOREPLACE (Optional) Without this parameter, this macro replaces
+#           previous defined variables, use NOREPLACE to prevent this.
+#         + NOESCAPE_SEMICOLON: (Optional) do not escape semicolons.
+#         + setting_sign: (Optional) The symbol that separate attribute name and its value.
+#           Default value: "="
 #
-# Defines the following macros:
+# Defines following macros:
 #   COMMAND_OUTPUT_TO_VARIABLE(var cmd)
 #     - Store command output to a variable, without new line characters (\n and \r).
 #       This macro is suitable for command that output one line result.
@@ -120,20 +135,44 @@ IF(NOT DEFINED _MANAGE_VARIABLE_CMAKE_)
 	SET(${var} "${value}")
     ENDMACRO(_MANAGE_VARIABLE_SET var value)
 
-    # This macro is meant to be internal.
     # it deals the "encoded" line.
-    MACRO(SETTING_FILE_LINE_PARSE attr value setting_sign str  _noUnQuoted )
+    FUNCTION(SETTING_STRING_GET_VARIABLE var value str )
+	SET(setting_sign "=")
+	FOREACH(_arg ${ARGN})
+	    IF (${_arg} STREQUAL "NOUNQUOTE")
+		SET(_noUnQuoted "NOUNQUOTE")
+	    ELSEIF (${_arg} STREQUAL "NOREPLACE")
+		SET(_noReplace "NOREPLACE")
+	    ELSE(${_arg} STREQUAL "NOUNQUOTE")
+		SET(setting_sign ${_arg})
+	    ENDIF(${_arg} STREQUAL "NOUNQUOTE")
+	ENDFOREACH(_arg)
+
 	STRING_SPLIT(_tokens "${setting_sign}" "${str}" 2)
-	SET(_idx 0)
+	SET(_varName "")
+	SET(_val "")
 	FOREACH(_token ${_tokens})
-	    IF(_idx EQUAL 0)
-		SET(${attr} "${_token}")
-	    ELSE(_idx EQUAL 0)
-		SET_VAR(${value} "${_token}" ${_noUnQuoted})
-	    ENDIF(_idx EQUAL 0)
-	    MATH(EXPR _idx ${_idx}+1)
+	    IF("${_varName}" STREQUAL "")
+		SET(_varName "${_token}")
+	    ELSE("${_varName}" STREQUAL "")
+		SET(_val "${_token}")
+	    ENDIF("${_varName}" STREQUAL "")
 	ENDFOREACH(_token ${_tokens})
-    ENDMACRO(SETTING_FILE_LINE_PARSE attr value setting_sign str  _noUnQuoted)
+
+	SET(${var} "${_varName}" PARENT_SCOPE)
+	# Set var when
+	# 1. NOREPLACE is not set, or
+	# 2. var has value already.
+	SET(_setVar 0)
+	IF(_noReplace STREQUAL "")
+	    STRING_TRIM(_value "${_val}" ${_noUnQuoted})
+	ELSEIF("${${var}}" STREQUAL "")
+	    STRING_TRIM(_value "${_val}" ${_noUnQuoted})
+	ELSEIF(_noReplace STREQUAL "")
+	    SET(_value "${${var}}")
+	ENDIF(_noReplace STREQUAL "")
+	SET(${value} "${_value}" PARENT_SCOPE)
+    ENDFUNCTION(SETTING_STRING_GET_VARIABLE var str)
 
     # Internal macro
     # Similar to STRING_ESCAPE, but read directly from file,
@@ -202,8 +241,8 @@ IF(NOT DEFINED _MANAGE_VARIABLE_CMAKE_)
 		    SET(_join_next 0)
 		    IF(_actual_line MATCHES "[ \\t]*${attr_pattern}[ \\t]*${setting_sign}")
 			#MESSAGE("*** matched_line=|${_actual_line}|")
-			SETTING_FILE_LINE_PARSE(_attr _value ${setting_sign}
-			    "${_actual_line}" "${_noUnQuoted}" )
+			SETTING_STRING_GET_VARIABLE(_attr _value
+			    "${_actual_line}" ${setting_sign} ${_noUnQuoted} )
 			#MESSAGE("*** _attr=${_attr} _value=${_value}")
 			IF(_noReplace STREQUAL "" OR NOT DEFINED ${_attr})
 			    # Unencoding
