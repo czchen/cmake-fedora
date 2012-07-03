@@ -1,9 +1,9 @@
-PRJ_VER=0.8.3
-SUMMARY=Release version are now defined in
+PRJ_VER=0.8.2.99
+SUMMARY=Release version are now defined in cmake-fedora.conf; New command: koji-build-scratch
 BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=
 [Changes]
-- New command: koji-build-scratch.sh for scratch build on all supported
+- New command: koji-build-scratch for scratch build on all supported
   releases.
 - Release versions are now defined in configuration file for easy
   maintenance.

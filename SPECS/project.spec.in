@@ -40,7 +40,7 @@ Requires:   cmake >= 2.4
 %defattr(-,root,root,-)
 %doc @PRJ_DOC_LIST@
 %{_bindir}/cmake-fedora-newprj.sh
-%{_bindir}/koji-build-scratch.sh
+%{_bindir}/koji-build-scratch
 %{_datadir}/cmake/Modules/CMakeVersion.cmake
 %{_datadir}/cmake/Modules/DateTimeFormat.cmake
 %{_datadir}/cmake/Modules/ManageEnvironment.cmake

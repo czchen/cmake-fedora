@@ -94,6 +94,9 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
     SET(_MANAGE_RELEASE_ON_FEDORA_ "DEFINED")
     INCLUDE(ManageMessage)
     SET(_dependencies_missing 0)
+    SET(KOJI_BUILD_SCRATCH koji-build-scratch)
+    CONFIGURE_FILE(scripts/${KOJI_BUILD_SCRATCH}.in
+	scripts/${KOJI_BUILD_SCRATCH} @ONLY)
 
     FIND_FILE(CMAKE_FEDORA_CONF cmake-fedora.conf "." "${CMAKE_SOURCE_DIR}" "${SYSCONF_DIR}")
     M_MSG(${M_INFO1} "CMAKE_FEDORA_CONF=${CMAKE_FEDORA_CONF}")
@@ -203,10 +206,10 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		M_MSG(${M_OFF} "Program koji is not found! Koji support disabled.")
 		SET(_dependencies_missing 1)
 	    ENDIF(KOJI_CMD STREQUAL "KOJI_CMD-NOTFOUND")
-	    FIND_PROGRAM(KOJI_BUILD_SCRATCH_CMD koji-build-scratch.sh
+	    FIND_PROGRAM(KOJI_BUILD_SCRATCH_CMD ${KOJI_BUILD_SCRATCH}
 		"${CMAKE_BINARY_DIR}/scripts" "${CMAKE_SOURCE_DIR}/scripts")
 	    IF(KOJI_BUILD_SCRATCH_CMD STREQUAL "KOJI_BUILD_SCRATCH_CMD-NOTFOUND")
-		M_MSG(${M_OFF} "Program koji-build-scratch.sh is not found! Koji support disabled.")
+		M_MSG(${M_OFF} "Program ${KOJI_BUILD_SCRATCH} is not found! Koji support disabled.")
 		SET(_dependencies_missing 1)
 	    ENDIF(KOJI_BUILD_SCRATCH_CMD STREQUAL "KOJI_BUILD_SCRATCH_CMD-NOTFOUND")
 

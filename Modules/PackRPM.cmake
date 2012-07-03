@@ -145,7 +145,6 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 	SET(${var} ${_archStr})
     ENDMACRO(PACK_RPM_GET_ARCH var spec_in)
 
-
     MACRO(PACK_RPM var spec_in sourcePackage)
 	IF(NOT EXISTS ${spec_in})
 	    M_MSG(${M_FATAL} "File ${spec_in} not found!")

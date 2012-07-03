@@ -31,5 +31,5 @@ debug*s.list
 FedPkg
 bodhi.template
 *.tar.gz
-scripts/koji-build-scratch.sh
+scripts/koji-build-scratch
 
