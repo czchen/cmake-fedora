@@ -23,24 +23,20 @@
 #
 # Defines following macros:
 #   SET_COMPILE_ENV(var default_value [ENV_NAME env_name]
-#     [DISPLAY type docstring])
-#     - Add compiler environment with a variable and its value.
-#       If the variable is not defined in cmake, the value is obtained from
-#       following priority:
-#       1. Environment variable with the same name (or specified via ENV_NAME)
-#       2. Parameter default_value
-#       Parameters:
-#       + var: Variable to be set
-#       + default_value: Default value of the var
-#       + env_name: (Optional)The name of environment variable.
-#         Only need if different from var.
-#       + type: is used by the CMake GUI to choose a widget with
-#         which the user sets a value. Valid values are:
-#           PATH     = Directory chooser dialog.
-#           STRING   = Arbitrary string.
-#           BOOL     = Boolean ON/OFF checkbox.
-#           INTERNAL = No GUI entry (used for persistent variables).
-#       + docstring: Label to show ing CMAKE GUI.
+#     [CACHE type docstring [FORCE]])
+#   - Ensure a variable is set to nonempty value, then add the variable and value to
+#     compiling definition.
+#     The value is determined by following order:
+#     1. Value of var if var is defined.
+#     2. Environment variable with the same name (or specified via ENV_NAME)
+#     3. Parameter default_value
+#     Parameters:
+#     + var: Variable to be set
+#     + default_value: Default value of the var
+#     + env_name: (Optional)The name of environment variable.
+#       Only need if different from var.
+#     + CACHE type docstring [FORCE]:
+#       Same with "SET" command.
 #
 #  SET_USUAL_COMPILE_ENVS()
 #  - Set the most often used variable and compile flags.
@@ -81,30 +77,34 @@ IF(NOT DEFINED _MANAGE_ENVIRONMENT_CMAKE_)
 	SET(_type "INTERNAL")
 	SET(_docstring "${var}")
 	SET(_env "${var}")
+	SET(_setOpts "")
 	FOREACH(_arg ${ARGN})
 	    IF(_arg STREQUAL "ENV_NAME")
-	    ELSEIF(_arg STREQUAL "DISPLAY")
-		SET(_stage TYPE)
+		SET(_stage "ENV_NAME")
+	    ELSEIF(_arg STREQUAL "CACHE")
+		SET(_stage "_CACHE")
 	    ELSE(_arg STREQUAL "ENV_NAME")
 		IF(_stage STREQUAL "ENV_NAME")
 		    SET(_env "${_arg}")
-		ELSEIF(_stage STREQUAL "TYPE")
-		    SET(_type "${_arg}")
-		    SET(_stage DOCSTRING)
-		ELSEIF(_stage STREQUAL "DOCSTRING")
-		    SET(_docstring "${_arg}")
+		ELSEIF(_stage STREQUAL "_CACHE")
+		    LIST(APPEND _setOpts "${_arg}")
 		ENDIF(_stage STREQUAL "ENV_NAME")
 	    ENDIF(_arg STREQUAL "ENV_NAME")
 	ENDFOREACH(_arg ${ARGN})
 
+	IF(NOT "${_setOpts}" STREQUAL "")
+	    LIST(INSERT _setOpts 0 "CACHE")
+	ENDIF(NOT "${_setOpts}" STREQUAL "")
+
 	# Set the variable
 	IF(DEFINED ${var})
-	    SET(${var} "${${var}}" CACHE ${_type} "${_docstring}")
+	    MESSAGE("SET(${var} \"${${var}}\" ${_setOpts})")
+	    SET(${var} "${${var}}" ${_setOpts})
 	ELSEIF(NOT "$ENV{${_env}}" STREQUAL "")
-	    SET(${var} "$ENV{${_env}}" CACHE ${_type} "${_docstring}")
+	    SET(${var} "$ENV{${_env}}" ${_setOpts})
 	ELSE(DEFINED ${var})
 	    # Default value
-	    SET(${var} "${default_value}" CACHE ${_type} "${_docstring}")
+	    SET(${var} "${default_value}" ${_setOpts})
 	ENDIF(DEFINED ${var})
 
 	# Enforce CMP0005 to new, yet pop after ADD_DEFINITION
@@ -144,20 +144,20 @@ IF(NOT DEFINED _MANAGE_ENVIRONMENT_CMAKE_)
     # CMake Variables
     #
     SET_COMPILE_ENV(CMAKE_INSTALL_PREFIX "/usr"
-	DISPLAY PATH "Install dir prefix")
+	CACHE PATH "Install dir prefix")
     SET_COMPILE_ENV(BIN_DIR  "${CMAKE_INSTALL_PREFIX}/bin"
-	DISPLAY PATH "Binary dir")
+	CACHE PATH "Binary dir")
     SET_COMPILE_ENV(DATA_DIR "${CMAKE_INSTALL_PREFIX}/share"
-	DISPLAY PATH "Data dir")
+	CACHE PATH "Data dir")
     SET_COMPILE_ENV(DOC_DIR  "${DATA_DIR}/doc"
-	DISPLAY PATH "Documentation dir")
+	CACHE PATH "Documentation dir")
     SET_COMPILE_ENV(SYSCONF_DIR "/etc"
-	DISPLAY PATH "System configuration dir")
+	CACHE PATH "System configuration dir")
     SET_COMPILE_ENV(LIBEXEC_DIR "${CMAKE_INSTALL_PREFIX}/libexec"
-	DISPLAY	PATH "LIBEXEC dir")
+	CACHE PATH "LIBEXEC dir")
 
     IF(CMAKE_SYSTEM_PROCESSOR MATCHES "64")
-	SET_COMPILE_ENV(IS_64 "64" DISPLAY STRING "IS_64")
+	SET_COMPILE_ENV(IS_64 "64" CACHE STRING "IS_64")
     ENDIF(CMAKE_SYSTEM_PROCESSOR MATCHES "64")
 
     IF(NOT DEFINED LIB_DIR)

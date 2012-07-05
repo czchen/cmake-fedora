@@ -37,40 +37,52 @@
 IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
     SET(_MANAGE_VERSION_CMAKE_ "DEFINED")
     INCLUDE(ManageMessage)
-    INCLUDE(CMakeVersion)
     INCLUDE(ManageVariable)
 
-    MACRO(LOAD_RELEASE_FILE releaseFile)
+    FUNCTION(LOAD_RELEASE_FILE releaseFile)
 	COMMAND_OUTPUT_TO_VARIABLE(_grep_line grep -F "[Changes]" -n -m 1 ${releaseFile})
 
-	SET(RELEASE_FILE ${releaseFile})
-	#MESSAGE("_grep_line=|${_grep_line}|")
-	IF("${_grep_line}" STREQUAL "")
-	    MESSAGE(FATAL_ERROR "${releaseFile} does not have a [Changes] tag!")
-	ENDIF("${_grep_line}" STREQUAL "")
-	STRING(REGEX REPLACE ":.*" "" _line_num "${_grep_line}")
+	SET(RELEASE_FILE ${releaseFile} CACHE FILEPATH "Release File")
+	FILE(STRINGS ${RELEASE_FILE} _release_lines)
 
+	SET(_changeItemSection 0)
+	SET(_changeItems "")
+	## Parse release file
+	FOREACH(_line ${_release_lines})
+	    IF(_changeItemSection)
+		### Append lines in change section
+		SET(_changeItems  "${_changeItems}\n${_line}")
+	    ELSEIF("${_line}" MATCHES "^[[]Changes[]]")
+		### Start the change section
+		SET(_changeItemSection 1)
+	    ELSE(_changeItemSection)
+		### Variable Setting section
+		SETTING_STRING_GET_VARIABLE(var value "${_line}")
+		#MESSAGE("var=${var} value=${value}")
+		IF(NOT var MATCHES "#")
+		    IF(var STREQUAL "PRJ_VER")
+			SET_COMPILE_ENV(${var} "${value}" CACHE STRING "Project Version" FORCE)
+		    ELSEIF(var STREQUAL "SUMMARY")
+			SET(CHANGE_SUMMARY "${value}" CACHE STRING "Change Summary" FORCE)
+		    ELSE(var STREQUAL "PRJ_VER")
+			SET(${var} "${value}" CACHE STRING "${var}" FORCE)
+		    ENDIF(var STREQUAL "PRJ_VER")
+		ENDIF(NOT var MATCHES "#")
+	    ENDIF(_changeItemSection)
+	ENDFOREACH(_line ${_release_line})
 
-	# Read header
-	SET(_release_file_header "${CMAKE_FEDORA_TMP_DIR}/${releaseFile}_HEADER")
-	MATH(EXPR _setting_line_num ${_line_num}-1)
-	COMMAND_OUTPUT_TO_VARIABLE(_releaseFile_head head -n ${_setting_line_num} ${releaseFile})
-	FILE(WRITE "${_release_file_header}" "${_releaseFile_head}")
-	SETTING_FILE_GET_ALL_VARIABLES("${_release_file_header}")
-	SET(CHANGE_SUMMARY "${SUMMARY}")
+	IF(_changeSection EQUAL 0)
+	    MESSAGE(FATAL_ERROR "${RELEASE_FILE} does not have a [Changes] tag!")
+	ELSEIF("${_changeItems}" STREQUAL "")
+	    MESSAGE(FATAL_ERROR "${RELEASE_FILE} does not have ChangeLog items!")
+	ENDIF(_changeSection EQUAL 0)
 
-	SET_COMPILE_ENV(PRJ_VER "${PRJ_VER}" DISPLAY STRING "Project Version")
+	SET(CHANGELOG_ITEMS "${_changeItems}")
+
 	SET_COMPILE_ENV(PRJ_DOC_DIR "${DOC_DIR}/${PROJECT_NAME}-${PRJ_VER}"
-	    DISPLAY PATH "Project docdir prefix")
-
-	# Read [Changes] Section
-	SET(_release_file_changes "${CMAKE_FEDORA_TMP_DIR}/${releaseFile}_CHANGES")
-	MATH(EXPR _line_num ${_line_num}+1)
-	COMMAND_OUTPUT_TO_VARIABLE(CHANGELOG_ITEMS tail -n +${_line_num} ${releaseFile})
-	FILE(WRITE "${_release_file_changes}" "${CHANGELOG_ITEMS}")
+	    CACHE PATH "Project docdir prefix" FORCE)
 
 	INCLUDE(DateTimeFormat)
-	FILE(READ "ChangeLog.prev" CHANGELOG_PREV)
 
 	SET(CMAKE_CACHE_TXT "CMakeCache.txt")
 	# PRJ_VER won't be updated until the removal of CMAKE_CACHE_TXT
@@ -85,7 +97,11 @@ IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
 	   && ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR}
 	   )
 
-	CONFIGURE_FILE(ChangeLog.in ChangeLog)
+        FILE(WRITE "${CMAKE_BINARY_DIR}/ChangeLog" "* ${TODAY_CHANGELOG} ${MAINTAINER} - ${PRJ_VER}")
+        FILE(APPEND "${CMAKE_BINARY_DIR}/ChangeLog" "${CHANGELOG_ITEMS}\n\n")
+	FILE(READ "ChangeLog.prev" CHANGELOG_PREV)
+	FILE(APPEND "${CMAKE_BINARY_DIR}/ChangeLog" "${CHANGELOG_PREV}")
+
 	ADD_CUSTOM_COMMAND(OUTPUT ChangeLog  ${CMAKE_CACHE_TXT}
 	    COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CACHE_TXT}
 	    COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR}
@@ -109,7 +125,7 @@ IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
 	#    )
 
 	# By this time,
-    ENDMACRO(LOAD_RELEASE_FILE releaseFile)
+    ENDFUNCTION(LOAD_RELEASE_FILE releaseFile)
 
 ENDIF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
 
