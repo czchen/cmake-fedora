@@ -98,7 +98,6 @@ IF(NOT DEFINED _MANAGE_ENVIRONMENT_CMAKE_)
 
 	# Set the variable
 	IF(DEFINED ${var})
-	    MESSAGE("SET(${var} \"${${var}}\" ${_setOpts})")
 	    SET(${var} "${${var}}" ${_setOpts})
 	ELSEIF(NOT "$ENV{${_env}}" STREQUAL "")
 	    SET(${var} "$ENV{${_env}}" ${_setOpts})
