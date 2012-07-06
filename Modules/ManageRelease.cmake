@@ -31,7 +31,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_CMAKE_)
     MACRO(MANAGE_RELEASE maintainerSetting)
 	SET(_disabled 0)
 
-	IF(NOT TARGET load)
+	IF(NOT TARGET upload)
 	    MAINTAINER_SETTING_READ_FILE(${maintainerSetting})
 	    # If maintainer file is invalid,
 	    # then target upload does not exist
@@ -45,11 +45,12 @@ IF(NOT DEFINED _MANAGE_RELEASE_CMAKE_)
 	IF(_disabled EQUAL 0)
 	    ## Target: release
 	    ADD_CUSTOM_TARGET(release
-		COMMENT "Release a new version"
+		COMMENT "Releasing ${PROJECT}-${PRJ_VER}"
 		)
-	    SET_TARGET_PROPERTIES(release PROPERTIES EXISTS 1)
 
-	    ADD_DEPENDENCIES(release upload)
+	    IF(TARGET upload)
+		ADD_DEPENDENCIES(release upload)
+	    ENDIF(TARGET upload)
 
 	    IF(RELEASE_TARGETS)
 		ADD_DEPENDENCIES(release ${RELEASE_TARGETS})
@@ -74,12 +75,6 @@ IF(NOT DEFINED _MANAGE_RELEASE_CMAKE_)
 
 	    ## After release targets
 
-	    ADD_CUSTOM_TARGET(changelog_update
-		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/ChangeLog ${CMAKE_SOURCE_DIR}/ChangeLog.prev
-		COMMAND ${CMAKE_COMMAND} -E copy ${RPM_BUILD_SPECS}/RPM-ChangeLog ${RPM_BUILD_SPECS}/RPM-ChangeLog.prev
-		DEPENDS ${CMAKE_SOURCE_DIR}/ChangeLog ${RPM_BUILD_SPECS}/RPM-ChangeLog
-		COMMENT "Changelogs are updated for next version."
-		)
 	    ADD_CUSTOM_TARGET(after_release)
 	    ADD_DEPENDENCIES(after_release after_release_push)
 	    ADD_DEPENDENCIES(after_release_push after_release_commit)

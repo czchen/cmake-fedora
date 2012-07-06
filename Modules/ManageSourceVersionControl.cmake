@@ -1,99 +1,66 @@
-# - Add source version control targets.
-# Macros for build Git, Mercurial, SVN and CVS specific targets.
-# These macros are called internally.
-# However, thes macros provides following targets which may be useful:
-#  - tag: Tag the release using the selected source version control.
+# - Module for manipulate source version control systems.
+# This module provides an universal interface for supported
+# source version control systems, namely:
+# Git, Mercurial and SVN.
+#
+# Following targets are defined (in Git terminology):
+#   - tag: Tag the working tree with PRJ_VER and CHANGE_SUMMARY.
+#     This target also does:
+#     1. Ensure there is nothing uncommitted.
+#     2. Push the commits and tags to server
+#   - after_release_commit:
+#     This target does some post release chores, such as
+#     updating ChangeLog.prev and RPM-ChangeLog.prev, then push them to server.
+#
+# Following variables are defined:
+#   - MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE:
+#     The file that would be touched after target tag is completed.
 #
 # Included by:
 #    ManageMaintainerTargets
 #    ManageReleaseOnFedora
 #
-#
-# Define following macros:
-#   MANAGE_SOURCE_VERSION_CONTROL_GIT()
-#   - Use Git as source version control.
-#     Reads following variables:
-#     + PRJ_VER: Project version.
-#     Defines following variables:
-#     + MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE: File to be generated after tag.
-#
-#   MANAGE_SOURCE_VERSION_CONTROL_HG()
-#   - Use Mercurial as source version control.
-#     Reads following variables:
-#     + PRJ_VER: Project version.
-#
-#   MANAGE_SOURCE_VERSION_CONTROL_SVN()
-#   - Use SVN as source version control.
-#     Reads following variables:
-#     + PRJ_VER: Project version.
-#
-#   MANAGE_SOURCE_VERSION_CONTROL_CVS()
-#   - Use CVS as source version control.
-#     Reads following variables:
-#     + PRJ_VER: Project version.
-#
 
 IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
     SET(_MANAGE_SOURCE_VERSION_CONTROL_CMAKE_ "DEFINED")
-    SET(after_release_message "After version ${PRJ_VER}")
+    SET(_after_release_message "After version ${PRJ_VER}")
+    INCLUDE(ManageTarget)
 
-    ## Common action
     MACRO(MANAGE_SOURCE_VERSION_CONTROL_COMMON)
+	ADD_DEPENDENCIES(after_release_commit changelog_prev_update)
     ENDMACRO(MANAGE_SOURCE_VERSION_CONTROL_COMMON)
 
     MACRO(MANAGE_SOURCE_VERSION_CONTROL_GIT)
-	SET(MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE ${CMAKE_SOURCE_DIR}/.git/refs/tags/${PRJ_VER})
+	SET(MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE
+	    ${CMAKE_SOURCE_DIR}/.git/refs/tags/${PRJ_VER}
+	    CACHE PATH "Source Version Control Tag File")
 
 	ADD_CUSTOM_TARGET(after_release_commit
-	    COMMAND git commit -a -m "${after_release_message}"
+	    COMMAND git commit -a -m "${_after_release_message}"
+	    COMMAND git push
 	    COMMENT "After release ${PRJ_VER}"
 	    VERBATIM
 	    )
 
-	ADD_CUSTOM_TARGET(after_release_push
-	    COMMAND git push
-	    COMMAND git push --tags
-	    COMMENT "Git push tags"
-	    VERBATIM
-	    )
-
-	SET(_force_commit_cmd "if git commit -a -m 'On release ${PRJ_VER}'"
-	    "then echo 'Commit uncommitted changes.'"
-	    "else echo 'Nothing new to commit.'"
-	    "fi")
-
-	ADD_CUSTOM_TARGET(force_commit
-	    COMMAND eval "${_force_commit_cmd}"
-	    COMMENT "Force commit uncommitted changes"
-	    VERBATIM
-	    )
-
-	ADD_CUSTOM_TARGET(tag
-	    DEPENDS ${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}
-	    )
-
-	ADD_DEPENDENCIES(tag force_commit)
-
-	ADD_CUSTOM_COMMAND(OUTPUT ${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}
+	ADD_CUSTOM_TARGET_COMMAND(tag OUTPUT ${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}
+	    COMMAND test -z "\$(git commit --short -uno)"
 	    COMMAND git tag -a -m "${CHANGE_SUMMARY}" "${PRJ_VER}" HEAD
 	    COMMENT "Tagging the source as ver ${PRJ_VER}"
 	    VERBATIM
 	    )
 
-
 	MANAGE_SOURCE_VERSION_CONTROL_COMMON()
     ENDMACRO(MANAGE_SOURCE_VERSION_CONTROL_GIT)
 
     MACRO(MANAGE_SOURCE_VERSION_CONTROL_HG)
+	SET(MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE
+	    ${CMAKE_SOURCE_DIR}/.hg/refs/tags/${PRJ_VER}
+	    CACHE PATH "Source Version Control Tag File")
+
 	ADD_CUSTOM_TARGET(after_release_commit
 	    COMMAND hg commit --m "${after_release_message}"
-	    COMMENT "Afer release ${PRJ_VER}"
-	    VERBATIM
-	    )
-
-	ADD_CUSTOM_TARGET(after_release_push
 	    COMMAND hg push
-	    COMMENT "Mercurial push tags"
+	    COMMENT "After release ${PRJ_VER}"
 	    VERBATIM
 	    )
 
@@ -107,14 +74,13 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
     ENDMACRO(MANAGE_SOURCE_VERSION_CONTROL_HG)
 
     MACRO(MANAGE_SOURCE_VERSION_CONTROL_SVN)
+	SET(MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE
+	    ${CMAKE_SOURCE_DIR}/SVN/refs/tags/${PRJ_VER}
+	    CACHE PATH "Source Version Control Tag File")
+
 	ADD_CUSTOM_TARGET(after_release_commit
 	    COMMAND svn commit -m "${after_release_message}"
-	    COMMENT "Afer release ${PRJ_VER}"
-	    VERBATIM
-	    )
-
-	ADD_CUSTOM_TARGET(after_release_push
-	    COMMENT "SVN push is done at commit"
+	    COMMENT "After release ${PRJ_VER}"
 	    VERBATIM
 	    )
 
@@ -126,27 +92,6 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 
 	MANAGE_SOURCE_VERSION_CONTROL_COMMON()
     ENDMACRO(MANAGE_SOURCE_VERSION_CONTROL_SVN)
-
-    MACRO(MANAGE_SOURCE_VERSION_CONTROL_CVS)
-	ADD_CUSTOM_TARGET(after_release_commit
-	    COMMAND svn commit -m "${after_release_message}"
-	    COMMENT "Afer release ${PRJ_VER}"
-	    VERBATIM
-	    )
-
-	ADD_CUSTOM_TARGET(after_release_push
-	    COMMENT "SVN push is done at commit"
-	    VERBATIM
-	    )
-
-	ADD_CUSTOM_TARGET(tag
-	    COMMAND cvs tag "${PRJ_VER}"
-	    COMMENT "Tagging the source as ver ${PRJ_VER}"
-	    VERBATIM
-	    )
-
-	MANAGE_SOURCE_VERSION_CONTROL_COMMON()
-    ENDMACRO(MANAGE_SOURCE_VERSION_CONTROL_CVS)
 
 ENDIF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 
