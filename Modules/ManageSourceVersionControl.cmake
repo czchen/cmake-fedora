@@ -27,7 +27,9 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
     INCLUDE(ManageTarget)
 
     MACRO(MANAGE_SOURCE_VERSION_CONTROL_COMMON)
-	ADD_DEPENDENCIES(after_release_commit changelog_prev_update)
+	ADD_CUSTOM_COMMAND(TARGET after_release_commit PRELINK
+	    COMMAND make changelog_prev_update
+	    )
     ENDMACRO(MANAGE_SOURCE_VERSION_CONTROL_COMMON)
 
     MACRO(MANAGE_SOURCE_VERSION_CONTROL_GIT)
@@ -54,11 +56,11 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 
     MACRO(MANAGE_SOURCE_VERSION_CONTROL_HG)
 	SET(MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE
-	    ${CMAKE_SOURCE_DIR}/.hg/refs/tags/${PRJ_VER}
+	    ${CMAKE_FEDORA_TEMP_DIR}/${PRJ_VER}
 	    CACHE PATH "Source Version Control Tag File")
 
 	ADD_CUSTOM_TARGET(after_release_commit
-	    COMMAND hg commit --m "${after_release_message}"
+	    COMMAND hg commit -m "${after_release_message}"
 	    COMMAND hg push
 	    COMMENT "After release ${PRJ_VER}"
 	    VERBATIM
@@ -75,7 +77,7 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 
     MACRO(MANAGE_SOURCE_VERSION_CONTROL_SVN)
 	SET(MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE
-	    ${CMAKE_SOURCE_DIR}/SVN/refs/tags/${PRJ_VER}
+	    ${CMAKE_FEDORA_TEMP_DIR}/${PRJ_VER}
 	    CACHE PATH "Source Version Control Tag File")
 
 	ADD_CUSTOM_TARGET(after_release_commit
@@ -86,6 +88,7 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 
 	ADD_CUSTOM_TARGET(tag
 	    COMMAND svn copy "${SOURCE_BASE_URL}/trunk" "${SOURCE_BASE_URL}/tags/${PRJ_VER}" -m "${CHANGE_SUMMARY}"
+	    COMMAND cmake -E touch ${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}
 	    COMMENT "Tagging the source as ver ${PRJ_VER}"
 	    VERBATIM
 	    )
