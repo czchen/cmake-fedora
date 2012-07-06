@@ -240,8 +240,6 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 		DEPENDS ${_prj_srpm_path} ${_prj_rpm_path}
 		)
 
-	    ADD_DEPENDENCIES(rpmlint version_check)
-
 	    ADD_CUSTOM_TARGET(clean_old_rpm
 		COMMAND find .
 		-name '${PROJECT_NAME}*.rpm' ! -name '${PROJECT_NAME}*-${PRJ_VER}-${PRJ_RELEASE_NO}.*.rpm'

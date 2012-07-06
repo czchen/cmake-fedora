@@ -1,4 +1,4 @@
-PRJ_VER=0.8.2.98
+PRJ_VER=0.8.99
 SUMMARY=Release version are now defined in cmake-fedora.conf; New command: koji-build-scratch
 BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=
@@ -10,6 +10,8 @@ REDHAT_BUGZILLA=
   maintenance.
 - RELEASE_ON_FEDORA: support new tags: "fedora" for current fedora,
   and "epel" for current epel.
+- ChangeLog generation rewritten, target version_check no longer need.
+- Removed target: version_check
 - Variable Removed:
   FEDORA_NEXT_RELEASE
   FEDORA_NEXT_RELEASE_TAGS

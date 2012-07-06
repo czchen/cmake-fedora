@@ -38,11 +38,10 @@
 #       files.
 #     Target:
 #     + pack_src: Pack source files like package_source.
-#       This target depends on version_check.
 #     + clean_pack_src: Remove all source packages.
 #     + clean_old_pack_src: Remove all old source package.
-#       This target depends on version_check.
-##
+#
+#
 IF(NOT DEFINED _PACK_SOURCE_CMAKE_)
     SET (_PACK_SOURCE_CMAKE_ "DEFINED")
     SET(PACK_SOURCE_IGNORE_FILES_DEFAULT
@@ -168,8 +167,6 @@ IF(NOT DEFINED _PACK_SOURCE_CMAKE_)
 	    DEPENDS "${_outputDir_rel}/${${var}}"
 	    )
 
-	ADD_DEPENDENCIES(pack_src version_check)
-
 	ADD_CUSTOM_TARGET(clean_old_pack_src
 	    COMMAND find .
 	    -name '${PROJECT_NAME}*.${PACK_SOURCE_FILE_EXTENSION}' ! -name '${PROJECT_NAME}-${PRJ_VER}-*.${PACK_SOURCE_FILE_EXTENSION}'
@@ -177,7 +174,7 @@ IF(NOT DEFINED _PACK_SOURCE_CMAKE_)
 	    COMMENT "Cleaning old source packages"
 	    )
 
-	ADD_DEPENDENCIES(clean_old_pack_src changelog version_check)
+	ADD_DEPENDENCIES(clean_old_pack_src changelog )
 
 	ADD_CUSTOM_TARGET(clean_pack_src
 	    COMMAND find .
