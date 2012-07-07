@@ -40,7 +40,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_CMAKE_)
 		MAINTAINER_SETTING_READ_FILE()
 		SET(_disabled 1)
 	    ENDIF(NOT TARGET upload)
-	ENDIF(NOT TARGET load)
+	ENDIF(NOT TARGET upload)
 
 	IF(_disabled EQUAL 0)
 	    ## Target: release
@@ -76,9 +76,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_CMAKE_)
 	    ## After release targets
 
 	    ADD_CUSTOM_TARGET(after_release)
-	    ADD_DEPENDENCIES(after_release after_release_push)
-	    ADD_DEPENDENCIES(after_release_push after_release_commit)
-	    ADD_DEPENDENCIES(after_release_commit changelog_update)
+	    ADD_DEPENDENCIES(after_release after_release_commit)
 	ENDIF(_disabled EQUAL 0)
 
 

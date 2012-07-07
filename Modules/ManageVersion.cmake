@@ -27,7 +27,7 @@
 #     + PRJ_VER: Release version.
 #     + CHANGE_SUMMARY: Summary of changes.
 #     + CHANGELOG_ITEMS: Lines below the [Changes] tag.
-#     + RELEASE_FILE: The loaded release file.
+#     + RELEASE_NOTES_FILE: The loaded release file.
 #     + PRJ_DOC_DIR: Documentation for the project.
 #       Default: ${DOC_DIR}/${PROJECT_NAME}-${PRJ_VER}
 #
@@ -52,15 +52,15 @@ IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
     FUNCTION(RELEASE_NOTES_READ_FILE)
 	FOREACH(_arg ${ARGN})
 	    IF(EXISTS ${_arg})
-		SET(RELEASE_FILE ${_arg} CACHE FILEPATH "Release File")
+		SET(RELEASE_NOTES_FILE ${_arg} CACHE FILEPATH "Release File")
 	    ENDIF(EXISTS ${_arg})
 	ENDFOREACH(_arg ${ARGN})
 
-	IF(RELEASE_FILE STREQUAL "")
-	    SET(RELEASE_FILE "RELEASE-NOTES.txt" CACHE FILEPATH "Release File")
-	ENDIF(RELEASE_FILE STREQUAL "")
+	IF(NOT RELEASE_NOTES_FILE)
+	    SET(RELEASE_NOTES_FILE "RELEASE-NOTES.txt" CACHE FILEPATH "Release Notes")
+	ENDIF(NOT RELEASE_NOTES_FILE)
 
-	FILE(STRINGS ${RELEASE_FILE} _release_lines)
+	FILE(STRINGS "${RELEASE_NOTES_FILE}" _release_lines)
 
 	SET(_changeItemSection 0)
 	SET(_changeItems "")
@@ -89,12 +89,12 @@ IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
 	ENDFOREACH(_line ${_release_line})
 
 	IF(_changeSection EQUAL 0)
-	    MESSAGE(FATAL_ERROR "${RELEASE_FILE} does not have a [Changes] tag!")
+	    MESSAGE(FATAL_ERROR "${RELEASE_NOTES_FILE} does not have a [Changes] tag!")
 	ELSEIF("${_changeItems}" STREQUAL "")
-	    MESSAGE(FATAL_ERROR "${RELEASE_FILE} does not have ChangeLog items!")
+	    MESSAGE(FATAL_ERROR "${RELEASE_NOTES_FILE} does not have ChangeLog items!")
 	ENDIF(_changeSection EQUAL 0)
 
-	SET(CHANGELOG_ITEMS "${_changeItems}" CACHE STRING "ChangeLog Item")
+	FILE(WRITE "${CMAKE_FEDORA_TMP_DIR}/ChangeLog.this" "${_changeItems}")
 
 	SET_COMPILE_ENV(PRJ_DOC_DIR "${DOC_DIR}/${PROJECT_NAME}-${PRJ_VER}"
 	    CACHE PATH "Project docdir prefix" FORCE)
@@ -106,22 +106,24 @@ IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
 	INCLUDE(DateTimeFormat)
 
 	FILE(WRITE ${CHANGELOG_FILE} "* ${TODAY_CHANGELOG} ${MAINTAINER} - ${PRJ_VER}")
-	FILE(APPEND ${CHANGELOG_FILE} "${CHANGELOG_ITEMS}\n\n")
+	FILE(READ "${CMAKE_FEDORA_TMP_DIR}/ChangeLog.this" _changeLog_items)
+
+	FILE(APPEND ${CHANGELOG_FILE} "_changeLog_items\n\n")
 	FILE(READ ${CHANGELOG_PREV_FILE} CHANGELOG_PREV)
 	FILE(APPEND ${CHANGELOG_FILE} "${CHANGELOG_PREV}")
 
 	ADD_CUSTOM_COMMAND(OUTPUT ${CMAKE_BINARY_DIR}/ChangeLog
 	    COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CACHE_TXT}
 	    COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR}
-	    DEPENDS ${RELEASE_FILE} ${CHANGELOG_PREV_FILE}
-	    COMMENT "ChangeLog is older than ${RELEASE_FILE}. Rebuilding"
+	    DEPENDS ${RELEASE_NOTES_FILE} ${CHANGELOG_PREV_FILE}
+	    COMMENT "ChangeLog is older than ${RELEASE_NOTES_FILE}. Rebuilding"
 	    VERBATIM
 	    )
 
 	ADD_CUSTOM_TARGET(changelog ALL
 	    COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_CACHE_TXT}
 	    COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR}
-	    DEPENDS ${RELEASE_FILE} ChangeLog.prev
+	    DEPENDS ${RELEASE_NOTES_FILE} ChangeLog.prev
 	    COMMENT "Building ChangeLog"
 	    VERBATIM
 	    )
