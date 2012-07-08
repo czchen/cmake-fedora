@@ -262,8 +262,9 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 	    SET(${var} "${_var}" PARENT_SCOPE)
 
 	    STRING(LENGTH "${str}" _str_len)
-	    MATH(EXPR _str_2_start ${_index}+1)
-	    MATH(EXPR _str_2_len ${_str_len}-${_index}-1)
+	    STRING(LENGTH "${delimiter}" _delimiter_len)
+	    MATH(EXPR _str_2_start ${_index}+${_delimiter_len})
+	    MATH(EXPR _str_2_len ${_str_len}-${_index}-${_delimiter_len})
 	    STRING(SUBSTRING "${str}" ${_str_2_start} ${_str_2_len} _str_remain)
 	    SET(${str_remain} "${_str_remain}" PARENT_SCOPE)
 	ENDIF(_index EQUAL -1)
@@ -289,9 +290,7 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 	ENDIF(NOT _max_tokens)
 
 	STRING_ESCAPE(_str "${str}" ${_NOESCAPE_SEMICOLON} ${_ESCAPE_VARIABLE})
-	#MESSAGE("_str (escaped)=${_str}")
 	STRING_ESCAPE(_delimiter "${delimiter}" ${_NOESCAPE_SEMICOLON} ${_ESCAPE_VARIABLE})
-
 	SET(_str_list "")
 	SET(_token_count 1)
 
@@ -306,10 +305,10 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 	    ENDIF("${_str}" STREQUAL "")
 	ENDWHILE(NOT _token_count EQUAL _max_tokens)
 
-	IF(NOT _str STREQUAL "")
+	IF(NOT "x${_str}" STREQUAL "x")
 	    ## Append last part
 	    LIST(APPEND _str_list "${_str}")
-	ENDIF(NOT _str STREQUAL "")
+	ENDIF(NOT "x${_str}" STREQUAL "x")
 
 	# Unencoding
 	STRING_UNESCAPE(${var} "${_str_list}" ${_NOESCAPE_SEMICOLON} ${_ESCAPE_VARIABLE})
