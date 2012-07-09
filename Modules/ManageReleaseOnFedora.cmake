@@ -1,8 +1,7 @@
-# - Fedora release tasks related to koji, fedpkg and bodhi
+# - Module for working with Fedora and EPEL releases.
 #
-# This module provides convenient targets and macroes for scratch build,
-# submit, and build on koji, using the GIT infrastructure,
-# as well as bodhi update.
+# This module provides convenient targets and macros for Fedora and EPEL
+# releases by using fedpkg, koji, and bodhi
 # Since this module is mainly for Fedora developers/maintainers,
 # This module checks ~/.fedora-upload-ca.cert
 #
@@ -93,55 +92,121 @@
 IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
     SET(_MANAGE_RELEASE_ON_FEDORA_ "DEFINED")
     INCLUDE(ManageMessage)
-    SET(_dependencies_missing 0)
-    SET(KOJI_BUILD_SCRATCH koji-build-scratch)
-    CONFIGURE_FILE(scripts/${KOJI_BUILD_SCRATCH}.in
-	scripts/${KOJI_BUILD_SCRATCH} @ONLY)
+    INCLUDE(ManageTarget)
+    SET(_manage_release_on_fedora_dependencies_missing 0)
 
     FIND_FILE(CMAKE_FEDORA_CONF cmake-fedora.conf "." "${CMAKE_SOURCE_DIR}" "${SYSCONF_DIR}")
     M_MSG(${M_INFO1} "CMAKE_FEDORA_CONF=${CMAKE_FEDORA_CONF}")
     IF("${CMAKE_FEDORA_CONF}" STREQUAL "CMAKE_FEDORA_CONF-NOTFOUND")
 	M_MSG(${M_OFF} "cmake-fedora.conf cannot be found! Fedora release support disabled.")
-	SET(_dependencies_missing 1)
+	SET(_manage_release_on_fedora_dependencies_missing 1)
     ENDIF("${CMAKE_FEDORA_CONF}" STREQUAL "CMAKE_FEDORA_CONF-NOTFOUND")
 
-    IF(_dependencies_missing EQUAL 0)
+    FIND_PROGRAM(FEDPKG_CMD fedpkg)
+    IF(FEDPKG_CMD STREQUAL "FEDPKG_CMD-NOTFOUND")
+	M_MSG(${M_OFF} "Program fedpkg is not found! fedpkg support disabled.")
+	SET(_manage_release_on_fedora_dependencies_missing 1)
+    ENDIF(FEDPKG_CMD STREQUAL "FEDPKG_CMD-NOTFOUND")
+
+    ## Set variables
+    IF(_manage_release_on_fedora_dependencies_missing  EQUAL 0)
+	SET(KOJI_BUILD_SCRATCH koji-build-scratch)
+	CONFIGURE_FILE(scripts/${KOJI_BUILD_SCRATCH}.in
+	    scripts/${KOJI_BUILD_SCRATCH} @ONLY)
+
 	# Set release tags according to CMAKE_FEDORA_CONF
 	SETTING_FILE_GET_ALL_VARIABLES(${CMAKE_FEDORA_CONF})
 
-	SET(FEDORA_SUPPORTED_RELEASE_TAGS "")
+	SET(FEDORA_RAWHIDE_VER "${FEDORA_RAWHIDE_VERSION}"
+	    CACHE STRING "Fedora Rawhide ver")
 	STRING_SPLIT(_FEDORA_SUPPORTED_VERS " " ${FEDORA_SUPPORTED_VERSIONS})
-	FOREACH(_ver ${_FEDORA_SUPPORTED_VERS})
-	    LIST(APPEND FEDORA_SUPPORTED_RELEASE_TAGS "f${_ver}")
-	ENDFOREACH(_ver ${_FEDORA_SUPPORTED_VERS})
+	SET(FEDORA_SUPPORTED_VERS ${_FEDORA_SUPPORTED_VERS}
+	    CACHE STRING "Fedora supported vers" FORCE)
 
-	SET(FEDORA_RAWHIDE_TAG "rawhide")
-	SET(FEDORA_CURRENT_RELEASE_TAGS ${FEDORA_RAWHIDE_TAG}
-	    ${FEDORA_SUPPORTED_RELEASE_TAGS})
-
-	SET(EPEL_SUPPORTED_RELEASE_TAGS "")
 	STRING_SPLIT(_EPEL_SUPPORTED_VERS " " ${EPEL_SUPPORTED_VERSIONS})
-	FOREACH(_ver ${_EPEL_SUPPORTED_VERS})
-	    LIST(APPEND EPEL_SUPPORTED_RELEASE_TAGS "el${_ver}")
-	ENDFOREACH(_ver ${_EPEL_SUPPORTED_VERS})
+	SET(EPEL_SUPPORTED_VERS ${_EPEL_SUPPORTED_VERS}
+	    CACHE STRING "EPEL supported vers" FORCE)
 
-	IF(NOT DEFINED FEDORA_KOJI_TAG_POSTFIX)
-	    SET(FEDORA_KOJI_TAG_POSTFIX "")
-	ENDIF(NOT DEFINED FEDORA_KOJI_TAG_POSTFIX)
+	SET(FEDORA_KOJI_TAG_POSTFIX "" CACHE STRING "Koji Fedora tag prefix")
+	SET(EPEL_KOJI_TAG_POSTFIX "-testing-candidate"
+	    CACHE STRING "Koji EPEL tag prefix")
 
-	IF(NOT DEFINED EPEL_KOJI_TAG_POSTFIX)
-	    SET(EPEL_KOJI_TAG_POSTFIX "-testing-candidate")
-	ENDIF(NOT DEFINED EPEL_KOJI_TAG_POSTFIX)
-
-	SET(_bodhi_template_file "${CMAKE_FEDORA_TMP_DIR}/bodhi.template")
+	SET(BODHI_TEMPLATE_FILE "${CMAKE_FEDORA_TMP_DIR}/bodhi.template"
+	    CACHE FILEPATH "Bodhi template file"
+	    )
 	LIST(APPEND PACK_SOURCE_IGNORE_FILES "/${FEDPKG_DIR}/")
 
-	# Need the definition of source version control first, as we need to check tag file.
-	INCLUDE(ManageSourceVersionControl)
+	SET(FEDPKG_DIR "${CMAKE_BINARY_DIR}/FedPkg" CACHE PATH "FedPkg dir")
 
-	IF("${FEDPKG_DIR}" STREQUAL "")
-	    SET(FEDPKG_DIR "FedPkg")
-	ENDIF("${FEDPKG_DIR}" STREQUAL "")
+	## Fedora package variables
+	SET(FEDORA_KARMA "3" CACHE STRING "Fedora Karma")
+	SET(FEDORA_UNSTABLE_KARMA "3" CACHE STRING "Fedora unstable Karma")
+	SET(FEDORA_AUTO_KARMA "True" CACHE STRING "Fedora auto Karma")
+    ENDIF(_manage_release_on_fedora_dependencies_missing  EQUAL 0)
+
+    FUNCTION(MANAGE_RELEASE_CREATE_FEDPKG_TARGETS prefix ver)
+	IF(_manage_release_on_fedora_dependencies_missing 0)
+	    SET(tag "${prefix}${ver}")
+	    SET(_branch ${tag})
+	    IF("${ver}" STREQUAL "${FEDORA_RAWHIDE_VER}")
+		SET(_branch "master")
+	    ENDIF("${ver}" STREQUAL "${FEDORA_RAWHIDE_VER}")
+
+	    IF("${prefix}" STREQUAL "f")
+		SET(_bodhi_tag "fc${ver}")
+	    ELSE("${prefix}" STREQUAL "f")
+		SET(_bodhi_tag "el${ver}"
+	    ENDIF("${prefix}" STREQUAL "f")
+
+	    SET(_fedpkg_tag_path_abs_prefix
+		"${FEDPKG_DIR}/.git/refs/tags")
+
+	    SET(_fedpkg_tag_name_prefix "${PRJ_VER}-${PRJ_RELEASE_NO}.${_bodhi_tag}")
+
+	    #Commit summary
+	    IF (DEFINED CHANGE_SUMMARY)
+		SET (COMMIT_MSG  "-m" "\"${CHANGE_SUMMARY}\"")
+	    ELSE(DEFINED CHANGE_SUMMARY)
+		SET (COMMIT_MSG  "-m"  "\"On releasing ${PRJ_VER}-${PRJ_RELEASE_NO}\"")
+	    ENDIF(DEFINED CHANGE_SUMMARY)
+
+	    SET(_fedpkg_tag_name_commit
+		"${_fedpkg_tag_name_prefix}.commit")
+
+	    ADD_CUSTOM_TARGET_COMMAND(fedpkg_${_branch}_commit
+		OUTPUT "${_fedpkg_tag_path_abs_prefix}/_fedpkg_tag_name_commit"
+		COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
+		COMMAND git pull --tag
+		COMMAND ${FEDPKG_CMD} import ${PRJ_SRPM}
+		COMMAND ${FEDPKG_CMD} commit -p ${COMMIT_MSG}"
+		COMMAND ${CMAKE_COMMAND} -E touch
+		"${_fedpkg_tag_path_abs_prefix}/_fedpkg_tag_name_commit"
+
+		COMMENT "fedpkg: committing ${_branch}"
+		VERBATIM
+		)
+	ENDIF(_manage_release_on_fedora_dependencies_missing 0)
+    ENDFUNCTION(MANAGE_RELEASE_CREATE_TARGETS tag)
+
+    FUNCTION(MANAGE_RELEASE_ON_FEDORA)
+	IF(_manage_release_on_fedora_dependencies_missing 0)
+	    ## Parse tags
+	    SET(_build_list ${FEDORA_RAWHIDE_VER})
+	    FOREACH(_rel ${ARGN})
+		IF(_rel STREQUAL "fedora")
+		    LIST(APPEND _build_list ${FEDORA_SUPPORTED_RELEASE_TAGS})
+		ELSE(_rel STREQUAL "fedora")
+		    LIST(APPEND _build_list ${_rel}
+		ENDIF(_rel STREQUAL "fedora")
+	    ENDFOREACH(_rel ${ARGN})
+
+	    ## Create targets
+	    FOREACH(_ver ${_build_list})
+		MANAGE_RELEASE_CREATE_FEDPKG_TARGETS("f${_ver}")
+	    ENDFOREACH(_ver ${_build_list})
+	ENDIF(_manage_release_on_fedora_dependencies_missing 0)
+    ENDFUNCTION(MANAGE_RELEASE_ON_FEDORA)
+
 	SET(_FEDORA_BUILD_TAGS "")
 
 	MACRO(_manange_release_on_fedora_parse_args)
@@ -447,33 +512,33 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		    _manange_release_on_fedora_parse_args(${ARGN})
 		ENDIF(_FEDORA_STABLE_KARMA STREQUAL "")
 
-		FILE(REMOVE ${_bodhi_template_file})
+		FILE(REMOVE ${BODHI_TEMPLATE_FILE})
 		FOREACH(_tag ${_FEDORA_BUILD_TAGS})
 		    IF(NOT _tag STREQUAL ${FEDORA_RAWHIDE_TAG})
 			_use_bodhi_convert_tag(_bodhi_tag ${_tag})
 
-			FILE(APPEND ${_bodhi_template_file} "[${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE_NO}.${_bodhi_tag}]\n\n")
+			FILE(APPEND ${BODHI_TEMPLATE_FILE} "[${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE_NO}.${_bodhi_tag}]\n\n")
 
 			IF(BODHI_UPDATE_TYPE)
-			    FILE(APPEND ${_bodhi_template_file} "type=${BODHI_UPDATE_TYPE}\n\n")
+			    FILE(APPEND ${BODHI_TEMPLATE_FILE} "type=${BODHI_UPDATE_TYPE}\n\n")
 			ELSE(BODHI_UPDATE_TYPE)
-			    FILE(APPEND ${_bodhi_template_file} "type=bugfix\n\n")
+			    FILE(APPEND ${BODHI_TEMPLATE_FILE} "type=bugfix\n\n")
 			ENDIF(BODHI_UPDATE_TYPE)
 
-			FILE(APPEND ${_bodhi_template_file} "request=testing\n")
-			FILE(APPEND ${_bodhi_template_file} "bugs=${REDHAT_BUGZILLA}\n")
+			FILE(APPEND ${BODHI_TEMPLATE_FILE} "request=testing\n")
+			FILE(APPEND ${BODHI_TEMPLATE_FILE} "bugs=${REDHAT_BUGZILLA}\n")
 
-			_append_notes(${_bodhi_template_file})
+			_append_notes(${BODHI_TEMPLATE_FILE})
 
-			FILE(APPEND ${_bodhi_template_file} "autokarma=${_FEDORA_AUTO_KARMA}\n")
-			FILE(APPEND ${_bodhi_template_file} "stable_karma=${_FEDORA_STABLE_KARMA}\n")
-			FILE(APPEND ${_bodhi_template_file} "unstable_karma=${_FEDORA_UNSTABLE_KARMA}\n")
-			FILE(APPEND ${_bodhi_template_file} "close_bugs=True\n")
+			FILE(APPEND ${BODHI_TEMPLATE_FILE} "autokarma=${_FEDORA_AUTO_KARMA}\n")
+			FILE(APPEND ${BODHI_TEMPLATE_FILE} "stable_karma=${_FEDORA_STABLE_KARMA}\n")
+			FILE(APPEND ${BODHI_TEMPLATE_FILE} "unstable_karma=${_FEDORA_UNSTABLE_KARMA}\n")
+			FILE(APPEND ${BODHI_TEMPLATE_FILE} "close_bugs=True\n")
 
 			IF(SUGGEST_REBOOT)
-			    FILE(APPEND ${_bodhi_template_file} "suggest_reboot=True\n")
+			    FILE(APPEND ${BODHI_TEMPLATE_FILE} "suggest_reboot=True\n")
 			ELSE(SUGGEST_REBOOT)
-			    FILE(APPEND ${_bodhi_template_file} "suggest_reboot=False\n\n")
+			    FILE(APPEND ${BODHI_TEMPLATE_FILE} "suggest_reboot=False\n\n")
 			ENDIF(SUGGEST_REBOOT)
 		    ENDIF(NOT _tag STREQUAL ${FEDORA_RAWHIDE_TAG})
 		ENDFOREACH(_tag ${_FEDORA_BUILD_TAGS})
@@ -483,7 +548,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		ENDIF(BODHI_USER)
 
 		ADD_CUSTOM_TARGET(bodhi_new
-		    COMMAND ${BODHI_CMD} --new ${_bodhi_login} --file ${_bodhi_template_file}
+		    COMMAND ${BODHI_CMD} --new ${_bodhi_login} --file ${BODHI_TEMPLATE_FILE}
 		    COMMENT "Send new package to bodhi"
 		    VERBATIM
 		    )
@@ -508,7 +573,6 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	    ENDIF(TARGET release)
 	ENDMACRO(RELEASE_ON_FEDORA srpm)
 
-    ENDIF(_dependencies_missing EQUAL 0)
 
 
 ENDIF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
