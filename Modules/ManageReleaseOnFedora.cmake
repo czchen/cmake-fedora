@@ -137,6 +137,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	LIST(APPEND PACK_SOURCE_IGNORE_FILES "/${FEDPKG_DIR}/")
 
 	SET(FEDPKG_DIR "${CMAKE_BINARY_DIR}/FedPkg" CACHE PATH "FedPkg dir")
+	FILE(MAKE_DIRECTORY ${FEDPKG_DIR})
 
 	## Fedora package variables
 	SET(FEDORA_KARMA "3" CACHE STRING "Fedora Karma")
@@ -146,8 +147,8 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 
     FUNCTION(MANAGE_RELEASE_CREATE_FEDPKG_TARGETS prefix ver)
 	IF(_manage_release_on_fedora_dependencies_missing 0)
-	    SET(tag "${prefix}${ver}")
-	    SET(_branch ${tag})
+	    SET(_tag "${prefix}${ver}")
+	    SET(_branch ${_tag})
 	    IF("${ver}" STREQUAL "${FEDORA_RAWHIDE_VER}")
 		SET(_branch "master")
 	    ENDIF("${ver}" STREQUAL "${FEDORA_RAWHIDE_VER}")
@@ -163,28 +164,67 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 
 	    SET(_fedpkg_tag_name_prefix "${PRJ_VER}-${PRJ_RELEASE_NO}.${_bodhi_tag}")
 
+	    ## Fedpkg import and commit
+	    SET(_import_opt "")
+	    IF(NOT ver EQUAL FEDORA_RAWHIDE_VER)
+		SET(_import_opt "-b ${_tag}")
+	    ENDIF(NOT ver EQUAL FEDORA_RAWHIDE_VER)
+
 	    #Commit summary
 	    IF (DEFINED CHANGE_SUMMARY)
 		SET (COMMIT_MSG  "-m" "\"${CHANGE_SUMMARY}\"")
 	    ELSE(DEFINED CHANGE_SUMMARY)
 		SET (COMMIT_MSG  "-m"  "\"On releasing ${PRJ_VER}-${PRJ_RELEASE_NO}\"")
 	    ENDIF(DEFINED CHANGE_SUMMARY)
+	    # Depends on tag file instead of target "tag"
+	    # To avoid excessive scratch build and rpmlint
+	    SET(_commit_opt --push --tag "${COMMIT_MSG}")
 
-	    SET(_fedpkg_tag_name_commit
-		"${_fedpkg_tag_name_prefix}.commit")
+	    SET(_fedpkg_tag_commit_file
+		"${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_prefix}.commit")
 
 	    ADD_CUSTOM_TARGET_COMMAND(fedpkg_${_branch}_commit
-		OUTPUT "${_fedpkg_tag_path_abs_prefix}/_fedpkg_tag_name_commit"
+		OUTPUT "${_fedpkg_tag_commit_file}"
 		COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
 		COMMAND git pull --tag
 		COMMAND ${FEDPKG_CMD} import ${PRJ_SRPM}
-		COMMAND ${FEDPKG_CMD} commit -p ${COMMIT_MSG}"
-		COMMAND ${CMAKE_COMMAND} -E touch
-		"${_fedpkg_tag_path_abs_prefix}/_fedpkg_tag_name_commit"
-
-		COMMENT "fedpkg: committing ${_branch}"
-		VERBATIM
+		COMMAND ${FEDPKG_CMD} commit ${_commit_opt}
+		COMMAND git push --tags
+		DEPENDS ${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE} ${PRJ_SRPM}
+		WORKING_DIRECTORY ${FEDPKG_DIR}
+		COMMENT "fedpkg commit on ${_branch} with ${PRJ_SRPM}"
 		)
+
+	    ## Fedpkg build
+	    SET(_fedpkg_tag_build_file
+		"${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_prefix}.build")
+
+	    ADD_CUSTOM_TARGET_COMMAND(fedpkg_${_branch}_build
+		OUTPUT "${_fedpkg_tag_build_file}"
+		COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
+		COMMAND ${FEDPKG_CMD} build
+		COMMAND git tag -a -m "${_fedpkg_tag_name_prefix} built"
+		COMMAND git push --tags
+		DEPENDS ${_fedpkg_tag_commit_file}
+		WORKING_DIRECTORY ${FEDPKG_DIR}
+		COMMENT "fedpkg build on ${_branch} with ${PRJ_SRPM}"
+		)
+
+	    ## Fedpkg build
+	    SET(_fedpkg_tag_update_file
+		"${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_prefix}.update")
+
+	    ADD_CUSTOM_TARGET_COMMAND(fedpkg_${_branch}_update
+		OUTPUT "${_fedpkg_tag_update_file}"
+		COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
+		COMMAND ${FEDPKG_CMD} build
+		COMMAND git tag -a -m "${_fedpkg_tag_name_prefix} updated"
+		COMMAND git push --tags
+		DEPENDS ${_fedpkg_tag_build_file}
+		WORKING_DIRECTORY ${FEDPKG_DIR}
+		COMMENT "fedpkg build on ${_branch} with ${PRJ_SRPM}"
+		)
+
 	ENDIF(_manage_release_on_fedora_dependencies_missing 0)
     ENDFUNCTION(MANAGE_RELEASE_CREATE_TARGETS tag)
 
