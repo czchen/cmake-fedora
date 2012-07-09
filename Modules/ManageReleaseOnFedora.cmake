@@ -104,7 +104,13 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 
     FIND_PROGRAM(FEDPKG_CMD fedpkg)
     IF(FEDPKG_CMD STREQUAL "FEDPKG_CMD-NOTFOUND")
-	M_MSG(${M_OFF} "Program fedpkg is not found! fedpkg support disabled.")
+	M_MSG(${M_OFF} "Program fedpkg is not found! Fedora support disabled.")
+	SET(_manage_release_on_fedora_dependencies_missing 1)
+    ENDIF(FEDPKG_CMD STREQUAL "FEDPKG_CMD-NOTFOUND")
+
+    FIND_PROGRAM(GIT_CMD git)
+    IF(FEDPKG_CMD STREQUAL "FEDPKG_CMD-NOTFOUND")
+	M_MSG(${M_OFF} "Program git is not found! Fedora support disabled.")
 	SET(_manage_release_on_fedora_dependencies_missing 1)
     ENDIF(FEDPKG_CMD STREQUAL "FEDPKG_CMD-NOTFOUND")
 
@@ -145,7 +151,39 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	SET(FEDORA_AUTO_KARMA "True" CACHE STRING "Fedora auto Karma")
     ENDIF(_manage_release_on_fedora_dependencies_missing  EQUAL 0)
 
-    FUNCTION(MANAGE_RELEASE_CREATE_FEDPKG_TARGETS prefix ver)
+    FUNCTION(MANAGE_RELEASE_ADD_KOJI_TARGETS prefix ver)
+	IF(_manage_release_on_fedora_dependencies_missing 0)
+	    FIND_PROGRAM(KOJI_CMD koji)
+	    IF(KOJI_CMD STREQUAL "KOJI_CMD-NOTFOUND")
+		M_MSG(${M_OFF} "Program koji is not found! Koji support disabled.")
+	    ELSE(KOJI_CMD STREQUAL "KOJI_CMD-NOTFOUND")
+
+		IF("${prefix}" STREQUAL "f")
+		    SET(_koji_target "f${ver}${FEDORA_KOJI_TAG_POSTFIX}")
+		ELSE("${prefix}" STREQUAL "f")
+		    SET(_koji_target "el${ver}${EPEL_KOJI_TAG_POSTFIX}")
+		ENDIF("${prefix}" STREQUAL "f")
+
+		SET(_koji_tag_path_abs_prefix
+		    "${CMAKE_FEDORA_TMP_DIR}")
+
+		SET(_koji_tag_name_prefix "${PRJ_VER}-${PRJ_RELEASE_NO}.${_koji_target}")
+
+		SET(_koji_tag_build_scratch_file
+		    "${_koji_tag_path_abs_prefix}/${_koji_tag_name_prefix}.build_scratch")
+
+		ADD_CUSTOM_TARGET_COMMAND(koji_${_branch}_build_scratch
+		    OUTPUT "${_koji_tag_build_scratch_file}"
+		    COMMAND ${KOJI_CMD} build "--scratch" "${_koji_target}" "${PRJ_SRPM}"
+		    DEPENDS "${PRJ_SRPM}"
+		    COMMENT "koji scratch build on ${_koji_target}"
+		    VERBATIM
+		    )
+	    ENDIF(KOJI_CMD STREQUAL "KOJI_CMD-NOTFOUND")
+	ENDIF(_manage_release_on_fedora_dependencies_missing 0)
+    ENDFUNCTION(MANAGE_RELEASE_ADD_KOJI_TARGETS prefix ver)
+
+    FUNCTION(MANAGE_RELEASE_ADD_FEDPKG_TARGETS prefix ver)
 	IF(_manage_release_on_fedora_dependencies_missing 0)
 	    SET(_tag "${prefix}${ver}")
 	    SET(_branch ${_tag})
@@ -156,7 +194,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	    IF("${prefix}" STREQUAL "f")
 		SET(_bodhi_tag "fc${ver}")
 	    ELSE("${prefix}" STREQUAL "f")
-		SET(_bodhi_tag "el${ver}"
+		SET(_bodhi_tag "el${ver}")
 	    ENDIF("${prefix}" STREQUAL "f")
 
 	    SET(_fedpkg_tag_path_abs_prefix
@@ -186,13 +224,14 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	    ADD_CUSTOM_TARGET_COMMAND(fedpkg_${_branch}_commit
 		OUTPUT "${_fedpkg_tag_commit_file}"
 		COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
-		COMMAND git pull --tag
-		COMMAND ${FEDPKG_CMD} import ${PRJ_SRPM}
+		COMMAND ${GIT_CMD} pull --tag
+		COMMAND ${FEDPKG_CMD} import "${PRJ_SRPM}"
 		COMMAND ${FEDPKG_CMD} commit ${_commit_opt}
-		COMMAND git push --tags
-		DEPENDS ${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE} ${PRJ_SRPM}
+		COMMAND ${GIT_CMD} push --tags
+		DEPENDS ${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE} "${PRJ_SRPM}"
 		WORKING_DIRECTORY ${FEDPKG_DIR}
 		COMMENT "fedpkg commit on ${_branch} with ${PRJ_SRPM}"
+		VERBATIM
 		)
 
 	    ## Fedpkg build
@@ -203,11 +242,12 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		OUTPUT "${_fedpkg_tag_build_file}"
 		COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
 		COMMAND ${FEDPKG_CMD} build
-		COMMAND git tag -a -m "${_fedpkg_tag_name_prefix} built"
-		COMMAND git push --tags
+		COMMAND ${GIT_CMD} tag -a -m "${_fedpkg_tag_name_prefix} built"
+		COMMAND ${GIT_CMD} push --tags
 		DEPENDS ${_fedpkg_tag_commit_file}
 		WORKING_DIRECTORY ${FEDPKG_DIR}
-		COMMENT "fedpkg build on ${_branch} with ${PRJ_SRPM}"
+		COMMENT "fedpkg build on ${_branch}"
+		VERBATIM
 		)
 
 	    ## Fedpkg build
@@ -218,15 +258,16 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		OUTPUT "${_fedpkg_tag_update_file}"
 		COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
 		COMMAND ${FEDPKG_CMD} build
-		COMMAND git tag -a -m "${_fedpkg_tag_name_prefix} updated"
-		COMMAND git push --tags
+		COMMAND ${GIT_CMD} tag -a -m "${_fedpkg_tag_name_prefix} updated"
+		COMMAND ${GIT_CMD} push --tags
 		DEPENDS ${_fedpkg_tag_build_file}
 		WORKING_DIRECTORY ${FEDPKG_DIR}
-		COMMENT "fedpkg build on ${_branch} with ${PRJ_SRPM}"
+		COMMENT "fedpkg build on ${_branch}"
+		VERBATIM
 		)
 
 	ENDIF(_manage_release_on_fedora_dependencies_missing 0)
-    ENDFUNCTION(MANAGE_RELEASE_CREATE_TARGETS tag)
+    ENDFUNCTION(MANAGE_RELEASE_ADD_TARGETS tag)
 
     FUNCTION(MANAGE_RELEASE_ON_FEDORA)
 	IF(_manage_release_on_fedora_dependencies_missing 0)
@@ -242,7 +283,8 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 
 	    ## Create targets
 	    FOREACH(_ver ${_build_list})
-		MANAGE_RELEASE_CREATE_FEDPKG_TARGETS("f${_ver}")
+		MANAGE_RELEASE_ADD_FEDPKG_TARGETS("f${_ver}")
+		MANAGE_RELEASE_ADD_KOJI_TARGETS("f${_ver}")
 	    ENDFOREACH(_ver ${_build_list})
 	ENDIF(_manage_release_on_fedora_dependencies_missing 0)
     ENDFUNCTION(MANAGE_RELEASE_ON_FEDORA)
@@ -410,7 +452,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		    COMMAND ${FEDPKG_CMD} pull
 		    COMMAND ${FEDPKG_CMD} import ${_import_opt} ${srpm}
 		    COMMAND ${FEDPKG_CMD} commit ${_commit_opt}
-		    COMMAND git push --tags
+		    COMMAND ${GIT_CMD} push --tags
 		    DEPENDS ${FEDPKG_WORKDIR} ${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE} ${srpm}
 		    WORKING_DIRECTORY ${FEDPKG_WORKDIR}
 		    COMMENT "fedpkg commit on ${_branch} with ${srpm}"
@@ -429,9 +471,9 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		    ${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_built}
 		    COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
 		    COMMAND ${FEDPKG_CMD} build
-		    COMMAND git tag -a -m "${_fedpkg_tag_name_prefix} built"
+		    COMMAND ${GIT_CMD} tag -a -m "${_fedpkg_tag_name_prefix} built"
 		    ${_fedpkg_tag_name_built}
-		    COMMAND git push --tags
+		    COMMAND ${GIT_CMD} push --tags
 		    WORKING_DIRECTORY ${FEDPKG_WORKDIR}
 		    COMMENT "fedpkg build on ${_branch}"
 		    VERBATIM
