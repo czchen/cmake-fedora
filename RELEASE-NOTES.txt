@@ -14,6 +14,7 @@ REDHAT_BUGZILLA=
 - Target changed: changelog_update are now separate as:
   + changelog_prev_update: Update ChangeLog.prev
   + rpm_changelog_prev_update: Update RPM-ChangeLog.prev
+- Module renamed: ManageReleaseOnFedora to ManageReleaseFedora
 - Function renamed: LOAD_RELEASE_FILE to RELEASE_NOTES_READ_FILE
 - RELEASE_ON_FEDORA: support new tags: "fedora" for current fedora,
   and "epel" for current epel.

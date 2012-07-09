@@ -26,7 +26,7 @@
 #   FEDORA_CURRENT_RELEASE_TAGS: Releases that are recommend to build against.
 #     It is essentially FEDORA_RAWHIDE_TAG + FEDORA_SUPPORTED_RELEASE_TAGS.
 # Defines following macros:
-#   RELEASE_ON_FEDORA(srpm [TAGS [tag1 [tag2 ...]])
+#   RELEASE_FEDORA(srpm [TAGS [tag1 [tag2 ...]])
 #   - This call USE_FEDPKG and USE_BODHI and set the corresponding
 #     dependencies. This macro is recommended than calling USE_FEDPKG and
 #     USE_BODHI directly.
@@ -89,8 +89,8 @@
 #     + bodhi_new: Send a new release to bodhi.
 #
 
-IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
-    SET(_MANAGE_RELEASE_ON_FEDORA_ "DEFINED")
+IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
+    SET(_MANAGE_RELEASE_FEDORA_ "DEFINED")
     INCLUDE(ManageMessage)
     INCLUDE(ManageTarget)
     SET(_manage_release_on_fedora_dependencies_missing 0)
@@ -269,8 +269,9 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	ENDIF(_manage_release_on_fedora_dependencies_missing 0)
     ENDFUNCTION(MANAGE_RELEASE_ADD_TARGETS tag)
 
-    FUNCTION(MANAGE_RELEASE_ON_FEDORA)
+    FUNCTION(MANAGE_RELEASE_FEDORA)
 	IF(_manage_release_on_fedora_dependencies_missing 0)
+	    ADD_CUSTOM_TARGET(release_fedora)
 	    ## Parse tags
 	    SET(_build_list ${FEDORA_RAWHIDE_VER})
 	    FOREACH(_rel ${ARGN})
@@ -287,7 +288,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 		MANAGE_RELEASE_ADD_KOJI_TARGETS("f${_ver}")
 	    ENDFOREACH(_ver ${_build_list})
 	ENDIF(_manage_release_on_fedora_dependencies_missing 0)
-    ENDFUNCTION(MANAGE_RELEASE_ON_FEDORA)
+    ENDFUNCTION(MANAGE_RELEASE_FEDORA)
 
 	SET(_FEDORA_BUILD_TAGS "")
 
@@ -641,7 +642,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	    ENDIF(_dependencies_missing EQUAL 0)
 	ENDMACRO(USE_BODHI)
 
-	MACRO(RELEASE_ON_FEDORA srpm)
+	MACRO(RELEASE_FEDORA srpm)
 	    IF(TARGET release)
 		USE_KOJI(${srpm} ${ARGN})
 		USE_FEDPKG(${srpm} ${ARGN})
@@ -653,9 +654,9 @@ IF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
 	    ELSE(TARGET release)
 		M_MSG(${M_OFF} "ManageReleaseOnFedora: maintainer file is invalid, disable release targets" )
 	    ENDIF(TARGET release)
-	ENDMACRO(RELEASE_ON_FEDORA srpm)
+	ENDMACRO(RELEASE_FEDORA srpm)
 
 
 
-ENDIF(NOT DEFINED _MANAGE_RELEASE_ON_FEDORA_)
+ENDIF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 
