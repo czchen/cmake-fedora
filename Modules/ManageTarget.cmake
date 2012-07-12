@@ -1,8 +1,5 @@
 # - Modules for managing targets and outputs.
 #
-# Included by:
-#   PackSource
-#
 # Defines following macros:
 #   ADD_CUSTOM_TARGET_COMMAND(target OUTPUT file1 [file2 ..] COMMAND
 #   command1 ...)

@@ -30,7 +30,7 @@
 #       and/or "epel" for EPEL current releases.
 #
 #     Reads following variables:
-#     + PRJ_SRPM: Project SRPM
+#     + PRJ_SRPM_FILE: Project SRPM
 #     + FEDPKG_DIR: Directory for fedpkg checkout.
 #       Default: FedPkg.
 #     Reads and define following variables:
@@ -132,13 +132,14 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
     FUNCTION(RELEASE_ADD_KOJI_BUILD_SCRATCH)
 	IF(_manage_release_on_fedora_dependencies_missing 0)
 	    ADD_CUSTOM_TARGET(koji_build_scratch
-		COMMAND ${KOJI_BUILD_SCRATCH_CMD} ${PRJ_SRPM} ${ARGN}
-		DEPENDS "${PRJ_SRPM}"
-		COMMENT "koji scratch build on ${PRJ_SRPM}"
+		COMMAND ${KOJI_BUILD_SCRATCH_CMD} ${PRJ_SRPM_FILE} ${ARGN}
+		DEPENDS "${PRJ_SRPM_FILE}"
+		COMMENT "koji scratch build on ${PRJ_SRPM_FILE}"
 		VERBATIM
 		)
 	ENDIF(_manage_release_on_fedora_dependencies_missing 0)
 	ADD_DEPENDENCIES(koji_build_scratch rpmlint)
+	ADD_DEPENDENCIES(tag koji_build_scratch)
     ENDFUNCTION(RELEASE_ADD_KOJI_BUILD_SCRATCH)
 
     # Convert fedora koji tag to bodhi tag
@@ -192,12 +193,12 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 		OUTPUT "${_fedpkg_tag_commit_file}"
 		COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
 		COMMAND ${GIT_CMD} pull --tag
-		COMMAND ${FEDPKG_CMD} import "${PRJ_SRPM}"
+		COMMAND ${FEDPKG_CMD} import "${PRJ_SRPM_FILE}"
 		COMMAND ${FEDPKG_CMD} commit ${_commit_opt}
 		COMMAND ${GIT_CMD} push --tags
-		DEPENDS ${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE} "${PRJ_SRPM}"
+		DEPENDS ${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE} "${PRJ_SRPM_FILE}"
 		WORKING_DIRECTORY ${FEDPKG_DIR}
-		COMMENT "fedpkg commit on ${_branch} with ${PRJ_SRPM}"
+		COMMENT "fedpkg commit on ${_branch} with ${PRJ_SRPM_FILE}"
 		VERBATIM
 		)
 
