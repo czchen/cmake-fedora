@@ -34,14 +34,16 @@ IF(NOT DEFINED _MANAGE_RELEASE_CMAKE_)
 	## Remove the missing targets
 	SET(_releaseTargets "")
 	FOREACH(_target ${ARGN})
-	    IF(TARGET _target)
+	    IF(TARGET ${_target})
 		LIST(APPEND _releaseTargets "${_target}")
-	    ELSE(TARGET _target)
+	    ELSE(TARGET ${_target})
 		M_MSG(${M_OFF} "Target ${_target} does not exist, skipped.")
-	    ENDIF(TARGET _target)
+	    ENDIF(TARGET ${_target})
 	ENDFOREACH(_target ${ARGN})
 
-	ADD_DEPENDENCIES(release ${_releaseTargets})
+	IF(${_releaseTargets})
+	    ADD_DEPENDENCIES(release ${_releaseTargets})
+	ENDIF(${_releaseTargets})
 
 	## Run after release
 	ADD_CUSTOM_COMMAND(TARGET release

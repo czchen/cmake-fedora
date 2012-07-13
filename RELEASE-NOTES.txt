@@ -5,6 +5,7 @@ REDHAT_BUGZILLA=
 [Changes]
 - Release version are now defined in cmake-fedora.conf
   for easy maintenance.
+- Fix the MANAGE_MESSAGE_LEVEL
 - CVS support is removed.
 - New command: koji-build-scratch for scratch build on all supported
   releases.
@@ -16,8 +17,14 @@ REDHAT_BUGZILLA=
   + rpm_changelog_prev_update: Update RPM-ChangeLog.prev
 - Module renamed:
   + ManageReleaseOnFedora to ManageReleaseFedora
+  + PackSource to ManageArchive
   + PackRPM to ManageRPM
-- Function renamed: LOAD_RELEASE_FILE to RELEASE_NOTES_READ_FILE
+- Function renamed:
+  + LOAD_RELEASE_FILE to RELEASE_NOTES_READ_FILE
+- Macro renamed:
+  + PACK_SOURCE to PACK_SOURCE_ARCHIVE
+  + USE_MOCK to RPM_MOCK_BUILD
+- Variable renamed: PACK_SOURCE_IGNORE_FILES to SOURCE_ARCHIVE_IGNORE_FILES
 - RELEASE_ON_FEDORA: support new tags: "fedora" for current fedora,
   and "epel" for current epel.
 - ChangeLog generation rewritten, target version_check no longer need.

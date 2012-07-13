@@ -7,6 +7,9 @@ CMAKE_POLICY(SET CMP0011 OLD)
 # Default CMAKE_INSTALL_PREFIX should be set before PROJECT()
 SET(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "Install dir prefix")
 
+# Message level INFO1 (5)
+SET(MANAGE_MESSAGE_LEVEL 5 CACHE STRING "Message (Verbose) Level")
+
 ####################################################################
 # Project specific information
 #
@@ -62,40 +65,40 @@ SET(EXECUTABLES scripts/cmake-fedora-newprj.sh scripts/koji-build-scratch.sh)
 
 INSTALL(PROGRAMS ${EXECUTABLES}
     DESTINATION ${BIN_DIR})
+
+####################################################################
+# Source Version Control
+#
+INCLUDE(ManageSourceVersionControl)
+MANAGE_SOURCE_VERSION_CONTROL_GIT()
+
 ####################################################################
 # Packing
 #
-SET(MAINTAINER_SETTING "${CMAKE_SOURCE_DIR}/MAINTAINER_SETTING_NO_PACK")
-INCLUDE(PackSource)
-INCLUDE(PackRPM)
+INCLUDE(ManageArchive)
+INCLUDE(ManageRPM)
+INCLUDE(ManageReleaseFedora)
+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/scripts/${KOJI_BUILD_SCRATCH}.in
+    "${CMAKE_BINARY_DIR}/scripts/${KOJI_BUILD_SCRATCH}" @ONLY)
 INCLUDE(ManageRelease)
-INCLUDE(ManageReleaseOnFedora)
 
 SET(PRJ_IGNORE_FILES_COMMON
     "/doc/"  "\\\\.spec$" "messages.po$" "\\\\.orig$"
 )
+LIST(APPEND SOURCE_ARCHIVE_IGNORE_FILES ${PRJ_IGNORE_FILES_COMMON} "/bin/")
 
-LIST(APPEND PACK_SOURCE_IGNORE_FILES ${PRJ_IGNORE_FILES_COMMON} "/bin/")
-
-PACK_SOURCE(PACK_SOURCE_FILE_NAME "${RPM_BUILD_SOURCES}")
-PACK_RPM(PRJ_SRPM_FILE_NAME "${RPM_BUILD_SPECS}/project.spec.in" "${PACK_SOURCE_FILE_NAME}")
-
-CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/scripts/${KOJI_BUILD_SCRATCH}.in
-    "${CMAKE_BINARY_DIR}/scripts/${KOJI_BUILD_SCRATCH}" @ONLY)
+PACK_SOURCE_ARCHIVE("${RPM_BUILD_SOURCES}")
+PACK_RPM()
+RELEASE_FEDORA(fedora epel)
+MANAGE_RELEASE(release_fedora)
 
 # "Off" Warning is displayed if mock is not installed.
-USE_MOCK("${RPM_BUILD_SPECS}/project.spec.in")
+#USE_MOCK("${RPM_BUILD_SPECS}/project.spec.in")
 
 ####################################################################
 # Hosting and Release
 #
 
-# "Off" Warning is displayed if ${MAINTAINER_SETTING} does not exist.
-MANAGE_RELEASE(${MAINTAINER_SETTING} UPLOAD src ${RPM_BUILD_SOURCES}/${PACK_SOURCE_FILE_NAME})
-
-
-RELEASE_ON_FEDORA("${RPM_BUILD_SRPMS}/${PRJ_SRPM_FILE_NAME}"
-    TAGS fedora epel)
 
 ####################################################################
 # Custom

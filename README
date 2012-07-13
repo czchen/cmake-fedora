@@ -6,7 +6,7 @@ CMake is a powerful cross-platform build system, it is considered faster and
 easier to understand than autotools. However, there are some gotchas for
 novice packagers.
 
-For example, without setting CPACK_SOURCE_IGNORE_FILES, novices might notice
+For example, without setting CSOURCE_ARCHIVE_IGNORE_FILES, novices might notice
 the tarball grow geometrically each time they pack, because the old tarballs
 are not excluded.
 
@@ -53,7 +53,7 @@ Following steps are recommended:
     c. Use PACK_SOURCE() to pack source.
        cmake-fedora has sane default for file exclusion, but you add
        your own excluding file patterns by appending then to
-       PACK_SOURCE_IGNORE_FILES
+       SOURCE_ARCHIVE_IGNORE_FILES
     d. Use PACK_RPM(), USE_FEDPKG(), and USE_BODHI() for rpm, fedpkg and
        bodhi support.
 
