@@ -5,7 +5,7 @@ Summary:    @PRJ_SUMMARY@
 License:    @LICENSE@
 Group:      System Environment/Libraries
 URL:        https://fedorahosted.org/%{name}/
-Source0:    https://fedorahosted.org/releases/c/m/%{name}/%{name}-%{version}-Source.@PACK_SOURCE_FILE_EXTENSION@
+Source0:    https://fedorahosted.org/releases/c/m/%{name}/%{name}-%{version}-Source.@SOURCE_ARCHIVE_FILE_EXTENSION@
 
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildArch:  noarch
@@ -22,7 +22,8 @@ Requires:   cmake >= 2.4
 
 %build
 # $RPM_OPT_FLAGS should be  loaded from cmake macro.
-%cmake -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo .
+#%cmake -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo .
+%cmake .
 %__make VERBOSE=1  %{?_smp_mflags}
 
 %install

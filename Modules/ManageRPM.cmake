@@ -221,11 +221,10 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 	    #-------------------------------------------------------------------
 	    # RPM build commands and targets
 
-	    ADD_CUSTOM_COMMAND(OUTPUT ${RPM_BUILD_BUILD}
-		COMMAND ${CMAKE_COMMAND} -E make_directory ${RPM_BUILD_BUILD}
-		)
+	    FILE(MAKE_DIRECTORY  ${RPM_BUILD_BUILD})
 
 	    # Don't worry about SRPMS, RPMS and BUILDROOT, it will be created by rpmbuild
+
 	    ADD_CUSTOM_TARGET_COMMAND(srpm
 		OUTPUT ${PRJ_SRPM_FILE}
 		COMMAND ${RPMBUILD_CMD} -bs ${PRJ_RPM_SPEC_FILE}
@@ -234,8 +233,7 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 		--define '_srcrpmdir ${RPM_BUILD_SRPMS}'
 		--define '_rpmdir ${RPM_BUILD_RPMS}'
 		--define '_specdir ${RPM_BUILD_SPECS}'
-		DEPENDS ${PRJ_RPM_SPEC_FILE}
-		${RPM_BUILD_SOURCES}/${sourcePackage} ${fileDependencies}
+		DEPENDS ${PRJ_RPM_SPEC_FILE} ${SOURCE_ARCHIVE_FILE}
 		COMMENT "Building srpm"
 		)
 
