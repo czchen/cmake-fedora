@@ -104,7 +104,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 
     FIND_PROGRAM(BODHI_CMD bodhi)
     IF(BODHI_CMD STREQUAL "BODHI_CMD-NOTFOUND")
-	M_MSG(${M_OFF} "Program bodhi is not found! Koji support disabled.")
+	M_MSG(${M_OFF} "Program bodhi is not found! Bodhi support disabled.")
     ENDIF(BODHI_CMD STREQUAL "BODHI_CMD-NOTFOUND")
 
 

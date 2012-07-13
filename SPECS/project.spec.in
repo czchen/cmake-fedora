@@ -8,7 +8,7 @@ URL:        https://fedorahosted.org/%{name}/
 Source0:    https://fedorahosted.org/releases/c/m/%{name}/%{name}-%{version}-Source.@SOURCE_ARCHIVE_FILE_EXTENSION@
 
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-uildArch:  noarch
+BuildArch:  noarch
 
 BuildRequires:  cmake >= 2.6
 
@@ -39,7 +39,7 @@ Requires:   cmake >= 2.6
 %files
 %defattr(-,root,root,-)
 %doc @PRJ_DOC_LIST@
-%{_bindir}/cmake-fedora-newprj.sh
+%{_bindir}/cmake-fedora-newprj
 %{_bindir}/koji-build-scratch
 %{_datadir}/cmake/Modules/*.cmake
 %{_datadir}/cmake/Modules/cmake_uninstall.cmake.in
