@@ -55,7 +55,7 @@ IF(NOT DEFINED _MANAGE_ARCHIVE_CMAKE_)
 	"\\\\.directory$" "CMakeCache\\\\.txt$"
 	"/install_manifest.txt$"
 	"/cmake_install\\\\.cmake$" "/cmake_uninstall\\\\.cmake$""/CPack.*\\\\.cmake$" "/CTestTestfile\\\\.cmake$"
-	"Makefile$"
+	"Makefile$" "/${PROJECT_NAME}-${PRJ_VER}-SOURCE/"
 	)
 
     LIST(APPEND SOURCE_ARCHIVE_IGNORE_FILES ${SOURCE_ARCHIVE_IGNORE_FILES_DEFAULT} ${SOURCE_ARCHIVE_IGNORE_FILES_CMAKE})
@@ -67,26 +67,24 @@ IF(NOT DEFINED _MANAGE_ARCHIVE_CMAKE_)
     #     This is called by SOURCE_ARCHIVE(),
     #     So no need to call it again.
     FUNCTION(SOURCE_ARCHIVE_GET_CONTENTS )
-	SET(_filelist "")
+	SET(_fileList "")
 	FILE(GLOB_RECURSE _ls "*")
 	STRING(REPLACE "\\\\" "\\" _ignore_files "${SOURCE_ARCHIVE_IGNORE_FILES}")
 	FOREACH(_file ${_ls})
 	    SET(_matched 0)
 	    FOREACH(filePattern ${_ignore_files})
 		#MESSAGE("filePattern=${filePattern}")
-		IF(NOT _matched)
-		    IF(_file MATCHES "${filePattern}")
-			SET(_matched 1)
-		    ENDIF(_file MATCHES "${filePattern}")
-		ENDIF(NOT _matched)
+		IF(_file MATCHES "${filePattern}")
+		    SET(_matched 1)
+		    BREAK()
+		ENDIF(_file MATCHES "${filePattern}")
 	    ENDFOREACH(filePattern ${_ignore_files})
 	    IF(NOT _matched)
 		FILE(RELATIVE_PATH _file ${CMAKE_SOURCE_DIR} "${_file}")
-		#MESSAGE("_file=${_file}")
-		LIST(APPEND _filelist "${_file}")
+		LIST(APPEND _fileList "${_file}")
 	    ENDIF(NOT _matched)
 	ENDFOREACH(_file ${_ls})
-	SET(SOURCE_ARCHIVE_CONTENTS CACHE STRING "Source archive file list" FORCE)
+	SET(SOURCE_ARCHIVE_CONTENTS ${_fileList} CACHE STRING "Source archive file list" FORCE)
 	#MESSAGE("SOURCE_ARCHIVE_IGNORE_FILES=${_ignore_files}")
     ENDFUNCTION(SOURCE_ARCHIVE_GET_CONTENTS var)
 
