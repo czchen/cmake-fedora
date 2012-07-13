@@ -8,11 +8,11 @@ URL:        https://fedorahosted.org/%{name}/
 Source0:    https://fedorahosted.org/releases/c/m/%{name}/%{name}-%{version}-Source.@SOURCE_ARCHIVE_FILE_EXTENSION@
 
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildArch:  noarch
+uildArch:  noarch
 
-BuildRequires:  cmake >= 2.4
+BuildRequires:  cmake >= 2.6
 
-Requires:   cmake >= 2.4
+Requires:   cmake >= 2.6
 
 %description
 @PRJ_DESCRIPTION@
@@ -22,8 +22,6 @@ Requires:   cmake >= 2.4
 
 %build
 # $RPM_OPT_FLAGS should be  loaded from cmake macro.
-#%cmake -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo .
-rm -f CMakeCache.txt
 %cmake .
 %__make VERBOSE=1  %{?_smp_mflags}
 
@@ -43,23 +41,7 @@ rm -f CMakeCache.txt
 %doc @PRJ_DOC_LIST@
 %{_bindir}/cmake-fedora-newprj.sh
 %{_bindir}/koji-build-scratch
-%{_datadir}/cmake/Modules/CMakeVersion.cmake
-%{_datadir}/cmake/Modules/DateTimeFormat.cmake
-%{_datadir}/cmake/Modules/ManageEnvironment.cmake
-%{_datadir}/cmake/Modules/ManageMaintainerTargets.cmake
-%{_datadir}/cmake/Modules/ManageMessage.cmake
-%{_datadir}/cmake/Modules/ManageRelease.cmake
-%{_datadir}/cmake/Modules/ManageReleaseOnFedora.cmake
-%{_datadir}/cmake/Modules/ManageSourceVersionControl.cmake
-%{_datadir}/cmake/Modules/ManageString.cmake
-%{_datadir}/cmake/Modules/ManageTranslation.cmake
-%{_datadir}/cmake/Modules/ManageUninstall.cmake
-%{_datadir}/cmake/Modules/ManageVariable.cmake
-%{_datadir}/cmake/Modules/ManageVersion.cmake
-%{_datadir}/cmake/Modules/PackRPM.cmake
-%{_datadir}/cmake/Modules/PackSource.cmake
-%{_datadir}/cmake/Modules/UseDoxygen.cmake
-%{_datadir}/cmake/Modules/UseGConf.cmake
+%{_datadir}/cmake/Modules/*.cmake
 %{_datadir}/cmake/Modules/cmake_uninstall.cmake.in
 %{_datadir}/cmake/Templates/fedora
 %config %{_sysconfdir}/cmake-fedora.conf

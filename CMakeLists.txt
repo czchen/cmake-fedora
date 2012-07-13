@@ -7,6 +7,9 @@ CMAKE_POLICY(SET CMP0011 OLD)
 # Default CMAKE_INSTALL_PREFIX should be set before PROJECT()
 SET(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "Install dir prefix")
 
+# Whether to build on fedora
+SET(CMAKE_FEDORA_ENABLE_FEDORA_BUILD "1" CACHE STRING "Enable fedora build")
+
 # Message level INFO1 (5)
 SET(MANAGE_MESSAGE_LEVEL 5 CACHE STRING "Message (Verbose) Level")
 
@@ -41,7 +44,7 @@ INCLUDE(ManageUninstall)
 ####################################################################
 # Installing
 #
-SET(INSTALL_DOCS ${RELEASE_FILE} AUTHORS README ChangeLog COPYING TODO)
+SET(INSTALL_DOCS ${RELEASE_NOTES_FILE} AUTHORS README ChangeLog COPYING TODO)
 STRING_JOIN(PRJ_DOC_LIST " " ${INSTALL_DOCS})
 
 INSTALL(FILES ${INSTALL_DOCS}
@@ -60,7 +63,7 @@ INSTALL(DIRECTORY Modules/
 INSTALL(DIRECTORY Templates/
     DESTINATION ${DATA_DIR}/cmake/Templates)
 
-SET(EXECUTABLES scripts/cmake-fedora-newprj.sh scripts/koji-build-scratch.sh)
+SET(EXECUTABLES scripts/cmake-fedora-newprj scripts/koji-build-scratch)
 #STRING_JOIN(PRJ_EXECUTABLES " " ${EXECUTABLES})
 
 INSTALL(PROGRAMS ${EXECUTABLES}
@@ -76,10 +79,13 @@ MANAGE_SOURCE_VERSION_CONTROL_GIT()
 # Packing
 #
 INCLUDE(ManageArchive)
-INCLUDE(ManageRPM)
-INCLUDE(ManageReleaseFedora)
-CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/scripts/${KOJI_BUILD_SCRATCH}.in
-    "${CMAKE_BINARY_DIR}/scripts/${KOJI_BUILD_SCRATCH}" @ONLY)
+
+IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
+    INCLUDE(ManageRPM)
+    INCLUDE(ManageReleaseFedora)
+    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/scripts/${KOJI_BUILD_SCRATCH}.in
+	"${CMAKE_BINARY_DIR}/scripts/${KOJI_BUILD_SCRATCH}" @ONLY)
+ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
 INCLUDE(ManageRelease)
 
 SET(PRJ_IGNORE_FILES_COMMON
@@ -88,12 +94,14 @@ SET(PRJ_IGNORE_FILES_COMMON
 LIST(APPEND SOURCE_ARCHIVE_IGNORE_FILES ${PRJ_IGNORE_FILES_COMMON} "/bin/")
 
 PACK_SOURCE_ARCHIVE("${RPM_BUILD_SOURCES}")
-PACK_RPM()
-RELEASE_FEDORA(fedora epel)
-MANAGE_RELEASE(release_fedora)
+IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
+    PACK_RPM()
+    RELEASE_FEDORA(fedora epel)
+    # "Off" Warning is displayed if mock is not installed.
+    RPM_MOCK_BUILD()
+    MANAGE_RELEASE(release_fedora)
+ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
 
-# "Off" Warning is displayed if mock is not installed.
-#USE_MOCK("${RPM_BUILD_SPECS}/project.spec.in")
 
 ####################################################################
 # Hosting and Release
@@ -105,23 +113,13 @@ MANAGE_RELEASE(release_fedora)
 #
 
 # Module-only tarballs
-ADD_CUSTOM_COMMAND(OUTPUT ${PROJECT_NAME}-${PRJ_VER}-modules-only.tar.gz
+INCLUDE(ManageTarget)
+ADD_CUSTOM_TARGET_COMMAND(module-only
+    OUTPUT ${PROJECT_NAME}-${PRJ_VER}-modules-only.tar.gz
     ${PROJECT_NAME}-modules-only-latest.tar.gz
     COMMAND tar --exclude=.* -czvf  ${PROJECT_NAME}-${PRJ_VER}-modules-only.tar.gz Modules/*.cmake Modules/*.cmake.in
     COMMAND ln -sf ${PROJECT_NAME}-${PRJ_VER}-modules-only.tar.gz ${PROJECT_NAME}-modules-only-latest.tar.gz
     )
-
-ADD_CUSTOM_TARGET(module_only
-    DEPENDS ${PROJECT_NAME}-${PRJ_VER}-modules-only.tar.gz ${PROJECT_NAME}-modules-only-latest.tar.gz
-    )
-
-IF(EXISTS "${MAINTAINER_SETTING}")
-    MANAGE_MAINTAINER_TARGETS_UPLOAD(
-	${PROJECT_NAME}-${PRJ_VER}-modules-only.tar.gz
-	${PROJECT_NAME}-modules-only-latest.tar.gz
-	FILE_ALIAS module_only )
-ENDIF(EXISTS "${MAINTAINER_SETTING}")
-
 
 ####################################################################
 # Test Suites.

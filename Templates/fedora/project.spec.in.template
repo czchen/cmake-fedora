@@ -5,13 +5,11 @@ Summary:    @PRJ_SUMMARY@
 License:    @LICENSE@
 Group:      System Environment/Libraries
 URL:        <URL>
-Source0:    <SITE>/%{name}-%{version}-Source.@PACK_SOURCE_FILE_EXTENSION@
+Source0:    <SITE>/%{name}-%{version}-Source.@SOURCE_ARCHIVE_FILE_EXTENSION@
 
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-BuildRequires:  cmake >= 2.4
-
-Requires:   cmake >= 2.4
+BuildRequires:  cmake >= 2.6
 
 %description
 @PRJ_DESCRIPTION@
@@ -21,7 +19,7 @@ Requires:   cmake >= 2.4
 
 %build
 # $RPM_OPT_FLAGS should be  loaded from cmake macro.
-%cmake -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo .
+%cmake .
 %__make VERBOSE=1  %{?_smp_mflags}
 
 %install

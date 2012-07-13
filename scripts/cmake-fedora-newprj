@@ -27,7 +27,7 @@ Options:
     -i { initial_version }: Inital project version.
 	Default value is 0.1.0 if this option is not given.
     -m { project_summary}: Project summary.
-    -s { git | hg | svn | cvs }: source version control.
+    -s { git | hg | svn }: source version control.
 END
 }
 
@@ -117,7 +117,7 @@ while getopts "hA:B:L:M:V:e:i:m:s:" opt; do
 	    PRJ_SUMMARY=$OPTARG;
 	    ;;
 	s)
-	    PRJ_SOURCE_VERSION_CONTROL=$OPTARG;
+	    PRJ_SOURCE_VERSION_CONTROL=`echo $OPTARG | sed -e 'y/[a-z]/[A-Z]/'`;
 	    ;;
 	*)
 	    ;;
@@ -208,15 +208,12 @@ function generate_license(){
 
 #generate files
 generate_file CMakeLists.txt  PRJ_NAME PRJ_AUTHORS PRJ_LICENSE PRJ_MAINTAINER\
-    PRJ_VENDOR PRJ_SUMMARY
+    PRJ_VENDOR PRJ_SUMMARY PRJ_SOURCE_VERSION_CONTROL
 
 generate_file RELEASE-NOTES.txt  PRJ_VER_INIT
 
-generate_file ChangeLog.in
-
 mkdir -p SPECS
 generate_file SPECS/project.spec.in
-generate_file SPECS/RPM-ChangeLog.in
 
 YEAR=`date +%Y`
 #copy licenses
@@ -288,8 +285,6 @@ case $PRJ_LICENSE in
     * )
 	;;
 esac
-
-generate_file2 MAINTAINER_SETTING_NO_PACK MAINTAINER_SETTING PRJ_SOURCE_VERSION_CONTROL
 
 if [ -f ChangeLog ]; then
     mv ChangeLog ChangeLog.prev

@@ -1,4 +1,4 @@
-PRJ_VER=0.8.99
+PRJ_VER=0.99.0
 SUMMARY=Major revised cmake-fedora
 BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=
@@ -15,6 +15,8 @@ REDHAT_BUGZILLA=
 - Target changed: changelog_update are now separate as:
   + changelog_prev_update: Update ChangeLog.prev
   + rpm_changelog_prev_update: Update RPM-ChangeLog.prev
+- Command renamed:
+  + cmake-fedora-newprj.sh to cmake-fedora-newprj
 - Module renamed:
   + ManageReleaseOnFedora to ManageReleaseFedora
   + PackSource to ManageArchive

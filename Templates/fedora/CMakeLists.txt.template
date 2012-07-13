@@ -7,6 +7,12 @@ CMAKE_POLICY(SET CMP0011 OLD)
 # Default CMAKE_INSTALL_PREFIX should be set before PROJECT()
 SET(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "Install dir prefix")
 
+# Whether to build on fedora
+SET(CMAKE_FEDORA_ENABLE_FEDORA_BUILD "1" CACHE STRING "Enable fedora build")
+
+# Message level M_OFF (4)
+SET(MANAGE_MESSAGE_LEVEL 4 CACHE STRING "Message (Verbose) Level")
+
 ####################################################################
 # Project specific information
 #
@@ -14,32 +20,29 @@ PROJECT(<PRJ_NAME>)
 SET(PRJ_SUMMARY "<PRJ_SUMMARY>")
 
 SET(PRJ_DESCRIPTION
-""
-    )
+	""
+   )
 
 SET(AUTHORS "<PRJ_AUTHORS>")
 SET(MAINTAINER "<PRJ_MAINTAINER>")
 SET(VENDOR "<PRJ_VENDOR>")
 SET(LICENSE "<PRJ_LICENSE>")
 
-
-
 ####################################################################
 # Includes
 #
 SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/Modules ${CMAKE_ROOT}/Modules )
-
 INCLUDE(ManageEnvironment RESULT_VARIABLE MANAGE_ENVIRONMENT_PATH)
 IF(MANAGE_ENVIRONMENT_PATH STREQUAL "NOTFOUND")
     MESSAGE(FATAL_ERROR "ManageEnvironment is not found in CMAKE_MODULE_PATH,
-	    please:
-	    1) install cmake-fedora, or;
+    please:
+    1) install cmake-fedora, or;
     2) wget -P SOURCES https://fedorahosted.org/releases/c/m/cmake-fedora/cmake-fedora-modules-only-latest.tar.gz
     tar zxvf SOURCES/cmake-fedora-modules-only-latest.tar.gz")
 ENDIF(MANAGE_ENVIRONMENT_PATH STREQUAL "NOTFOUND")
 
 INCLUDE(ManageVersion)
-LOAD_RELEASE_FILE("RELEASE-NOTES.txt")
+RELEASE_NOTES_READ_FILE()
 INCLUDE(ManageUninstall)
 
 ####################################################################
@@ -49,41 +52,54 @@ INCLUDE(ManageUninstall)
 ####################################################################
 # Installing
 #
-
-SET(INSTALL_DOCS ${RELEASE_FILE} AUTHORS README ChangeLog COPYING TODO)
+SET(INSTALL_DOCS ${RELEASE_NOTES_FILE} AUTHORS README ChangeLog COPYING TODO)
 STRING_JOIN(PRJ_DOC_LIST " " ${INSTALL_DOCS})
 
 INSTALL(FILES ${INSTALL_DOCS}
-    DESTINATION "${PRJ_DOC_DIR}")
+	    DESTINATION "${PRJ_DOC_DIR}")
+
+####################################################################
+# Source Version Control
+#
+INCLUDE(ManageSourceVersionControl)
+MANAGE_SOURCE_VERSION_CONTROL_<PRJ_SOURCE_VERSION_CONTROL>()
 
 ####################################################################
 # Packing
 #
-SET(MAINTAINER_SETTING "${CMAKE_SOURCE_DIR}/MAINTAINER_SETTING_NO_PACK")
-INCLUDE(PackSource)
-INCLUDE(PackRPM)
+INCLUDE(ManageArchive)
+
+IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
+    INCLUDE(ManageRPM)
+    INCLUDE(ManageReleaseFedora)
+    CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/scripts/${KOJI_BUILD_SCRATCH}.in
+	"${CMAKE_BINARY_DIR}/scripts/${KOJI_BUILD_SCRATCH}" @ONLY)
+ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
 INCLUDE(ManageRelease)
-INCLUDE(ManageReleaseOnFedora)
 
 SET(PRJ_IGNORE_FILES_COMMON
-    "\\\\.spec$" "messages.po$" "\\\\.orig$")
+    "/doc/"  "\\\\.spec$" "messages.po$" "\\\\.orig$"
+)
 
 LIST(APPEND SOURCE_ARCHIVE_IGNORE_FILES ${PRJ_IGNORE_FILES_COMMON} "/bin/")
 
-PACK_SOURCE(PACK_SOURCE_FILE_NAME "${RPM_BUILD_SOURCES}")
-PACK_RPM(PRJ_SRPM_FILE_NAME "${RPM_BUILD_SPECS}/project.spec.in" "${PACK_SOURCE_FILE_NAME}")
+PACK_SOURCE_ARCHIVE("${RPM_BUILD_SOURCES}")
+IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
+    PACK_RPM()
+    RELEASE_FEDORA(fedora epel)
+    # "Off" Warning is displayed if mock is not installed.
+    RPM_MOCK_BUILD()
+    MANAGE_RELEASE(release_fedora)
+ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
 
-# "Off" Warning is displayed if mock is not installed.
-USE_MOCK("${RPM_BUILD_SPECS}/project.spec.in")
-
-#####################################################################
+####################################################################
 # Hosting and Release
 #
 
-# "Off" Warning is displayed if ${MAINTAINER_SETTING} does not exist.
-MANAGE_RELEASE(${MAINTAINER_SETTING} UPLOAD src ${RPM_BUILD_SOURCES}/${PACK_SOURCE_FILE_NAME})
 
-RELEASE_ON_FEDORA("${RPM_BUILD_SRPMS}/${PRJ_SRPM_FILE_NAME}" TAGS fedora epel)
+####################################################################
+# Custom
+#
 
 ####################################################################
 # Test Suites.

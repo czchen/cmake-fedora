@@ -68,8 +68,6 @@
 #
 #   RPM_MOCK_BUILD()
 #   - Add mock related targets.
-#     Arguments:
-#     + spec_in: RPM spec input template.
 #     Targets:
 #     + rpm_mock_i386: Make i386 rpm
 #     + rpm_mock_x86_64: Make x86_64 rpm
