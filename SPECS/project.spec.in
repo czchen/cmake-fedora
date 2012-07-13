@@ -23,6 +23,7 @@ Requires:   cmake >= 2.4
 %build
 # $RPM_OPT_FLAGS should be  loaded from cmake macro.
 #%cmake -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo .
+rm -f CMakeCache.txt
 %cmake .
 %__make VERBOSE=1  %{?_smp_mflags}
 

@@ -154,8 +154,7 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 	    "/${_rpm_build_sources_basename}/" "/${_rpm_build_srpms_basename}/" "/${_rpm_build_rpms_basename}/"
 	    "/${_rpm_build_build_basename}/" "/${_rpm_build_buildroot_basename}/" "debug.*s.list")
 
-	SET(SOURCE_ARCHIVE_IGNORE_FILES ${SOURCE_ARCHIVE_IGNORE_FILES}
-	    ${RPM_IGNORE_FILES})
+	LIST(APPEND SOURCE_ARCHIVE_IGNORE_FILES ${RPM_IGNORE_FILES})
 
     ENDIF(NOT _manage_rpm_dependency_missing)
 
@@ -241,7 +240,7 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 
 	    ADD_CUSTOM_TARGET_COMMAND(rpm
 		OUTPUT ${PRJ_RPM_FILES}
-		COMMAND ${RPMBUILD_CMD} -bb  ${PRJ_RPM_SPEC_FILE}
+		COMMAND ${RPMBUILD_CMD} -ba  ${PRJ_RPM_SPEC_FILE}
 		--define '_sourcedir ${RPM_BUILD_SOURCES}'
 		--define '_builddir ${RPM_BUILD_BUILD}'
 		--define '_buildrootdir ${RPM_BUILD_BUILDROOT}'
