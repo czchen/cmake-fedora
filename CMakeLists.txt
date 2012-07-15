@@ -112,7 +112,13 @@ ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
 ####################################################################
 # Hosting and Release
 #
+INCLUDE(ManageUpload)
+ADD_CUSTOM_TARGET(upload
+    COMMENT "Uploading all files"
+    )
 
+MANAGE_UPLOAD_FEDORAHOSTED(USER dchen FILE_ALIAS src UPLOAD_FILES ${SOURCE_ARCHIVE_FILE})
+ADD_DEPENDENCIES(upload upload_fedorahosted_src)
 
 ####################################################################
 # Custom
@@ -120,12 +126,17 @@ ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
 
 # Module-only tarballs
 INCLUDE(ManageTarget)
+SET(MODULE_ONLY_ARCHIVE ${PROJECT_NAME}-${PRJ_VER}-modules-only.tar.gz)
+SET(MODULE_ONLY_LATEST_ARCHIVE ${PROJECT_NAME}-modules-only-latest.tar.gz)
 ADD_CUSTOM_TARGET_COMMAND(module-only
-    OUTPUT ${PROJECT_NAME}-${PRJ_VER}-modules-only.tar.gz
-    ${PROJECT_NAME}-modules-only-latest.tar.gz
-    COMMAND tar --exclude=.* -czvf  ${PROJECT_NAME}-${PRJ_VER}-modules-only.tar.gz Modules/*.cmake Modules/*.cmake.in
-    COMMAND ln -sf ${PROJECT_NAME}-${PRJ_VER}-modules-only.tar.gz ${PROJECT_NAME}-modules-only-latest.tar.gz
+    OUTPUT ${MODULE_ONLY_ARCHIVE} ${MODULE_ONLY_LATEST_ARCHIVE}
+    COMMAND tar --exclude=.* -czvf  ${MODULE_ONLY_ARCHIVE} Modules/*.cmake Modules/*.cmake.in
+    COMMAND ln -sf ${MODULE_ONLY_ARCHIVE} ${MODULE_ONLY_LATEST_ARCHIVE}
     )
+
+MANAGE_UPLOAD_FEDORAHOSTED(USER dchen FILE_ALIAS modules UPLOAD_FILES ${MODULE_ONLY_ARCHIVE} ${MODULE_ONLY_LATEST_ARCHIVE})
+ADD_DEPENDENCIES(upload upload_fedorahosted_modules)
+
 
 ####################################################################
 # Test Suites.

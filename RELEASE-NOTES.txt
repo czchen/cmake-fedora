@@ -19,6 +19,7 @@ REDHAT_BUGZILLA=
   + cmake-fedora-newprj.sh to cmake-fedora-newprj
 - Module renamed:
   + ManageReleaseOnFedora to ManageReleaseFedora
+  + ManageMaintainerTargets to ManageUpload
   + PackSource to ManageArchive
   + PackRPM to ManageRPM
 - Function renamed:
