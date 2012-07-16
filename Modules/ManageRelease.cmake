@@ -28,7 +28,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_CMAKE_)
 	## Target: release
 	ADD_CUSTOM_TARGET(release
 	    DEPENDS ${RELEASE_DEPENDS_FILES}
-	    COMMENT "Releasing ${PROJECT}-${PRJ_VER}"
+	    COMMENT "Releasing ${PROJECT_NAME}-${PRJ_VER}"
 	    )
 
 	## Remove the missing targets

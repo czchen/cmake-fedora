@@ -205,6 +205,14 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 	    SET(_fedpkg_tag_commit_file
 		"${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_prefix}.commit")
 
+	    SET(FEDPKG_PRJ_DIR "${FEDPKG_DIR}/${PROJECT_NAME}")
+
+	    ADD_CUSTOM_COMMAND(OUTPUT ${FEDPKG_PRJ_DIR}
+		COMMAND ${FEDPKG_CMD} clone ${PROJECT_NAME}
+		WORKING_DIRECTORY ${FEDPKG_DIR}
+		COMMENT "fedpkg clone"
+		)
+
 	    ADD_CUSTOM_TARGET_COMMAND(fedpkg_${_branch}_commit
 		OUTPUT "${_fedpkg_tag_commit_file}"
 		COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
@@ -212,8 +220,8 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 		COMMAND ${FEDPKG_CMD} import "${PRJ_SRPM_FILE}"
 		COMMAND ${FEDPKG_CMD} commit ${_commit_opt}
 		COMMAND ${GIT_CMD} push --tags
-		DEPENDS ${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE} "${PRJ_SRPM_FILE}"
-		WORKING_DIRECTORY ${FEDPKG_DIR}
+		DEPENDS ${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE} "${PRJ_SRPM_FILE}" ${FEDPKG_PRJ_DIR}
+		WORKING_DIRECTORY ${FEDPKG_PRJ_DIR}
 		COMMENT "fedpkg commit on ${_branch} with ${PRJ_SRPM_FILE}"
 		VERBATIM
 		)
@@ -228,8 +236,8 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 		COMMAND ${FEDPKG_CMD} build
 		COMMAND ${GIT_CMD} tag -a -m "${_fedpkg_tag_name_prefix} built"
 		COMMAND ${GIT_CMD} push --tags
-		DEPENDS ${_fedpkg_tag_commit_file}
-		WORKING_DIRECTORY ${FEDPKG_DIR}
+		DEPENDS ${_fedpkg_tag_commit_file} ${FEDPKG_PRJ_DIR}
+		WORKING_DIRECTORY ${FEDPKG_PRJ_DIR}
 		COMMENT "fedpkg build on ${_branch}"
 		VERBATIM
 		)
@@ -246,8 +254,8 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 		COMMAND ${FEDPKG_CMD} build
 		COMMAND ${GIT_CMD} tag -a -m "${_fedpkg_tag_name_prefix} updated"
 		COMMAND ${GIT_CMD} push --tags
-		DEPENDS ${_fedpkg_tag_build_file}
-		WORKING_DIRECTORY ${FEDPKG_DIR}
+		DEPENDS ${_fedpkg_tag_build_file} ${FEDPKG_PRJ_DIR}
+		WORKING_DIRECTORY ${FEDPKG_PRJ_DIR}
 		COMMENT "fedpkg build on ${_branch}"
 		VERBATIM
 		)
@@ -312,15 +320,14 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 	    ENDFOREACH(_rel ${ARGN})
 	    LIST(REMOVE_DUPLICATES _build_list)
 
-	    SET(_bodhi_stamp_file "${CMAKE_FEDORA_TMP_DIR}/${PRJ_VER}-${PRJ_RELEASE_NO}.${_bodhi_tag}.bodhi_new")
 
 	    IF(BODHI_USER)
 		SET(_bodhi_login "-u ${BODHI_USER}")
 	    ENDIF(BODHI_USER)
 
-	    ADD_CUSTOM_TARGET_COMMAND(bodhi_new
-		OUTPUT "${_bodhi_stamp_file}"
+	    ADD_CUSTOM_TARGET(bodhi_new
 		COMMAND ${BODHI_CMD} --new ${_bodhi_login} --file ${BODHI_TEMPLATE_FILE}
+		DEPENDS "${BODHI_TEMPLATE_FILE}"
 		COMMENT "Submit new release to bodhi (Fedora)"
 		VERBATIM
 		)
@@ -328,15 +335,15 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 	    ## Create targets
 	    FILE(REMOVE "${BODHI_TEMPLATE_FILE}")
 	    RELEASE_ADD_KOJI_BUILD_SCRATCH(${_build_list})
-	    ADD_DEPENDENCIES(tag koji_build_scratch)
 	    FOREACH(_tag ${_build_list})
 		RELEASE_ADD_FEDPKG_TARGETS("${_tag}")
 		RELEASE_APPEND_BODHI_FILE("${_tag}")
 	    ENDFOREACH(_tag ${_build_list})
 
 	    ADD_CUSTOM_TARGET(release_fedora
-		DEPENDS "${_bodhi_stamp_file}"
 		COMMENT "Release for Fedora")
+
+	    ADD_DEPENDENCIES(release_fedora bodhi_new)
 
 	ENDIF(NOT _manage_release_fedora_dependencies_missing)
     ENDFUNCTION(RELEASE_FEDORA)
