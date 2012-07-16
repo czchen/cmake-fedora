@@ -9,8 +9,6 @@
 #   ManageMessage
 #   ManageTarget
 #
-# Reads following variables:
-#
 # Reads and defines following variables if dependencies are satisfied:
 #   PRJ_RPM_SPEC_IN_FILE: spec.in that generate spec
 #   PRJ_RPM_SPEC_FILE: spec file for rpmbuild.

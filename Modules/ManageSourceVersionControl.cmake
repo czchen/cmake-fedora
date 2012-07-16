@@ -45,7 +45,7 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	    )
 
 	ADD_CUSTOM_TARGET_COMMAND(tag OUTPUT ${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}
-	    COMMAND test -z "\$(git commit --short -uno)"
+	    COMMAND test -z "$(git commit --short -uno)"
 	    COMMAND git tag -a -m "${CHANGE_SUMMARY}" "${PRJ_VER}" HEAD
 	    COMMENT "Tagging the source as ver ${PRJ_VER}"
 	    VERBATIM

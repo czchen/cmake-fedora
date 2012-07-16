@@ -101,6 +101,13 @@ ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
 ####################################################################
 # Hosting and Release
 #
+INCLUDE(ManageUpload)
+ADD_CUSTOM_TARGET(upload
+    COMMENT "Uploading all files"
+    )
+
+MANAGE_UPLOAD_CMD(scp src UPLOAD_FILES ${SOURCE_ARCHIVE_FILE})
+ADD_DEPENDENCIES(upload upload_src)
 
 
 ####################################################################
