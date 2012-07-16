@@ -40,6 +40,8 @@ INCLUDE(ManageUninstall)
 ####################################################################
 # Building
 #
+CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/cmake-fedora.conf.in
+    "${CMAKE_BINARY_DIR}/cmake-fedora.conf" @ONLY)
 
 ####################################################################
 # Installing
@@ -136,7 +138,6 @@ ADD_CUSTOM_TARGET_COMMAND(module-only
 
 MANAGE_UPLOAD_FEDORAHOSTED(modules USER dchen UPLOAD_FILES ${MODULE_ONLY_ARCHIVE} ${MODULE_ONLY_LATEST_ARCHIVE})
 ADD_DEPENDENCIES(upload upload_fedorahosted_modules)
-
 
 ####################################################################
 # Test Suites.

@@ -41,6 +41,9 @@ PRJ_TEMPLATES_PATH="$CMAKE_TEMPLATES_PATH"
 PRJ_LICENSE=""
 PRJ_SOURCE_VERSION_CONTROL=""
 OPT_EXTRACT_SPEC=""
+if [ -e /etc/cmake-fedora.conf ]; then
+    source /etc/cmake-fedora.conf
+fi
 
 # extract_from_spec
 function extract_from_spec(){
@@ -213,7 +216,7 @@ generate_file CMakeLists.txt  PRJ_NAME PRJ_AUTHORS PRJ_LICENSE PRJ_MAINTAINER\
 generate_file RELEASE-NOTES.txt  PRJ_VER_INIT
 
 mkdir -p SPECS
-generate_file SPECS/project.spec.in
+generate_file SPECS/project.spec.in CMAKE_FEDORA_VERSION
 
 YEAR=`date +%Y`
 #copy licenses

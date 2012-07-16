@@ -1,4 +1,4 @@
-PRJ_VER=0.99.0
+PRJ_VER=0.99.1
 SUMMARY=Major revised cmake-fedora
 BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=

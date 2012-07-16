@@ -25,6 +25,7 @@ SPECS/cmake-fedora.spec
 RPMS/
 SRPMS/
 BUILD/
+BUILDROOT/
 SOURCES/
 tags
 debug*s.list
@@ -32,4 +33,5 @@ FedPkg
 bodhi.template
 *.tar.gz
 scripts/koji-build-scratch
+cmake-fedora.conf
 

@@ -77,10 +77,9 @@ IF(NOT DEFINED _MANAGE_ENVIRONMENT_CMAKE_)
 
     MACRO(SET_COMPILE_ENV var default_value)
 	SET(_stage "")
-	SET(_type "INTERNAL")
-	SET(_docstring "${var}")
 	SET(_env "${var}")
 	SET(_setOpts "")
+	SET(_force 0)
 	FOREACH(_arg ${ARGN})
 	    IF(_arg STREQUAL "ENV_NAME")
 		SET(_stage "ENV_NAME")
@@ -91,6 +90,9 @@ IF(NOT DEFINED _MANAGE_ENVIRONMENT_CMAKE_)
 		    SET(_env "${_arg}")
 		ELSEIF(_stage STREQUAL "_CACHE")
 		    LIST(APPEND _setOpts "${_arg}")
+		    IF(_arg STREQUAL "FORCE")
+			SET(_force 1)
+		    ENDIF(_arg STREQUAL "FORCE")
 		ENDIF(_stage STREQUAL "ENV_NAME")
 	    ENDIF(_arg STREQUAL "ENV_NAME")
 	ENDFOREACH(_arg ${ARGN})
@@ -100,14 +102,22 @@ IF(NOT DEFINED _MANAGE_ENVIRONMENT_CMAKE_)
 	ENDIF(NOT "${_setOpts}" STREQUAL "")
 
 	# Set the variable
-	IF(DEFINED ${var})
-	    SET(${var} "${${var}}" ${_setOpts})
-	ELSEIF(NOT "$ENV{${_env}}" STREQUAL "")
-	    SET(${var} "$ENV{${_env}}" ${_setOpts})
-	ELSE(DEFINED ${var})
-	    # Default value
-	    SET(${var} "${default_value}" ${_setOpts})
-	ENDIF(DEFINED ${var})
+	IF(_force)
+	    IF(NOT "$ENV{${_env}}" STREQUAL "")
+		SET(${var} "$ENV{${_env}}" ${_setOpts})
+	    ELSE(NOT "$ENV{${_env}}" STREQUAL "")
+		SET(${var} "${default_value}" ${_setOpts})
+	    ENDIF(NOT "$ENV{${_env}}" STREQUAL "")
+	ELSE(_force)
+	    IF(NOT "${${var}}" STREQUAL "")
+		SET(${var} "${${var}}" ${_setOpts})
+	    ELSEIF(NOT "$ENV{${_env}}" STREQUAL "")
+		SET(${var} "$ENV{${_env}}" ${_setOpts})
+	    ELSE(NOT "${${var}}" STREQUAL "")
+		# Default value
+		SET(${var} "${default_value}" ${_setOpts})
+	    ENDIF(NOT "${${var}}" STREQUAL "")
+	ENDIF(_force)
 
 	# Enforce CMP0005 to new, yet pop after ADD_DEFINITION
 	CMAKE_POLICY(PUSH)
@@ -115,6 +125,7 @@ IF(NOT DEFINED _MANAGE_ENVIRONMENT_CMAKE_)
 	#	ADD_DEFINITIONS(-D${_env}='"${${var}}"')
 	ADD_DEFINITIONS(-D${_env}=${${var}})
 	CMAKE_POLICY(POP)
+	M_MSG(${M_INFO2} "SET(${var} ${${var}})")
     ENDMACRO(SET_COMPILE_ENV var default_value)
 
     MACRO(MANAGE_CMAKE_POLICY policyName defaultValue)
@@ -145,8 +156,6 @@ IF(NOT DEFINED _MANAGE_ENVIRONMENT_CMAKE_)
     ####################################################################
     # CMake Variables
     #
-    SET_COMPILE_ENV(CMAKE_INSTALL_PREFIX "/usr"
-	CACHE PATH "Install dir prefix")
     SET_COMPILE_ENV(BIN_DIR  "${CMAKE_INSTALL_PREFIX}/bin"
 	CACHE PATH "Binary dir")
     SET_COMPILE_ENV(DATA_DIR "${CMAKE_INSTALL_PREFIX}/share"
@@ -162,18 +171,11 @@ IF(NOT DEFINED _MANAGE_ENVIRONMENT_CMAKE_)
 	SET_COMPILE_ENV(IS_64 "64" CACHE STRING "IS_64")
     ENDIF(CMAKE_SYSTEM_PROCESSOR MATCHES "64")
 
-    IF(NOT DEFINED LIB_DIR)
-	SET_COMPILE_ENV(LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib${IS_64}")
-    ENDIF(NOT DEFINED LIB_DIR)
+    SET_COMPILE_ENV(LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib${IS_64}"
+	CACHE PATH "Library dir")
 
-    IF(DEFINED PROJECT_NAME)
-	SET_COMPILE_ENV(PROJECT_NAME "${PROJECT_NAME}")
-	SET_COMPILE_ENV(PRJ_DATA_DIR "${DATA_DIR}/${PROJECT_NAME}")
-
-	IF(DEFINED PRJ_VER)
-	    SET_COMPILE_ENV(PRJ_VER "${PRJ_VER}")
-	ENDIF(DEFINED PRJ_VER)
-    ENDIF(DEFINED PROJECT_NAME)
+    SET_COMPILE_ENV(PROJECT_NAME "${PROJECT_NAME}")
+    SET_COMPILE_ENV(PRJ_DATA_DIR "${DATA_DIR}/${PROJECT_NAME}")
 
     # Directory to store cmake-fedora specific temporary files.
     IF(NOT CMAKE_FEDORA_TMP_DIR)
