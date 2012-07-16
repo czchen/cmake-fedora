@@ -160,9 +160,6 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
     ENDFUNCTION(RELEASE_ADD_KOJI_BUILD_SCRATCH)
 
     # Convert fedora koji tag to bodhi tag
-    MACRO(_use_bodhi_convert_tag tag_out tag_in)
-    ENDMACRO(_use_bodhi_convert_tag tag_out tag_in)
-
     FUNCTION(_RELEASE_TO_BODHI_TAG bodhiTag tag)
 	STRING(REGEX REPLACE "f([0-9]+)" "fc\\1" _tag_replace "${tag}")
 	IF(_tag_replace STREQUAL "")
@@ -184,7 +181,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 	    SET(_fedpkg_tag_path_abs_prefix
 		"${FEDPKG_DIR}/.git/refs/tags")
 
-	    SET(_fedpkg_tag_name_prefix "${PRJ_VER}-${PRJ_RELEASE_NO}.${_bodhi_tag}")
+	    SET(_fedpkg_tag_name_prefix "${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE_NO}.${_bodhi_tag}")
 
 	    ## Fedpkg import and commit
 	    SET(_import_opt "")
@@ -203,40 +200,39 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 	    SET(_commit_opt --push --tag "${COMMIT_MSG}")
 
 	    SET(_fedpkg_tag_commit_file
-		"${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_prefix}.commit")
+		"${CMAKE_FEDORA_TMP_DIR}/${_fedpkg_tag_name_prefix}.commit")
 
 	    SET(FEDPKG_PRJ_DIR "${FEDPKG_DIR}/${PROJECT_NAME}")
 
-	    ADD_CUSTOM_COMMAND(OUTPUT ${FEDPKG_PRJ_DIR}
+	    ADD_CUSTOM_COMMAND(OUTPUT "${FEDPKG_PRJ_DIR}/.git"
 		COMMAND ${FEDPKG_CMD} clone ${PROJECT_NAME}
 		WORKING_DIRECTORY ${FEDPKG_DIR}
 		COMMENT "fedpkg clone"
 		)
 
-	    ADD_CUSTOM_TARGET_COMMAND(fedpkg_${_branch}_commit
-		OUTPUT "${_fedpkg_tag_commit_file}"
+	    ADD_CUSTOM_TARGET(fedpkg_${_branch}_commit
 		COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
-		COMMAND ${GIT_CMD} pull --tag
+		COMMAND ${GIT_CMD} pull
 		COMMAND ${FEDPKG_CMD} import "${PRJ_SRPM_FILE}"
 		COMMAND ${FEDPKG_CMD} commit ${_commit_opt}
-		COMMAND ${GIT_CMD} push --tags
-		DEPENDS ${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE} "${PRJ_SRPM_FILE}" ${FEDPKG_PRJ_DIR}
+		COMMAND ${GIT_CMD} push --all
+		DEPENDS "${FEDPKG_PRJ_DIR}/.git"
 		WORKING_DIRECTORY ${FEDPKG_PRJ_DIR}
 		COMMENT "fedpkg commit on ${_branch} with ${PRJ_SRPM_FILE}"
 		VERBATIM
 		)
 
+	    ADD_DEPENDENCIES(fedpkg_${_branch}_commit tag)
+
 	    ## Fedpkg build
 	    SET(_fedpkg_tag_build_file
-		"${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_prefix}.build")
+		"${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_prefix}")
 
 	    ADD_CUSTOM_TARGET_COMMAND(fedpkg_${_branch}_build
 		OUTPUT "${_fedpkg_tag_build_file}"
-		COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
+		COMMAND make -C ${CMAKE_SOURCE_DIR} fedpkg_${_branch}_commit
 		COMMAND ${FEDPKG_CMD} build
-		COMMAND ${GIT_CMD} tag -a -m "${_fedpkg_tag_name_prefix} built"
 		COMMAND ${GIT_CMD} push --tags
-		DEPENDS ${_fedpkg_tag_commit_file} ${FEDPKG_PRJ_DIR}
 		WORKING_DIRECTORY ${FEDPKG_PRJ_DIR}
 		COMMENT "fedpkg build on ${_branch}"
 		VERBATIM
