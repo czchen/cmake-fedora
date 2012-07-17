@@ -49,7 +49,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_CMAKE_)
 	ADD_CUSTOM_COMMAND(TARGET release
 	    POST_BUILD
 	    COMMAND make after_release_commit
-	    COMMENT "After released ${PROJECT}-${PRJ_VER}"
+	    COMMENT "After released ${PROJECT_NAME}-${PRJ_VER}"
 	    )
 
     ENDMACRO(MANAGE_RELEASE)

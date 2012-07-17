@@ -22,7 +22,7 @@
 
 IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
     SET(_MANAGE_SOURCE_VERSION_CONTROL_CMAKE_ "DEFINED")
-    SET(_after_release_message "After version ${PRJ_VER}")
+    SET(_after_release_message "After released ${PRJ_VER}")
     INCLUDE(ManageTarget)
 
     MACRO(MANAGE_SOURCE_VERSION_CONTROL_COMMON)
@@ -36,22 +36,10 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	    ${CMAKE_SOURCE_DIR}/.git/refs/tags/${PRJ_VER}
 	    CACHE PATH "Source Version Control Tag File")
 
-	IF(MANAGE_SOURCE_VERSION_CONTROL_TAG_PRE_TARGETS)
-	    SET(_makeTargets COMMAND make ${MANAGE_SOURCE_VERSION_CONTROL_TAG_PRE_TARGETS})
-	ELSE(MANAGE_SOURCE_VERSION_CONTROL_TAG_PRE_TARGETS)
-	    SET(_makeTargets "")
-	ENDIF(MANAGE_SOURCE_VERSION_CONTROL_TAG_PRE_TARGETS)
-
-	IF(MANAGE_SOURCE_VERSION_CONTROL_TAG_DEPENDS)
-	    SET(_depends "DEPENDS" ${MANAGE_SOURCE_VERSION_CONTROL_TAG_DEPENDS})
-	ELSE(MANAGE_SOURCE_VERSION_CONTROL_TAG_DEPENDS)
-	    SET(_depends "")
-	ENDIF(MANAGE_SOURCE_VERSION_CONTROL_TAG_DEPENDS)
-
 	ADD_CUSTOM_TARGET(after_release_commit
 	    COMMAND git commit -a -m "${_after_release_message}"
 	    COMMAND git push
-	    COMMENT "After release ${PRJ_VER}"
+	    COMMENT "After released ${PRJ_VER}"
 	    VERBATIM
 	    )
 
@@ -79,9 +67,9 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	    CACHE PATH "Source Version Control Tag File")
 
 	ADD_CUSTOM_TARGET(after_release_commit
-	    COMMAND hg commit -m "${after_release_message}"
+	    COMMAND hg commit -m "${_after_release_message}"
 	    COMMAND hg push
-	    COMMENT "After release ${PRJ_VER}"
+	    COMMENT "After released ${PRJ_VER}"
 	    VERBATIM
 	    )
 
@@ -105,8 +93,8 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	    CACHE PATH "Source Version Control Tag File")
 
 	ADD_CUSTOM_TARGET(after_release_commit
-	    COMMAND svn commit -m "${after_release_message}"
-	    COMMENT "After release ${PRJ_VER}"
+	    COMMAND svn commit -m "${_after_release_message}"
+	    COMMENT "After released ${PRJ_VER}"
 	    VERBATIM
 	    )
 
