@@ -1,4 +1,4 @@
-PRJ_VER=0.99.6
+PRJ_VER=0.99.7
 SUMMARY=Major revised cmake-fedora
 BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=
@@ -23,6 +23,7 @@ REDHAT_BUGZILLA=
   + ManageMaintainerTargets to ManageUpload
   + PackSource to ManageArchive
   + PackRPM to ManageRPM
+  + UseGConf to ManageGConf
 - Function renamed:
   + LOAD_RELEASE_FILE to RELEASE_NOTES_READ_FILE
 - Macro renamed:
