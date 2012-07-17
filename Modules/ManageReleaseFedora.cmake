@@ -137,7 +137,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 
 	## Fedora package variables
 	SET(FEDORA_KARMA "3" CACHE STRING "Fedora Karma")
-	SET(FEDORA_UNSTABLE_KARMA "3" CACHE STRING "Fedora unstable Karma")
+	SET(FEDORA_UNSTABLE_KARMA "-3" CACHE STRING "Fedora unstable Karma")
 	SET(FEDORA_AUTO_KARMA "True" CACHE STRING "Fedora auto Karma")
 
 	FIND_PROGRAM(KOJI_BUILD_SCRATCH_CMD ${KOJI_BUILD_SCRATCH} PATHS ${CMAKE_BINARY_DIR}/scripts . )
@@ -226,7 +226,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 		    OUTPUT "${_fedpkg_tag_commit_file}"
 		    COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
 		    COMMAND ${GIT_CMD} pull
-		    COMMAND ${GIT_CMD} merge master
+		    COMMAND ${GIT_CMD} merge -m "Merge branch 'master' into ${_branch}" master
 		    COMMAND ${FEDPKG_CMD} push
 		    COMMAND ${CMAKE_COMMAND} -E touch "${_fedpkg_tag_commit_file}"
 		    DEPENDS "${FEDPKG_PRJ_DIR_GIT}" "${FEDPKG_PRJ_RAWHIDE_COMMIT_FILE}"
