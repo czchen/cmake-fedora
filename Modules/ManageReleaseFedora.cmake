@@ -210,13 +210,15 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 		COMMENT "fedpkg clone"
 		)
 
-	    ADD_CUSTOM_TARGET(fedpkg_${_branch}_commit
+	    ADD_CUSTOM_TARGET_COMMAND(fedpkg_${_branch}_commit
+		OUTPUT "${_fedpkg_tag_commit_file}"
 		COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
 		COMMAND ${GIT_CMD} pull
 		COMMAND ${FEDPKG_CMD} import "${PRJ_SRPM_FILE}"
 		COMMAND ${FEDPKG_CMD} commit ${_commit_opt}
 		COMMAND ${GIT_CMD} push --all
-		DEPENDS "${FEDPKG_PRJ_DIR}/.git" "${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}"
+		COMMAND ${CMAKE_COMMAND} -E touch "${_fedpkg_tag_commit_file}"
+		DEPENDS "${FEDPKG_PRJ_DIR}/.git" "${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}" "${PRJ_SRPM_FILE}"
 		WORKING_DIRECTORY ${FEDPKG_PRJ_DIR}
 		COMMENT "fedpkg commit on ${_branch} with ${PRJ_SRPM_FILE}"
 		VERBATIM
@@ -226,11 +228,15 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 	    SET(_fedpkg_tag_build_file
 		"${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_prefix}")
 
-	    ADD_CUSTOM_TARGET_COMMAND(fedpkg_${_branch}_build
-		OUTPUT "${_fedpkg_tag_build_file}"
+	    ADD_CUSTOM_TARGET(fedpkg_${_branch}_build
+		DEPENDS "${_fedpkg_tag_build_file}"
+		)
+
+	    ADD_CUSTOM_COMMAND(OUTPUT "${_fedpkg_tag_build_file}"
 		COMMAND make -C ${CMAKE_SOURCE_DIR} fedpkg_${_branch}_commit
 		COMMAND ${FEDPKG_CMD} build
 		COMMAND ${GIT_CMD} push --tags
+		DEPENDS "${_fedpkg_tag_commit_file}"
 		WORKING_DIRECTORY ${FEDPKG_PRJ_DIR}
 		COMMENT "fedpkg build on ${_branch}"
 		VERBATIM
