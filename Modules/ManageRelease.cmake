@@ -41,16 +41,16 @@ IF(NOT DEFINED _MANAGE_RELEASE_CMAKE_)
 	    ENDIF(TARGET ${_target})
 	ENDFOREACH(_target ${ARGN})
 
-	IF(${_releaseTargets})
+	IF(_releaseTargets)
 	    ADD_DEPENDENCIES(release ${_releaseTargets})
-	ENDIF(${_releaseTargets})
+	ENDIF(_releaseTargets)
 
 	## Run after release
-	ADD_CUSTOM_COMMAND(TARGET release
-	    POST_BUILD
-	    COMMAND make after_release_commit
-	    COMMENT "After released ${PROJECT}-${PRJ_VER}"
-	    )
+	#ADD_CUSTOM_COMMAND(TARGET release
+	#    POST_BUILD
+	#    COMMAND make after_release_commit
+	#    COMMENT "After released ${PROJECT_NAME}-${PRJ_VER}"
+	#    )
 
     ENDMACRO(MANAGE_RELEASE)
 ENDIF(NOT DEFINED _MANAGE_RELEASE_CMAKE_)

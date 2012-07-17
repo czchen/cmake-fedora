@@ -144,6 +144,11 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 	IF(KOJI_BUILD_SCRATCH_CMD STREQUAL "KOJI_BUILD_SCRATCH_CMD-NOTFOUND")
 	    M_MSG(${M_OFF} "Program koji_build_scratch is not found!")
 	ENDIF(KOJI_BUILD_SCRATCH_CMD STREQUAL "KOJI_BUILD_SCRATCH_CMD-NOTFOUND")
+
+	SET(FEDPKG_PRJ_DIR "${FEDPKG_DIR}/${PROJECT_NAME}")
+	SET(FEDPKG_PRJ_DIR_GIT "${FEDPKG_PRJ_DIR}/.git")
+	SET(FEDPKG_PRJ_RAWHIDE_TAG "${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE_NO}.f${FEDORA_RAWHIDE_VER}")
+	SET(FEDPKG_PRJ_RAWHIDE_COMMIT_FILE "${CMAKE_FEDORA_TMP_DIR}/${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE_NO}.f${FEDORA_RAWHIDE_VER}")
     ENDIF(NOT _manage_release_fedora_dependencies_missing)
 
     FUNCTION(RELEASE_ADD_KOJI_BUILD_SCRATCH)
@@ -178,8 +183,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 
 	    _RELEASE_TO_BODHI_TAG(_bodhi_tag "${tag}")
 
-	    SET(_fedpkg_tag_path_abs_prefix
-		"${FEDPKG_DIR}/.git/refs/tags")
+	    SET(_fedpkg_tag_path_abs_prefix "${FEDPKG_PRJ_DIR_GIT}/refs/tags")
 
 	    SET(_fedpkg_tag_name_prefix "${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE_NO}.${_bodhi_tag}")
 
@@ -202,27 +206,38 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 	    SET(_fedpkg_tag_commit_file
 		"${CMAKE_FEDORA_TMP_DIR}/${_fedpkg_tag_name_prefix}.commit")
 
-	    SET(FEDPKG_PRJ_DIR "${FEDPKG_DIR}/${PROJECT_NAME}")
 
-	    ADD_CUSTOM_COMMAND(OUTPUT "${FEDPKG_PRJ_DIR}/.git"
-		COMMAND ${FEDPKG_CMD} clone ${PROJECT_NAME}
-		WORKING_DIRECTORY ${FEDPKG_DIR}
-		COMMENT "fedpkg clone"
-		)
 
-	    ADD_CUSTOM_TARGET_COMMAND(fedpkg_${_branch}_commit
-		OUTPUT "${_fedpkg_tag_commit_file}"
-		COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
-		COMMAND ${GIT_CMD} pull
-		COMMAND ${FEDPKG_CMD} import "${PRJ_SRPM_FILE}"
-		COMMAND ${FEDPKG_CMD} commit ${_commit_opt}
-		COMMAND ${GIT_CMD} push --all
-		COMMAND ${CMAKE_COMMAND} -E touch "${_fedpkg_tag_commit_file}"
-		DEPENDS "${FEDPKG_PRJ_DIR}/.git" "${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}" "${PRJ_SRPM_FILE}"
-		WORKING_DIRECTORY ${FEDPKG_PRJ_DIR}
-		COMMENT "fedpkg commit on ${_branch} with ${PRJ_SRPM_FILE}"
-		VERBATIM
-		)
+	    IF(_branch STREQUAL "master")
+		ADD_CUSTOM_TARGET_COMMAND(fedpkg_${_branch}_commit
+		    OUTPUT "${FEDPKG_PRJ_RAWHIDE_COMMIT_FILE}"
+		    COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
+		    COMMAND ${GIT_CMD} pull --all
+		    COMMAND ${FEDPKG_CMD} import "${PRJ_SRPM_FILE}"
+		    COMMAND ${FEDPKG_CMD} commit ${_commit_opt}
+		    COMMAND ${GIT_CMD} push --all
+		    COMMAND ${CMAKE_COMMAND} -E touch "${_fedpkg_tag_commit_file}"
+		    DEPENDS "${FEDPKG_PRJ_DIR_GIT}" "${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}" "${PRJ_SRPM_FILE}"
+			"${FEDPKG_PRJ_RAWHIDE_COMMIT_FILE}"
+		    WORKING_DIRECTORY ${FEDPKG_PRJ_DIR}
+		    COMMENT "fedpkg commit on ${_branch} with ${PRJ_SRPM_FILE}"
+		    VERBATIM
+		    )
+	    ELSE(_branch STREQUAL "master")
+		ADD_CUSTOM_TARGET_COMMAND(fedpkg_${_branch}_commit
+		    OUTPUT "${_fedpkg_tag_commit_file}"
+		    COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
+		    COMMAND ${GIT_CMD} pull
+		    COMMAND ${GIT_CMD} merge master
+		    COMMAND ${FEDPKG_CMD} push
+		    COMMAND ${CMAKE_COMMAND} -E touch "${_fedpkg_tag_commit_file}"
+		    DEPENDS "${FEDPKG_PRJ_DIR_GIT}" "${FEDPKG_PRJ_RAWHIDE_COMMIT_FILE}"
+		    WORKING_DIRECTORY ${FEDPKG_PRJ_DIR}
+		    COMMENT "fedpkg commit on ${_branch} with ${PRJ_SRPM_FILE}"
+		    VERBATIM
+		    )
+	    ENDIF(_branch STREQUAL "master")
+
 
 	    ## Fedpkg build
 	    SET(_fedpkg_tag_build_file
@@ -233,7 +248,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 		)
 
 	    ADD_CUSTOM_COMMAND(OUTPUT "${_fedpkg_tag_build_file}"
-		COMMAND make -C ${CMAKE_SOURCE_DIR} fedpkg_${_branch}_commit
+		COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
 		COMMAND ${FEDPKG_CMD} build
 		COMMAND ${GIT_CMD} push --tags
 		DEPENDS "${_fedpkg_tag_commit_file}"
@@ -320,7 +335,6 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 	    ENDFOREACH(_rel ${ARGN})
 	    LIST(REMOVE_DUPLICATES _build_list)
 
-
 	    IF(BODHI_USER)
 		SET(_bodhi_login "-u ${BODHI_USER}")
 	    ENDIF(BODHI_USER)
@@ -330,6 +344,12 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 		DEPENDS "${BODHI_TEMPLATE_FILE}"
 		COMMENT "Submit new release to bodhi (Fedora)"
 		VERBATIM
+		)
+
+	    ADD_CUSTOM_COMMAND(OUTPUT "${FEDPKG_PRJ_DIR_GIT}"
+		COMMAND ${FEDPKG_CMD} clone ${PROJECT_NAME}
+		WORKING_DIRECTORY ${FEDPKG_DIR}
+		COMMENT "fedpkg clone ${PROJECT_NAME}"
 		)
 
 	    ## Create targets
