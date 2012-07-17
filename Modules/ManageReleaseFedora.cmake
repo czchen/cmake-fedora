@@ -195,9 +195,9 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 
 	    #Commit summary
 	    IF (DEFINED CHANGE_SUMMARY)
-		SET (COMMIT_MSG  "-m" "\"${CHANGE_SUMMARY}\"")
+		SET (COMMIT_MSG  "-m" "${CHANGE_SUMMARY}")
 	    ELSE(DEFINED CHANGE_SUMMARY)
-		SET (COMMIT_MSG  "-m"  "\"On releasing ${PRJ_VER}-${PRJ_RELEASE_NO}\"")
+		SET (COMMIT_MSG  "-m"  "On releasing ${PRJ_VER}-${PRJ_RELEASE_NO}")
 	    ENDIF(DEFINED CHANGE_SUMMARY)
 	    # Depends on tag file instead of target "tag"
 	    # To avoid excessive scratch build and rpmlint
@@ -205,8 +205,6 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 
 	    SET(_fedpkg_tag_commit_file
 		"${CMAKE_FEDORA_TMP_DIR}/${_fedpkg_tag_name_prefix}.commit")
-
-
 
 	    IF(_branch STREQUAL "master")
 		ADD_CUSTOM_TARGET_COMMAND(fedpkg_${_branch}_commit
@@ -241,7 +239,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 
 	    ## Fedpkg build
 	    SET(_fedpkg_tag_build_file
-		"${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_prefix}")
+		"${CMAKE_FEDORA_TMP_DIR}/${_fedpkg_tag_name_prefix}")
 
 	    ADD_CUSTOM_TARGET(fedpkg_${_branch}_build
 		DEPENDS "${_fedpkg_tag_build_file}"
@@ -250,7 +248,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 	    ADD_CUSTOM_COMMAND(OUTPUT "${_fedpkg_tag_build_file}"
 		COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
 		COMMAND ${FEDPKG_CMD} build
-		COMMAND ${GIT_CMD} push --tags
+		COMMAND ${CMAKE_COMMAND} -E touch "${_fedpkg_tag_build_file}"
 		DEPENDS "${_fedpkg_tag_commit_file}"
 		WORKING_DIRECTORY ${FEDPKG_PRJ_DIR}
 		COMMENT "fedpkg build on ${_branch}"
