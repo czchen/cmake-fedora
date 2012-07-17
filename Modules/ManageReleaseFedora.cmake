@@ -156,7 +156,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 		)
 	ENDIF(NOT _manage_release_fedora_dependencies_missing)
 	ADD_DEPENDENCIES(koji_build_scratch rpmlint)
-	ADD_DEPENDENCIES(tag koji_build_scratch)
+	ADD_DEPENDENCIES(tag_pre koji_build_scratch)
     ENDFUNCTION(RELEASE_ADD_KOJI_BUILD_SCRATCH)
 
     # Convert fedora koji tag to bodhi tag
@@ -216,13 +216,11 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 		COMMAND ${FEDPKG_CMD} import "${PRJ_SRPM_FILE}"
 		COMMAND ${FEDPKG_CMD} commit ${_commit_opt}
 		COMMAND ${GIT_CMD} push --all
-		DEPENDS "${FEDPKG_PRJ_DIR}/.git"
+		DEPENDS "${FEDPKG_PRJ_DIR}/.git" "${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}"
 		WORKING_DIRECTORY ${FEDPKG_PRJ_DIR}
 		COMMENT "fedpkg commit on ${_branch} with ${PRJ_SRPM_FILE}"
 		VERBATIM
 		)
-
-	    ADD_DEPENDENCIES(fedpkg_${_branch}_commit tag)
 
 	    ## Fedpkg build
 	    SET(_fedpkg_tag_build_file

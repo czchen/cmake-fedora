@@ -3,22 +3,21 @@
 # source version control systems, namely:
 # Git, Mercurial and SVN.
 #
-# Following targets are defined (in Git terminology):
+# Following targets are defined for each source version control (in Git terminology):
 #   - tag: Tag the working tree with PRJ_VER and CHANGE_SUMMARY.
 #     This target also does:
 #     1. Ensure there is nothing uncommitted.
 #     2. Push the commits and tags to server
+#   - tag_pre: Targets that 'tag' depends on.
+#     So you can push some check before the tag.
 #   - after_release_commit:
 #     This target does some post release chores, such as
 #     updating ChangeLog.prev and RPM-ChangeLog.prev, then push them to server.
 #
-# Following variables are defined:
+# Following variables are defined for each source version control:
 #   - MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE:
 #     The file that would be touched after target tag is completed.
 #
-# Included by:
-#    ManageMaintainerTargets
-#    ManageReleaseOnFedora
 #
 
 IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
@@ -37,6 +36,18 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	    ${CMAKE_SOURCE_DIR}/.git/refs/tags/${PRJ_VER}
 	    CACHE PATH "Source Version Control Tag File")
 
+	IF(MANAGE_SOURCE_VERSION_CONTROL_TAG_PRE_TARGETS)
+	    SET(_makeTargets COMMAND make ${MANAGE_SOURCE_VERSION_CONTROL_TAG_PRE_TARGETS})
+	ELSE(MANAGE_SOURCE_VERSION_CONTROL_TAG_PRE_TARGETS)
+	    SET(_makeTargets "")
+	ENDIF(MANAGE_SOURCE_VERSION_CONTROL_TAG_PRE_TARGETS)
+
+	IF(MANAGE_SOURCE_VERSION_CONTROL_TAG_DEPENDS)
+	    SET(_depends "DEPENDS" ${MANAGE_SOURCE_VERSION_CONTROL_TAG_DEPENDS})
+	ELSE(MANAGE_SOURCE_VERSION_CONTROL_TAG_DEPENDS)
+	    SET(_depends "")
+	ENDIF(MANAGE_SOURCE_VERSION_CONTROL_TAG_DEPENDS)
+
 	ADD_CUSTOM_TARGET(after_release_commit
 	    COMMAND git commit -a -m "${_after_release_message}"
 	    COMMAND git push
@@ -44,10 +55,17 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	    VERBATIM
 	    )
 
+	ADD_CUSTOM_TARGET(tag_pre
+	    COMMENT "Pre-tagging check"
+	    )
+
 	ADD_CUSTOM_TARGET_COMMAND(tag OUTPUT ${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}
+	    ${_makeTargets}
+	    COMMAND make tag_pre
 	    COMMAND git commit --short -uno > "${CMAKE_FEDORA_TMP_DIR}/git-status" || echo "Is source committed?"
 	    COMMAND test ! -s "${CMAKE_FEDORA_TMP_DIR}/git-status"
 	    COMMAND git tag -a -m "${CHANGE_SUMMARY}" "${PRJ_VER}" HEAD
+	    ${_depends}
 	    COMMENT "Tagging the source as ver ${PRJ_VER}"
 	    VERBATIM
 	    )
@@ -67,7 +85,12 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	    VERBATIM
 	    )
 
+	ADD_CUSTOM_TARGET(tag_pre
+	    COMMENT "Pre-tagging check"
+	    )
+
 	ADD_CUSTOM_TARGET(tag
+	    COMMAND make tag_pre
 	    COMMAND hg tag -m "${CHANGE_SUMMARY}" "${PRJ_VER}"
 	    COMMENT "Tagging the source as ver ${PRJ_VER}"
 	    VERBATIM
@@ -87,7 +110,12 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	    VERBATIM
 	    )
 
+	ADD_CUSTOM_TARGET(tag_pre
+	    COMMENT "Pre-tagging check"
+	    )
+
 	ADD_CUSTOM_TARGET(tag
+	    COMMAND make tag_pre
 	    COMMAND svn copy "${SOURCE_BASE_URL}/trunk" "${SOURCE_BASE_URL}/tags/${PRJ_VER}" -m "${CHANGE_SUMMARY}"
 	    COMMAND cmake -E touch ${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}
 	    COMMENT "Tagging the source as ver ${PRJ_VER}"

@@ -1,4 +1,4 @@
-PRJ_VER=0.99.2
+PRJ_VER=0.99.3
 SUMMARY=Major revised cmake-fedora
 BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=
@@ -6,6 +6,7 @@ REDHAT_BUGZILLA=
 - Release version are now defined in cmake-fedora.conf
   for easy maintenance.
 - Fix the MANAGE_MESSAGE_LEVEL
+- koji scratch builds are run only once before tagging.
 - CVS support is removed.
 - New command: koji-build-scratch for scratch build on all supported
   releases.

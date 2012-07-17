@@ -62,6 +62,7 @@ INSTALL(FILES ${INSTALL_DOCS}
 # Source Version Control
 #
 INCLUDE(ManageSourceVersionControl)
+
 MANAGE_SOURCE_VERSION_CONTROL_<PRJ_SOURCE_VERSION_CONTROL>()
 
 ####################################################################
