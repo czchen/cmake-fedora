@@ -24,11 +24,13 @@ REDHAT_BUGZILLA=
   + PackSource to ManageArchive
   + PackRPM to ManageRPM
   + UseGConf to ManageGConf
+  + UseDoxygen to ManageAPIDoc
 - Function renamed:
   + LOAD_RELEASE_FILE to RELEASE_NOTES_READ_FILE
 - Macro renamed:
   + PACK_SOURCE to PACK_SOURCE_ARCHIVE
   + USE_MOCK to RPM_MOCK_BUILD
+  + USE_DOXYGEN to MANAGE_APIDOC_DOXYGEN
 - Variable renamed: PACK_SOURCE_IGNORE_FILES to SOURCE_ARCHIVE_IGNORE_FILES
 - RELEASE_ON_FEDORA: support new tags: "fedora" for current fedora,
   and "epel" for current epel.

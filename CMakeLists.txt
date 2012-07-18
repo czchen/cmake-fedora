@@ -110,7 +110,6 @@ IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
     MANAGE_RELEASE(release_fedora)
 ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
 
-
 ####################################################################
 # Hosting and Release
 #
