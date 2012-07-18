@@ -149,7 +149,6 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 	SET(RPM_IGNORE_FILES
 	    "/${_rpm_build_sources_basename}/" "/${_rpm_build_srpms_basename}/" "/${_rpm_build_rpms_basename}/"
 	    "/${_rpm_build_build_basename}/" "/${_rpm_build_buildroot_basename}/" "debug.*s.list")
-
 	LIST(APPEND SOURCE_ARCHIVE_IGNORE_FILES ${RPM_IGNORE_FILES})
 
     ENDIF(NOT _manage_rpm_dependency_missing)
