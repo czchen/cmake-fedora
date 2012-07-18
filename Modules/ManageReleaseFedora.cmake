@@ -149,8 +149,10 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 
 	SET(FEDPKG_PRJ_DIR "${FEDPKG_DIR}/${PROJECT_NAME}")
 	SET(FEDPKG_PRJ_DIR_GIT "${FEDPKG_PRJ_DIR}/.git")
-	SET(FEDPKG_PRJ_RAWHIDE_TAG "${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE_NO}.f${FEDORA_RAWHIDE_VER}")
-	SET(FEDPKG_PRJ_RAWHIDE_COMMIT_FILE "${CMAKE_FEDORA_TMP_DIR}/${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE_NO}.f${FEDORA_RAWHIDE_VER}")
+
+	# NVRD: Name-Version-Release-Dist
+	SET(FEDPKG_NVR_RAWHIDE "${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE_NO}.f${FEDORA_RAWHIDE_VER}")
+	SET(FEDPKG_NVR_RAWHIDE_COMMIT_FILE "${CMAKE_FEDORA_TMP_DIR}/${FEDPKG_NVR_RAWHIDE}.commit")
     ENDIF(NOT _manage_release_fedora_dependencies_missing)
 
     FUNCTION(RELEASE_ADD_KOJI_BUILD_SCRATCH)
@@ -185,10 +187,6 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 
 	    _RELEASE_TO_BODHI_TAG(_bodhi_tag "${tag}")
 
-	    SET(_fedpkg_tag_path_abs_prefix "${FEDPKG_PRJ_DIR_GIT}/refs/tags")
-
-	    SET(_fedpkg_tag_name_prefix "${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE_NO}.${_bodhi_tag}")
-
 	    ## Fedpkg import and commit
 	    SET(_import_opt "")
 	    IF(NOT ver EQUAL FEDORA_RAWHIDE_VER)
@@ -205,33 +203,33 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 	    # To avoid excessive scratch build and rpmlint
 	    SET(_commit_opt --push --tag "${COMMIT_MSG}")
 
-	    SET(_fedpkg_tag_commit_file
-		"${CMAKE_FEDORA_TMP_DIR}/${_fedpkg_tag_name_prefix}.commit")
+	    SET(_fedpkg_nvrd "${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE_NO}.${_bodhi_tag}")
+	    SET(_fedpkg_nvrd_commit_file
+		"${CMAKE_FEDORA_TMP_DIR}/${_fedpkg_nvrd}.commit")
 
 	    IF(_branch STREQUAL "master")
 		ADD_CUSTOM_TARGET_COMMAND(fedpkg_${_branch}_commit
-		    OUTPUT "${FEDPKG_PRJ_RAWHIDE_COMMIT_FILE}"
+		    OUTPUT "${FEDPKG_NVR_RAWHIDE_COMMIT_FILE}"
 		    COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
 		    COMMAND ${GIT_CMD} pull --all
 		    COMMAND ${FEDPKG_CMD} import "${PRJ_SRPM_FILE}"
 		    COMMAND ${FEDPKG_CMD} commit ${_commit_opt}
 		    COMMAND ${GIT_CMD} push --all
-		    COMMAND ${CMAKE_COMMAND} -E touch "${_fedpkg_tag_commit_file}"
+		    COMMAND ${CMAKE_COMMAND} -E touch "${_fedpkg_nvrd_commit_file}"
 		    DEPENDS "${FEDPKG_PRJ_DIR_GIT}" "${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}" "${PRJ_SRPM_FILE}"
-			"${FEDPKG_PRJ_RAWHIDE_COMMIT_FILE}"
 		    WORKING_DIRECTORY ${FEDPKG_PRJ_DIR}
 		    COMMENT "fedpkg commit on ${_branch} with ${PRJ_SRPM_FILE}"
 		    VERBATIM
 		    )
 	    ELSE(_branch STREQUAL "master")
 		ADD_CUSTOM_TARGET_COMMAND(fedpkg_${_branch}_commit
-		    OUTPUT "${_fedpkg_tag_commit_file}"
+		    OUTPUT "${_fedpkg_nvrd_commit_file}"
 		    COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
 		    COMMAND ${GIT_CMD} pull
 		    COMMAND ${GIT_CMD} merge -m "Merge branch 'master' into ${_branch}" master
 		    COMMAND ${FEDPKG_CMD} push
-		    COMMAND ${CMAKE_COMMAND} -E touch "${_fedpkg_tag_commit_file}"
-		    DEPENDS "${FEDPKG_PRJ_DIR_GIT}" "${FEDPKG_PRJ_RAWHIDE_COMMIT_FILE}"
+		    COMMAND ${CMAKE_COMMAND} -E touch "${_fedpkg_nvrd_commit_file}"
+		    DEPENDS "${FEDPKG_PRJ_DIR_GIT}" "${FEDPKG_NVR_RAWHIDE_COMMIT_FILE}"
 		    WORKING_DIRECTORY ${FEDPKG_PRJ_DIR}
 		    COMMENT "fedpkg commit on ${_branch} with ${PRJ_SRPM_FILE}"
 		    VERBATIM
@@ -240,18 +238,18 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 
 
 	    ## Fedpkg build
-	    SET(_fedpkg_tag_build_file
-		"${CMAKE_FEDORA_TMP_DIR}/${_fedpkg_tag_name_prefix}")
+	    SET(_fedpkg_nvrd_build_file
+		"${CMAKE_FEDORA_TMP_DIR}/${_fedpkg_nvrd}")
 
 	    ADD_CUSTOM_TARGET(fedpkg_${_branch}_build
-		DEPENDS "${_fedpkg_tag_build_file}"
+		DEPENDS "${_fedpkg_nvrd_build_file}"
 		)
 
-	    ADD_CUSTOM_COMMAND(OUTPUT "${_fedpkg_tag_build_file}"
+	    ADD_CUSTOM_COMMAND(OUTPUT "${_fedpkg_nvrd_build_file}"
 		COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
 		COMMAND ${FEDPKG_CMD} build
-		COMMAND ${CMAKE_COMMAND} -E touch "${_fedpkg_tag_build_file}"
-		DEPENDS "${_fedpkg_tag_commit_file}"
+		COMMAND ${CMAKE_COMMAND} -E touch "${_fedpkg_nvrd_build_file}"
+		DEPENDS "${_fedpkg_nvrd_commit_file}"
 		WORKING_DIRECTORY ${FEDPKG_PRJ_DIR}
 		COMMENT "fedpkg build on ${_branch}"
 		VERBATIM
@@ -260,16 +258,15 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 	    ADD_DEPENDENCIES(bodhi_new fedpkg_${_branch}_build)
 
 	    ## Fedpkg update
-	    SET(_fedpkg_tag_update_file
-		"${_fedpkg_tag_path_abs_prefix}/${_fedpkg_tag_name_prefix}.update")
+	    SET(_fedpkg_nvrd_update_file
+		"${CMAKE_FEDORA_TMP_DIR}/${_fedpkg_nvrd}.update")
 
 	    ADD_CUSTOM_TARGET_COMMAND(fedpkg_${_branch}_update
-		OUTPUT "${_fedpkg_tag_update_file}"
+		OUTPUT "${_fedpkg_nvrd_update_file}"
 		COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
-		COMMAND ${FEDPKG_CMD} build
-		COMMAND ${GIT_CMD} tag -a -m "${_fedpkg_tag_name_prefix} updated"
-		COMMAND ${GIT_CMD} push --tags
-		DEPENDS ${_fedpkg_tag_build_file} ${FEDPKG_PRJ_DIR}
+		COMMAND ${FEDPKG_CMD} update
+		COMMAND ${CMAKE_COMMAND} -E touch "${_fedpkg_nvrd_build_file}"
+		DEPENDS ${_fedpkg_nvrd_build_file}
 		WORKING_DIRECTORY ${FEDPKG_PRJ_DIR}
 		COMMENT "fedpkg build on ${_branch}"
 		VERBATIM
