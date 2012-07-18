@@ -3,6 +3,7 @@ SUMMARY=Major revised cmake-fedora
 BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=
 [Changes]
+- Greatly simplified the modules design and usage.
 - Release version are now defined in cmake-fedora.conf
   for easy maintenance.
 - Fix the MANAGE_MESSAGE_LEVEL
@@ -13,6 +14,8 @@ REDHAT_BUGZILLA=
 - New module: ManageTarget
 - New function: SETTING_STRING_GET_VARIABLE
 - New macro: ADD_CUSTOM_TARGET_COMMAND
+- Macros changed behavior:
+  MANAGE_ZANATA: Arguments are changed.
 - Target changed: changelog_update are now separate as:
   + changelog_prev_update: Update ChangeLog.prev
   + rpm_changelog_prev_update: Update RPM-ChangeLog.prev
@@ -31,6 +34,8 @@ REDHAT_BUGZILLA=
   + PACK_SOURCE to PACK_SOURCE_ARCHIVE
   + USE_MOCK to RPM_MOCK_BUILD
   + USE_DOXYGEN to MANAGE_APIDOC_DOXYGEN
+  + USE_GETTEXT to MANAGE_GETTEXT
+  + USE_ZANATA to MANAGE_ZANATA
 - Variable renamed: PACK_SOURCE_IGNORE_FILES to SOURCE_ARCHIVE_IGNORE_FILES
 - RELEASE_ON_FEDORA: support new tags: "fedora" for current fedora,
   and "epel" for current epel.
