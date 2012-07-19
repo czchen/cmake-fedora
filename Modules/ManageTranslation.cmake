@@ -195,7 +195,7 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 		DEPENDS ${_gmoFile_list}
 		COMMENT "Generate gmo files for translation"
 		)
-	ENDIF(${_gettext_dependency_missing} EQUAL 0)
+	ENDIF(NOT _gettext_dependency_missing)
     ENDFUNCTION(MANAGE_GETTEXT)
 
 
