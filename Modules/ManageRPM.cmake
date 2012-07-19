@@ -183,9 +183,9 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 	INCLUDE(DateTimeFormat)
 
 	FILE(WRITE ${RPM_CHANGELOG_FILE} "* ${TODAY_CHANGELOG} ${MAINTAINER} - ${PRJ_VER}-${PRJ_RELEASE_NO}")
-	FILE(READ "${CMAKE_FEDORA_TMP_DIR}/ChangeLog.this" _changeLog_items)
+	FILE(READ "${CMAKE_FEDORA_TMP_DIR}/ChangeLog.this" CHANGELOG_ITEMS)
 
-	FILE(APPEND ${RPM_CHANGELOG_FILE} "_changeLog_items\n\n")
+	FILE(APPEND ${RPM_CHANGELOG_FILE} "${CHANGELOG_ITEMS}\n\n")
 
 	# Update RPM_ChangeLog
 	# Use this instead of FILE(READ is to avoid error when reading '\'

@@ -273,7 +273,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 
     MACRO(_append_notes _file)
     	STRING(REGEX REPLACE "\n" "\n " _notes "${CHANGELOG_ITEMS}")
-    	FILE(APPEND ${_file} "notes=${_notes}\n\n")
+    	FILE(APPEND "${_file}" "notes=${_notes}\n\n")
     ENDMACRO(_append_notes _file)
 
     FUNCTION(RELEASE_APPEND_BODHI_FILE tag)
