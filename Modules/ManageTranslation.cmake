@@ -227,7 +227,6 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 	ENDIF(NOT EXISTS "${ZANATA_INI_FILE}")
 
 	IF(NOT _manage_zanata_dependencies_missing)
-	    M_MSG(${M_INFO1} "MANAGE_ZANATA:_zanata_xml=${_zanata_xml}")
 	    # Parsing arguments
 	    SET(_yes "")
 	    FOREACH(_arg ${ARGN})
