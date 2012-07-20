@@ -1,6 +1,6 @@
-PRJ_VER=1.0.0
-SUMMARY=Major revised cmake-fedora
-BODHI_UPDATE_TYPE=bugfix
+PRJ_VER=1.0.1
+SUMMARY=Major revised cmake-fedora; Module stabilized.
+BODHI_UPDATE_TYPE=enhancement
 REDHAT_BUGZILLA=
 [Changes]
 - Greatly simplified the modules design and usage.
@@ -13,7 +13,9 @@ REDHAT_BUGZILLA=
   releases.
 - New module: ManageTarget
 - New function: SETTING_STRING_GET_VARIABLE
-- New macro: ADD_CUSTOM_TARGET_COMMAND
+- New macro:
+  + ADD_CUSTOM_TARGET_COMMAND
+  + STRING_ESCAPE_SEMICOLON
 - Macros changed behavior:
   MANAGE_ZANATA: Arguments are changed.
 - Target changed: changelog_update are now separate as:

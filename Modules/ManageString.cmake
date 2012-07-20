@@ -15,6 +15,12 @@
 #       + str: A string.
 #       + NOUNQUOTE: (Optional) do not remove the double quote mark around the string.
 #
+#   STRING_ESCAPE_SEMICOLON(var str)
+#   - Escape the semicolon
+#     * Parameters:
+#       + var: A variable that stores the result.
+#       + str: A string.
+#
 #   STRING_UNQUOTE(var str)
 #   - Remove double quote marks and quote marks around a string.
 #     If the string is not quoted, then content of str is copied to var
@@ -83,7 +89,7 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
     ENDFUNCTION(STRING_RIGHTMOST_NOTMATCH_INDEX var str)
 
     FUNCTION(STRING_TRIM var str)
-	#STRING_ESCAPE(_ret "${str}" ${ARGN})
+	#_STRING_ESCAPE(_ret "${str}" ${ARGN})
 	STRING_LEFTMOST_NOTMATCH_INDEX(_leftIndex "${str}" "[ \t\n\r]")
 	STRING_RIGHTMOST_NOTMATCH_INDEX(_rightIndex "${str}" "[ \t\n\r]")
 	#MESSAGE("_left=${_leftIndex} _rightIndex=${_rightIndex} str=|${str}|")
@@ -111,13 +117,17 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 	SET(${var} "${_ret}" PARENT_SCOPE)
 
 	# Unencoding
-	#STRING_UNESCAPE(${var} "${_ret}" ${ARGN})
+	#_STRING_UNESCAPE(${var} "${_ret}" ${ARGN})
     ENDFUNCTION(STRING_TRIM var str)
+
+    MACRO(STRING_ESCAPE_SEMICOLON var str)
+	STRING(REGEX REPLACE ";" "\\\\;" ${var} "${str}")
+    ENDMACRO(STRING_ESCAPE_SEMICOLON var str)
 
     # Internal macro
     # Nested Variable cannot be escaped here, as variable is already substituted
     # at the time it passes to this macro.
-    MACRO(STRING_ESCAPE var str)
+    MACRO(_STRING_ESCAPE var str)
 	# ';' and '\' are tricky, need to be encoded.
 	# '#' => '#H'
 	# '\' => '#B'
@@ -143,11 +153,11 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 	IF(_NOESCAPE_SEMICOLON STREQUAL "")
 	    STRING(REGEX REPLACE ";" "#S" _ret "${_ret}")
 	ENDIF(_NOESCAPE_SEMICOLON STREQUAL "")
-	#MESSAGE("STRING_ESCAPE:_ret=${_ret}")
+	#MESSAGE("_STRING_ESCAPE:_ret=${_ret}")
 	SET(${var} "${_ret}")
-    ENDMACRO(STRING_ESCAPE var str)
+    ENDMACRO(_STRING_ESCAPE var str)
 
-    MACRO(STRING_UNESCAPE var str)
+    MACRO(_STRING_UNESCAPE var str)
 	# '#B' => '\'
 	# '#H' => '#'
 	# '#D' => '$'
@@ -163,7 +173,7 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 		STRING(REGEX REPLACE "#D" "$" _ret "${_ret}")
 	    ENDIF(${_arg} STREQUAL "NOESCAPE_SEMICOLON")
 	ENDFOREACH(_arg)
-	#MESSAGE("###STRING_UNESCAPE: var=${var} _ret=${_ret} _NOESCAPE_SEMICOLON=${_NOESCAPE_SEMICOLON} ESCAPE_VARIABLE=${_ESCAPE_VARIABLE}")
+	#MESSAGE("###_STRING_UNESCAPE: var=${var} _ret=${_ret} _NOESCAPE_SEMICOLON=${_NOESCAPE_SEMICOLON} ESCAPE_VARIABLE=${_ESCAPE_VARIABLE}")
 
 	STRING(REGEX REPLACE "#B" "\\\\" _ret "${_ret}")
 	IF("${_NOESCAPE_SEMICOLON}" STREQUAL "")
@@ -180,8 +190,8 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 	ENDIF(NOT _ESCAPE_VARIABLE STREQUAL "")
 	STRING(REGEX REPLACE "#H" "#" _ret "${_ret}")
 	SET(${var} "${_ret}")
-	#MESSAGE("*** STRING_UNESCAPE: ${var}=${${var}}")
-    ENDMACRO(STRING_UNESCAPE var str)
+	#MESSAGE("*** _STRING_UNESCAPE: ${var}=${${var}}")
+    ENDMACRO(_STRING_UNESCAPE var str)
 
     MACRO(STRING_UNQUOTE var str)
 	SET(_ret "${str}")
@@ -207,10 +217,6 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 	ENDIF (_strLen GREATER 1)
 	SET(${var} "${_ret}")
     ENDMACRO(STRING_UNQUOTE var str)
-
-    #MACRO(STRING_ESCAPE_SEMICOLON var str)
-    #	STRING(REGEX REPLACE ";" "\\\\;" ${var} "${str}")
-    #ENDMACRO(STRING_ESCAPE_SEMICOLON var str)
 
     MACRO(STRING_JOIN var delimiter str_list)
 	SET(_ret "")
@@ -289,8 +295,8 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 	    SET(_max_tokens -1)
 	ENDIF(NOT _max_tokens)
 
-	STRING_ESCAPE(_str "${str}" ${_NOESCAPE_SEMICOLON} ${_ESCAPE_VARIABLE})
-	STRING_ESCAPE(_delimiter "${delimiter}" ${_NOESCAPE_SEMICOLON} ${_ESCAPE_VARIABLE})
+	_STRING_ESCAPE(_str "${str}" ${_NOESCAPE_SEMICOLON} ${_ESCAPE_VARIABLE})
+	_STRING_ESCAPE(_delimiter "${delimiter}" ${_NOESCAPE_SEMICOLON} ${_ESCAPE_VARIABLE})
 	SET(_str_list "")
 	SET(_token_count 1)
 
@@ -311,7 +317,7 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 	ENDIF(NOT "x${_str}" STREQUAL "x")
 
 	# Unencoding
-	STRING_UNESCAPE(${var} "${_str_list}" ${_NOESCAPE_SEMICOLON} ${_ESCAPE_VARIABLE})
+	_STRING_UNESCAPE(${var} "${_str_list}" ${_NOESCAPE_SEMICOLON} ${_ESCAPE_VARIABLE})
 	#MESSAGE("***STRING_SPLIT: tokens=${${var}}")
     ENDMACRO(STRING_SPLIT var delimiter str)
 

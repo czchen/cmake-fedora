@@ -190,8 +190,11 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 	    ENDIF(NOT ver EQUAL FEDORA_RAWHIDE_VER)
 
 	    #Commit summary
+	    INCLUDE(ManageString)
+	    STRING_ESCAPE_SEMICOLON(_change_summary_escaped "${CHANGE_SUMMARY}")
+
 	    IF (DEFINED CHANGE_SUMMARY)
-		SET (COMMIT_MSG  "-m" "${CHANGE_SUMMARY}")
+		SET (COMMIT_MSG  "-m" "${_change_summary_escaped}")
 	    ELSE(DEFINED CHANGE_SUMMARY)
 		SET (COMMIT_MSG  "-m"  "On releasing ${PRJ_VER}-${PRJ_RELEASE_NO}")
 	    ENDIF(DEFINED CHANGE_SUMMARY)

@@ -253,7 +253,7 @@ IF(NOT DEFINED _MANAGE_VARIABLE_CMAKE_)
 			#MESSAGE("*** _attr=${_attr} _value=${_value}")
 			IF(_noReplace STREQUAL "" OR NOT DEFINED ${_attr})
 			    # Unencoding
-			    STRING_UNESCAPE(_value "${_value}" ${_noEscapeSemicolon} ESCAPE_VARIABLE)
+			    _STRING_UNESCAPE(_value "${_value}" ${_noEscapeSemicolon} ESCAPE_VARIABLE)
 			    IF(_escapeVariable STREQUAL "")
 				# Variable should not be escaped
 				# i.e. need substitution
