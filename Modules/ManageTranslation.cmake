@@ -116,8 +116,8 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 		    IF(_stage STREQUAL "SRCS")
 			FILE(RELATIVE_PATH _relFile ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/${_arg})
 			LIST(APPEND _src_list ${_relFile})
-			GET_FILENAME_COMPONENT(_absFile ${_arg} ABSOLUTE)
-			LIST(APPEND _src_list_abs ${_absFile})
+			GET_FILENAME_COMPONENT(_absPoFile ${_arg} ABSOLUTE)
+			LIST(APPEND _src_list_abs ${_absPoFile})
 		    ELSEIF(_stage STREQUAL "LOCALES")
 			LIST(APPEND _localeList ${_arg})
 		    ELSEIF(_stage STREQUAL "XGETTEXT_OPTIONS")
@@ -160,43 +160,43 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 		)
 
 	    ### Generating gmo files
-	    SET(_gmoFile_list "")
-	    SET(_absFileList "")
+	    SET(_gmoFileList "")
+	    SET(_absGmoFileList "")
+	    SET(_absPoFileList "")
 	    GET_FILENAME_COMPONENT(_potBasename ${_potFile} NAME_WE)
 	    GET_FILENAME_COMPONENT(_potDir ${_potFile} PATH)
 	    GET_FILENAME_COMPONENT(_absPotFile ${_potFile} ABSOLUTE)
 	    GET_FILENAME_COMPONENT(_absPotDir ${_absPotFile} PATH)
 	    FOREACH(_locale ${_localeList})
-		SET(_gmoFile ${_absPotDir}/${_locale}.gmo)
-		SET(_absFile ${_absPotDir}/${_locale}.po)
+		SET(_absGmoFile ${_absPotDir}/${_locale}.gmo)
+		SET(_absPoFile ${_absPotDir}/${_locale}.po)
 
-		ADD_CUSTOM_COMMAND(OUTPUT ${_absFile}
+		ADD_CUSTOM_COMMAND(OUTPUT ${_absPoFile}
 		    COMMAND ${GETTEXT_MSGMERGE_CMD}
-		    ${MANAGE_TRANSLATION_GETTEXT_MSGMERGE_OPTIONS} ${_absFile} ${_potFile}
+		    ${MANAGE_TRANSLATION_GETTEXT_MSGMERGE_OPTIONS} ${_absPoFile} ${_potFile}
 		    DEPENDS ${_potFile}
 		    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-		    COMMENT "${GETTEXT_MSGMERGE_CMD} ${MANAGE_TRANSLATION_GETTEXT_MSGMERGE_OPTIONS} ${_absFile} ${_potFile}"
+		    COMMENT "${GETTEXT_MSGMERGE_CMD} ${MANAGE_TRANSLATION_GETTEXT_MSGMERGE_OPTIONS} ${_absPoFile} ${_potFile}"
 		    )
 
-		ADD_CUSTOM_COMMAND(OUTPUT ${_gmoFile}
-		    COMMAND ${GETTEXT_MSGFMT_CMD} -o ${_gmoFile} ${_absFile}
-		    DEPENDS ${_absFile}
+		ADD_CUSTOM_COMMAND(OUTPUT ${_absGmoFile}
+		    COMMAND ${GETTEXT_MSGFMT_CMD} -o ${_absGmoFile} ${_absPoFile}
+		    DEPENDS ${_absPoFile}
 		    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-		    COMMENT "${GETTEXT_MSGFMT_CMD} -o ${_gmoFile} ${_absFile}"
+		    COMMENT "${GETTEXT_MSGFMT_CMD} -o ${_absGmoFile} ${_absPoFile}"
 		    )
 
-		#MESSAGE("_absFile=${_absFile} _absPotDir=${_absPotDir} _lang=${_lang} curr_bin=${CMAKE_CURRENT_BINARY_DIR}")
-		INSTALL(FILES ${_gmoFile} DESTINATION share/locale/${_locale}/LC_MESSAGES RENAME ${_potBasename}.mo)
-		LIST(APPEND _gmoFile_list ${_gmoFile})
-		LIST(APPEND _absFileList ${_absFile})
+		#MESSAGE("_absPoFile=${_absPoFile} _absPotDir=${_absPotDir} _lang=${_lang} curr_bin=${CMAKE_CURRENT_BINARY_DIR}")
+		INSTALL(FILES ${_absGmoFile} DESTINATION share/locale/${_locale}/LC_MESSAGES RENAME ${_potBasename}.mo)
+		LIST(APPEND _absGmoFileList ${_absGmoFile})
+		LIST(APPEND _absPoFileList ${_absPoFile})
 	    ENDFOREACH(_locale ${_localeList})
-	    M_MSG(${M_INFO2} "_gmoFile_list=${_gmoFile_list}")
-	    SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${_potFile}" ${_gmoFile_list})
+	    SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${_absGmoFileList};${_potFile}" )
 
-	    SET(MANAGE_TRANSLATION_GETTEXT_PO_FILES ${_absFileList} CACHE STRING "PO files")
+	    SET(MANAGE_TRANSLATION_GETTEXT_PO_FILES ${_absPoFileList} CACHE STRING "PO files")
 
 	    ADD_CUSTOM_TARGET(gmo_files ${_all}
-		DEPENDS ${_gmoFile_list}
+		DEPENDS ${_absGmoFileList}
 		COMMENT "Generate gmo files for translation"
 		)
 	ENDIF(NOT _gettext_dependency_missing)
