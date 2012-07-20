@@ -62,6 +62,8 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 	--language=C --keyword=_ --keyword=N_ --keyword=C_:1c,2 --keyword=NC_:1c,2 -s
 	--package-name=${PROJECT_NAME} --package-version=${PRJ_VER})
     SET(MANAGE_TRANSLATION_GETTEXT_MSGMERGE_OPTIONS "--indent" "--update" "--backup=none" CACHE STRING "msgmerge options")
+    SET_DIRECTORY_PROPERTIES(PROPERTIES CLEAN_NO_CUSTOM "1")
+
     INCLUDE(ManageMessage)
 
     #========================================
@@ -189,6 +191,8 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 		LIST(APPEND _absFileList ${_absFile})
 	    ENDFOREACH(_locale ${_localeList})
 	    M_MSG(${M_INFO2} "_gmoFile_list=${_gmoFile_list}")
+	    SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${_potFile}" ${_gmoFile_list})
+
 	    SET(MANAGE_TRANSLATION_GETTEXT_PO_FILES ${_absFileList} CACHE STRING "PO files")
 
 	    ADD_CUSTOM_TARGET(gmo_files ${_all}
