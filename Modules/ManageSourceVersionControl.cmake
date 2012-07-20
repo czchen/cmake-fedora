@@ -54,7 +54,7 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	    COMMAND make tag_pre
 	    COMMAND git commit --short -uno > "${CMAKE_FEDORA_TMP_DIR}/git-status" || echo "Is source committed?"
 	    COMMAND test ! -s "${CMAKE_FEDORA_TMP_DIR}/git-status"
-	    COMMAND git tag -a -m "${CHANGE_SUMMARY}" "${PRJ_VER}" HEAD
+	    COMMAND git tag -a -m "${_change_summary_escaped}" "${PRJ_VER}" HEAD
 	    ${_depends}
 	    COMMENT "Tagging the source as ver ${PRJ_VER}"
 	    VERBATIM
@@ -77,7 +77,7 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 
 	ADD_CUSTOM_TARGET(tag
 	    COMMAND make tag_pre
-	    COMMAND hg tag -m "${CHANGE_SUMMARY}" "${PRJ_VER}"
+	    COMMAND hg tag -m "${_change_summary_escaped}" "${PRJ_VER}"
 	    COMMENT "Tagging the source as ver ${PRJ_VER}"
 	    VERBATIM
 	    )
@@ -98,7 +98,7 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 
 	ADD_CUSTOM_TARGET(tag
 	    COMMAND make tag_pre
-	    COMMAND svn copy "${SOURCE_BASE_URL}/trunk" "${SOURCE_BASE_URL}/tags/${PRJ_VER}" -m "${CHANGE_SUMMARY}"
+	    COMMAND svn copy "${SOURCE_BASE_URL}/trunk" "${SOURCE_BASE_URL}/tags/${PRJ_VER}" -m "${_change_summary_escaped}"
 	    COMMAND cmake -E touch ${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}
 	    COMMENT "Tagging the source as ver ${PRJ_VER}"
 	    VERBATIM
