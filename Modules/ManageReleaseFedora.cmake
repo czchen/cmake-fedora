@@ -197,29 +197,39 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 	    ENDIF(NOT ver EQUAL FEDORA_RAWHIDE_VER)
 
 	    #Commit summary
-	    INCLUDE(ManageString)
-	    STRING_ESCAPE_SEMICOLON(_change_summary_escaped "${CHANGE_SUMMARY}")
-
 	    IF (DEFINED CHANGE_SUMMARY)
-		SET (COMMIT_MSG  "-m" "${_change_summary_escaped}")
+		SET (COMMIT_MSG  "-m" "${CHANGE_SUMMARY}")
 	    ELSE(DEFINED CHANGE_SUMMARY)
 		SET (COMMIT_MSG  "-m"  "On releasing ${PRJ_VER}-${PRJ_RELEASE_NO}")
 	    ENDIF(DEFINED CHANGE_SUMMARY)
 	    # Depends on tag file instead of target "tag"
 	    # To avoid excessive scratch build and rpmlint
-	    SET(_commit_opt --push --tag "${COMMIT_MSG}")
+	    SET(_commit_opt --push --tag )
 
 	    SET(_fedpkg_nvrd "${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE_NO}.${_bodhi_tag}")
 	    SET(_fedpkg_nvrd_commit_file
 		"${CMAKE_FEDORA_TMP_DIR}/${_fedpkg_nvrd}.commit")
 
 	    IF(_branch STREQUAL "master")
-		ADD_CUSTOM_TARGET_COMMAND(fedpkg_${_branch}_commit
-		    OUTPUT "${FEDPKG_NVR_RAWHIDE_COMMIT_FILE}"
+		# Can't use ADD_CUSTOM_TARGET here, as the COMMIT_SUMMARY may have semi-colon ':'
+		ADD_CUSTOM_TARGET(fedpkg_${_branch}_commit
 		    COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
 		    COMMAND ${GIT_CMD} pull --all
 		    COMMAND ${FEDPKG_CMD} import "${PRJ_SRPM_FILE}"
-		    COMMAND ${FEDPKG_CMD} commit ${_commit_opt}
+		    COMMAND ${FEDPKG_CMD} commit ${_commit_opt} -m "${CHANGE_SUMMARY}"
+		    COMMAND ${GIT_CMD} push --all
+		    COMMAND ${CMAKE_COMMAND} -E touch "${FEDPKG_NVR_RAWHIDE_COMMIT_FILE}"
+		    DEPENDS "${FEDPKG_PRJ_DIR_GIT}" "${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}" "${PRJ_SRPM_FILE}"
+		    WORKING_DIRECTORY ${FEDPKG_PRJ_DIR}
+		    COMMENT "fedpkg commit on ${_branch} with ${PRJ_SRPM_FILE}"
+		    VERBATIM
+		    )
+
+		ADD_CUSTOM_COMMAND(OUTPUT "${FEDPKG_NVR_RAWHIDE_COMMIT_FILE}"
+		    COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
+		    COMMAND ${GIT_CMD} pull --all
+		    COMMAND ${FEDPKG_CMD} import "${PRJ_SRPM_FILE}"
+		    COMMAND ${FEDPKG_CMD} commit ${_commit_opt} -m "${CHANGE_SUMMARY}"
 		    COMMAND ${GIT_CMD} push --all
 		    COMMAND ${CMAKE_COMMAND} -E touch "${FEDPKG_NVR_RAWHIDE_COMMIT_FILE}"
 		    DEPENDS "${FEDPKG_PRJ_DIR_GIT}" "${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}" "${PRJ_SRPM_FILE}"
