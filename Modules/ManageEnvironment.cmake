@@ -122,7 +122,6 @@ IF(NOT DEFINED _MANAGE_ENVIRONMENT_CMAKE_)
 	# Enforce CMP0005 to new, yet pop after ADD_DEFINITION
 	CMAKE_POLICY(PUSH)
 	CMAKE_POLICY(SET CMP0005 NEW)
-	#	ADD_DEFINITIONS(-D${_env}='"${${var}}"')
 	ADD_DEFINITIONS(-D${_env}=${${var}})
 	CMAKE_POLICY(POP)
 	M_MSG(${M_INFO2} "SET(${var} ${${var}})")

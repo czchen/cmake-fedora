@@ -30,14 +30,17 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	    COMMENT "Pre-tagging check"
 	    )
 
-	ADD_CUSTOM_COMMAND(TARGET after_release_commit PRE_LINK
-	    COMMAND make changelog_prev_update
+
+	ADD_CUSTOM_TARGET(after_release_commit_pre
+	    COMMENT "Before 'after_release_commit'"
 	    )
 
+	IF(TARGET changelog_prev_update)
+	    ADD_DEPENDENCIES(after_release_commit_pre changelog_prev_update)
+	ENDIF(TARGET changelog_prev_update)
+
 	IF(TARGET rpm_changelog_prev_update)
-	    ADD_CUSTOM_COMMAND(TARGET after_release_commit PRE_LINK
-		COMMAND make rpm_changelog_prev_update
-		)
+	    ADD_DEPENDENCIES(after_release_commit_pre rpm_changelog_prev_update)
 	ENDIF(TARGET rpm_changelog_prev_update)
     ENDMACRO(MANAGE_SOURCE_VERSION_CONTROL_COMMON)
 
@@ -46,14 +49,10 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	    ${CMAKE_SOURCE_DIR}/.git/refs/tags/${PRJ_VER}
 	    CACHE PATH "Source Version Control Tag File")
 
-	#	ADD_CUSTOM_TARGET(after_release_commit
-	#    COMMAND git commit -a -m "${_after_release_message}"
-	#    COMMAND git push
-	#    COMMENT "After released ${PRJ_VER}"
-	#    VERBATIM
-	#    )
 	ADD_CUSTOM_TARGET(after_release_commit
+	    COMMAND make after_release_commit_pre
 	    COMMAND git commit -a -m "${_after_release_message}"
+	    COMMAND git push
 	    COMMENT "After released ${PRJ_VER}"
 	    VERBATIM
 	    )
@@ -80,7 +79,8 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	    CACHE PATH "Source Version Control Tag File")
 
 	ADD_CUSTOM_TARGET(after_release_commit
-	    COMMAND hg commit -m "${_after_release_message}"
+	    COMMAND make after_release_commit_pre
+    	    COMMAND hg commit -m "${_after_release_message}"
 	    COMMAND hg push
 	    COMMENT "After released ${PRJ_VER}"
 	    VERBATIM
@@ -107,7 +107,8 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	    CACHE PATH "Source Version Control Tag File")
 
 	ADD_CUSTOM_TARGET(after_release_commit
-	    COMMAND svn commit -m "${_after_release_message}"
+	    COMMAND make after_release_commit_pre
+    	    COMMAND svn commit -m "${_after_release_message}"
 	    COMMENT "After released ${PRJ_VER}"
 	    VERBATIM
 	    )
