@@ -24,8 +24,6 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
     SET(_MANAGE_SOURCE_VERSION_CONTROL_CMAKE_ "DEFINED")
     SET(_after_release_message "After released ${PRJ_VER}")
     INCLUDE(ManageTarget)
-    INCLUDE(ManageString)
-    STRING_ESCAPE_SEMICOLON(_change_summary_escaped "${CHANGE_SUMMARY}")
 
     MACRO(MANAGE_SOURCE_VERSION_CONTROL_COMMON)
 	ADD_CUSTOM_TARGET(tag_pre
@@ -55,17 +53,19 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	    VERBATIM
 	    )
 
-	ADD_CUSTOM_TARGET_COMMAND(tag OUTPUT ${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}
-	    ${_makeTargets}
+	# Can't use ADD_CUSTOM_TARGET here, as the COMMIT_SUMMARY may have semi-colon ':'
+	ADD_CUSTOM_TARGET(tag
+	    DEPENDS "${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}"
+	    )
+
+	ADD_CUSTOM_COMMAND(OUTPUT ${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}
 	    COMMAND make tag_pre
 	    COMMAND git commit --short -uno > "${CMAKE_FEDORA_TMP_DIR}/git-status" || echo "Is source committed?"
 	    COMMAND test ! -s "${CMAKE_FEDORA_TMP_DIR}/git-status"
-	    COMMAND git tag -a -m "${_change_summary_escaped}" "${PRJ_VER}" HEAD
-	    ${_depends}
+	    COMMAND git tag -a -m "${CHANGE_SUMMARY}" "${PRJ_VER}" HEAD
 	    COMMENT "Tagging the source as ver ${PRJ_VER}"
 	    VERBATIM
 	    )
-
 	MANAGE_SOURCE_VERSION_CONTROL_COMMON()
     ENDMACRO(MANAGE_SOURCE_VERSION_CONTROL_GIT)
 
@@ -82,8 +82,13 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	    )
 
 	ADD_CUSTOM_TARGET(tag
+	    DEPENDS "${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}"
+	    )
+
+	ADD_CUSTOM_COMMAND(OUTPUT "${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}"
 	    COMMAND make tag_pre
-	    COMMAND hg tag -m "${_change_summary_escaped}" "${PRJ_VER}"
+	    COMMAND hg tag -m "${CHANGE_SUMMARY}" "${PRJ_VER}"
+	    COMMAND ${CMAKE_COMMAND} -E touch "${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}"
 	    COMMENT "Tagging the source as ver ${PRJ_VER}"
 	    VERBATIM
 	    )
@@ -103,8 +108,12 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	    )
 
 	ADD_CUSTOM_TARGET(tag
+	    DEPENDS "${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}"
+	    )
+
+	ADD_CUSTOM_TARGET(OUTPUT "${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}"
 	    COMMAND make tag_pre
-	    COMMAND svn copy "${SOURCE_BASE_URL}/trunk" "${SOURCE_BASE_URL}/tags/${PRJ_VER}" -m "${_change_summary_escaped}"
+	    COMMAND svn copy "${SOURCE_BASE_URL}/trunk" "${SOURCE_BASE_URL}/tags/${PRJ_VER}" -m "${CHANGE_SUMMARY}"
 	    COMMAND cmake -E touch ${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}
 	    COMMENT "Tagging the source as ver ${PRJ_VER}"
 	    VERBATIM
