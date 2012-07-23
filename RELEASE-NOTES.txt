@@ -3,4 +3,4 @@ SUMMARY=
 BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=
 [Changes]
-
+Fixed after_release_commit

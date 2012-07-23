@@ -46,9 +46,14 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	    ${CMAKE_SOURCE_DIR}/.git/refs/tags/${PRJ_VER}
 	    CACHE PATH "Source Version Control Tag File")
 
+	#	ADD_CUSTOM_TARGET(after_release_commit
+	#    COMMAND git commit -a -m "${_after_release_message}"
+	#    COMMAND git push
+	#    COMMENT "After released ${PRJ_VER}"
+	#    VERBATIM
+	#    )
 	ADD_CUSTOM_TARGET(after_release_commit
 	    COMMAND git commit -a -m "${_after_release_message}"
-	    COMMAND git push
 	    COMMENT "After released ${PRJ_VER}"
 	    VERBATIM
 	    )
