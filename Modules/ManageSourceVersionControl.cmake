@@ -32,9 +32,15 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	    COMMENT "Pre-tagging check"
 	    )
 
-	ADD_CUSTOM_COMMAND(TARGET after_release_commit PRELINK
+	ADD_CUSTOM_COMMAND(TARGET after_release_commit PRE_LINK
 	    COMMAND make changelog_prev_update
 	    )
+
+	IF(TARGET rpm_changelog_prev_update)
+	    ADD_CUSTOM_COMMAND(TARGET after_release_commit PRE_LINK
+		COMMAND make rpm_changelog_prev_update
+		)
+	ENDIF(TARGET rpm_changelog_prev_update)
     ENDMACRO(MANAGE_SOURCE_VERSION_CONTROL_COMMON)
 
     MACRO(MANAGE_SOURCE_VERSION_CONTROL_GIT)
