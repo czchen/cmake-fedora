@@ -33,11 +33,15 @@ SET(LICENSE "<PRJ_LICENSE>")
 #
 IF(MANAGE_ENVIRONMENT_PATH STREQUAL "NOTFOUND")
 MESSAGE(FATAL_ERROR "ManageEnvironment is not found in CMAKE_MODULE_PATH,
-	please:
-	1) git submodule init; git submodule update
-	2) or install cmake-fedora/
-	3) wget -P SOURCES https://fedorahosted.org/releases/c/m/cmake-fedora/cmake-fedora-modules-only-latest.tar.gz
-	    tar zxvf SOURCES/cmake-fedora-modules-only-latest.tar.gz")
+	please install cmake-fedora as:
+	1) Git submodule:
+	   git submodule init; git submodule update
+	   ln -s cmake-fedora/Modules .
+	2) software package:
+	   Please refer the software package repositories of your system.
+	3) Module-only tarball:
+	   wget -P SOURCES https://fedorahosted.org/releases/c/m/cmake-fedora/cmake-fedora-modules-only-latest.tar.gz
+	   tar zxvf SOURCES/cmake-fedora-modules-only-latest.tar.gz")
 ENDIF(MANAGE_ENVIRONMENT_PATH STREQUAL "NOTFOUND")
 
 INCLUDE(ManageVersion)
