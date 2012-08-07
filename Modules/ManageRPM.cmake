@@ -208,6 +208,10 @@ IF(NOT DEFINED _PACK_RPM_CMAKE_)
 	    DEPENDS ${RPM_CHANGELOG_FILE}
 	    COMMENT "${RPM_CHANGELOG_FILE} are saving as ${RPM_CHANGELOG_PREV_FILE}"
 	    )
+
+	IF(TARGET after_release_commit_pre)
+	    ADD_DEPENDENCIES(after_release_commit_pre rpm_changelog_prev_update)
+	ENDIF(TARGET after_release_commit_pre)
     ENDMACRO(RPM_CHANGELOG_WRITE_FILE)
 
     MACRO(PACK_RPM)

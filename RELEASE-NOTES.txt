@@ -1,6 +1,6 @@
-PRJ_VER=1.0.2
+PRJ_VER=1.0.3
 SUMMARY=
 BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=
 [Changes]
-Fixed after_release_commit
+- after_release_commit depends rpm_changelog_prev_update if RPM supported enabled.

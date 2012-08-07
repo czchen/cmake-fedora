@@ -1,5 +1,5 @@
 * Mon Jul 23 2012 Ding-Yi Chen <dchen at redhat.com> - 1.0.2
-Fixed after_release_commit
+- Fixed after_release_commit
 
 * Sun Jul 22 2012 Ding-Yi Chen <dchen at redhat.com> - 1.0.1
 - Greatly simplified the modules design and usage.
