@@ -47,7 +47,7 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
     MACRO(MANAGE_SOURCE_VERSION_CONTROL_GIT)
 	SET(MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE
 	    ${CMAKE_SOURCE_DIR}/.git/refs/tags/${PRJ_VER}
-	    CACHE PATH "Source Version Control Tag File")
+	    CACHE PATH "Source Version Control Tag File" FORCE)
 
 	ADD_CUSTOM_TARGET(after_release_commit
 	    COMMAND make after_release_commit_pre
@@ -76,7 +76,7 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
     MACRO(MANAGE_SOURCE_VERSION_CONTROL_HG)
 	SET(MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE
 	    ${CMAKE_FEDORA_TEMP_DIR}/${PRJ_VER}
-	    CACHE PATH "Source Version Control Tag File")
+	    CACHE PATH "Source Version Control Tag File" FORCE)
 
 	ADD_CUSTOM_TARGET(after_release_commit
 	    COMMAND make after_release_commit_pre
@@ -104,7 +104,7 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
     MACRO(MANAGE_SOURCE_VERSION_CONTROL_SVN)
 	SET(MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE
 	    ${CMAKE_FEDORA_TEMP_DIR}/${PRJ_VER}
-	    CACHE PATH "Source Version Control Tag File")
+	    CACHE PATH "Source Version Control Tag File" FORCE)
 
 	ADD_CUSTOM_TARGET(after_release_commit
 	    COMMAND make after_release_commit_pre
