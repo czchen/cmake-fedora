@@ -6,5 +6,6 @@ REDHAT_BUGZILLA=
 - after_release_commit depends rpm_changelog_prev_update if RPM supported enabled.
 - Corrected the 'FORCE' of cmake CACHE
 - Update the error messages when cmake-fedora is not installed.
-- Fixed target: zanata_push_trans
+- Fixed target: zanata_push_trans.
+- Fixed zanata arguments.
 

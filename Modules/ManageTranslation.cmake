@@ -227,6 +227,9 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 	ENDIF(NOT EXISTS "${ZANATA_INI_FILE}")
 
 	IF(NOT _manage_zanata_dependencies_missing)
+	    SET(_zanata_args --url "${ZANATA_SERVER}"
+		--project-config "${ZANATA_XML_FILE}" --user-config "${ZANATA_INI_FILE}")
+
 	    # Parsing arguments
 	    SET(_yes "")
 	    FOREACH(_arg ${ARGN})
@@ -235,19 +238,16 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 		ENDIF(_arg STREQUAL "YES")
 	    ENDFOREACH(_arg ${ARGN})
 
-	    SET(_zanata_args --url=${ZANATA_SERVER}
-		--project-config="${ZANATA_XML_FILE}" --user-config="${ZANATA_INI_FILE}")
-
 	    ADD_CUSTOM_TARGET(zanata_project_create
 		COMMAND ${ZANATA_CMD} project create ${PROJECT_NAME} ${_zanata_args}
-		--project-name="${PROJECT_NAME}" --project-desc="${PRJ_SUMMARY}"
+		--project-name "${PROJECT_NAME}" --project-desc "${PRJ_SUMMARY}"
 		COMMENT "Creating project ${PROJECT_NAME} on Zanata server ${serverUrl}"
 		VERBATIM
 		)
 
 	    ADD_CUSTOM_TARGET(zanata_version_create
 		COMMAND ${ZANATA_CMD} version create
-		${PRJ_VER} ${_zanata_args} --project-id="${PROJECT_NAME}"
+		${PRJ_VER} ${_zanata_args} --project-id "${PROJECT_NAME}"
 		COMMENT "Creating version ${PRJ_VER} on Zanata server ${serverUrl}"
 		VERBATIM
 		)
