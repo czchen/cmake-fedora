@@ -254,7 +254,7 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 
 	    SET(_po_files_depend "")
 	    IF(MANAGE_TRANSLATION_GETTEXT_PO_FILES)
-		SET(_po_files_depend "DEPENDS" {MANAGE_TRANSLATION_GETTEXT_PO_FILES})
+		SET(_po_files_depend "DEPENDS" ${MANAGE_TRANSLATION_GETTEXT_PO_FILES})
 	    ENDIF(MANAGE_TRANSLATION_GETTEXT_PO_FILES)
 	    # Zanata push
 	    ADD_CUSTOM_TARGET(zanata_push
@@ -269,7 +269,7 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 	    # Zanata push with translation
 	    ADD_CUSTOM_TARGET(zanata_push_trans
 		COMMAND ${_yes}
-		${ZANATA_CMD} push ${_zanata_args} --push-trans ${ZANATA_PUSH_OPTIONS}
+		${ZANATA_CMD} push ${_zanata_args} --push-type both ${ZANATA_PUSH_OPTIONS}
 		${_po_files_depend}
 		COMMENT "Push source messages and translations to zanata server ${ZANATA_SERVER}"
 		VERBATIM
