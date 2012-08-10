@@ -128,7 +128,7 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 			M_MSG(${M_WARN} "MANAGE_GETTEXT: not recognizing arg ${_arg}")
 		    ENDIF(_stage STREQUAL "SRCS")
 		ENDIF(_arg STREQUAL "ALL")
-	    ENDFOREACH(_arg ${_args} ${ARGN})
+	    ENDFOREACH(_arg ${ARGN})
 
 	    # Default values
 	    IF(_xgettext_option_list STREQUAL "")

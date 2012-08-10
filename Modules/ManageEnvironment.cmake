@@ -72,21 +72,6 @@ IF(NOT DEFINED _MANAGE_ENVIRONMENT_CMAKE_)
     SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS ON)
     CMAKE_POLICY(VERSION 2.6.2)
 
-    # Silence the cmake CMP0017 warning for cmake-2.8.4 and later
-    #  Module files located in the the CMake module directory
-    #  are preferred over the files in CMAKE_MODULE_PATH
-    IF(POLICY CMP0017)
-	CMAKE_POLICY(PUSH)
-	CMAKE_POLICY(SET CMP0017 NEW)
-    ENDIF(POLICY CMP0017)
-    INCLUDE(ManageMessage)
-    IF(POLICY CMP0017)
-	CMAKE_POLICY(POP)
-    ENDIF(POLICY CMP0017)
-
-    M_MSG(${M_INFO1} "CMAKE_HOST_SYSTEM=${CMAKE_HOST_SYSTEM}")
-    M_MSG(${M_INFO1} "CMAKE_SYSTEM=${CMAKE_SYSTEM}")
-
     MACRO(SET_COMPILE_ENV var default_value)
 	SET(_stage "")
 	SET(_env "${var}")
@@ -162,7 +147,12 @@ IF(NOT DEFINED _MANAGE_ENVIRONMENT_CMAKE_)
 
     # CMP0017: Prefer files from the CMake module directory when including from there.
     # OLD: Prefer files from CMAKE_MODULE_PATH regardless
-    MANAGE_CMAKE_POLICY(CMP0017 OLD)
+    MANAGE_CMAKE_POLICY(CMP0017 NEW)
+
+    # Include should be put after the cmake policy
+    INCLUDE(ManageMessage)
+    M_MSG(${M_INFO1} "CMAKE_HOST_SYSTEM=${CMAKE_HOST_SYSTEM}")
+    M_MSG(${M_INFO1} "CMAKE_SYSTEM=${CMAKE_SYSTEM}")
 
     ####################################################################
     # CMake Variables

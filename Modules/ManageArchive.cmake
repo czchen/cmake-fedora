@@ -7,12 +7,12 @@
 #   CPack
 #
 # Included by:
-#   PackRPM
+#   ManageRPM
 #
 # Read and Defines following variable:
 #   SOURCE_ARCHIVE_IGNORE_FILES_DEFAULT: Default list of file patterns
 #     that are normally exclude from the source package.
-#     Override it by setting it before INCLUDE(PackSource).
+#     Override it by setting it before INCLUDE(ManageArchive).
 # Defines following target:
 #     pack_remove_old: Remove old source package files.
 # Defines following macro:
@@ -73,7 +73,7 @@ IF(NOT DEFINED _MANAGE_ARCHIVE_CMAKE_)
 	FOREACH(_file ${_ls})
 	    SET(_matched 0)
 	    FOREACH(filePattern ${_ignore_files})
-		#MESSAGE("filePattern=${filePattern}")
+		M_MSG(${M_INFO3} "_file=${_file} filePattern=${filePattern}")
 		IF(_file MATCHES "${filePattern}")
 		    SET(_matched 1)
 		    BREAK()
@@ -85,12 +85,12 @@ IF(NOT DEFINED _MANAGE_ARCHIVE_CMAKE_)
 	    ENDIF(NOT _matched)
 	ENDFOREACH(_file ${_ls})
 	SET(SOURCE_ARCHIVE_CONTENTS ${_fileList} CACHE STRING "Source archive file list" FORCE)
-	#MESSAGE("SOURCE_ARCHIVE_IGNORE_FILES=${_ignore_files}")
+	M_MSG(${M_INFO2} "SOURCE_ARCHIVE_CONTENTS=${SOURCE_ARCHIVE_CONTENTS}")
     ENDFUNCTION(SOURCE_ARCHIVE_GET_CONTENTS var)
 
     MACRO(PACK_SOURCE_ARCHIVE outputDir)
 	IF(PRJ_VER STREQUAL "")
-	    MESSAGE(FATAL_ERROR "PRJ_VER not defined")
+	    M_MSG(${M_FATAL} "PRJ_VER not defined")
 	ENDIF(PRJ_VER STREQUAL "")
 	IF(${ARGV2})
 	    SET(CPACK_GENERATOR "${ARGV2}")
