@@ -1,5 +1,5 @@
-PRJ_VER=1.0.3
-SUMMARY=
+PRJ_VER=1.0.3.98
+SUMMARY=Revise Zanata support
 BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=
 [Changes]
