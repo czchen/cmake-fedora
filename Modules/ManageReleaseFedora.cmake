@@ -213,7 +213,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 	    IF(_branch STREQUAL "master")
 		# Can't use ADD_CUSTOM_TARGET_COMMAND here, as the COMMIT_SUMMARY may have semi-colon ':'
 		ADD_CUSTOM_COMMAND(OUTPUT "${FEDPKG_NVR_RAWHIDE_COMMIT_FILE}"
-		    COMMAND make fedpkg_clone
+		    COMMAND test -d ${PROJECT_NAME} || ${FEDPKG_CMD} clone ${PROJECT_NAME}
 		    COMMAND ${FEDPKG_CMD} switch-branch ${_branch}
 		    COMMAND ${GIT_CMD} pull --all
 		    COMMAND ${FEDPKG_CMD} import "${PRJ_SRPM_FILE}"
@@ -350,13 +350,6 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 		COMMAND ${BODHI_CMD} --new ${_bodhi_login} --file ${BODHI_TEMPLATE_FILE}
 		DEPENDS "${BODHI_TEMPLATE_FILE}"
 		COMMENT "Submit new release to bodhi (Fedora)"
-		VERBATIM
-		)
-
-	    ADD_CUSTOM_TARGET(fedpkg_clone
-		COMMAND ${FEDPKG_CMD} clone ${PROJECT_NAME}
-		WORKING_DIRECTORY ${FEDPKG_DIR}
-		COMMENT "fedpkg clone ${PROJECT_NAME}"
 		VERBATIM
 		)
 

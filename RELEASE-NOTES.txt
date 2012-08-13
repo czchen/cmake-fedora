@@ -1,4 +1,4 @@
-PRJ_VER=1.0.3.98
+PRJ_VER=1.0.3.99
 SUMMARY=Revise Zanata support
 BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=
@@ -8,4 +8,6 @@ REDHAT_BUGZILLA=
 - Update the error messages when cmake-fedora is not installed.
 - Fixed target: zanata_push_trans.
 - Fixed zanata arguments.
+- fedpkg clone is now triggered if the clone directory does not exist when doing the fedpkg_commit,
+  it no longer the listed OUTPUT of an ADD_CUSTOM_COMMAND.
 
