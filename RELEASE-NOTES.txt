@@ -1,8 +1,9 @@
-PRJ_VER=1.0.3.99
-SUMMARY=Revise Zanata support
+PRJ_VER=1.0.4
+SUMMARY=Source tarball filename changed;Revise Zanata support
 BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=
 [Changes]
+- Source tarball filename is now name-version.tar.gz instead of name-version-Source.tar.gz
 - after_release_commit depends rpm_changelog_prev_update if RPM supported enabled.
 - Corrected the 'FORCE' of cmake CACHE
 - Update the error messages when cmake-fedora is not installed.
