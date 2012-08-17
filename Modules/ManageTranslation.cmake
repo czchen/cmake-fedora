@@ -3,6 +3,12 @@
 #   1) Creates gettext related targets.
 #   2) Communicate to Zanata servers.
 #
+# Defines following targets:
+#   + translations: Make the translation files.
+#     This target itself does nothing but provide a target for others to
+#     depend on.
+#     If macro MANAGE_GETTEXT is used, then it depends on the target gmo_files.
+#
 # Defines following variables:
 #   + XGETTEXT_OPTIONS_C: Usual xgettext options for C programs.
 #
@@ -65,6 +71,11 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
     SET_DIRECTORY_PROPERTIES(PROPERTIES CLEAN_NO_CUSTOM "1")
 
     INCLUDE(ManageMessage)
+    IF(NOT TARGET translations)
+	ADD_CUSTOM_TARGET(translations
+	    COMMENT "Making translations"
+	    )
+    ENDIF(NOT TARGET translations)
 
     #========================================
     # GETTEXT support
@@ -96,8 +107,8 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 	IF(NOT _gettext_dependency_missing)
 	    SET(_stage "")
 	    SET(_all "")
-	    SET(_src_list "")
-	    SET(_src_list_abs "")
+	    SET(_srcList "")
+	    SET(_srcList_abs "")
 	    SET(_localeList "")
 	    SET(_potFile "")
 	    SET(_xgettext_option_list "")
@@ -115,9 +126,9 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 		ELSE(_arg STREQUAL "ALL")
 		    IF(_stage STREQUAL "SRCS")
 			FILE(RELATIVE_PATH _relFile ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/${_arg})
-			LIST(APPEND _src_list ${_relFile})
+			LIST(APPEND _srcList ${_relFile})
 			GET_FILENAME_COMPONENT(_absPoFile ${_arg} ABSOLUTE)
-			LIST(APPEND _src_list_abs ${_absPoFile})
+			LIST(APPEND _srcList_abs ${_absPoFile})
 		    ELSEIF(_stage STREQUAL "LOCALES")
 			LIST(APPEND _localeList ${_arg})
 		    ELSEIF(_stage STREQUAL "XGETTEXT_OPTIONS")
@@ -147,10 +158,10 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 		ENDFOREACH(_poFile ${_poFiles})
 	    ENDIF(NOT _localeList)
 
-	    M_MSG(${M_INFO2} "XGETTEXT=${XGETTEXT_CMD} ${_xgettext_option_list} -o ${_potFile} ${_src_list}")
+	    M_MSG(${M_INFO2} "XGETTEXT=${XGETTEXT_CMD} ${_xgettext_option_list} -o ${_potFile} ${_srcList}")
 	    ADD_CUSTOM_COMMAND(OUTPUT ${_potFile}
-		COMMAND ${XGETTEXT_CMD} ${_xgettext_option_list} -o ${_potFile} ${_src_list}
-		DEPENDS ${_src_list_abs}
+		COMMAND ${XGETTEXT_CMD} ${_xgettext_option_list} -o ${_potFile} ${_srcList}
+		DEPENDS ${_srcList_abs}
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		COMMENT "Extract translatable messages to ${_potFile}"
 		)
@@ -199,6 +210,8 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 		DEPENDS ${_absGmoFileList}
 		COMMENT "Generate gmo files for translation"
 		)
+
+	    ADD_DEPENDENCIES(translations gmo_files)
 	ENDIF(NOT _gettext_dependency_missing)
     ENDFUNCTION(MANAGE_GETTEXT)
 
@@ -278,7 +291,7 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 	    ADD_DEPENDENCIES(zanata_push_trans pot_file)
 
 	    # Zanata pull
-	    ADD_CUSTOM_TARGET(zanata_pull ${_allForPull}
+	    ADD_CUSTOM_TARGET(zanata_pull
 		COMMAND ${_yes}
 		${ZANATA_CMD} pull ${_zanata_args} ${ZANATA_PULL_OPTIONS}
 		COMMENT "Pull translations fro zanata server ${ZANATA_SERVER}"

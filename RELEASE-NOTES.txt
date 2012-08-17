@@ -10,4 +10,5 @@ REDHAT_BUGZILLA=
 - Fixed zanata arguments.
 - fedpkg clone is now triggered if the clone directory does not exist when doing the fedpkg_commit,
   it no longer the listed OUTPUT of an ADD_CUSTOM_COMMAND.
+- Add target: translations as an universal easy target to generate/update translation files.
 
