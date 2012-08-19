@@ -1,3 +1,14 @@
+* Fri Aug 17 2012 Ding-Yi Chen <dchen at redhat.com> - 1.0.4
+- Source tarball filename is now name-version.tar.gz instead of name-version-Source.tar.gz
+- after_release_commit depends rpm_changelog_prev_update if RPM supported enabled.
+- Corrected the 'FORCE' of cmake CACHE
+- Update the error messages when cmake-fedora is not installed.
+- Fixed target: zanata_push_trans.
+- Fixed zanata arguments.
+- fedpkg clone is now triggered if the clone directory does not exist when doing the fedpkg_commit,
+  it no longer the listed OUTPUT of an ADD_CUSTOM_COMMAND.
+- Add target: translations as an universal easy target to generate/update translation files.
+
 * Mon Jul 23 2012 Ding-Yi Chen <dchen at redhat.com> - 1.0.2
 - Fixed after_release_commit
 
