@@ -65,7 +65,7 @@ TARGETS=${TARGETS:-"$FEDORA_CURRENT_RELEASE_TAGS $EPEL_CURRENT_RELEASE_TAGS"}
 
 for t in $TARGETS; do
 #    echo "koji build --scratch $t$_SUFFIX $srpm"
-    if [ ! "$t" = "rawhide" ]; then
+    if [ ! "$t" = "rawhide" -a ! "$t" = "f${FEDORA_RAWHIDE_VERSION}"]; then
 	t=$t$_SUFFIX
     fi
     if ! koji build --scratch "$t" "$srpm"; then
