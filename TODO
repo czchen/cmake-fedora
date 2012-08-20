@@ -2,19 +2,13 @@
 # Please refer the latest TODO: https://fedorahosted.org/cmake-fedora/#TODO
 
 = TODO =
- * Documentation
-   * README
-
- * Targets:
-   * clean_all
-
  * Project generate script
    * Generate the version control ignore files
    * Import old spec
    * GUI
 
  * Version control support
-   * Exclude version control ignore from packing as well (Except ChangeLog)
+   * Ignore file list from source version control is excluded from package as well. (Yet ChangeLog and pot file are still included)
 
  * spec file: file section
    * Auto generate
@@ -22,28 +16,9 @@
    * i18n/l10n relative setting
 
  * Hosting support
-   * `SourceForge`
    * `GoogleCode`
    * `GitHub`
 
  * Support other distribution
   * Debian/Ubuntu
-
-= Done =
- * Documentation
-   * Wiki
-
- * Targets:
-   * release: all in one step
-   * install_rpm: install as RPM
-
-* Version control support
-   * Tag
-
-* Project generate script
-  * Command line interface
-  * Import spec template
-
- * Hosting support
-  * FedoraHosted
 

@@ -8,5 +8,7 @@ REDHAT_BUGZILLA=
   to avoid confusion between source generate by cmake-fedora
   (which contains ChangeLog and projectName.pot) and tarball generation service from hosting site
   (which does not contain generated files)
+- koji-build-scratch: rawhide build target does not always have suffix -candidate.
 - README updated.
+- TODO updated.
 
