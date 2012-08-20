@@ -1,8 +1,9 @@
 PRJ_VER=1.0.5
-SUMMARY=Source tarball filename has changed back to name-version-Source.tar.gz
+SUMMARY=F18 support;Source tarball filename has changed back to name-version-Source.tar.gz
 BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=
 [Changes]
+- Fedora 18 support.
 - Source tarball filename is changed back to name-version-Source.tar.gz
   to avoid confusion between source generate by cmake-fedora
   (which contains ChangeLog and projectName.pot) and tarball generation service from hosting site
