@@ -10,6 +10,9 @@
  * Version control support
    * Ignore file list from source version control is excluded from package as well. (Yet ChangeLog and pot file are still included)
 
+ * RPM:
+   * PRJ_RPM_FILES actually list all the binary RPM files.
+
  * spec file: file section
    * Auto generate
    * Auto update
