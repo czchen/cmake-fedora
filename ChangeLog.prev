@@ -1,3 +1,13 @@
+* Thu Nov 22 2012 Ding-Yi Chen <dchen at redhat.com> - 1.0.5
+- Fedora 18 support.
+- Source tarball filename is changed back to name-version-Source.tar.gz
+  to avoid confusion between source generate by cmake-fedora
+  (which contains ChangeLog and projectName.pot) and tarball generation service from hosting site
+  (which does not contain generated files)
+- koji-build-scratch: rawhide build target does not always have suffix -candidate.
+- README updated.
+- TODO updated.
+
 * Fri Aug 17 2012 Ding-Yi Chen <dchen at redhat.com> - 1.0.4
 - Source tarball filename is now name-version.tar.gz instead of name-version-Source.tar.gz
 - after_release_commit depends rpm_changelog_prev_update if RPM supported enabled.
