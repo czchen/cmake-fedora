@@ -1,14 +1,8 @@
-PRJ_VER=1.0.5
-SUMMARY=F18 support;Source tarball filename has changed back to name-version-Source.tar.gz
+PRJ_VER=1.0.6
+SUMMARY=Fixed 879141
 BODHI_UPDATE_TYPE=bugfix
-REDHAT_BUGZILLA=
+REDHAT_BUGZILLA=879141
 [Changes]
-- Fedora 18 support.
-- Source tarball filename is changed back to name-version-Source.tar.gz
-  to avoid confusion between source generate by cmake-fedora
-  (which contains ChangeLog and projectName.pot) and tarball generation service from hosting site
-  (which does not contain generated files)
-- koji-build-scratch: rawhide build target does not always have suffix -candidate.
-- README updated.
-- TODO updated.
+Fixed Bug 879141 - Excessive quotation mark for target tag_pre
+[TODO]
 
