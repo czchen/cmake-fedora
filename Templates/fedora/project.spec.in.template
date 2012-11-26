@@ -29,7 +29,7 @@ rm -rf %{buildroot}
 %__make install DESTDIR=%{buildroot}
 # We install document using %doc
 (cd %{buildroot}/@PRJ_DOC_DIR@
-    %__rm -rf @PRJ_DOC_LIST@
+    rm -rf @PRJ_DOC_LIST@
 )
 
 %clean
