@@ -8,7 +8,7 @@ URL:        <URL>
 Source0:    <SITE>/%{name}-%{version}-Source.@SOURCE_ARCHIVE_FILE_EXTENSION@
 Source1:    https://fedorahosted.org/releases/c/m/cmake-fedora/cmake-fedora-<CMAKE_FEDORA_VERSION>-modules-only.tar.gz
 
-BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+BuildRoot:  %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 
 BuildRequires:  cmake >= 2.6
 
@@ -25,15 +25,15 @@ tar xzvf %{SOURCE1}
 %__make VERBOSE=1  %{?_smp_mflags}
 
 %install
-%__rm -rf $RPM_BUILD_ROOT
-%__make install DESTDIR=$RPM_BUILD_ROOT
+rm -rf %{buildroot}
+%__make install DESTDIR=%{buildroot}
 # We install document using %doc
-(cd $RPM_BUILD_ROOT/@PRJ_DOC_DIR@
+(cd %{buildroot}/@PRJ_DOC_DIR@
     %__rm -rf @PRJ_DOC_LIST@
 )
 
 %clean
-%__rm -rf $RPM_BUILD_ROOT
+rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)
