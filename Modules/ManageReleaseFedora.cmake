@@ -154,12 +154,13 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 	SET(FEDPKG_PRJ_DIR_GIT "${FEDPKG_PRJ_DIR}/.git/.cmake-fedora")
 
 	ADD_CUSTOM_COMMAND(OUTPUT ${FEDPKG_PRJ_DIR_GIT}
-	    COMMAND ${CMAKE_COMMAND} -E make_directory ${FEDPKG_DIR}
 	    COMMAND [ -d ${FEDPKG_PRJ_DIR} ] || ${FEDPKG_CMD} clone ${PROJECT_NAME}
 	    COMMAND ${CMAKE_COMMAND} -E touch ${FEDPKG_PRJ_DIR_GIT}
 	    COMMENT "Making FedPkg directory"
+	    WORKING_DIRECTORY ${FEDPKG_DIR}
 	    VERBATIM
 	    )
+
     ENDIF(NOT _manage_release_fedora_dependencies_missing)
 
     FUNCTION(RELEASE_ADD_KOJI_BUILD_SCRATCH)
