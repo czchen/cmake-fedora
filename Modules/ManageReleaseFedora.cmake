@@ -148,14 +148,18 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 	ENDIF(KOJI_BUILD_SCRATCH_CMD STREQUAL "KOJI_BUILD_SCRATCH_CMD-NOTFOUND")
 
 	SET(FEDPKG_PRJ_DIR "${FEDPKG_DIR}/${PROJECT_NAME}")
-	SET(FEDPKG_PRJ_DIR_GIT "${FEDPKG_PRJ_DIR}/.git/description")
-	# In case FEDPKG_PRJ_DIR_GIT be clean by "make clean"
 
-	IF(EXISTS  "${FEDPKG_PRJ_DIR}")
-	    IF(NOT EXISTS "${FEDPKG_PRJ_DIR_GIT}")
-		FILE(WRITE ${FEDPKG_PRJ_DIR_GIT} "${PRJ_SUMMARY}")
-	    ENDIF(NOT EXISTS "${FEDPKG_PRJ_DIR_GIT}")
-	ENDIF(EXISTS  "${FEDPKG_PRJ_DIR}")
+	## Don't use what is in git, otherwise it will be cleaned
+	## By make clean
+	SET(FEDPKG_PRJ_DIR_GIT "${FEDPKG_PRJ_DIR}/.git/.cmake-fedora")
+
+	ADD_CUSTOM_COMMAND(OUTPUT ${FEDPKG_PRJ_DIR_GIT}
+	    COMMAND ${CMAKE_COMMAND} -E make_directory ${FEDPKG_DIR}
+	    COMMAND [ -d ${FEDPKG_PRJ_DIR} ] || ${FEDPKG_CMD} clone
+	    COMMAND ${CMAKE_COMMAND} -E touch ${FEDPKG_PRJ_DIR_GIT}
+	    COMMENT "Making FedPkg directory"
+	    VERBATIM
+	    )
     ENDIF(NOT _manage_release_fedora_dependencies_missing)
 
     FUNCTION(RELEASE_ADD_KOJI_BUILD_SCRATCH)
