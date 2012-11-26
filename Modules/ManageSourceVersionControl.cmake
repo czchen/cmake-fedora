@@ -62,12 +62,15 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	    DEPENDS "${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}"
 	    )
 
+	ADD_CUSTOM_TARGET(commit_clean
+	    COMMAND git diff --exit-code
+	    COMMENT "Is git commit clean?"
+	    VERBATIM
+	    )
+
 	ADD_CUSTOM_COMMAND(OUTPUT ${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}
+	    COMMAND make commit_clean
 	    COMMAND make tag_pre
-	    COMMAND git commit --short -uno > "${CMAKE_FEDORA_TMP_DIR}/git-status"
-	    COMMAND echo "Is Source committed?"
-	    COMMAND if [ -s "${CMAKE_FEDORA_TMP_DIR}/git-status" ] ; then
-	    COMMAND test ! -s "${CMAKE_FEDORA_TMP_DIR}/git-status"
 	    COMMAND git tag -a -m "${CHANGE_SUMMARY}" "${PRJ_VER}" HEAD
 	    COMMENT "Tagging the source as ver ${PRJ_VER}"
 	    VERBATIM

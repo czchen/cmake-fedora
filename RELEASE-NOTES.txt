@@ -3,6 +3,7 @@ SUMMARY=Fixed 879141
 BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=879141
 [Changes]
-Fixed Bug 879141 - Excessive quotation mark for target tag_pre
+- Fixed Bug 879141 - Excessive quotation mark for target tag_pre
+- New target: commit_clean
 [TODO]
 
