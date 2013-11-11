@@ -1,6 +1,27 @@
-#!/bin/bash
-if [ -e /etc/cmake-fedora.conf ]; then
-    source /etc/cmake-fedora.conf
+#!/bin/sh
+
+for f in /etc/cmake-fedora.conf $PWD/cmake-fedora.conf; do
+    if [ -e $f ];then
+	source $f
+    fi
+done
+
+KOJI_CMD=`which koji 2>/dev/null`
+if [ -z "$KOJI_CMD" ];then
+    echo "Fail to find executable koji, quit." > /dev/stderr
+    exit -1
+fi
+
+CMAKE_FEDORA_KOJI="cmake-fedora-koji"
+CMAKE_FEDORA_KOJI_CMD=`which $CMAKE_FEDORA_KOJI 2>/dev/null`
+
+if [ -z "$CMAKE_FEDORA_KOJI_CMD" ];then
+    SCRIPT_DIR=`dirname $0`
+    CMAKE_FEDORA_KOJI_CMD="$SCRIPT_DIR/$CMAKE_FEDORA_KOJI"
+    if [ -x "$CMAKE_FEDORA_KOJI_CMD" ];then
+	echo "Fail to find executable $CMAKE_FEDORA_KOJI, quit." > /dev/stderr
+	exit -1
+    fi
 fi
 
 FEDORA_RAWHIDE_VERSION=${FEDORA_RAWHIDE_VERSION:-"@FEDORA_RAWHIDE_VERSION@"}

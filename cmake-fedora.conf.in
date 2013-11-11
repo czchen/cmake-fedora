@@ -1,5 +1,13 @@
 CMAKE_FEDORA_VERSION=@PRJ_VER@
-FEDORA_RAWHIDE_VERSION=19
-FEDORA_SUPPORTED_VERSIONS="18 17 16"
-EPEL_SUPPORTED_VERSIONS="6 5"
+
+#######################################
+# Local Cache 
+
+LOCAL_CACHE=0
+LOCAL_CACHE_DIR=$HOME/.cache/cmake-fedora/
+
+# How long should the cache be kept until update.
+# In seconds
+# e.g. 30 days expiry is 2592000
+LOCAL_CACHE_EXPIRY=2592000
 
