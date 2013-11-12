@@ -32,6 +32,5 @@ debug*s.list
 FedPkg
 bodhi.template
 *.tar.gz
-scripts/koji-build-scratch
 cmake-fedora.conf
 

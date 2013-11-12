@@ -1,0 +1,74 @@
+#!/bin/sh
+
+function print_usage(){
+    cat <<END
+Usage: $0 <srpm> [scope1 [scope2 ....]]
+    This command does the scratch build for fedora and epel releases with koji
+
+Parameters:
+    srpm: SRPM file to be scratch-built with koji.
+
+    scopes: releases of what to build. Multiple values are allowed.
+        Valid values:
+            rawhide: Build rawhide.
+
+	    fedora: Build currently supported fedora releases.
+	        Rawhide is not included.
+
+            f22 f21 ...: Build the specified fedora releases.
+
+	    epel: Build the currently supported EPEL releases.
+
+	    el7 el6 ... : The EPEL releases to be built.
+
+        If scopes is not specified, then rawhide and active 
+	fedora and EPEL releases are built,
+       	as if "rawhide fedora epel" are specified.
+END
+}
+
+
+KOJI_CMD=`which koji 2>/dev/null`
+if [ -z "$KOJI_CMD" ];then
+    echo "Fail to find executable koji" > /dev/stderr
+    exit -1
+fi
+
+CMAKE_FEDORA_KOJI="cmake-fedora-koji"
+CMAKE_FEDORA_KOJI_CMD=`which $CMAKE_FEDORA_KOJI 2>/dev/null`
+
+if [ -z "$CMAKE_FEDORA_KOJI_CMD" ];then
+    SCRIPT_DIR=`dirname $0`
+    CMAKE_FEDORA_KOJI_CMD="$SCRIPT_DIR/$CMAKE_FEDORA_KOJI"
+    if [[ ! -x "$CMAKE_FEDORA_KOJI_CMD" ]];then
+	echo "Fail to find executable $CMAKE_FEDORA_KOJI" > /dev/stderr
+	exit -2
+    fi
+fi
+
+SRPM=$1
+shift
+
+if [[ -z "$SRPM" ]];then
+    print_usage
+    exit -1
+elif [[ ! -r "$SRPM" ]];then
+    echo "Fail to read SRPM file $SRPM" > /dev/stderr
+    exit -2
+fi
+
+TARGETS=`$CMAKE_FEDORA_KOJI_CMD target $@ | xargs`
+echo "TARGETS=$TARGETS"
+FAILED=
+
+for t in $TARGETS;do
+    if ! $KOJI_CMD build --scratch $t $SRPM; then
+	FAILED="$FAILED $t"
+    fi
+done
+
+if [ -n "$FAILED" ]; then
+    echo "Failed targets:$FAILED" > /dev/stderr
+    exit 1
+fi
+exit 0
