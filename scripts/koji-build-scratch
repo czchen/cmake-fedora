@@ -1,9 +1,9 @@
-#!/bin/sh
+#!/bin/bash
 
 function print_usage(){
     cat <<END
 Usage: $0 <srpm> [scope1 [scope2 ....]]
-    This command does the scratch build for fedora and epel releases with koji
+    This command does koji scratch build for given fedora and epel releases.
 
 Parameters:
     srpm: SRPM file to be scratch-built with koji.
