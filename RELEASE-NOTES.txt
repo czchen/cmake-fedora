@@ -7,6 +7,7 @@ REDHAT_BUGZILLA=879141
 - Fixed Bug 879141 - Excessive quotation mark for target tag_pre
 - New target: commit_clean
 - New script: cmake-fedora-koji
-- Changed script: koji-build-scratch: 'rawhide' is required in argument to build on rawhide.
+- Changed script: koji-build-scratch: fedora_1, fedora_2, 
+  epel_1, epel_2 can now be used as build scopes.
 [TODO]
 

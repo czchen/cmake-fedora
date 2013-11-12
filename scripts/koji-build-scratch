@@ -12,12 +12,21 @@ Parameters:
         Valid values:
             rawhide: Build rawhide.
 
-	    fedora: Build currently supported fedora releases.
-	        Rawhide is not included.
+	    fedora: Build actives fedora releases, including Rawhide.
+
+	    fedora_1: Build the latest supported fedora releases.
+	        This is one release eariler than rawhide.
+
+	    fedora_2: Build the second latest supported fedora releases.
+	        This is two releases eariler than rawhide.
 
             f22 f21 ...: Build the specified fedora releases.
 
 	    epel: Build the currently supported EPEL releases.
+
+	    epel_1: Build the latest supported EPEL releases.
+
+	    epel_2: Build the second latest supported EPEL releases.
 
 	    el7 el6 ... : The EPEL releases to be built.
 
