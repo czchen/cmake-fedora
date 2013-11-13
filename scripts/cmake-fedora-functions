@@ -1,0 +1,24 @@
+# Common functions
+
+function find_program(){
+    _name=$1
+    shift
+    _cmd=`which $_name 2>/dev/null`
+    if [[ -z "$_cmd" ]];then
+        for p in $@;do
+	    if [[ -x "$p/$_name" ]];then
+	        _cmd=$p/$_name
+  	        break
+            fi
+        done
+    fi
+
+    if [[ -z "$_cmd" ]];then
+        echo "Fail to find executable : $_name" > /dev/stderr
+        exit -2
+    fi
+    echo "$_cmd"
+}
+
+
+

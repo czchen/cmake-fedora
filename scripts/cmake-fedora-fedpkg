@@ -1,0 +1,181 @@
+#!/bin/bash
+
+function print_usage(){
+    cat <<END
+Usage: $0 [-d work_dir] [-m message ] <srpm> [scope1 [scope2 ....]]
+	This command builds a package to fedora and epel releases with given srpm.
+
+Parameters:
+    -d work_dir: The work directory. Default is current directory.
+
+    -m message: Message used as commit message.
+        If not specified, then use the latest changelog item.
+
+    srpm: SRPM file to be scratch-built with koji.
+
+    scopes: releases of what to build. Multiple values are allowed.
+      Valid values:
+          rawhide: Build rawhide.
+
+          fedora: Build actives fedora releases, including Rawhide.
+
+          fedora_1: Build the latest supported fedora releases.
+              This is one release eariler than rawhide.
+
+          fedora_2: Build the second latest supported fedora releases.
+              This is two releases eariler than rawhide.
+
+          f22 f21 ...: Build the specified fedora releases.
+
+          epel: Build the currently supported EPEL releases.
+
+          epel_1: Build the latest supported EPEL releases.
+
+          epel_2: Build the second latest supported EPEL releases.
+
+          el7 el6 ... : The EPEL releases to be built.
+
+         If scopes is not specified, then rawhide and active 
+         fedora and EPEL releases are built,
+         as if "rawhide fedora epel" are specified.
+
+Environment Variables:
+    FEDPKG_DIR
+        The directory that this program should work on.
+	If -d is not specified, this program will use the value as
+	work directory.
+
+END
+}
+
+# is target been built
+# Valid target example: cmake-fedora-1.0.5-1.fc20
+function is_target_built(){
+    target=$1
+    ${KOJI_CMD} buildinfo "${target}" | grep -i "State: COMPLETE" > /dev/null
+}
+
+for f in /etc/cmake-fedora.conf $PWD/cmake-fedora.conf; do
+    if [ -e $f ];then
+	source $f
+    fi
+done
+
+for p in $CMAKE_LIBRARY_DIR $PWD $PWD/scripts ;do
+    FUNCTION_FILE=$p/cmake-fedora-functions
+    if  [ -r $FUNCTION_FILE ];then
+	source $FUNCTION_FILE
+	break
+    fi
+done
+
+RPM_CMD=`find_program rpm`
+FEDPKG_CMD=`find_program fedpkg`
+KOJI_CMD=`find_program koji`
+GIT_CMD=`find_program git`
+
+SCRIPT_DIR=$(realpath `dirname $0`)
+CMAKE_FEDORA_KOJI_CMD=`find_program cmake-fedora-koji $SCRIPT_DIR`
+echo "CMAKE_FEDORA_KOJI_CMD=$CMAKE_FEDORA_KOJI_CMD"
+
+WORK_DIR=${FEDPKG_DIR:-$PWD}
+MSG=
+
+while getopts "gd" opt;do
+    case $d in
+	h)
+	    print_usage
+	    exit 0
+	    ;;
+	d )
+	    WORK_DIR=$OPTARG
+	    ;;
+	d )
+	    MSG=$OPTARG
+	    ;;
+    esac
+done
+shift $((OPTIND-1)) 
+
+if [[ ! -w $WORK_DIR ]];then
+    echo "$WORK_DIR is not writable." > /dev/stderr
+    exit -2
+fi
+
+SRPM=$1
+shift
+
+if [[ -z $SRPM ]];then
+    print_usage
+    exit -1
+fi
+
+if [[ -z "$MSG" ]];then
+    MSG=`${RPM_CMD} -qp --queryformat "%{CHANGELOGTEXT}" $SRPM`
+fi
+
+NAME=`${RPM_CMD} -qp --queryformat "%{NAME}" $SRPM`
+
+## NVR here does not include release tag,
+##  (e.g. cmake-fedora-2.0.0-1)
+NVR=`${RPM_CMD} -qp --queryformat "%{NAME}-%{VERSION}-%{RELEASE}" $SRPM | sed -e 's/\.fc[0-9]*$//' | sed -e 's/\.el[0-9]*$//'`
+
+PKG_DIR="$WORK_DIR/$NAME"
+
+if [[ ! -r $PKG_DIR ]];then
+    $FEPKG_CMD clone $NAME
+fi
+
+if [[ ! -x $PKG_DIR ]];then
+    echo "Failed to change to $PKG_DIR" > /dev/stderr
+fi
+
+cd $PKG_DIR
+${GIT_CMD} pull --all
+
+first=
+
+for b in `$CMAKE_FEDORA_KOJI_CMD git-branch $@ | xargs `;do
+    bodhi_branch=
+
+    if [[ -z "$first" ]];then
+	first=$b
+    fi
+
+    case $b in
+	master )
+	    bodhi_branch=`$CMAKE_FEDORA_KOJI_CMD branch rawhide | sed -e 's/^f/fc/'`
+	    ;;
+	f* )
+	    bodhi_branch=`echo $b | sed -e 's/^f/fc/'`
+	    ;;
+	el* )
+	    bodhi_branch=$b
+	    ;;
+	* )
+	    echo "Invalid branch name: $b" > /dev/stderr
+	    exit 1
+	    ;;
+    esac
+    target="$NVR.$bodhi_branch"
+    echo -n "Has $target already been built? ... "
+    if is_target_built $target ;then
+	echo "yes, skip this." > /dev/stderr
+	continue
+    else
+	echo "no, start building." > /dev/stderr
+    fi
+
+    $FEDPKG_CMD switch-branch $b
+
+    if [[ $first = $b ]];then
+	$FEDPKG_CMD import $SRPM
+	$FEDPKG_CMD commit -m "$MSG"
+    else
+	$GIT_CMD merge $first
+    fi
+    $FEDPKG_CMD push
+    echo "Building $NVR.$bodhi_branch" > /dev/stderr
+    $FEDPKG_CMD build
+done
+

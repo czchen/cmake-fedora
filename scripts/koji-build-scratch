@@ -36,24 +36,24 @@ Parameters:
 END
 }
 
-
-KOJI_CMD=`which koji 2>/dev/null`
-if [ -z "$KOJI_CMD" ];then
-    echo "Fail to find executable koji" > /dev/stderr
-    exit -1
-fi
-
-CMAKE_FEDORA_KOJI="cmake-fedora-koji"
-CMAKE_FEDORA_KOJI_CMD=`which $CMAKE_FEDORA_KOJI 2>/dev/null`
-
-if [ -z "$CMAKE_FEDORA_KOJI_CMD" ];then
-    SCRIPT_DIR=`dirname $0`
-    CMAKE_FEDORA_KOJI_CMD="$SCRIPT_DIR/$CMAKE_FEDORA_KOJI"
-    if [[ ! -x "$CMAKE_FEDORA_KOJI_CMD" ]];then
-	echo "Fail to find executable $CMAKE_FEDORA_KOJI" > /dev/stderr
-	exit -2
+for f in /etc/cmake-fedora.conf $PWD/cmake-fedora.conf; do
+    if [ -e $f ];then
+	source $f
     fi
-fi
+done
+
+for p in $CMAKE_LIBRARY_DIR $PWD $PWD/scripts ;do
+    FUNCTION_FILE=$p/cmake-fedora-functions
+    if  [ -r $FUNCTION_FILE ];then
+	source $FUNCTION_FILE
+	break
+    fi
+done
+
+KOJI_CMD=`find_program koji`
+
+SCRIPT_DIR=`dirname $0`
+CMAKE_FEDORA_KOJI_CMD=`find_program cmake-fedora-koji $SCRIPT_DIR`
 
 SRPM=$1
 shift

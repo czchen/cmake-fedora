@@ -1,5 +1,7 @@
 CMAKE_FEDORA_VERSION=@PRJ_VER@
 
+CMAKE_LIBRARY_DIR=/usr/lib/cmake-fedora/
+
 #######################################
 # Local Cache 
 
@@ -10,4 +12,5 @@ LOCAL_CACHE_DIR=$HOME/.cache/cmake-fedora/
 # In seconds
 # e.g. 30 days expiry is 2592000
 LOCAL_CACHE_EXPIRY=2592000
+
 
