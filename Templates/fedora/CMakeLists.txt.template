@@ -71,34 +71,34 @@ MANAGE_SOURCE_VERSION_CONTROL_<PRJ_SOURCE_VERSION_CONTROL>()
 ####################################################################
 # Packing
 #
-INCLUDE(ManageArchive)
-
 IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
     INCLUDE(ManageRPM)
     INCLUDE(ManageReleaseFedora)
-ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
+    ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
 INCLUDE(ManageRelease)
 
-SET(PRJ_IGNORE_FILES_COMMON
-    "/doc/"  "\\\\.spec$" "messages.po$" "\\\\.orig$"
-)
+    SET(PRJ_IGNORE_FILES_COMMON
+	    "/doc/"  "\\\\.spec$" "messages.po$" "\\\\.orig$"
+       )
+    LIST(APPEND SOURCE_ARCHIVE_IGNORE_FILES ${PRJ_IGNORE_FILES_COMMON} "/bin/" "${KOJI_BUILD_SCRATCH}$")
 
-LIST(APPEND SOURCE_ARCHIVE_IGNORE_FILES ${PRJ_IGNORE_FILES_COMMON} "/bin/")
-
-IF(RPM_BUILD_SOURCES)
-    SET(SOURCE_ARCHIVE_DIR ${RPM_BUILD_SOURCES})
-ELSE(RPM_BUILD_SOURCES)
-    SET(SOURCE_ARCHIVE_DIR ${CMAKE_BINARY_DIR}/SOURCES)
+    IF(RPM_BUILD_SOURCES)
+SET(SOURCE_ARCHIVE_DIR ${RPM_BUILD_SOURCES})
+    ELSE(RPM_BUILD_SOURCES)
+SET(SOURCE_ARCHIVE_DIR ${CMAKE_BINARY_DIR}/SOURCES)
 ENDIF(RPM_BUILD_SOURCES)
 
-PACK_SOURCE_ARCHIVE("${SOURCE_ARCHIVE_DIR}")
-IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
+    PACK_SOURCE_ARCHIVE("${SOURCE_ARCHIVE_DIR}")
+    IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
     PACK_RPM()
-    RELEASE_FEDORA(fedora epel)
-    # "Off" Warning is displayed if mock is not installed.
+RELEASE_FEDORA(fedora epel)
+# "Off" Warning is displayed if mock is not installed.
     RPM_MOCK_BUILD()
     MANAGE_RELEASE(release_fedora)
+    ELSE(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
+    MANAGE_RELEASE()
 ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
+
 
 ####################################################################
 # Hosting and Release
