@@ -51,10 +51,12 @@ IF(NOT DEFINED _MANAGE_ARCHIVE_CMAKE_)
 	"\\\\.gmo$" "\\\\.cache$"
 	"\\\\.tar.gz$" "\\\\.tar.bz2$" "/src/config\\\\.h$" "NO_PACK")
 
-    SET(SOURCE_ARCHIVE_IGNORE_FILES_CMAKE "/CMakeFiles/" "_CPack_Packages/" "/Testing/"
+    SET(SOURCE_ARCHIVE_IGNORE_FILES_CMAKE 
+	"/CMakeFiles/" "_CPack_Packages/" "/Testing/"
 	"\\\\.directory$" "CMakeCache\\\\.txt$"
 	"/install_manifest.txt$"
-	"/cmake_install\\\\.cmake$" "/cmake_uninstall\\\\.cmake$""/CPack.*\\\\.cmake$" "/CTestTestfile\\\\.cmake$"
+	"/cmake_install\\\\.cmake$" "/cmake_uninstall\\\\.cmake$"
+	"/CPack.*\\\\.cmake$" "/CTestTestfile\\\\.cmake$"
 	"Makefile$" "/${PROJECT_NAME}-${PRJ_VER}-SOURCE/"
 	)
 

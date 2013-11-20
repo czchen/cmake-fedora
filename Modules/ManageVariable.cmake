@@ -96,13 +96,16 @@
 #         + setting_sign: (Optional) The symbol that separate attribute name and its value.
 #           Default value: "="
 #
-#   GET_ENV(var default_value [env])
+#   GET_ENV(var default_value [env] 
+#      [[CACHE type docstring [FORCE]] | PARENT_SCOPE])
 #     - Get the value of a environment variable, or use default
 #       if the environment variable does not exist or is empty.
 #       * Parameters:
 #         var: Variable to be set
 #         default_value: Default value of the var
 #         env: (Optional) The name of environment variable. Only need if different from var.
+#         CACHE ... : Arguments for SET
+#         PARENT_SCOPE: Arguments for SET
 #
 #   SET_VAR(var untrimmed_value)
 #     - Trim an set the value to a variable.
@@ -289,16 +292,29 @@ IF(NOT DEFINED _MANAGE_VARIABLE_CMAKE_)
     ENDMACRO(SETTING_FILE_GET_ALL_VARIABLES setting_file)
 
     MACRO(GET_ENV var default_value)
-	IF(${ARGC} GREATER 2)
-	    SET(_env "${ARGV2}")
-	ELSE(${ARGC} GREATER 2)
-	    SET(_env "${var}")
-	ENDIF(${ARGC} GREATER 2)
+	SET(_env "${var}")
+	SET(_state "")
+	SET(_setArgList "")
+	FOREACH(_arg ${ARGN})
+	    IF(_state STREQUAL "set_args")
+		LIST(APPEND _setArgList "${_arg}")
+	    ELSE(_state STREQUAL "set_args")
+		IF (_arg STREQUAL "CACHE")
+		    SET(_state "set_args")
+		    LIST(APPEND _setArgList "${_arg}")
+		ELSEIF (_arg STREQUAL "PARENT_SCOPE")
+		    SET(_state "set_args")
+		    LIST(APPEND _setArgList "${_arg}")
+		ELSE(_arg STREQUAL "CACHE")
+		    SET(_env "${_arg}")
+		ENDIF(_arg STREQUAL "CACHE")
+	    ENDIF(_state STREQUAL "set_args")
+	ENDFOREACH(_arg ${ARGN})
 
 	IF ("$ENV{${_env}}" STREQUAL "")
-	    SET(${var} "${default_value}")
+	    SET(${var} "${default_value}" ${_setArgList})
 	ELSE("$ENV{${_env}}" STREQUAL "")
-	    SET(${var} "$ENV{${_env}}")
+	    SET(${var} "$ENV{${_env}}" ${_setArgList})
 	ENDIF("$ENV{${_env}}" STREQUAL "")
 	# MESSAGE("Variable ${var}=${${var}}")
     ENDMACRO(GET_ENV var default_value)

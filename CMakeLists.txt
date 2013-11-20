@@ -106,6 +106,8 @@ IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
     # "Off" Warning is displayed if mock is not installed.
     RPM_MOCK_BUILD()
     MANAGE_RELEASE(release_fedora)
+ELSE(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
+    MANAGE_RELEASE()
 ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
 
 ####################################################################

@@ -3,11 +3,23 @@ SUMMARY=Fedora version will now automatically updated;Fixed 879141
 BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=879141
 [Changes]
-- Fedora version will now automatically updated
-- Fixed Bug 879141 - Excessive quotation mark for target tag_pre
-- New target: commit_clean
-- New script: cmake-fedora-koji
-- Changed script: koji-build-scratch: fedora_1, fedora_2, 
-  epel_1, epel_2 can now be used as build scopes.
+- Enhancement:
+  + Fedora version will now automatically updated.
+  + New scripts: 
+    cmake-fedora-koji: Koji utilities.
+    cmake-fedora-fedpkg: Fedpkg utilities.
+  + Changed scripts:
+    koji-build-scratch: fedora_1, fedora_2, 
+    epel_1, epel_2 can now be used as build scopes.
+- Bug Fixes:
+  Resolves Bug 879141 - Excessive quotation mark for target tag_pre
+- Removed Variables: 
+  + FEDORA_AUTO_KARMA
+
+- Removed Targets:
+  + bodhi_new: Submit the package to bodhi
+  + fedpkg_<tag>_build: Build for tag
+  + fedpkg_<tag>_commit: Import, commit and push
+
 [TODO]
 

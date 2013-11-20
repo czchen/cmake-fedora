@@ -35,9 +35,8 @@ Parameters:
 
           el7 el6 ... : The EPEL releases to be built.
 
-         If scopes is not specified, then rawhide and active 
-         fedora and EPEL releases are built,
-         as if "rawhide fedora epel" are specified.
+         If scopes is not specified, then it works 
+         as if "fedora epel" are specified.
 
 Environment Variables:
     FEDPKG_DIR
@@ -73,6 +72,7 @@ RPM_CMD=`find_program rpm`
 FEDPKG_CMD=`find_program fedpkg`
 KOJI_CMD=`find_program koji`
 GIT_CMD=`find_program git`
+BODHI_CMD=`find_program bodhi`
 
 SCRIPT_DIR=$(realpath `dirname $0`)
 CMAKE_FEDORA_KOJI_CMD=`find_program cmake-fedora-koji $SCRIPT_DIR`
@@ -81,7 +81,7 @@ echo "CMAKE_FEDORA_KOJI_CMD=$CMAKE_FEDORA_KOJI_CMD"
 WORK_DIR=${FEDPKG_DIR:-$PWD}
 MSG=
 
-while getopts "gd" opt;do
+while getopts "hdm" opt;do
     case $d in
 	h)
 	    print_usage
@@ -90,7 +90,7 @@ while getopts "gd" opt;do
 	d )
 	    WORK_DIR=$OPTARG
 	    ;;
-	d )
+	m )
 	    MSG=$OPTARG
 	    ;;
     esac
@@ -177,5 +177,7 @@ for b in `$CMAKE_FEDORA_KOJI_CMD git-branch $@ | xargs `;do
     $FEDPKG_CMD push
     echo "Building $NVR.$bodhi_branch" > /dev/stderr
     $FEDPKG_CMD build
+    echo "Pushing NVR to Bodhi > /dev/stderr
+
 done
 

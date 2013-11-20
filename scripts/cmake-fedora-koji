@@ -10,56 +10,47 @@ SYNOPSIS
 
 DESCRIPTION
     Following sub-command are recognized:
-       ver
-           Return version numbers, such as "21 20"
+        ver
+            Return version numbers, such as "21 20"
 
-       branch
-           Return branch names, such as "f21 f20"
+        branch
+            Return branch names, such as "f21 f20"
 
-       git-branch 
-           Return git branch names, such as "master 21 20"
+        git-branch 
+            Return git branch names, such as "master 21 20"
 
-       bodhi-branch
-           Return bodhi branch names, such as "fc21 fc20", this does not return rawhide.
+        bodhi-branch
+            Return bodhi branch names, such as "fc21 fc20", this does not return rawhide.
 
-       target
-           Return koji target names, such as "f21-candidate f20-candidate"
+        target
+            Return koji target names, such as "f21-candidate f20-candidate"
 	
-       clean
-           For cleaning cache.
+        clean
+            For cleaning cache.
 
-    Following scope are recognized:
-        all (default)
-	   Include active fedora and EPEL releases, including rawhide.
+    scopes: releases of what to build. Multiple values are allowed.
+    	Valid values:
+        rawhide: Build rawhide.
 
-	rawhide
-	    Rawhide only.
+        fedora: Build actives fedora releases, including Rawhide.
 
-	fedora
- 	    Active fedora releases, including rawhide.
+        fedora_1: Build the latest supported fedora releases.
+        This is one release eariler than rawhide.
 
-	fedora_1
-	    Latest supported fedora release. It is one release earlier than rawhide.
+        fedora_2: Build the second latest supported fedora releases.
+        This is two releases eariler than rawhide.
 
-	fedora_2
-	    Latest supported fedora release. It is two releases earlier than rawhide.
+        f22 f21 ...: Build the specified fedora releases.
 
-        f20 f19 ...
-	    Fedora releases.
+        epel: Build the currently supported EPEL releases.
 
-	epel
-	    Active EPEL releases.
+        epel_1: Build the latest supported EPEL releases.
 
-        epel_1
-            Latest supported EPEL release.
-	
-	epel_2
-	    Second latest supported EPEL release.
+        epel_2: Build the second latest supported EPEL releases.
 
-	el6, el5 ...
-	    EPEL releases.
-    clean-cache
-        Remove the koji list target cache file.
+        el7 el6 ... : The EPEL releases to be built.
+
+        If scopes is not specified, then "fedora epel" is assumed.
 
 END
 }

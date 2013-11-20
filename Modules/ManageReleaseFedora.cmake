@@ -40,15 +40,25 @@
 #   - Release this project to specified Fedora and EPEL releases.
 #     Arguments:
 #     + scopeList: List of Fedora and EPEL release to be build.
-        If not specif
-#       E.g. "f18", "f17", "el7"
-#       You can also specify "fedora" for fedora active nt releases,
-#       and/or "epel" for EPEL current releases.
+#       Valid values:
+#       - rawhide: Build rawhide.
+#       - fedora: Build actives fedora releases, including Rawhide.
+#       - fedora_1: Build the latest supported fedora releases.
+#         This is one release eariler than rawhide.
+#       - fedora_2: Build the second latest supported fedora releases.
+#         This is two releases eariler than rawhide.
+#       - f22 f21 ...: Build the specified fedora releases.
+#       - epel: Build the currently supported EPEL releases.
+#       - epel_1: Build the latest supported EPEL releases.
+#       - epel_2: Build the second latest supported EPEL releases.
+#       - el7 el6 ... : The EPEL releases to be built.
+#       If not specified, "fedora epel" will be used.
 #
 #     Reads following variables:
 #     + PRJ_SRPM_FILE: Project SRPM
 #     + FEDPKG_DIR: Directory for fedpkg checkout.
-#       Default: FedPkg.
+#       Default: Environment variable FEDPKG_DIR, 
+#                then $CMAKE_BINARY_DIR/FedPkg.
 #     Reads and define following variables:
 #     + FEDORA_RAWHIDE_VER: Numeric version of rawhide, such as 18
 #     + FEDORA_SUPPORTED_VERS: Numeric versions of currently supported Fedora,
@@ -59,15 +69,10 @@
 #       Default: 3
 #     + FEDORA_UNSTABLE_KARMA: Karma for auto unpushing.
 #       Default: 3
-#     + FEDORA_AUTO_KARMA: Whether to enable auto pushing/unpushing
-#       Default: True
 #     Defines following targets:
 #     + release_fedora: Make necessary steps for releasing on fedora,
 #       such as making source file tarballs, source rpms, build with fedpkg
 #       and upload to bodhi.
-#     + bodhi_new: Submit the package to bodhi
-#     + fedpkg_<tag>_build: Build for tag
-#     + fedpkg_<tag>_commit: Import, commit and push
 #     + koji_build_scratch: Scratch build using koji
 #
 #
@@ -141,13 +146,6 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 	## Fedora package variables
 	SET(FEDORA_KARMA "3" CACHE STRING "Fedora Karma")
 	SET(FEDORA_UNSTABLE_KARMA "-3" CACHE STRING "Fedora unstable Karma")
-	SET(FEDORA_AUTO_KARMA "True" CACHE STRING "Fedora auto Karma")
-
-	SET(FEDPKG_PRJ_DIR "${FEDPKG_DIR}/${PROJECT_NAME}")
-
-	## Don't use what is in git, otherwise it will be cleaned
-	## By make clean
-	SET(FEDPKG_PRJ_DIR_GIT "${FEDPKG_PRJ_DIR}/.git/.cmake-fedora")
     ENDIF(NOT _manage_release_fedora_dependencies_missing)
 
     FUNCTION(RELEASE_FEDORA_KOJI_BUILD_SCRATCH)
@@ -190,7 +188,6 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 	    ADD_CUSTOM_TARGET(release_fedora
 		COMMENT "Release for Fedora")
 	    ADD_DEPENDENCIES(release_fedora fedpkg_build)
-	    ADD_DEPENDENCIES(release release_fedora)
 	ENDIF(NOT _manage_release_fedora_dependencies_missing)
     ENDFUNCTION(RELEASE_FEDORA)
 ENDIF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
