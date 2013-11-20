@@ -1,0 +1,316 @@
+#!/bin/bash
+
+function print_usage(){
+    cat<<END
+NAME 
+    cmake-fedora-koji - cmake-fedora helper script to get koji build information
+
+SYNOPSIS
+    cmake-fedora-koji [sub-command [scope1 [scope2] ....]]
+
+DESCRIPTION
+    Following sub-command are recognized:
+       ver
+           Return version numbers, such as "21 20"
+
+       branch
+           Return branch names, such as "f21 f20"
+
+       git-branch 
+           Return git branch names, such as "master 21 20"
+
+       bodhi-branch
+           Return bodhi branch names, such as "fc21 fc20", this does not return rawhide.
+
+       target
+           Return koji target names, such as "f21-candidate f20-candidate"
+	
+       clean
+           For cleaning cache.
+
+    Following scope are recognized:
+        all (default)
+	   Include active fedora and EPEL releases, including rawhide.
+
+	rawhide
+	    Rawhide only.
+
+	fedora
+ 	    Active fedora releases, including rawhide.
+
+	fedora_1
+	    Latest supported fedora release. It is one release earlier than rawhide.
+
+	fedora_2
+	    Latest supported fedora release. It is two releases earlier than rawhide.
+
+        f20 f19 ...
+	    Fedora releases.
+
+	epel
+	    Active EPEL releases.
+
+        epel_1
+            Latest supported EPEL release.
+	
+	epel_2
+	    Second latest supported EPEL release.
+
+	el6, el5 ...
+	    EPEL releases.
+    clean-cache
+        Remove the koji list target cache file.
+
+END
+}
+
+
+function local_cache_file_update(){
+    $KOJI_CMD list-targets --quiet | tee "$LOCAL_CACHE_FILE"
+}
+
+function get_koji_list_targets(){
+    if [ "$LOCAL_CACHE" = "1" ];then
+	if [ ! -e $LOCAL_CACHE_DIR ];then
+	    mkdir -p $LOCAL_CACHE_DIR
+	fi
+	if [ ! -e "$LOCAL_CACHE_FILE" ]; then
+	    local_cache_file_update
+	else 
+	    FILE_TIME=`stat --format '%Y' "$LOCAL_CACHE_FILE"`
+	    CURRENT_TIME=`date '+%s'`
+	    LOCAL_CACHE_EXPIRY=${LOCAL_CACHE_EXPIRY:=2592000}
+	    if expr "$FILE_TIME" "+" "$LOCAL_CACHE_EXPIRY" "<" "$CURRENT_TIME"; then
+		local_cache_file_update
+	    else
+		cat "$LOCAL_CACHE_FILE"
+	    fi
+	fi
+    else
+	$KOJI_CMD list-targets --quiet
+    fi
+}
+
+function get_RAWHIDE_BRANCH(){
+    get_koji_list_targets | awk '{if ($1 == "rawhide") print $3}'
+}
+
+function get_fedora_nr_branches(){
+    get_koji_list_targets | awk '{if ($1 ~ "^f[0-9]+-candidate$") print $1}' | grep -v "$RAWHIDE_BRANCH" | sed -e 's/-.*$//' |  sort -r
+}
+
+function get_epel_branches(){
+    get_koji_list_targets | awk '{if ($1 ~ "^el[0-9]+-candidate$") print $1}' | sed -e 's/-.*$//' |  sort -r
+}
+
+for f in /etc/cmake-fedora.conf $PWD/cmake-fedora.conf; do
+    if [ -e $f ];then
+	source $f
+    fi
+done
+
+for p in $CMAKE_LIBRARY_DIR $PWD $PWD/scripts `dirname $0`;do
+    FUNCTION_FILE=$p/cmake-fedora-functions
+    if  [ -r $FUNCTION_FILE ];then
+	source $FUNCTION_FILE
+	break
+    fi
+done
+
+
+KOJI_CMD=`find_program koji`
+LOCAL_CACHE_FILE="${LOCAL_CACHE_DIR:=$HOME/.cache/cmake-fedora/}koji"
+
+if [ -z "$KOJI_CMD" ];then
+    echo "koji is not found in path" > /dev/stderr
+    exit -1
+fi
+
+
+if [ $# = 0 ]; then
+   print_usage
+fi
+
+subCmd=$1
+shift
+
+if [ "$subCmd" = "clean" ];then
+    rm -f $LOCAL_CACHE_FILE
+    echo "Cache file $LOCAL_CACHE_FILE removed"
+    exit 0
+fi
+
+rawhide=0
+
+# fedora_nr: Fedora w/o rawhide
+fedora_nr=0
+fedora_1=0
+fedora_2=0
+epel=0
+epel_1=0
+epel_2=0
+fedoraList=
+epelList=
+
+if [[ -z "$1" ]];then
+    rawhide=1
+    fedora_nr=1
+    epel=1
+else
+    for scopeCmd in $@;do
+	case $scopeCmd in
+	    rawhide )
+		rawhide=1
+		;;
+	    'fedora' )
+		rawhide=1
+		fedora_nr=1
+		;;
+	    'fedora_1' )
+		fedora_1=1
+		;;
+	    'fedora_2' )
+		fedora_2=1
+		;;
+	    'epel' )
+		epel=1
+		;;
+	    'epel_1' )
+		epel_1=1
+		;;
+	    'epel_2' )
+		epel_2=1
+		;;
+	    all )
+		rawhide=1
+		fedora_nr=1
+		epel=1
+		break
+		;;
+	    f[0-9]* )
+		if [[ $fedora -eq 0 ]];then
+		    if [[ -z "$fedoraList" ]];then
+			fedoraList="$scopeCmd"
+		    else
+			fedoraList="$fedoraList $scopeCmd"
+		    fi
+		fi
+		;;
+	    el[0-9]* )
+		if [[ $epel -eq 0 ]];then
+		    if [[ -z "$epelList" ]];then
+			epelList="$scopeCmd"
+		    else
+			epelList="$epelList $scopeCmd"
+		    fi
+		fi
+		;;
+	    * )
+		echo "Invalid scope $scopeCmd" > /dev/stderr
+		exit -1;
+	esac
+    done
+fi
+
+RAWHIDE_BRANCH=`get_RAWHIDE_BRANCH`
+
+FEDORA_NR_BRANCHES=`get_fedora_nr_branches`
+FEDORA_TMP_FILE=`mktemp cmake-fedora.fedora.XXXX.tmp`
+if [[ $fedora_nr -eq 1 ]];then
+    echo -e "$FEDORA_NR_BRANCHES" > $FEDORA_TMP_FILE
+else
+    if [[ $fedora_1 -eq 1 ]];then
+	(echo -e "$FEDORA_NR_BRANCHES" | head -n 1) >> $FEDORA_TMP_FILE
+    fi
+    if [[ $fedora_2 -eq 1 ]];then
+	(echo -e "$FEDORA_NR_BRANCHES" | head -n 2 | tail -n 1 ) >> $FEDORA_TMP_FILE
+    fi
+    for f in $fedoraList;do 
+	echo $f >> $FEDORA_TMP_FILE
+    done
+    buf=`sort -r -u $FEDORA_TMP_FILE`
+    echo -e "$buf" > $FEDORA_TMP_FILE
+fi
+
+EPEL_BRANCHES=`get_epel_branches`
+EPEL_TMP_FILE=`mktemp cmake-fedora.epel.XXXX.tmp`
+if [[ $epel -eq 1 ]];then
+    echo -e "$EPEL_BRANCHES" > $EPEL_TMP_FILE
+else
+    if [[ $epel_1 -eq 1 ]];then
+	(echo -e "$EPEL_BRANCHES" | head -n 1) >> $EPEL_TMP_FILE
+    fi
+    if [[ $epel_2 -eq 1 ]];then
+	(echo -e "$EPEL_BRANCHES" | head -n 2 | tail -n 1) >> $EPEL_TMP_FILE
+    fi
+    for e in $epelList;do 
+	echo $e >> $EPEL_TMP_FILE
+    done
+    buf=`sort -r -u $EPEL_TMP_FILE`
+    echo -e "$buf" > $EPEL_TMP_FILE
+fi
+
+
+case $subCmd in
+    ver )
+	if [[ $rawhide -eq 1 ]];then
+	    echo "$RAWHIDE_BRANCH" | sed -e 's/^f//'
+	fi
+
+	if [ `stat --format "%s" $FEDORA_TMP_FILE` -gt 1 ];then 
+	    cat $FEDORA_TMP_FILE | sed -e 's/^f//'
+	fi
+	if [ `stat --format "%s" $EPEL_TMP_FILE` -gt 1 ];then 
+	    cat $EPEL_TMP_FILE | sed -e 's/^el//'
+	fi
+	;;
+
+    branch | git-branch )
+	if [[ $rawhide -eq 1 ]];then
+	    if [[ $subCmd = "git-branch" ]];then
+		echo "master"
+	    elif [[ $subCmd = "branch" ]];then
+		echo "$RAWHIDE_BRANCH"
+	    fi
+	fi
+
+	if [ `stat --format "%s" $FEDORA_TMP_FILE` -gt 1 ];then 
+	    cat $FEDORA_TMP_FILE
+	fi
+	if [ `stat --format "%s" $EPEL_TMP_FILE` -gt 1 ];then 
+	    cat $EPEL_TMP_FILE
+	fi
+	;;
+
+    bodhi-branch )
+	if [ `stat --format "%s" $FEDORA_TMP_FILE` -gt 1 ];then 
+	    cat $FEDORA_TMP_FILE | sed -e 's/^f/fc/'
+	fi
+	if [ `stat --format "%s" $EPEL_TMP_FILE` -gt 1 ];then 
+	    cat $EPEL_TMP_FILE
+	fi
+	;;
+
+    target )
+	if [[ $rawhide -eq 1 ]];then
+	    echo "$RAWHIDE_BRANCH-candidate"
+	fi
+
+	if [ `stat --format "%s" $FEDORA_TMP_FILE` -gt 1 ];then 
+	    cat $FEDORA_TMP_FILE | sed -e 's/$/-candidate/'
+	fi
+	if [ `stat --format "%s" $EPEL_TMP_FILE` -gt 1 ];then 
+	    cat $EPEL_TMP_FILE | sed -e 's/$/-candidate/'
+	fi
+	;;
+
+    *)
+	print_usage
+	echo "Invalid subcommand '$subCmd'" > /dev/stderr
+	rm -f $FEDORA_TMP_FILE $EPEL_TMP_FILE
+	exit -1
+	;;
+esac
+rm -f $FEDORA_TMP_FILE $EPEL_TMP_FILE
+exit 0
+
