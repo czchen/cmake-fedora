@@ -53,7 +53,7 @@ IF(NOT DEFINED _MANAGE_FILE_CMAKE_)
 	    ENDIF(_state STREQUAL "ERROR_MSG")
 	ENDFOREACH(_arg ${ARGN})
 
-	FIND_PROGRAM(${VAR} ${name} $_findProgramArgList)
+	FIND_PROGRAM(${VAR} ${name} ${_findProgramArgList})
 	IF(${VAR} STREQUAL "${VAR}-NOTFOUND")
 	    M_MSG(${verboseLevel} "Program ${name} is not found!${_errorMsg}")
 

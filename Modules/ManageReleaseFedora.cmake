@@ -92,41 +92,21 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 	SET(_manage_release_fedora_dependencies_missing 1)
     ENDIF("${CMAKE_FEDORA_CONF}" STREQUAL "CMAKE_FEDORA_CONF-NOTFOUND")
 
-    FIND_PROGRAM_ERROR_HANDLING(FEDPKG_CMD fedokg ${M_OFF} 
-	ERROR_MSG " Fedora support disabled."
-	ERROR_VAR _manage_release_fedora_dependencies_missing
-    )
+    FUNCTION(RELEASE_FEDORA_FIND_DEPENDENCY var name)
+	FIND_PROGRAM_ERROR_HANDLING(${var} "${name}" ${M_OFF} 
+	    ERROR_MSG " Fedora support disabled."
+	    ERROR_VAR _manage_release_fedora_dependencies_missing
+	    ${ARGN}
+	    )
+    ENDFUNCTION(RELEASE_FEDORA_FIND_DEPENDENCY var name)
 
-    FIND_PROGRAM_ERROR_HANDLING(KOJI_CMD koji ${M_OFF} 
-        ERROR_MSG " Fedora support disabled."
-        ERROR_VAR _manage_release_fedora_dependencies_missing
-    )
-
-    FIND_PROGRAM(GIT_CMD git)
-    IF(FEDPKG_CMD STREQUAL "FEDPKG_CMD-NOTFOUND")
-	M_MSG(${M_OFF} "Program git is not found! Fedora support disabled.")
-	SET(_manage_release_fedora_dependencies_missing 1)
-    ENDIF(FEDPKG_CMD STREQUAL "FEDPKG_CMD-NOTFOUND")
-
-    FIND_PROGRAM(BODHI_CMD bodhi)
-    IF(BODHI_CMD STREQUAL "BODHI_CMD-NOTFOUND")
-	M_MSG(${M_OFF} "Program bodhi is not found! Bodhi support disabled.")
-    ENDIF(BODHI_CMD STREQUAL "BODHI_CMD-NOTFOUND")
-
-    FIND_PROGRAM(KOJI_BUILD_SCRATCH_CMD ${KOJI_BUILD_SCRATCH} PATHS ${CMAKE_BINARY_DIR}/scripts . )
-    IF(KOJI_BUILD_SCRATCH_CMD STREQUAL "KOJI_BUILD_SCRATCH_CMD-NOTFOUND")
-	M_MSG(${M_OFF} "Program koji_build_scratch is not found!")
-    ENDIF(KOJI_BUILD_SCRATCH_CMD STREQUAL "KOJI_BUILD_SCRATCH_CMD-NOTFOUND")
-
-    FIND_PROGRAM(CMAKE_FEDORA_KOJI_CMD "cmake-fedora-koji" PATHS ${CMAKE_BINARY_DIR}/scripts . )
-    IF(CMAKE_FEDORA_KOJI_CMD STREQUAL "CMAKE_FEDORA_KOJI_CMD-NOTFOUND")
-	M_MSG(${M_OFF} "Program koji_build_scratch is not found!")
-    ENDIF(CMAKE_FEDORA_KOJI_CMD STREQUAL "CMAKE_FEDORA_KOJI_CMD-NOTFOUND")
-
-    FIND_PROGRAM(CMAKE_FEDORA_FEDPKG_CMD "cmake-fedora-fedpkg" PATHS ${CMAKE_BINARY_DIR}/scripts . )
-    IF(CMAKE_FEDORA_FEDPKG_CMD STREQUAL "CMAKE_FEDORA_FEDPKG_CMD-NOTFOUND")
-	M_MSG(${M_OFF} "Program koji_build_scratch is not found!")
-    ENDIF(CMAKE_FEDORA_FEDPKG_CMD STREQUAL "CMAKE_FEDORA_FEDPKG_CMD-NOTFOUND")
+    RELEASE_FEDORA_FIND_DEPENDENCY(FEDPKG_CMD fedpkg)
+    RELEASE_FEDORA_FIND_DEPENDENCY(KOJI_CMD koji)
+    RELEASE_FEDORA_FIND_DEPENDENCY(GIT_CMD git)
+    RELEASE_FEDORA_FIND_DEPENDENCY(BODHI_CMD bodhi)
+    RELEASE_FEDORA_FIND_DEPENDENCY(KOJI_BUILD_SCRATCH_CMD koji-build-scratch PATH ${CMAKE_SOURCE_DIR}/scripts)
+    RELEASE_FEDORA_FIND_DEPENDENCY(CMAKE_FEDORA_KOJI_CMD cmake-fedora-koji PATH ${CMAKE_SOURCE_DIR}/scripts)
+    RELEASE_FEDORA_FIND_DEPENDENCY(CMAKE_FEDORA_FEDPKG_CMD cmake-fedora-fedpkg PATH ${CMAKE_SOURCE_DIR}/scripts)
 
     ## Set variables
     IF(NOT _manage_release_fedora_dependencies_missing)
@@ -138,7 +118,7 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 	    CACHE FILEPATH "Bodhi template file"
 	)
 
-    GET_ENV(FEDPKG_DIR "${CMAKE_BINARY_DIR}/FedPkg" CACHE PATH "FedPkg dir")
+        GET_ENV(FEDPKG_DIR "${CMAKE_BINARY_DIR}/FedPkg" CACHE PATH "FedPkg dir")
 
 	GET_FILENAME_COMPONENT(_FEDPKG_DIR_NAME ${FEDPKG_DIR} NAME)
 	LIST(APPEND SOURCE_ARCHIVE_IGNORE_FILES "/${_FEDPKG_DIR_NAME}/")

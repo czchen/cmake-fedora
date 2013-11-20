@@ -1,7 +1,7 @@
 PRJ_VER=1.0.6
 SUMMARY=Fedora version will now automatically updated;Fixed 879141
 BODHI_UPDATE_TYPE=bugfix
-REDHAT_BUGZILLA=879141
+REDHAT_BUGZILLA=879141;992069
 [Changes]
 - Enhancement:
   + Fedora version will now automatically updated.
@@ -12,7 +12,8 @@ REDHAT_BUGZILLA=879141
     koji-build-scratch: fedora_1, fedora_2, 
     epel_1, epel_2 can now be used as build scopes.
 - Bug Fixes:
-  Resolves Bug 879141 - Excessive quotation mark for target tag_pre
+  Resolves: Bug 879141 - Excessive quotation mark for target tag_pre
+  Resolves: Bug 992069 - cmake-fedora: FTBFS in rawhide
 - Removed Variables: 
   + FEDORA_AUTO_KARMA
 
