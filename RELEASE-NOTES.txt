@@ -1,4 +1,4 @@
-PRJ_VER=1.0.6
+PRJ_VER=1.1.0
 SUMMARY=Fedora version will now automatically updated;Fixed 879141
 BODHI_UPDATE_TYPE=bugfix
 REDHAT_BUGZILLA=879141;992069
@@ -21,6 +21,4 @@ REDHAT_BUGZILLA=879141;992069
   + bodhi_new: Submit the package to bodhi
   + fedpkg_<tag>_build: Build for tag
   + fedpkg_<tag>_commit: Import, commit and push
-
-[TODO]
 

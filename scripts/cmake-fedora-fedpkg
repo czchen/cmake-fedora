@@ -2,14 +2,25 @@
 
 function print_usage(){
     cat <<END
-Usage: $0 [-d work_dir] [-m message ] <srpm> [scope1 [scope2 ....]]
+Usage: $0 [-b bugs] [-d work_dir] [-m message] [-t updateType] <srpm> [scope1 [scope2 ....]]
 	This command builds a package to fedora and epel releases with given srpm.
 
 Parameters:
+    -b bugs: The list of bug this update fixed. Split with ','.
+
     -d work_dir: The work directory. Default is current directory.
 
     -m message: Message used as commit message.
         If not specified, then use the latest changelog item.
+
+	-t updateType: Update type. Valid values:
+            [bugfix|security|enhancement|newpackage].
+	    Default: 
+	        newpackage: if this package does not exist in bodhi
+		enhancement: if the latest change log item has 
+		   "Enhancement:"
+		bugfix: for everything else.   
+       
 
     srpm: SRPM file to be scratch-built with koji.
 
@@ -44,6 +55,11 @@ Environment Variables:
 	If -d is not specified, this program will use the value as
 	work directory.
 
+    BODHI_USER
+        Bodhi username. If not specified, it uses environment variable
+       	LOGNAME.
+
+
 END
 }
 
@@ -51,7 +67,25 @@ END
 # Valid target example: cmake-fedora-1.0.5-1.fc20
 function is_target_built(){
     target=$1
-    ${KOJI_CMD} buildinfo "${target}" | grep -i "State: COMPLETE" > /dev/null
+    ${KOJI_CMD} buildinfo "${target}" | grep -qcs -i "State: COMPLETE"
+}
+
+# is package exists in bodhi
+# Valid target example: cmake-fedora
+function is_package_new_in_bodhi(){
+    package=$1
+   ${BODHI_CMD} $package | grep -qcs $package 
+}
+
+# is target in bodhi
+# Valid target example: cmake-fedora-1.0.5-1.fc20
+function is_target_in_bodhi(){
+    target=$1
+    ${BODHI_CMD} "${target}" | grep -qcs -i "Update ID" > /dev/null
+}
+
+function is_update_enhancement(){
+    echo $CHANGELOGTEXT | grep -qcs -e "Enhancement:"
 }
 
 for f in /etc/cmake-fedora.conf $PWD/cmake-fedora.conf; do
@@ -73,6 +107,8 @@ FEDPKG_CMD=`find_program fedpkg`
 KOJI_CMD=`find_program koji`
 GIT_CMD=`find_program git`
 BODHI_CMD=`find_program bodhi`
+BODHI_USER=${BODHI_USER:=$LOGNAME}
+echo "BODHI_USER=$BODHI_USER"
 
 SCRIPT_DIR=$(realpath `dirname $0`)
 CMAKE_FEDORA_KOJI_CMD=`find_program cmake-fedora-koji $SCRIPT_DIR`
@@ -80,12 +116,17 @@ echo "CMAKE_FEDORA_KOJI_CMD=$CMAKE_FEDORA_KOJI_CMD"
 
 WORK_DIR=${FEDPKG_DIR:-$PWD}
 MSG=
+BUGS=
+UPDATE_TYPE=
 
-while getopts "hdm" opt;do
+while getopts "hb:d:m:t:" opt;do
     case $d in
 	h)
 	    print_usage
 	    exit 0
+	    ;;
+	b )
+	    BUGS=$OPTARG
 	    ;;
 	d )
 	    WORK_DIR=$OPTARG
@@ -93,14 +134,15 @@ while getopts "hdm" opt;do
 	m )
 	    MSG=$OPTARG
 	    ;;
+	t )
+	    UPDATE_TYPE=$OPTARG
+	    ;;
+	* )
+	    ;;
+	    
     esac
 done
 shift $((OPTIND-1)) 
-
-if [[ ! -w $WORK_DIR ]];then
-    echo "$WORK_DIR is not writable." > /dev/stderr
-    exit -2
-fi
 
 SRPM=$1
 shift
@@ -110,8 +152,19 @@ if [[ -z $SRPM ]];then
     exit -1
 fi
 
+if [[ -n "$BUGS" ]];then
+    BUGS="--bugs $BUGS"
+fi
+
+if [[ ! -w $WORK_DIR ]];then
+    echo "$WORK_DIR is not writable." > /dev/stderr
+    exit -2
+fi
+
+CHANGELOGTEXT=`${RPM_CMD} -qp --queryformat "%{CHANGELOGTEXT}" $SRPM`
+
 if [[ -z "$MSG" ]];then
-    MSG=`${RPM_CMD} -qp --queryformat "%{CHANGELOGTEXT}" $SRPM`
+    MSG=$CHANGELOGTEXT
 fi
 
 NAME=`${RPM_CMD} -qp --queryformat "%{NAME}" $SRPM`
@@ -119,6 +172,17 @@ NAME=`${RPM_CMD} -qp --queryformat "%{NAME}" $SRPM`
 ## NVR here does not include release tag,
 ##  (e.g. cmake-fedora-2.0.0-1)
 NVR=`${RPM_CMD} -qp --queryformat "%{NAME}-%{VERSION}-%{RELEASE}" $SRPM | sed -e 's/\.fc[0-9]*$//' | sed -e 's/\.el[0-9]*$//'`
+
+if [[ -z "$UPDATE_TYPE" ]];then
+    if  is_package_new_in_bodhi $NAME; then
+	UPDATE_TYPE=newpackage
+    elif is_update_enhancement; then
+	    UPDATE_TYPE=enhancement
+    else
+	    UPDARE_TYPE=bugfix
+    fi
+fi
+echo "UPDATE_TYPE=$UPDATE_TYPE" > /dev/stderr
 
 PKG_DIR="$WORK_DIR/$NAME"
 
@@ -134,6 +198,7 @@ cd $PKG_DIR
 ${GIT_CMD} pull --all
 
 first=
+bodhiPushList=
 
 for b in `$CMAKE_FEDORA_KOJI_CMD git-branch $@ | xargs `;do
     bodhi_branch=
@@ -157,27 +222,38 @@ for b in `$CMAKE_FEDORA_KOJI_CMD git-branch $@ | xargs `;do
 	    exit 1
 	    ;;
     esac
+
     target="$NVR.$bodhi_branch"
     echo -n "Has $target already been built? ... "
+    $FEDPKG_CMD switch-branch $b
     if is_target_built $target ;then
 	echo "yes, skip this." > /dev/stderr
-	continue
     else
 	echo "no, start building." > /dev/stderr
+	if [[ $first = $b ]];then
+	    $FEDPKG_CMD import $SRPM
+	    $FEDPKG_CMD commit -m "$MSG"
+	else
+	    $GIT_CMD merge $first
+	fi
+	$FEDPKG_CMD push
+	echo "Building $NVR.$bodhi_branch" > /dev/stderr
+	$FEDPKG_CMD build
+
     fi
 
-    $FEDPKG_CMD switch-branch $b
-
-    if [[ $first = $b ]];then
-	$FEDPKG_CMD import $SRPM
-	$FEDPKG_CMD commit -m "$MSG"
-    else
-	$GIT_CMD merge $first
+    if [[ ! "$b" = "master" ]];then
+	echo -n "Has $target already in bodhi? ... "
+	if is_target_in_bodhi $target ; then
+	    echo "yes, skip this." > /dev/stderr
+	else
+	    echo "no, push it." > /dev/stderr
+	    bodhiPushList="$bodhiPushList $NVR.$bodhi_branch"
+	fi
     fi
-    $FEDPKG_CMD push
-    echo "Building $NVR.$bodhi_branch" > /dev/stderr
-    $FEDPKG_CMD build
-    echo "Pushing NVR to Bodhi > /dev/stderr
-
 done
+
+if [[ -n "$bodhiPushList" ]];then
+    $BODHI_CMD -n $BUGS -u $BODHI_NAME -N $CHANGELOGTEXT -R testing $bodhiPushList
+fi
 
