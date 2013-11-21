@@ -1,5 +1,6 @@
-# - Pack source helper module
-# By default CPack pack everything under the source directory, this is usually
+# - Archive Management Module
+# By default CPack pack everything under the source directory,
+# this is usually
 # undesirable. We avoid this by using the sane default ignore list.
 #
 # Includes:
@@ -15,8 +16,9 @@
 #     Override it by setting it before INCLUDE(ManageArchive).
 # Defines following target:
 #     pack_remove_old: Remove old source package files.
+# Defines following function:
 # Defines following macro:
-#   SOURCE_ARCHIVE(outputDir [generator])
+#   PACK_SOURCE_ARCHIVE(outputDir [generator])
 #   - Pack source files as <projectName>-<PRJ_VER>-Source.<packFormat>,
 #     Arguments:
 #     + outputDir: Directory to write source archive.
