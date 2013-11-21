@@ -27,6 +27,7 @@ SET(AUTHORS "Ding-Yi Chen")
 SET(MAINTAINER "Ding-Yi Chen <dchen at redhat.com>")
 SET(VENDOR "Red Hat, APAC, Inc.")
 SET(LICENSE BSD)
+SET(PRJ_GROUP "System Environment/Libraries")
 
 ####################################################################
 # Includes
@@ -36,6 +37,9 @@ INCLUDE(ManageEnvironment RESULT_VARIABLE MANAGE_ENVIRONMENT_PATH)
 INCLUDE(ManageVersion)
 RELEASE_NOTES_READ_FILE()
 INCLUDE(ManageUninstall)
+INCLUDE(ManageSourceVersionControl)
+INCLUDE(ManageFile)
+INCLUDE(ManageArchive)
 
 ####################################################################
 # Building
@@ -43,44 +47,25 @@ INCLUDE(ManageUninstall)
 CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/cmake-fedora.conf.in
     "${CMAKE_BINARY_DIR}/cmake-fedora.conf" @ONLY)
 
+
 ####################################################################
 # Installing
 #
-SET(INSTALL_DOCS ${RELEASE_NOTES_FILE} AUTHORS README ChangeLog COPYING TODO)
-STRING_JOIN(PRJ_DOC_LIST " " ${INSTALL_DOCS})
 
-INSTALL(FILES ${INSTALL_DOCS}
-    DESTINATION "${PRJ_DOC_DIR}")
-
-INSTALL(FILES cmake-fedora.conf
-    DESTINATION "${SYSCONF_DIR}")
-
-INSTALL(FILES CMakeLists.txt ${RELEASE_FILE} SPECS/project.spec.in
-    DESTINATION "${PRJ_DOC_DIR}/examples")
-
-INSTALL(DIRECTORY Modules/
-    DESTINATION ${DATA_DIR}/cmake/Modules
-    REGEX "\\.cmake(\\.in)?$")
-
-INSTALL(DIRECTORY Templates/
-    DESTINATION ${DATA_DIR}/cmake/Templates)
-
-SET(EXECUTABLES scripts/cmake-fedora-newprj scripts/koji-build-scratch)
-#STRING_JOIN(PRJ_EXECUTABLES " " ${EXECUTABLES})
-
-INSTALL(PROGRAMS ${EXECUTABLES}
-    DESTINATION ${BIN_DIR})
-
-####################################################################
-# Source Version Control
-#
-INCLUDE(ManageSourceVersionControl)
 MANAGE_SOURCE_VERSION_CONTROL_GIT()
+
+MANAGE_FILE_INSTALL(PRJ_DOC AUTHORS README ChangeLog COPYING TODO)
+MANAGE_FILE_INSTALL(SYSCONF cmake-fedora.conf) 
+MANAGE_FILE_INSTALL(PRJ_DOC SUBDIR examples CMakeLists.txt)
+MANAGE_DIRECTORY_INSTALL(DATA SUBDIR cmake/Templates/fedora Templates/fedora/) 
+
+ADD_SUBDIRECTORY(Modules)
+ADD_SUBDIRECTORY(scripts)
+
 
 ####################################################################
 # Packing
 #
-INCLUDE(ManageArchive)
 
 IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
     INCLUDE(ManageRPM)

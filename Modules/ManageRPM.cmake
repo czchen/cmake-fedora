@@ -44,6 +44,7 @@
 #   RPM_IGNORE_FILES: A list of exclude file patterns for PackSource.
 #     This value is appended to SOURCE_ARCHIVE_IGNORE_FILES after including
 #     this module.
+#   RPM_FILES_SECTION_CONTENT: A list of string  
 #
 # Defines following Macros:
 #   PACK_RPM()
@@ -78,28 +79,30 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
     SET (_MANAGE_RPM_CMAKE_ "DEFINED")
 
     INCLUDE(ManageMessage)
+    INCLUDE(ManageFile)
     INCLUDE(ManageTarget)
     SET(_manage_rpm_dependency_missing 0)
 
-    FIND_PROGRAM(RPMBUILD_CMD NAMES "rpmbuild-md5")
-    IF("${RPMBUILD_CMD}" STREQUAL "RPMBUILD_CMD-NOTFOUND")
-	M_MSG(${M_OFF} "rpmbuild is not found in PATH, rpm build support is disabled.")
-	SET(_manage_rpm_dependency_missing 1)
-    ENDIF("${RPMBUILD_CMD}" STREQUAL "RPMBUILD_CMD-NOTFOUND")
+    FIND_PROGRAM_ERROR_HANDLING(RPMBUILD_CMD
+	ERROR_MSG " rpm build support is disabled."
+	ERROR_VAR _manage_rpm_dependency_missing
+	VERBOSE_LEVEL ${M_OFF}
+	NAMES "rpmbuild-md5" "rpmbuild"
+	)
 
-    SET(_PRJ_RPM_SPEC_IN_FILE_SEARCH_NAMES  "${PROJECT_NAME}.spec.in" "project.spec.in")
-    SET(_PRJ_RPM_SPEC_IN_FILE_SEARCH_PATH "${CMAKE_SOURCE_DIR}/SPECS" "SPECS" "." "${RPM_BUILD_TOPDIR}/SPECS")
-    FIND_FILE(PRJ_RPM_SPEC_IN_FILE NAMES ${_PRJ_RPM_SPEC_IN_FILE_SEARCH_NAMES} PATHS ${_PRJ_RPM_SPEC_IN_FILE_SEARCH_PATH})
-    IF(PRJ_RPM_SPEC_IN_FILE STREQUAL "PRJ_RPM_SPEC_IN_FILE-NOTFOUND")
-	M_MSG(${M_OFF} "Cannot find ${PROJECT}.spec.in or project .in"
-	    "${_PRJ_RPM_SPEC_IN_FILE_SEARCH_PATH}")
-	M_MSG(${M_OFF} "rpm build support is disabled.")
-	SET(_manage_rpm_dependency_missing 1)
-    ENDIF(PRJ_RPM_SPEC_IN_FILE STREQUAL "PRJ_RPM_SPEC_IN_FILE-NOTFOUND")
+    FIND_FILE_ERROR_HANDLING(PRJ_RPM_SPEC_IN_FILE
+	ERROR_MSG " rpm build support is disabled."
+	ERROR_VAR _manage_rpm_dependency_missing
+	VERBOSE_LEVEL ${M_OFF}
+	NAMES "${PROJECT_NAME}.spec.in" "project.spec.in"
+	PATHS "${CMAKE_SOURCE_DIR}/SPECS" "SPECS" "." "${RPM_BUILD_TOPDIR}/SPECS" "${CMAKE_ROOT}/Templates/fedora"
+	)
 
     IF(NOT _manage_rpm_dependency_missing)
 	INCLUDE(ManageVariable)
 	SET (SPEC_FILE_WARNING "This file is generated, please modified the .spec.in file instead!")
+
+	SET(RPM_FILES_SECTION_CONTENT "")
 
 	EXECUTE_PROCESS(COMMAND rpm --showrc
 	    COMMAND grep -E "dist[[:space:]]*\\."

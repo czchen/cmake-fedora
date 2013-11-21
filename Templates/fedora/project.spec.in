@@ -2,26 +2,32 @@ Name:       @PROJECT_NAME@
 Version:    @PRJ_VER@
 Release:    1%{?dist}
 Summary:    @PRJ_SUMMARY@
+@RPM_SPEC_SUMMARY_TRANSLATION_OUTPUT@
 License:    @LICENSE@
-Group:      System Environment/Libraries
-URL:        https://fedorahosted.org/%{name}/
+Group:      @PRJ_GROUP@
+URL:        @RPM_SPEC_URL_OUTPUT@
 Source0:    https://fedorahosted.org/releases/c/m/%{name}/%{name}-%{version}-Source.@SOURCE_ARCHIVE_FILE_EXTENSION@
 
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildArch:  noarch
 
-BuildRequires:  cmake >= 2.6
+@RPM_SPEC_BUILD_ARCH_OUTPUT@
 
-Requires:   cmake >= 2.6
+@RPM_SPEC_BUILD_REQUIRES_OUTPUT@
+
+@RPM_SPEC_REQUIRES_OUTPUT@
 
 %description
 @PRJ_DESCRIPTION@
+
+@RPM_SPEC_DESCRIPTION_TRANSLATION_OUTPUT@
+
+@RPM_SPEC_SUB_PACKAGE_OUTPUT@
 
 %prep
 %setup -q -n %{name}-%{version}-Source
 
 %build
-# $RPM_OPT_FLAGS should be  loaded from cmake macro.
+# $RPM_OPT_FLAGS should be loaded from cmake macro.
 %cmake .
 %__make VERBOSE=1  %{?_smp_mflags}
 
@@ -33,11 +39,20 @@ Requires:   cmake >= 2.6
     %__rm -rf @PRJ_DOC_LIST@
 )
 
-%clean
-%__rm -rf $RPM_BUILD_ROOT
+@RPM_SPEC_FIND_LANG_SECTION_OUTPUT@
 
-%files
-%defattr(-,root,root,-)
+@RPM_SPEC_PRE_SECTION_OUTPUT@
+
+@RPM_SPEC_PREUN_SECTION_OUTPUT@
+
+@RPM_SPEC_POST_SECTION_OUTPUT@
+
+@RPM_SPEC_POSTUN_SECTION_OUTPUT@
+
+%clean
+
+@RPM_SPEC_FILES_SECTION_OUTPUT@
+@RPM_SPEC_FILES_
 %doc @PRJ_DOC_LIST@
 %{_bindir}/cmake-fedora-newprj
 %{_bindir}/koji-build-scratch
