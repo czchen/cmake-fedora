@@ -99,7 +99,7 @@ for f in /etc/cmake-fedora.conf $PWD/cmake-fedora.conf; do
     fi
 done
 
-for p in $CMAKE_FEDORA_LIBRARY_DIR $PWD $PWD/scripts ;do
+for p in $CMAKE_FEDORA_LIBEXEC_DIR $PWD $PWD/scripts ;do
     FUNCTION_FILE=$p/cmake-fedora-functions
     if  [ -r $FUNCTION_FILE ];then
 	source $FUNCTION_FILE
@@ -117,7 +117,6 @@ echo "BODHI_USER=$BODHI_USER"
 
 SCRIPT_DIR=$(realpath `dirname $0`)
 CMAKE_FEDORA_KOJI_CMD=`find_program cmake-fedora-koji $SCRIPT_DIR`
-echo "CMAKE_FEDORA_KOJI_CMD=$CMAKE_FEDORA_KOJI_CMD"
 
 WORK_DIR=${FEDPKG_DIR:-$PWD}
 MSG=
@@ -260,7 +259,6 @@ for b in `$CMAKE_FEDORA_KOJI_CMD git-branch $@ | xargs `;do
 	fi
     fi
 done
-exit 0
 
 if [[ -n "$bodhiPushList" ]];then
     $BODHI_CMD -n $BUGS -u $BODHI_NAME -N $CHANGELOGTEXT -R testing $bodhiPushList

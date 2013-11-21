@@ -100,7 +100,7 @@ for f in /etc/cmake-fedora.conf $PWD/cmake-fedora.conf; do
     fi
 done
 
-for p in $CMAKE_FEDORA_LIBRARY_DIR $PWD $PWD/scripts `dirname $0`;do
+for p in $CMAKE_FEDORA_LIBEXEC_DIR $PWD $PWD/scripts `dirname $0`;do
     FUNCTION_FILE=$p/cmake-fedora-functions
     if  [ -r $FUNCTION_FILE ];then
 	source $FUNCTION_FILE

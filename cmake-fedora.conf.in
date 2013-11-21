@@ -1,6 +1,6 @@
 CMAKE_FEDORA_VERSION=@PRJ_VER@
 
-CMAKE_FEDORA_LIBRARY_DIR=/usr/lib/cmake-fedora/
+CMAKE_FEDORA_LIBEXEC_DIR=@LIBEXEC_DIR@
 
 #######################################
 # Local Cache 
