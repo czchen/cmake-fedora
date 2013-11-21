@@ -74,7 +74,12 @@ function is_target_built(){
 # Valid target example: cmake-fedora
 function is_package_new_in_bodhi(){
     package=$1
-   ${BODHI_CMD} $package | grep -qcs $package 
+    if ${BODHI_CMD} $package | grep -qcs $package;then
+	return 1
+    else
+	return 0
+    fi
+    
 }
 
 # is target in bodhi
@@ -120,7 +125,7 @@ BUGS=
 UPDATE_TYPE=
 
 while getopts "hb:d:m:t:" opt;do
-    case $d in
+    case $opt in
 	h)
 	    print_usage
 	    exit 0
@@ -150,6 +155,8 @@ shift
 if [[ -z $SRPM ]];then
     print_usage
     exit -1
+else
+    SRPM=`realpath $SRPM`
 fi
 
 if [[ -n "$BUGS" ]];then
@@ -160,6 +167,7 @@ if [[ ! -w $WORK_DIR ]];then
     echo "$WORK_DIR is not writable." > /dev/stderr
     exit -2
 fi
+echo "WORK_DIR=$WORK_DIR" > /dev/stderr
 
 CHANGELOGTEXT=`${RPM_CMD} -qp --queryformat "%{CHANGELOGTEXT}" $SRPM`
 
@@ -179,22 +187,22 @@ if [[ -z "$UPDATE_TYPE" ]];then
     elif is_update_enhancement; then
 	    UPDATE_TYPE=enhancement
     else
-	    UPDARE_TYPE=bugfix
+	    UPDATE_TYPE=bugfix
     fi
 fi
 echo "UPDATE_TYPE=$UPDATE_TYPE" > /dev/stderr
 
-PKG_DIR="$WORK_DIR/$NAME"
 
-if [[ ! -r $PKG_DIR ]];then
-    $FEPKG_CMD clone $NAME
+cd $WORK_DIR
+if [[ ! -r $NAME ]];then
+    $FEDPKG_CMD clone $NAME
 fi
 
-if [[ ! -x $PKG_DIR ]];then
-    echo "Failed to change to $PKG_DIR" > /dev/stderr
+if [[ ! -x $NAME ]];then
+    echo "Failed to change to $WORK_DIR/$NAME" > /dev/stderr
 fi
 
-cd $PKG_DIR
+cd $NAME
 ${GIT_CMD} pull --all
 
 first=
@@ -252,6 +260,7 @@ for b in `$CMAKE_FEDORA_KOJI_CMD git-branch $@ | xargs `;do
 	fi
     fi
 done
+exit 0
 
 if [[ -n "$bodhiPushList" ]];then
     $BODHI_CMD -n $BUGS -u $BODHI_NAME -N $CHANGELOGTEXT -R testing $bodhiPushList
