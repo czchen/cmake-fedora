@@ -191,7 +191,6 @@ if [[ -z "$UPDATE_TYPE" ]];then
 fi
 echo "UPDATE_TYPE=$UPDATE_TYPE" > /dev/stderr
 
-
 cd $WORK_DIR
 if [[ ! -r $NAME ]];then
     $FEDPKG_CMD clone $NAME
@@ -231,8 +230,8 @@ for b in `$CMAKE_FEDORA_KOJI_CMD git-branch $@ | xargs `;do
     esac
 
     target="$NVR.$bodhi_branch"
-    echo -n "Has $target already been built? ... "
     $FEDPKG_CMD switch-branch $b
+    echo -n "Has $target already been built? ... "
     if is_target_built $target ;then
 	echo "yes, skip this." > /dev/stderr
     else
@@ -260,7 +259,8 @@ for b in `$CMAKE_FEDORA_KOJI_CMD git-branch $@ | xargs `;do
     fi
 done
 
+echo "Running $BODHI_CMD -n $BUGS -t $UPDATE_TYPE -u $BODHI_NAME -N $CHANGELOGTEXT -R testing $bodhiPushList
 if [[ -n "$bodhiPushList" ]];then
-    $BODHI_CMD -n $BUGS -u $BODHI_NAME -N $CHANGELOGTEXT -R testing $bodhiPushList
+    $BODHI_CMD -n $BUGS -t $UPDATE_TYPE -u $BODHI_NAME -N $CHANGELOGTEXT -R testing $bodhiPushList
 fi
 
