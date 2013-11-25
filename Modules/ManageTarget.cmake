@@ -1,7 +1,8 @@
 # - Modules for managing targets and outputs.
 #
 # Defines following macros:
-#   ADD_CUSTOM_TARGET_COMMAND(target OUTPUT file1 [file2 ..] COMMAND
+#   ADD_CUSTOM_TARGET_COMMAND(target OUTPUT file1 [file2 ..]
+#   [ALL] COMMAND
 #   command1 ...)
 #   - Combine ADD_CUSTOM_TARGET and ADD_CUSTOM_COMMAND.
 #     Always build when making the target, also specify the output files
@@ -18,11 +19,15 @@ IF(NOT DEFINED _MANAGE_TARGET_CMAKE_)
 	SET(_outputFileList "")
 	SET(_optionList "")
 	SET(_outputFileMode 1)
+	SET(_all "")
 	FOREACH(_t ${ARGN})
 	    IF(_outputFileMode)
 		IF(_t STREQUAL "COMMAND")
 		    SET(_outputFileMode 0)
 		    LIST(APPEND _optionList "${_t}")
+		ELSEIF(_t STREQUAL "ALL")
+		    SET(_outputFileMode 0)
+		    SET(_all "ALL")
 		ELSE(_t STREQUAL "COMMAND")
 		    LIST(APPEND _outputFileList "${_t}")
 		ENDIF(_t STREQUAL "COMMAND")
@@ -31,7 +36,7 @@ IF(NOT DEFINED _MANAGE_TARGET_CMAKE_)
 	    ENDIF(_outputFileMode)
 	ENDFOREACH(_t ${ARGN})
 	#MESSAGE("ADD_CUSTOM_TARGET(${target} ${_optionList})")
-	ADD_CUSTOM_TARGET(${target} ${_optionList})
+	ADD_CUSTOM_TARGET(${target} ${_all} ${_optionList})
 	#MESSAGE("ADD_CUSTOM_COMMAND(OUTPUT ${_outputFileList}  ${_optionList})")
 	ADD_CUSTOM_COMMAND(OUTPUT ${_outputFileList}  ${_optionList})
     ENDMACRO(ADD_CUSTOM_TARGET_COMMAND)

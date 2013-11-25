@@ -40,19 +40,7 @@
 #     + FIND_PROGRAM_ARGS: A list of arguments to be passed 
 #       to FIND_PROGRAM
 #
-#   MANAGE_DIRECTORY_INSTALL(dirType
-#     [DEST_SUBDIR subDir]
-#     [dirs | DIRECTORY dirs] [ARGS args]
-#   )
-#     Manage dir installation.
-#     Parameter:
-#     + dirType: Type of dirs. Valid values:
-#       DATA, PRJ_DATA,
-#       SYSCONF, SYSCONF_NO_REPLACE, 
-#       LIB, LIBEXEC
-#     + DEST_SUBDIR subDir: Subdir of Destination dir
-#     + dirs: Files to be installed.
-#     + args: Arguments for INSTALL.
+# Defines following macros:
 #
 #   MANAGE_FILE_INSTALL(fileType
 #     [DEST_SUBDIR subDir]
@@ -71,7 +59,7 @@
 
 IF(NOT DEFINED _MANAGE_FILE_CMAKE_)
     SET(_MANAGE_FILE_CMAKE_ "DEFINED")
-    SET(FILE_INSTALL_BIN_LIST "")
+    SET(FILE_INSTALL_BIN_LIST "" )
     SET(FILE_INSTALL_PRJ_DOC_LIST "")
     SET(FILE_INSTALL_DATA_LIST "")
     SET(FILE_INSTALL_PRJ_DATA_LIST "")
@@ -79,61 +67,19 @@ IF(NOT DEFINED _MANAGE_FILE_CMAKE_)
     SET(FILE_INSTALL_SYSCONF_NO_REPLACE_LIST "")
     SET(FILE_INSTALL_LIB_LIST "")
     SET(FILE_INSTALL_LIBEXEC_LIST "")
-    SET(DIRECTORY_INSTALL_DATA_LIST "")
-    SET(DIRECTORY_INSTALL_PRJ_DATA_LIST "")
-    SET(DIRECTORY_INSTALL_SYSCONF_LIST "")
-    SET(DIRECTORY_INSTALL_SYSCONF_NO_REPLACE_LIST "")
-    SET(DIRECTORY_INSTALL_LIB_LIST "")
-    SET(DIRECTORY_INSTALL_LIBEXEC_LIST "")
 
-    FUNCTION(MANAGE_DIRECTORY_INSTALL dirType)
-	SET(_state "")
-	SET(_dirList "")
-	SET(_argList "")
-	SET(_subDir "")
-	FOREACH(_arg ${ARGN})
-	    IF(_arg STREQUAL "DEST_SUBDIR")
-		SET(_state "${_arg}")
-	    ELSEIF(_arg STREQUAL "DIRECTORY")
-		SET(_state "${_arg}")
-	    ELSEIF(_arg STREQUAL "ARGS")
-		SET(_state "${_arg}")
-	    ELSE(_arg STREQUAL "DEST_SUBDIR")
-		IF(_state STREQUAL "")
-		    SET(_state "DIRECTORY")
-		    LIST(APPEND _dirList "${_arg}")
-		ELSEIF(_state STREQUAL "DEST_SUBDIR")
-		    SET(_subDir "${_arg}")
-		    SET(_state "")
-		ELSEIF(_state STREQUAL "DIRECTORY")
-		    LIST(APPEND _dirList "${_arg}")
-		ELSEIF(_state STREQUAL "ARGS")
-		    LIST(APPEND _argList "${_arg}")
-		ENDIF(_state STREQUAL "")
-	    ENDIF(_arg STREQUAL "DEST_SUBDIR")
-	ENDFOREACH(_arg ${ARGN})
+    MACRO(_MANAGE_FILE_INSTALL_FILE_OR_DIR)
+	FOREACH(_f ${_fileList})
+	    IF(IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${_f}") 
+		INSTALL(DIRECTORY ${_f} DESTINATION "${_destDir}" ${_argList})
+	    ELSE(IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${_f}") 
+		INSTALL(FILES ${_f} DESTINATION "${_destDir}" ${_argList})
 
-	IF(dirType STREQUAL "SYSCONF_NO_REPLACE")
-	    SET(_destDir "${SYSCONF_DIR}/${_subDir}")
-	    INSTALL(DIRECTORY ${_dirList} DESTINATION "${_destDir}" ${_argList})
-	ELSE(dirType STREQUAL "SYSCONF_NO_REPLACE")
-	    SET(_destDir "${${dirType}_DIR}/${_subDir}")
-	    INSTALL(DIRECTORY ${_dirList} DESTINATION "${_destDir}" ${_argList})
+	    ENDIF(IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${_f}") 
+	ENDFOREACH(_f ${_fileList})
+    ENDMACRO(_MANAGE_FILE_INSTALL_FILE_OR_DIR)
 
-	ENDIF(dirType STREQUAL "SYSCONF_NO_REPLACE")
-
-	IF(_subDir)
-	    FOREACH(_d ${_dirList})
-		LIST(APPEND DIRECTORY_INSTALL_${dirType}_LIST 
-		    "${_subDir}/${_d}")
-	    ENDFOREACH(_d ${_dirList})
-	ELSE(_subDir)
-	    LIST(APPEND DIRECTORY_INSTALL_${dirType}_LIST 
-		"${_dirList}")
-	ENDIF(_subDir)
-    ENDFUNCTION(MANAGE_DIRECTORY_INSTALL dirType)
-
-    FUNCTION(MANAGE_FILE_INSTALL fileType)
+    MACRO(MANAGE_FILE_INSTALL fileType)
 	SET(_state "")
 	SET(_fileList "")
 	SET(_argList "")
@@ -162,14 +108,13 @@ IF(NOT DEFINED _MANAGE_FILE_CMAKE_)
 
 	IF(fileType STREQUAL "SYSCONF_NO_REPLACE")
 	    SET(_destDir "${SYSCONF_DIR}/${_subDir}")
-	    INSTALL(FILE ${_fileList} DESTINATION "${_destDir}" ${_argList})
+	    _MANAGE_FILE_INSTALL_FILE_OR_DIR()
 	ELSEIF(fileType STREQUAL "BIN")
 	    SET(_destDir "${${fileType}_DIR}/${_subDir}")
-	    INSTALL(PROGRAM ${_fileList} DESTINATION "${_destDir}" ${_argList})
+	    INSTALL(PROGRAMS ${_fileList} DESTINATION "${_destDir}" ${_argList})
 	ELSE(fileType STREQUAL "SYSCONF_NO_REPLACE")
 	    SET(_destDir "${${fileType}_DIR}/${_subDir}")
-	    INSTALL(FILE ${_fileList} DESTINATION "${_destDir}" ${_argList})
-
+	    _MANAGE_FILE_INSTALL_FILE_OR_DIR()
 	ENDIF(fileType STREQUAL "SYSCONF_NO_REPLACE")
 
 	IF(_subDir)
@@ -181,7 +126,11 @@ IF(NOT DEFINED _MANAGE_FILE_CMAKE_)
 	    LIST(APPEND FILE_INSTALL_${fileType}_LIST 
 		"${_fileList}")
 	ENDIF(_subDir)
-    ENDFUNCTION(MANAGE_FILE_INSTALL fileType)
+	IF(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+	    SET(FILE_INSTALL_${fileType}_LIST ${FILE_INSTALL_${fileType}_LIST} PARENT_SCOPE)
+	ENDIF(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+
+    ENDMACRO(MANAGE_FILE_INSTALL fileType)
 
     FUNCTION(FIND_FILE_ERROR_HANDLING VAR)
 	SET(_verboseLevel ${M_ERROR})

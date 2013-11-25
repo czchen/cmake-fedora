@@ -49,8 +49,8 @@ IF(NOT DEFINED _MANAGE_ARCHIVE_CMAKE_)
     SET(SOURCE_ARCHIVE_IGNORE_FILES_DEFAULT
 	"/\\\\.svn/"  "/CVS/" "/\\\\.git/"  "\\\\.gitignore$" "/\\\\.hg/"
 	"/\\\\.hgignore$"
-	"~$" "\\\\.swp$" "\\\\.log$" "\\\\.bak$" "\\\\.old$"
-	"\\\\.gmo$" "\\\\.cache$"
+	"~$" "\\\\.swp$" "\\\\.log$" "\\\\.bak$" "\\\\.old$" 
+	"\\\\.gmo$" "\\\\.cache$" "\\\\.tmp$"
 	"\\\\.tar.gz$" "\\\\.tar.bz2$" "/src/config\\\\.h$" "NO_PACK")
 
     SET(SOURCE_ARCHIVE_IGNORE_FILES_CMAKE 

@@ -216,7 +216,6 @@ generate_file CMakeLists.txt  PRJ_NAME PRJ_AUTHORS PRJ_LICENSE PRJ_MAINTAINER\
 generate_file RELEASE-NOTES.txt  PRJ_VER_INIT
 
 mkdir -p SPECS
-generate_file SPECS/project.spec.in CMAKE_FEDORA_VERSION
 
 YEAR=`date +%Y`
 #copy licenses

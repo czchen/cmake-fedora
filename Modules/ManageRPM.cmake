@@ -12,6 +12,8 @@
 # Reads and defines following variables if dependencies are satisfied:
 #   PRJ_RPM_SPEC_IN_FILE: spec.in that generate spec
 #   PRJ_RPM_SPEC_FILE: spec file for rpmbuild.
+#   RPM_SPEC_BUILD_ARCH: (optional) Set "BuildArch:"
+#   RPM_BUILD_ARCH: (optional) Arch that will be built."
 #   RPM_DIST_TAG: (optional) Current distribution tag such as el5, fc10.
 #     Default: Distribution tag from rpm --showrc
 #
@@ -40,6 +42,9 @@
 #   RPM_BUILD_BUILDROOT: (optional) Directory for RPM build.
 #     Default: ${RPM_BUILD_TOPDIR}/BUILDROOT
 #
+#   RPM_RELEASE_NO: (optional) RPM release number
+#     Default: 1
+#
 # Defines following variables:
 #   RPM_IGNORE_FILES: A list of exclude file patterns for PackSource.
 #     This value is appended to SOURCE_ARCHIVE_IGNORE_FILES after including
@@ -60,7 +65,7 @@
 #     + clean_old_pkg: Remove old source packages and rpms.
 #     This macro defines following variables:
 #     + PRJ_RELEASE: Project release with distribution tags. (e.g. 1.fc13)
-#     + PRJ_RELEASE_NO: Project release number, without distribution tags. (e.g. 1)
+#     + RPM_RELEASE_NO: Project release number, without distribution tags. (e.g. 1)
 #     + PRJ_SRPM_FILE: Path to generated SRPM file, including relative path.
 #     + PRJ_RPM_BUILD_ARCH: Architecture to be build.
 #     + PRJ_RPM_FILES: Binary RPM files to be build.
@@ -83,6 +88,13 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
     INCLUDE(ManageTarget)
     SET(_manage_rpm_dependency_missing 0)
 
+    FIND_PROGRAM_ERROR_HANDLING(RPM_CMD
+	ERROR_MSG " rpm build support is disabled."
+	ERROR_VAR _manage_rpm_dependency_missing
+	VERBOSE_LEVEL ${M_OFF}
+	"rpm"
+	)
+
     FIND_PROGRAM_ERROR_HANDLING(RPMBUILD_CMD
 	ERROR_MSG " rpm build support is disabled."
 	ERROR_VAR _manage_rpm_dependency_missing
@@ -95,23 +107,24 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
 	ERROR_VAR _manage_rpm_dependency_missing
 	VERBOSE_LEVEL ${M_OFF}
 	NAMES "${PROJECT_NAME}.spec.in" "project.spec.in"
-	PATHS "${CMAKE_SOURCE_DIR}/SPECS" "SPECS" "." "${RPM_BUILD_TOPDIR}/SPECS" "${CMAKE_ROOT}/Templates/fedora"
+	PATHS "${CMAKE_SOURCE_DIR}/SPECS" "SPECS" "." "${RPM_BUILD_TOPDIR}/SPECS" 
+	"${CMAKE_SOURCE_DIR}/Templates/fedora"
+	"${CMAKE_ROOT}/Templates/fedora"
 	)
 
     IF(NOT _manage_rpm_dependency_missing)
 	INCLUDE(ManageVariable)
 	SET (SPEC_FILE_WARNING "This file is generated, please modified the .spec.in file instead!")
 
-	SET(RPM_FILES_SECTION_CONTENT "")
-
-	EXECUTE_PROCESS(COMMAND rpm --showrc
-	    COMMAND grep -E "dist[[:space:]]*\\."
-	    COMMAND sed -e "s/^.*dist\\s*\\.//"
-	    COMMAND tr \\n \\t
-	    COMMAND sed  -e s/\\t//
-	    OUTPUT_VARIABLE _RPM_DIST_TAG)
-
+	# %{dist}
+	EXECUTE_PROCESS(COMMAND ${RPM_CMD} -E "%{dist}"
+	    COMMAND sed -e "s/^\\.//"
+	    OUTPUT_VARIABLE _RPM_DIST_TAG
+	    OUTPUT_STRIP_TRAILING_WHITESPACE)
 	SET(RPM_DIST_TAG "${_RPM_DIST_TAG}" CACHE STRING "RPM Dist Tag")
+
+	SET(RPM_RELEASE_NO "1" CACHE STRING "RPM Release Number")
+
 	SET(RPM_BUILD_TOPDIR "${CMAKE_BINARY_DIR}" CACHE PATH "RPM topdir")
 	SET(RPM_BUILD_SPECS "${RPM_BUILD_TOPDIR}/SPECS" CACHE PATH "RPM SPECS dir")
 	SET(RPM_BUILD_SOURCES "${RPM_BUILD_TOPDIR}/SOURCES" CACHE PATH "RPM SOURCES dir")
@@ -122,10 +135,8 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
 
 	## RPM spec.in and RPM-ChangeLog.prev
 	SET(PRJ_RPM_SPEC_FILE "${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec" CACHE FILEPATH "spec")
-	SET(PRJ_RPM_SPEC_IN_FILE "${_PRJ_RPM_SPEC_IN_FILE}" CACHE FILEPATH "spec.in")
-	GET_FILENAME_COMPONENT(_PRJ_RPM_SPEC_IN_DIR "${PRJ_RPM_SPEC_IN_FILE}" PATH)
-	SET(PRJ_RPM_SPEC_IN_DIR "${_PRJ_RPM_SPEC_IN_DIR}" CACHE INTERNAL "Dir contains spec.in")
-	SET(RPM_CHANGELOG_PREV_FILE "${PRJ_RPM_SPEC_IN_DIR}/RPM-ChangeLog.prev" CACHE FILEPATH "ChangeLog.prev for RPM")
+
+	SET(RPM_CHANGELOG_PREV_FILE "${CMAKE_SOURCE_DIR}/SPECS/RPM-ChangeLog.prev" CACHE FILEPATH "ChangeLog.prev for RPM")
 	SET(RPM_CHANGELOG_FILE "${RPM_BUILD_SPECS}/RPM-ChangeLog" CACHE FILEPATH "ChangeLog for RPM")
 
 	# Add RPM build directories in ignore file list.
@@ -141,36 +152,141 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
 
     ENDIF(NOT _manage_rpm_dependency_missing)
 
-    FUNCTION(PRJ_RPM_SPEC_IN_READ_FILE)
-	SETTING_FILE_GET_VARIABLE(_releaseStr Release "${PRJ_RPM_SPEC_IN_FILE}" ":")
-	STRING(REPLACE "%{?dist}" ".${RPM_DIST_TAG}" _PRJ_RELEASE ${_releaseStr})
-	STRING(REPLACE "%{?dist}" "" _PRJ_RELEASE_NO ${_releaseStr})
-	#MESSAGE("_releaseTag=${_releaseTag} _releaseStr=${_releaseStr}")
+    MACRO(PRJ_RPM_SPEC_DATA_PREPARE)
+	# %{_build_arch}
+	IF(RPM_SPEC_BUILD_ARCH STREQUAL "")
+	    EXECUTE_PROCESS(COMMAND ${RPM_CMD} -E "%{_build_arch}"
+		OUTPUT_VARIABLE _RPM_BUILD_ARCH
+		OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-	SET(PRJ_RELEASE ${_PRJ_RELEASE} CACHE STRING "Release with dist" FORCE)
-	SET(PRJ_RELEASE_NO ${_PRJ_RELEASE_NO} CACHE STRING "Release w/o dist" FORCE)
-	SET(PRJ_SRPM "${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE}.src.rpm" CACHE STRING "PRJ SRPM" FORCE)
-	SET(PRJ_SRPM_FILE "${RPM_BUILD_SRPMS}/${PRJ_SRPM}" CACHE FILEPATH "PRJ SRPM File" FORCE)
+	    SET(RPM_BUILD_ARCH "${_RPM_BUILD_ARCH}" 
+		CACHE STRING "RPM Arch")
+	ELSE(RPM_SPEC_BUILD_ARCH STREQUAL "")
+	    SET(RPM_BUILD_ARCH "${RPM_SPEC_BUILD_ARCH}" 
+		CACHE STRING "RPM Arch")
+	    SET(RPM_SPEC_BUILD_ARCH_OUTPUT 
+		"BuildArch:  ${RPM_SPEC_BUILD_ARCH}")
+	ENDIF(RPM_SPEC_BUILD_ARCH STREQUAL "")
 
-	## GET BuildArch
-	SETTING_FILE_GET_VARIABLE(_archStr BuildArch "${PRJ_RPM_SPEC_IN_FILE}" ":")
-	IF(NOT _archStr STREQUAL "noarch")
-	    SET(_archStr ${CMAKE_HOST_SYSTEM_PROCESSOR})
-	ENDIF(NOT _archStr STREQUAL "noarch")
-	SET(PRJ_RPM_BUILD_ARCH "${_archStr}" CACHE STRING "BuildArch")
+	SET(RPM_SPEC_SUMMARY_TRANSLATION_OUTPUT "")
+	SET(_lang "")
+	FOREACH(_sT ${SUMMARY_TRANSLATIONS})
+	    IF(_lang STREQUAL "")
+		SET(_lang "${_sT}")
+	    ELSE(_lang STREQUAL "")
+		LIST(APPEND RPM_SPEC_SUMMARY_TRANSLATION_OUTPUT
+		    "Summary(${_lang}): ${_sT}")
+		SET(_lang "")
+	    ENDIF(_lang STREQUAL "")
+	ENDFOREACH(_sT ${SUMMARY_TRANSLATIONS})
+	SET(RPM_SPEC_URL_OUTPUT ${URL_TEMPLATE})
+	SET(RPM_SPEC_SOURCE0_OUTPUT ${SOURCE_DOWNLOAD_URL_TEMPLATE})
+	
+	SET(RPM_SPEC_BUILD_REQUIRES_OUTPUT "")
+	FOREACH(_bD ${BUILD_REQUIRES})
+	    LIST(APPEND RPM_SPEC_BUILD_REQUIRES_OUTPUT
+		"BuildRequires: ${_bD}")
+	ENDFOREACH(_bD ${BUILD_REQUIRES})
 
-	## Main rpm
-	SET(PRJ_RPM_FILES "${RPM_BUILD_RPMS}/${PRJ_RPM_BUILD_ARCH}/${PROJECT_NAME}-${PRJ_VER}-${PRJ_RELEASE}.${PRJ_RPM_BUILD_ARCH}.rpm"
-	    CACHE STRING "RPM files" FORCE)
+	SET(RPM_SPEC_REQUIRES_OUTPUT "")
+	FOREACH(_d ${REQUIRES})
+	    LIST(APPEND RPM_SPEC_REQUIRES_OUTPUT
+		"Requires:      ${_d}")
+	ENDFOREACH(_d ${REQUIRES})
 
-	## Obtains sub packages
-	## [TODO]
-    ENDFUNCTION(PRJ_RPM_SPEC_IN_READ_FILE)
+	SET(RPM_SPEC_DESCRIPTION_TRANSLATION_OUTPUT "")
+	SET(_lang "")
+	FOREACH(_dT ${DESCRIPTION_TRANSLATIONS})
+	    IF(_lang STREQUAL "")
+		SET(_lang "${_dT}")
+	    ELSE(_lang STREQUAL "")
+		LIST(APPEND RPM_SPEC_DESCRIPTION_TRANSLATION_OUTPUT
+		    "%description -l ${_lang}"
+		    "${_dT}")
+		SET(_lang "")
+	    ENDIF(_lang STREQUAL "")
+	ENDFOREACH(_dT ${DESCRIPTION_TRANSLATIONS})
+
+	IF(HAS_TRANSLATION)
+	    SET(RPM_SPEC_FIND_SECTION_OUTPUT "%find_lang %{name}")
+	    SET(RPM_SPEC_FILES_SECTION_OUTPUT "%files -f %{name}.lang")
+	ELSE(HAS_TRANSLATION)
+	    SET(RPM_SPEC_FILES_SECTION_OUTPUT "%files")
+	ENDIF(HAS_TRANSLATION)
+
+	STRING_JOIN(PRJ_DOC_LIST " " ${FILE_INSTALL_PRJ_DOC_LIST})
+	IF(NOT PRJ_DOC_LIST STREQUAL "")
+	    SET(RPM_SPEC_PRJ_DOC_REMOVAL_OUTPUT 
+		"# We install document using doc
+(cd \$RPM_BUILD_ROOT${PRJ_DOC_DIR}
+    rm -fr *
+)")
+	    LIST(APPEND RPM_SPEC_FILES_SECTION_OUTPUT 
+		"%doc ${PRJ_DOC_LIST}")
+	ENDIF(NOT PRJ_DOC_LIST STREQUAL "")
+
+	FOREACH(_f ${FILE_INSTALL_BIN_LIST})
+	    LIST(APPEND RPM_SPEC_FILES_SECTION_OUTPUT 
+		"%{_bindir}/${_f}")
+	ENDFOREACH(_f ${FILE_INSTALL_BIN_LIST})
+
+	FOREACH(_f ${FILE_INSTALL_LIB_LIST})
+	    LIST(APPEND RPM_SPEC_FILES_SECTION_OUTPUT 
+		"%{_libdir}/${_f}")
+	ENDFOREACH(_f ${FILE_INSTALL_LIB_LIST})
+
+	FOREACH(_f ${FILE_INSTALL_PRJ_LIB_LIST})
+	    LIST(APPEND RPM_SPEC_FILES_SECTION_OUTPUT 
+		"%{_libdir}/%{name}/${_f}")
+	ENDFOREACH(_f ${FILE_INSTALL_PRJ_LIB_LIST})
+
+	FOREACH(_f ${FILE_INSTALL_LIBEXEC_LIST})
+	    LIST(APPEND RPM_SPEC_FILES_SECTION_OUTPUT 
+		"%{_libexecdir}/${_f}")
+	ENDFOREACH(_f ${FILE_INSTALL_LIBEXEC_LIST})
+
+	FOREACH(_f ${FILE_INSTALL_PRJ_LIBEXEC_LIST})
+	    LIST(APPEND RPM_SPEC_FILES_SECTION_OUTPUT 
+		"%{_libexecdir}/%{name}${_f}")
+	ENDFOREACH(_f ${FILE_INSTALL_PRJ_LIBEXEC_LIST})
+
+	FOREACH(_f ${FILE_INSTALL_SYSCONF_LIST})
+	    LIST(APPEND RPM_SPEC_FILES_SECTION_OUTPUT 
+		"%config %{_sysconfdir}/${_f}")
+	ENDFOREACH(_f ${FILE_INSTALL_SYSCONF_LIST})
+
+	FOREACH(_f ${FILE_INSTALL_PRJ_SYSCONF_LIST})
+	    LIST(APPEND RPM_SPEC_FILES_SECTION_OUTPUT 
+		"%config %{_sysconfdir}/%{name}/${_f}")
+	ENDFOREACH(_f ${FILE_INSTALL_PRJ_SYSCONF_LIST})
+
+	FOREACH(_f ${FILE_INSTALL_SYSCONF_NO_REPLACE_LIST})
+	    LIST(APPEND RPM_SPEC_FILES_SECTION_OUTPUT 
+		"%config(noreplce) %{_sysconfdir}/${_f}")
+	ENDFOREACH(_f ${FILE_INSTALL_SYSCONF_NO_REPLACE_LIST})
+
+	FOREACH(_f ${FILE_INSTALL_PRJ_SYSCONF_NO_REPLACE_LIST})
+	    LIST(APPEND RPM_SPEC_FILES_SECTION_OUTPUT 
+		"%config(noreplce) %{_sysconfdir}/%{name}/${_f}")
+	ENDFOREACH(_f ${FILE_INSTALL_PRJ_SYSCONF_NO_REPLACE_LIST})
+
+	FOREACH(_f ${FILE_INSTALL_DATA_LIST})
+	    LIST(APPEND RPM_SPEC_FILES_SECTION_OUTPUT 
+		"%{_datadir}/${_f}")
+	ENDFOREACH(_f ${FILE_INSTALL_DATA_LIST})
+
+	FOREACH(_f ${FILE_INSTALL_PRJ_DATA_LIST})
+	    LIST(APPEND RPM_SPEC_FILES_SECTION_OUTPUT 
+		"%{_datadir}/%{name}/${_f}")
+	ENDFOREACH(_f ${FILE_INSTALL_PRJ_DATA_LIST})
+	STRING_JOIN(RPM_SPEC_FILES_SECTION_OUTPUT "\n" ${RPM_SPEC_FILES_SECTION_OUTPUT})
+
+    ENDMACRO(PRJ_RPM_SPEC_DATA_PREPARE)
 
     MACRO(RPM_CHANGELOG_WRITE_FILE)
 	INCLUDE(DateTimeFormat)
 
-	FILE(WRITE ${RPM_CHANGELOG_FILE} "* ${TODAY_CHANGELOG} ${MAINTAINER} - ${PRJ_VER}-${PRJ_RELEASE_NO}\n")
+	FILE(WRITE ${RPM_CHANGELOG_FILE} "* ${TODAY_CHANGELOG} ${MAINTAINER} - ${PRJ_VER}-${RPM_RELEASE_NO}\n")
 	FILE(READ "${CMAKE_FEDORA_TMP_DIR}/ChangeLog.this" CHANGELOG_ITEMS)
 
 	FILE(APPEND ${RPM_CHANGELOG_FILE} "${CHANGELOG_ITEMS}\n\n")
@@ -204,12 +320,17 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
 
     MACRO(PACK_RPM)
 	IF(NOT _manage_rpm_dependency_missing )
-	    PRJ_RPM_SPEC_IN_READ_FILE()
-	    RPM_CHANGELOG_WRITE_FILE()
+	    SET(PRJ_SRPM_FILE "${RPM_BUILD_SRPMS}/${PROJECT_NAME}-${PRJ_VER}-${RPM_RELEASE_NO}.src.rpm"
+		CACHE STRING "RPM files" FORCE)
+
+	    SET(PRJ_RPM_FILES "${RPM_BUILD_RPMS}/${PRJ_RPM_BUILD_ARCH}/${PROJECT_NAME}-${PRJ_VER}-${RPM_RELEASE_NO}.${PRJ_RPM_BUILD_ARCH}.rpm"
+		CACHE STRING "RPM files" FORCE)
+
+	    PRJ_RPM_SPEC_DATA_PREPARE()
+   	    RPM_CHANGELOG_WRITE_FILE()
 
 	    # Generate spec
 	    CONFIGURE_FILE(${PRJ_RPM_SPEC_IN_FILE} ${PRJ_RPM_SPEC_FILE})
-
 	    #-------------------------------------------------------------------
 	    # RPM build commands and targets
 
@@ -247,8 +368,8 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
 
 	    ADD_CUSTOM_TARGET(install_rpms
 		COMMAND find ${RPM_BUILD_RPMS}/${PRJ_RPM_BUILD_ARCH}
-		-name '${PROJECT_NAME}*-${PRJ_VER}-${PRJ_RELEASE_NO}.*.${PRJ_RPM_BUILD_ARCH}.rpm' !
-		-name '${PROJECT_NAME}-debuginfo-${PRJ_RELEASE_NO}.*.${PRJ_RPM_BUILD_ARCH}.rpm'
+		-name '${PROJECT_NAME}*-${PRJ_VER}-${RPM_RELEASE_NO}.*.${PRJ_RPM_BUILD_ARCH}.rpm' !
+		-name '${PROJECT_NAME}-debuginfo-${RPM_RELEASE_NO}.*.${PRJ_RPM_BUILD_ARCH}.rpm'
 		-print -exec sudo rpm --upgrade --hash --verbose '{}' '\\;'
 		DEPENDS ${PRJ_RPM_FILES}
 		COMMENT "Install all rpms except debuginfo"
@@ -256,14 +377,14 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
 
 	    ADD_CUSTOM_TARGET(rpmlint
 		COMMAND find .
-		-name '${PROJECT_NAME}*-${PRJ_VER}-${PRJ_RELEASE_NO}.*.rpm'
+		-name '${PROJECT_NAME}*-${PRJ_VER}-${RPM_RELEASE_NO}.*.rpm'
 		-print -exec rpmlint '{}' '\\;'
 		DEPENDS ${PRJ_SRPM_FILE} ${PRJ_RPM_FILES}
 		)
 
 	    ADD_CUSTOM_TARGET(clean_old_rpm
 		COMMAND find .
-		-name '${PROJECT_NAME}*.rpm' ! -name '${PROJECT_NAME}*-${PRJ_VER}-${PRJ_RELEASE_NO}.*.rpm'
+		-name '${PROJECT_NAME}*.rpm' ! -name '${PROJECT_NAME}*-${PRJ_VER}-${RPM_RELEASE_NO}.*.rpm'
 		-print -delete
 		COMMAND find ${RPM_BUILD_BUILD}
 		-path '${PROJECT_NAME}*' ! -path '${RPM_BUILD_BUILD}/${PROJECT_NAME}-${PRJ_VER}-*'

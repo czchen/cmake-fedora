@@ -28,6 +28,11 @@ SET(MAINTAINER "Ding-Yi Chen <dchen at redhat.com>")
 SET(VENDOR "Red Hat, APAC, Inc.")
 SET(LICENSE BSD)
 SET(PRJ_GROUP "System Environment/Libraries")
+SET(RPM_SPEC_BUILD_ARCH "noarch")
+SET(URL_TEMPLATE "https://fedorahosted.org/%{name}/")
+SET(SOURCE_DOWNLOAD_URL_TEMPLATE "https://fedorahosted.org/releases/c/m/%{name}/%{name}-%{version}-Source.tar.gz")
+SET(BUILD_REQUIRES "cmake >= 2.6")
+SET(REQUIRES "cmake >= 2.6")
 
 ####################################################################
 # Includes
@@ -40,6 +45,7 @@ INCLUDE(ManageUninstall)
 INCLUDE(ManageSourceVersionControl)
 INCLUDE(ManageFile)
 INCLUDE(ManageArchive)
+INCLUDE(ManageTarget)
 
 ####################################################################
 # Building
@@ -56,11 +62,10 @@ MANAGE_SOURCE_VERSION_CONTROL_GIT()
 
 MANAGE_FILE_INSTALL(PRJ_DOC AUTHORS README ChangeLog COPYING TODO)
 MANAGE_FILE_INSTALL(SYSCONF cmake-fedora.conf) 
-MANAGE_FILE_INSTALL(PRJ_DOC SUBDIR examples CMakeLists.txt)
-MANAGE_DIRECTORY_INSTALL(DATA SUBDIR cmake/Templates/fedora Templates/fedora/) 
 
 ADD_SUBDIRECTORY(Modules)
 ADD_SUBDIRECTORY(scripts)
+ADD_SUBDIRECTORY(Templates)
 
 
 ####################################################################
@@ -76,7 +81,7 @@ INCLUDE(ManageRelease)
 SET(PRJ_IGNORE_FILES_COMMON
     "/doc/"  "\\\\.spec$" "messages.po$" "\\\\.orig$"
 )
-LIST(APPEND SOURCE_ARCHIVE_IGNORE_FILES ${PRJ_IGNORE_FILES_COMMON} "/bin/" "${KOJI_BUILD_SCRATCH}$")
+LIST(APPEND SOURCE_ARCHIVE_IGNORE_FILES ${PRJ_IGNORE_FILES_COMMON} "/bin/")
 
 IF(RPM_BUILD_SOURCES)
     SET(SOURCE_ARCHIVE_DIR ${RPM_BUILD_SOURCES})

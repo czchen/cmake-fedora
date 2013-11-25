@@ -10,10 +10,15 @@ REDHAT_BUGZILLA=879141;992069
   + Changed scripts:
     koji-build-scratch: fedora_1, fedora_2, 
     epel_1, epel_2 can now be used as build scopes.
-  + BODHI_UPDATE_TYPE is no longer required
+  + BODHI_UPDATE_TYPE is no longer required.
+  + No need to manual edit project.spec.in
+  + ADD_CUSTOM_TARGET_COMMAND now allow "ALL"
 - Bug Fixes:
   Resolves: Bug 879141 - Excessive quotation mark for target tag_pre
   Resolves: Bug 992069 - cmake-fedora: FTBFS in rawhide
+- Removed Directory: 
+  + <PRJ_DOC_DIR>/examples: as the examples can be found in
+    <CMAKE_ROOT>/Templates/fedora
 - Removed Variables: 
   + FEDORA_AUTO_KARMA
 
