@@ -1,3 +1,9 @@
+* Sat Aug 03 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.0.5-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_20_Mass_Rebuild
+
+* Wed Feb 13 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.0.5-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_19_Mass_Rebuild
+
 * Thu Nov 22 2012 Ding-Yi Chen <dchen at redhat.com> - 1.0.5-1
 - Fedora 18 support.
 - Source tarball filename is changed back to name-version-Source.tar.gz
