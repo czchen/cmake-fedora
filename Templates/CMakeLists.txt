@@ -1,4 +1,4 @@
 FILE(GLOB TEMPLATE_LIST RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "*.txt" "*.in" "*.template")
 
-MANAGE_FILE_INSTALL(DATA DEST_SUBDIR cmake/Templates fedora) 
+MANAGE_FILE_INSTALL(DATA fedora DEST_SUBDIR cmake/Templates) 
 

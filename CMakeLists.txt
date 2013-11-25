@@ -67,7 +67,6 @@ ADD_SUBDIRECTORY(Modules)
 ADD_SUBDIRECTORY(scripts)
 ADD_SUBDIRECTORY(Templates)
 
-
 ####################################################################
 # Packing
 #

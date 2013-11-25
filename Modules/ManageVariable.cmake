@@ -113,6 +113,13 @@
 #         var: Variable to be set
 #         untrimmed_value: Untrimmed values that may have space, \t, \n, \r in the front or back of the string.
 #
+#   VARIABLE_PARSE_ARGN(var validOptions [arguments ])
+#     - Parse the arguments and put the result in var and var_<optName>
+#       * Parameters:
+#         var: Main variable name.
+#         validOptions: List name of valid options.
+#         arguments: (Optional) variable to be parsed.
+#
 
 IF(NOT DEFINED _MANAGE_VARIABLE_CMAKE_)
     SET(_MANAGE_VARIABLE_CMAKE_ "DEFINED")
@@ -338,5 +345,28 @@ IF(NOT DEFINED _MANAGE_VARIABLE_CMAKE_)
 	#MESSAGE("***SET_VAR: ${var}=|${value}|")
     ENDMACRO(SET_VAR var untrimmedValue)
 
+    MACRO(VARIABLE_PARSE_ARGN var validOptions)
+	SET(_optName "")	## Last _optName
+	SET(_listName ${var})
+
+	## Unset all, otherwise ghost from previous running exists.
+	UNSET(${var})
+	FOREACH(_o ${validOptions})
+	    UNSET(${var}_${_o})
+	ENDFOREACH(_o ${validOptions})
+
+	FOREACH(_arg ${ARGN})
+	    LIST(FIND ${validOptions} "${_arg}" _optIndex)
+	    IF(_optIndex EQUAL -1)
+		## Not an option name. Append to existing options
+		LIST(APPEND ${_listName} "${_arg}")
+	    ELSE(_optIndex EQUAL -1)
+		## Is an option name.
+		## Obtain option name
+		LIST(GET ${validOptions} ${_optIndex} _optName)
+		SET(_listName "${var}_${_optName}")
+	    ENDIF(_optIndex EQUAL -1)
+	ENDFOREACH(_arg ${ARGN})
+    ENDMACRO(VARIABLE_PARSE_ARGN var validOptions)
 ENDIF(NOT DEFINED _MANAGE_VARIABLE_CMAKE_)
 

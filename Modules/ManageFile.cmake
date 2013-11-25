@@ -43,8 +43,7 @@
 # Defines following macros:
 #
 #   MANAGE_FILE_INSTALL(fileType
-#     [DEST_SUBDIR subDir]
-#     [files | FILES files] [ARGS args]
+#     [files | FILES files] [DEST_SUBDIR subDir] [ARGS args]
 #   )
 #     Manage file installation.
 #     Parameter:
@@ -80,52 +79,31 @@ IF(NOT DEFINED _MANAGE_FILE_CMAKE_)
     ENDMACRO(_MANAGE_FILE_INSTALL_FILE_OR_DIR)
 
     MACRO(MANAGE_FILE_INSTALL fileType)
-	SET(_state "")
+	SET(_validOptions "DEST_SUBDIR" "FILES" "ARGS")
+	VARIABLE_PARSE_ARGN(_opt _validOptions ${ARGN})
 	SET(_fileList "")
-	SET(_argList "")
-	SET(_subDir "")
-	FOREACH(_arg ${ARGN})
-	    IF(_arg STREQUAL "DEST_SUBDIR")
-		SET(_state "${_arg}")
-	    ELSEIF(_arg STREQUAL "FILES")
-		SET(_state "${_arg}")
-	    ELSEIF(_arg STREQUAL "ARGS")
-		SET(_state "${_arg}")
-	    ELSE(_arg STREQUAL "DEST_SUBDIR")
-		IF(_state STREQUAL "")
-		    SET(_state "FILES")
-		    LIST(APPEND _fileList "${_arg}")
-		ELSEIF(_state STREQUAL "DEST_SUBDIR")
-		    SET(_subDir "${_arg}")
-		    SET(_state "")
-		ELSEIF(_state STREQUAL "FILES")
-		    LIST(APPEND _fileList "${_arg}")
-		ELSEIF(_state STREQUAL "ARGS")
-		    LIST(APPEND _argList "${_arg}")
-		ENDIF(_state STREQUAL "")
-	    ENDIF(_arg STREQUAL "DEST_SUBDIR")
-	ENDFOREACH(_arg ${ARGN})
+	LIST(APPEND _fileList ${_opt} ${_opt_FILES})
 
 	IF("${fileType}" STREQUAL "SYSCONF_NO_REPLACE")
-	    SET(_destDir "${SYSCONF_DIR}/${_subDir}")
+	    SET(_destDir "${SYSCONF_DIR}/${_opt_DEST_SUBDIR}")
 	    _MANAGE_FILE_INSTALL_FILE_OR_DIR()
 	ELSEIF("${fileType}" STREQUAL "BIN")
-	    SET(_destDir "${${fileType}_DIR}/${_subDir}")
-	    INSTALL(PROGRAMS ${_fileList} DESTINATION "${_destDir}" ${_argList})
+	    SET(_destDir "${${fileType}_DIR}/${_opt_DEST_SUBDIR}")
+	    INSTALL(PROGRAMS ${_fileList} DESTINATION "${_destDir}" ${_opt_ARGS})
 	ELSE("${fileType}" STREQUAL "SYSCONF_NO_REPLACE")
-	    SET(_destDir "${${fileType}_DIR}/${_subDir}")
+	    SET(_destDir "${${fileType}_DIR}/${_opt_DEST_SUBDIR}")
 	    _MANAGE_FILE_INSTALL_FILE_OR_DIR()
 	ENDIF("${fileType}" STREQUAL "SYSCONF_NO_REPLACE")
 
-	IF(_subDir)
+	IF(_opt_DEST_SUBDIR)
 	    FOREACH(_f ${_fileList})
 		LIST(APPEND FILE_INSTALL_${fileType}_LIST 
-		    "${_subDir}/${_f}")
+		    "${_opt_DEST_SUBDIR}/${_f}")
 	    ENDFOREACH(_f ${_fileList})
-	ELSE(_subDir)
+	ELSE(_opt_DEST_SUBDIR)
 	    LIST(APPEND FILE_INSTALL_${fileType}_LIST 
 		"${_fileList}")
-	ENDIF(_subDir)
+	ENDIF(_opt_DEST_SUBDIR)
 	IF(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 	    SET(FILE_INSTALL_${fileType}_LIST ${FILE_INSTALL_${fileType}_LIST} PARENT_SCOPE)
 	ENDIF(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
