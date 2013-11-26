@@ -1,4 +1,4 @@
-PRJ_VER=1.1.4
+PRJ_VER=1.1.5
 SUMMARY=Fedora version will now automatically updated;Fixed 879141; Fixed 992069
 REDHAT_BUGZILLA=879141;992069
 [Changes]
