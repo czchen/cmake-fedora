@@ -4,6 +4,8 @@ REDHAT_BUGZILLA=879141;992069
 [Changes]
 - Enhancement:
   + Fedora version will now automatically updated.
+  + New macros:
+    - VARIABLE_PARSE_ARGN: Parse the arguments.
   + New scripts: 
     cmake-fedora-koji: Koji utilities.
     cmake-fedora-fedpkg: Fedpkg utilities.
@@ -16,12 +18,26 @@ REDHAT_BUGZILLA=879141;992069
 - Bug Fixes:
   Resolves: Bug 879141 - Excessive quotation mark for target tag_pre
   Resolves: Bug 992069 - cmake-fedora: FTBFS in rawhide
+- Changed Modules
+  + ManageUpload:
+    - New macros:
+      + MANAGE_UPLOAD_TARGET
+    - Changed macros:
+      + MANAGE_UPLOAD_SCP: parameter fileAlias replaced with targetName
+      + MANAGE_UPLOAD_SFTP: parameter fileAlias replaced with targetName 
+      + MANAGE_UPLOAD_FEDORAHOSTED: parameter fileAlias replaced with targetName
+      + MANAGE_UPLOAD_SOURCEFORGE: parameter fileAlias replaced with targetName
+    - Removed macros:
+      + MANAGE_UPLOAD_MAKE_TARGET
+      + MANAGE_UPLOAD_CMD
 - Removed Directory: 
   + <PRJ_DOC_DIR>/examples: as the examples can be found in
     <CMAKE_ROOT>/Templates/fedora
 - Removed Variables: 
   + FEDORA_AUTO_KARMA
-
+- Removed Macros:
+  + MANAGE_UPLOAD_MAKE_TARGET
+  + MANAGE_UPLOAD_CMD
 - Removed Targets:
   + bodhi_new: Submit the package to bodhi
   + fedpkg_<tag>_build: Build for tag
