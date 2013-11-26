@@ -107,7 +107,8 @@ ADD_CUSTOM_TARGET(upload
     COMMENT "Uploading all files"
     )
 
-MANAGE_UPLOAD_FEDORAHOSTED(src USER dchen UPLOAD_FILES ${SOURCE_ARCHIVE_FILE})
+MANAGE_UPLOAD_FEDORAHOSTED(upload_fedorahosted_src 
+    UPLOAD_FILES ${SOURCE_ARCHIVE_FILE})
 ADD_DEPENDENCIES(upload upload_fedorahosted_src)
 
 ####################################################################
@@ -124,7 +125,8 @@ ADD_CUSTOM_TARGET_COMMAND(module-only
     COMMAND ln -sf ${MODULE_ONLY_ARCHIVE} ${MODULE_ONLY_LATEST_ARCHIVE}
     )
 
-MANAGE_UPLOAD_FEDORAHOSTED(modules USER dchen UPLOAD_FILES ${MODULE_ONLY_ARCHIVE} ${MODULE_ONLY_LATEST_ARCHIVE})
+MANAGE_UPLOAD_FEDORAHOSTED(upload_fedorahosted_modules 
+    UPLOAD_FILES ${MODULE_ONLY_ARCHIVE} ${MODULE_ONLY_LATEST_ARCHIVE})
 ADD_DEPENDENCIES(upload upload_fedorahosted_modules)
 
 ####################################################################

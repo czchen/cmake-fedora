@@ -259,8 +259,8 @@ for b in `$CMAKE_FEDORA_KOJI_CMD git-branch $@ | xargs `;do
     fi
 done
 
-echo "Running $BODHI_CMD -n $BUGS -t $UPDATE_TYPE -u $BODHI_NAME -N $CHANGELOGTEXT -R testing $bodhiPushList"
+echo "Running $BODHI_CMD -n $BUGS -t $UPDATE_TYPE -u $BODHI_USER -N $CHANGELOGTEXT -R testing $bodhiPushList"
 if [[ -n "$bodhiPushList" ]];then
-    $BODHI_CMD -n $BUGS -t $UPDATE_TYPE -u $BODHI_NAME -N $CHANGELOGTEXT -R testing $bodhiPushList
+    $BODHI_CMD -n $BUGS -t $UPDATE_TYPE -u $BODHI_USER -N $CHANGELOGTEXT -R testing $bodhiPushList
 fi
 
