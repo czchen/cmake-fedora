@@ -1,3 +1,45 @@
+* Tue Nov 26 2013 Ding-Yi Chen <dchen at redhat.com> - 1.1.6-1
+- Enhancement:
+  + Fedora version will now automatically updated.
+  + New macros:
+    - VARIABLE_PARSE_ARGN: Parse the arguments.
+  + New scripts: 
+    cmake-fedora-koji: Koji utilities.
+    cmake-fedora-fedpkg: Fedpkg utilities.
+  + Changed scripts:
+    koji-build-scratch: fedora_1, fedora_2, 
+    epel_1, epel_2 can now be used as build scopes.
+  + BODHI_UPDATE_TYPE is no longer required.
+  + No need to manual edit project.spec.in
+  + ADD_CUSTOM_TARGET_COMMAND now allow "ALL"
+- Bug Fixes:
+  Resolves: Bug 879141 - Excessive quotation mark for target tag_pre
+  Resolves: Bug 992069 - cmake-fedora: FTBFS in rawhide
+- Changed Modules
+  + ManageUpload:
+    - New macros:
+      + MANAGE_UPLOAD_TARGET
+    - Changed macros:
+      + MANAGE_UPLOAD_SCP: parameter fileAlias replaced with targetName
+      + MANAGE_UPLOAD_SFTP: parameter fileAlias replaced with targetName 
+      + MANAGE_UPLOAD_FEDORAHOSTED: parameter fileAlias replaced with targetName
+      + MANAGE_UPLOAD_SOURCEFORGE: parameter fileAlias replaced with targetName
+    - Removed macros:
+      + MANAGE_UPLOAD_MAKE_TARGET
+      + MANAGE_UPLOAD_CMD
+- Removed Directory: 
+  + <PRJ_DOC_DIR>/examples: as the examples can be found in
+    <CMAKE_ROOT>/Templates/fedora
+- Removed Variables: 
+  + FEDORA_AUTO_KARMA
+- Removed Macros:
+  + MANAGE_UPLOAD_MAKE_TARGET
+  + MANAGE_UPLOAD_CMD
+- Removed Targets:
+  + bodhi_new: Submit the package to bodhi
+  + fedpkg_<tag>_build: Build for tag
+  + fedpkg_<tag>_commit: Import, commit and push
+
 * Sat Aug 03 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.0.5-3
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_20_Mass_Rebuild
 
