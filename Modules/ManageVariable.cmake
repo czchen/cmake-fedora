@@ -364,6 +364,8 @@ IF(NOT DEFINED _MANAGE_VARIABLE_CMAKE_)
 		## Is an option name.
 		## Obtain option name
 		LIST(GET ${validOptions} ${_optIndex} _optName)
+		# Init the option name, so it can be find by IF(DEFINED ...)
+		SET(${var}_${_optName} "")
 		SET(_listName "${var}_${_optName}")
 	    ENDIF(_optIndex EQUAL -1)
 	ENDFOREACH(_arg ${ARGN})
