@@ -50,7 +50,7 @@
 #     + fileType: Type of files. Valid values:
 #       BIN, PRJ_DOC, DATA, PRJ_DATA, 
 #       SYSCONF, SYSCONF_NO_REPLACE, 
-#       LIB, LIBEXEC
+#       LIB, LIBEXEC, TARGETS
 #     + DEST_SUBDIR subDir: Subdir of Destination dir
 #     + files: Files to be installed.
 #     + args: Arguments for INSTALL.
@@ -66,6 +66,7 @@ IF(NOT DEFINED _MANAGE_FILE_CMAKE_)
     SET(FILE_INSTALL_SYSCONF_NO_REPLACE_LIST "")
     SET(FILE_INSTALL_LIB_LIST "")
     SET(FILE_INSTALL_LIBEXEC_LIST "")
+    SET(FILE_INSTALL_TARGETS "")
 
     MACRO(_MANAGE_FILE_INSTALL_FILE_OR_DIR)
 	FOREACH(_f ${_fileList})
@@ -91,6 +92,8 @@ IF(NOT DEFINED _MANAGE_FILE_CMAKE_)
 	ELSEIF("${fileType}" STREQUAL "BIN")
 	    SET(_destDir "${${fileType}_DIR}/${_opt_DEST_SUBDIR}")
 	    INSTALL(PROGRAMS ${_fileList} DESTINATION "${_destDir}" ${_opt_ARGS})
+	ELSEIF("${fileType}" STREQUAL "TARGETS")
+	    INSTALL(TARGETS ${_fileList} ${_opt_ARGS})
 	ELSE("${fileType}" STREQUAL "SYSCONF_NO_REPLACE")
 	    SET(_destDir "${${fileType}_DIR}/${_opt_DEST_SUBDIR}")
 	    _MANAGE_FILE_INSTALL_FILE_OR_DIR()
