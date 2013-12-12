@@ -5,7 +5,7 @@ REDHAT_BUGZILLA=
 - Changed Modules:
   + ManageRPM
     - Add support of pre, post, and preun
-  + ManageFie
+  + ManageFile
     - Add absolute file support
     - MANAGE_FILE_INSTALL: Add TARGETS support.
 

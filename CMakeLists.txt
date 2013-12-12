@@ -133,6 +133,7 @@ ADD_DEPENDENCIES(upload upload_fedorahosted_modules)
 # Test Suites.
 #
 ENABLE_TESTING()
+ADD_TEST("ManageFile" ctest -S test/testManageFile.cmake)
 ADD_TEST("ManageString" ctest -S test/testManageString.cmake)
 ADD_TEST("ManageVariable" ctest -S test/testManageVariable.cmake)
 
