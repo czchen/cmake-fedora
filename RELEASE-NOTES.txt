@@ -1,11 +1,18 @@
-PRJ_VER=1.1.7
-SUMMARY=
-REDHAT_BUGZILLA=
+PRJ_VER=1.2.0
+SUMMARY=gitignore file as sorce of CPACK_SOURCE_IGNORE_FILES
+REDHAT_BUGZILLA=1040333
 [Changes]
-- Changed Modules:
-  + ManageRPM
-    - Add support of pre, post, and preun
+- Enhancement:
   + ManageFile
     - Add absolute file support
     - MANAGE_FILE_INSTALL: Add TARGETS support.
+    - GIT_GLOB_TO_CMAKE_REGEX: Convert git glob to cmake regex
+  + ManageArchive:
+    - PACK_SOURCE_CPACK: Pack with CPack
+    - Fixed Bug 1040333 - RFE: Support .gitignore file as 
+      source of CPACK_SOURCE_IGNORE_FILES
+- Changed Modules:
+  + ManageRPM
+    - Add support of pre, post, and preun
+    
 

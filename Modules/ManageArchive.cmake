@@ -4,19 +4,29 @@
 # undesirable. We avoid this by using the sane default ignore list.
 #
 # Includes:
+#   ManageFile
 #   ManageVersion
 #   CPack
 #
 # Included by:
 #   ManageRPM
 #
-# Read and Defines following variable:
-#   SOURCE_ARCHIVE_IGNORE_FILES_DEFAULT: Default list of file patterns
-#     that are normally exclude from the source package.
-#     Override it by setting it before INCLUDE(ManageArchive).
 # Defines following target:
 #     pack_remove_old: Remove old source package files.
 # Defines following function:
+#   PACK_SOURCE_CPACK(var [GENERATOR cpackGenerator] 
+#     [GITIGNORE gitignoreFile] [INCLUDE fileList])
+#   - Pack with CPack. Thus cpack related targets
+#     such as 'package_source' will be added.
+#     Arguments:
+#     + var: Variable that hold cpack filename (without directory).
+#     + GENERATORE cpackGenerator: Specify CPack Generator to be used.
+#       Default: TGZ
+#     + GITIGNORE gitignoreFile: Use gitignore 
+#       file as bases of ignore_file list
+#     + INCLUDE fileList: List of files that to be packed disregarding
+#       the ignore file. This is useful for packing the generated file
+#       such as .pot or Changelog.
 # Defines following macro:
 #   PACK_SOURCE_ARCHIVE(outputDir [generator])
 #   - Pack source files as <projectName>-<PRJ_VER>-Source.<packFormat>,
@@ -46,12 +56,8 @@
 #
 IF(NOT DEFINED _MANAGE_ARCHIVE_CMAKE_)
     SET (_MANAGE_ARCHIVE_CMAKE_ "DEFINED")
-    SET(SOURCE_ARCHIVE_IGNORE_FILES_DEFAULT
-	"/\\\\.svn/"  "/CVS/" "/\\\\.git/"  "\\\\.gitignore$" "/\\\\.hg/"
-	"/\\\\.hgignore$"
-	"~$" "\\\\.swp$" "\\\\.log$" "\\\\.bak$" "\\\\.old$" 
-	"\\\\.gmo$" "\\\\.cache$" "\\\\.tmp$"
-	"\\\\.tar.gz$" "\\\\.tar.bz2$" "/src/config\\\\.h$" "NO_PACK")
+    SET(SOURCE_ARCHIVE_IGNORE_FILES_COMMON
+	"/\\\\.svn/"  "/CVS/" "/\\\\.git/" "/\\\\.hg/" "NO_PACK")
 
     SET(SOURCE_ARCHIVE_IGNORE_FILES_CMAKE 
 	"/CMakeFiles/" "_CPack_Packages/" "/Testing/"
@@ -61,10 +67,13 @@ IF(NOT DEFINED _MANAGE_ARCHIVE_CMAKE_)
 	"/CPack.*\\\\.cmake$" "/CTestTestfile\\\\.cmake$"
 	"Makefile$" "/${PROJECT_NAME}-${PRJ_VER}-SOURCE/"
 	)
-
-    LIST(APPEND SOURCE_ARCHIVE_IGNORE_FILES ${SOURCE_ARCHIVE_IGNORE_FILES_DEFAULT} ${SOURCE_ARCHIVE_IGNORE_FILES_CMAKE})
+    SET(SOURCE_ARCHIVE_IGNORE_FILES 
+	${SOURCE_ARCHIVE_IGNORE_FILES_CMAKE}
+	${SOURCE_ARCHIVE_IGNORE_FILES_COMMON}
+	)
 
     INCLUDE(ManageVersion)
+    INCLUDE(ManageFile)
 
     # Internal:  SOURCE_ARCHIVE_GET_CONTENTS()
     #   - Return all source file to be packed.
@@ -90,7 +99,92 @@ IF(NOT DEFINED _MANAGE_ARCHIVE_CMAKE_)
 	ENDFOREACH(_file ${_ls})
 	SET(SOURCE_ARCHIVE_CONTENTS ${_fileList} CACHE STRING "Source archive file list" FORCE)
 	M_MSG(${M_INFO2} "SOURCE_ARCHIVE_CONTENTS=${SOURCE_ARCHIVE_CONTENTS}")
-    ENDFUNCTION(SOURCE_ARCHIVE_GET_CONTENTS var)
+    ENDFUNCTION(SOURCE_ARCHIVE_GET_CONTENTS)
+
+    MACRO(CMAKE_REGEX_TO_REGEX var cmrgx)
+	STRING(REPLACE "\\\\" "\\" ${var} "${cmrgx}")
+    ENDMACRO(CMAKE_REGEX_TO_REGEX var cmrgx)
+
+    MACRO(SOURCE_ARCHIVE_GET_IGNORE_LIST)
+	SET(_valid_options "GITIGNORE" "INCLUDE")
+	VARIABLE_PARSE_ARGN(_opt _valid_options ${ARGN})
+	IF(_opt_GITIGNORE)
+	    FILE(STRINGS "${_opt_GITIGNORE}" _content REGEX "^[^#]")
+	    FOREACH(_s ${_content})
+		STRING(STRIP "${_s}" _s)
+		STRING(LENGTH "${_s}" _l)
+		IF(_l GREATER 0)
+		    ## Covert the string from glob to cmake regex
+		    GIT_GLOB_TO_CMAKE_REGEX(_cmrgx ${_s})
+		    LIST(APPEND SOURCE_ARCHIVE_IGNORE_FILES "${_cmrgx}")
+		ENDIF(_l GREATER 0)
+	    ENDFOREACH(_s ${_content})
+	ENDIF(_opt_GITIGNORE)
+
+	## regex match one of include files
+	## then remove that line
+	FOREACH(_ignore_pattern ${SOURCE_ARCHIVE_IGNORE_FILES})
+	    CMAKE_REGEX_TO_REGEX(_ip "${_ignore_pattern}")
+	    FOREACH(_i ${_opt_INCLUDE})
+		STRING(REGEX MATCH "${_ip}" _ret "${_i}")
+		IF(_ret)
+		    LIST(REMOVE_ITEM SOURCE_ARCHIVE_IGNORE_FILES "${_ignore_pattern}")
+		ENDIF(_ret)
+	    ENDFOREACH(_i ${_opt_INCLUDE})
+	ENDFOREACH(_ignore_pattern ${SOURCE_ARCHIVE_IGNORE_FILES})
+    ENDMACRO(SOURCE_ARCHIVE_GET_IGNORE_LIST)
+
+    MACRO(PACK_SOURCE_CPACK var)
+	SET(_valid_options "GENERATOR" "INCLUDE" "GITIGNORE")
+	VARIABLE_PARSE_ARGN(_opt _valid_options ${ARGN})
+	IF(NOT _opt_GENERATOR)
+	    SET(_opt_GENERATOR "TGZ")
+	ENDIF(NOT _opt_GENERATOR)
+	SET(CPACK_GENERATOR "${_opt_GENERATOR}")
+	SET(CPACK_SOURCE_GENERATOR ${CPACK_GENERATOR})
+	IF(${CPACK_GENERATOR} STREQUAL "TGZ")
+	    SET(SOURCE_ARCHIVE_FILE_EXTENSION "tar.gz")
+	ELSEIF(${CPACK_GENERATOR} STREQUAL "TBZ2")
+	    SET(SOURCE_ARCHIVE_FILE_EXTENSION "tar.bz2")
+	ELSEIF(${CPACK_GENERATOR} STREQUAL "ZIP")
+	    SET(SOURCE_ARCHIVE_FILE_EXTENSION "zip")
+	ENDIF(${CPACK_GENERATOR} STREQUAL "TGZ")
+	SET(CPACK_PACKAGE_VERSION ${PRJ_VER})
+	IF(PRJ_SUMMARY)
+	    SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PRJ_SUMMARY}")
+	ENDIF(PRJ_SUMMARY)
+	IF(EXISTS ${CMAKE_SOURCE_DIR}/COPYING)
+	    SET(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/COPYING)
+	ENDIF(EXISTS ${CMAKE_SOURCE_DIR}/COPYING)
+
+	IF(EXISTS ${CMAKE_SOURCE_DIR}/README)
+	    SET(CPACK_PACKAGE_DESCRIPTION_FILE ${CMAKE_SOURCE_DIR}/README)
+	ENDIF(EXISTS ${CMAKE_SOURCE_DIR}/README)
+	SET(CPACK_PACKAGE_VENDOR "${VENDOR}")
+
+	SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PRJ_VER}-Source")
+	LIST(APPEND SOURCE_ARCHIVE_IGNORE_FILES "${PROJECT_NAME}-[^/]*-Source")
+	SET(SOURCE_ARCHIVE_NAME "${CPACK_SOURCE_PACKAGE_FILE_NAME}.${SOURCE_ARCHIVE_FILE_EXTENSION}" CACHE STRING "Source archive name" FORCE)
+	SET(SOURCE_ARCHIVE_FILE "${outputDir}/${SOURCE_ARCHIVE_NAME}" CACHE FILEPATH "Source archive file" FORCE)
+
+	SET(_ignore_list_opts "")
+	IF(_opt_INCLUDE)
+	    LIST(APPEND _ignore_list_opts "INCLULDE" ${_opt_INCLUDE})
+	ENDIF(_opt_INCLUDE)
+	IF(_opt_GITIGNORE)
+	    LIST(APPEND _ignore_list_opts "GITIGNORE" ${_opt_GITIGNORE})
+	ENDIF(_opt_GITIGNORE)
+	SOURCE_ARCHIVE_GET_IGNORE_LIST( ${_ignore_list_opts})
+
+	LIST(APPEND CPACK_SOURCE_IGNORE_FILES ${SOURCE_ARCHIVE_IGNORE_FILES})
+	SOURCE_ARCHIVE_GET_CONTENTS()
+	SET(SOURCE_ARCHIVE_CONTENTS_ABSOLUTE "")
+	FOREACH(_file ${SOURCE_ARCHIVE_CONTENTS})
+	    LIST(APPEND SOURCE_ARCHIVE_CONTENTS_ABSOLUTE "${CMAKE_HOME_DIRECTORY}/${_file}")
+	ENDFOREACH(_file ${SOURCE_ARCHIVE_CONTENTS})
+
+	INCLUDE(CPack)
+    ENDMACRO(PACK_SOURCE_CPACK var)
 
     MACRO(PACK_SOURCE_ARCHIVE outputDir)
 	IF(PRJ_VER STREQUAL "")
@@ -114,7 +208,7 @@ IF(NOT DEFINED _MANAGE_ARCHIVE_CMAKE_)
 	SET(CPACK_PACKAGE_VERSION ${PRJ_VER})
 
 	IF(EXISTS ${CMAKE_SOURCE_DIR}/COPYING)
-	    SET(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/README)
+	    SET(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/COPYING)
 	ENDIF(EXISTS ${CMAKE_SOURCE_DIR}/COPYING)
 
 	IF(EXISTS ${CMAKE_SOURCE_DIR}/README)

@@ -41,11 +41,10 @@
 #       to FIND_PROGRAM
 #
 # Defines following macros:
-#
 #   MANAGE_FILE_INSTALL(fileType
 #     [files | FILES files] [DEST_SUBDIR subDir] [ARGS args]
 #   )
-#     Manage file installation.
+#   - Manage file installation.
 #     Parameter:
 #     + fileType: Type of files. Valid values:
 #       BIN, PRJ_DOC, DATA, PRJ_DATA, 
@@ -54,7 +53,15 @@
 #     + DEST_SUBDIR subDir: Subdir of Destination dir
 #     + files: Files to be installed.
 #     + args: Arguments for INSTALL.
-
+#
+#   GIT_GLOB_TO_CMAKE_REGEX(var glob)
+#   - Convert git glob to cmake file regex
+#     This macro covert git glob used in gitignore to
+#     cmake file regex used in CPACK_SOURCE_IGNORE_FILES
+#     Parameter:
+#     + var: Variable that hold the result.
+#     + glob: Glob to be converted
+#
 
 IF(NOT DEFINED _MANAGE_FILE_CMAKE_)
     SET(_MANAGE_FILE_CMAKE_ "DEFINED")
@@ -202,11 +209,11 @@ IF(NOT DEFINED _MANAGE_FILE_CMAKE_)
 	STRING(REGEX REPLACE "[*]{2}" "!d" _s "${_s}")
 	STRING(REGEX REPLACE "[*]" "!s" _s "${_s}")
 	STRING(REGEX REPLACE "[?]" "!q" _s "${_s}")
-	STRING(REGEX REPLACE "[.]" "\\\\\\\\\\\\\\\\." _s "${_s}")
+	STRING(REGEX REPLACE "[.]" "\\\\\\\\." _s "${_s}")
 	STRING(REGEX REPLACE "!d" ".*" _s "${_s}")
 	STRING(REGEX REPLACE "!s" "[^/]*" _s "${_s}")
 	STRING(REGEX REPLACE "!q" "[^/]" _s "${_s}")
-	STRING(REGEX REPLACE "!e" "[^/]" _s "${_s}")
+	STRING(REGEX REPLACE "!e" "!" _s "${_s}")
 	STRING(LENGTH "${_s}" _len)
 	MATH(EXPR _l ${_len}-1)
 	STRING(SUBSTRING "${_s}" ${_l} 1 _t)
