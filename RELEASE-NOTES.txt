@@ -11,7 +11,13 @@ REDHAT_BUGZILLA=1040333
     - PACK_SOURCE_CPACK: Pack with CPack
     - Fixed Bug 1040333 - RFE: Support .gitignore file as 
       source of CPACK_SOURCE_IGNORE_FILES
+  + ManageVariable:
+    - VARIABLE_TO_ARGN: Merge the variable and options to 
+      the form of ARGN.
 - Changed Modules:
+  + ManageArchive:
+    - PACK_SOURCE_ARCHIVE: Can now pass either 
+      empty, outputDir, or source File
   + ManageRPM
     - Add support of pre, post, and preun
     
