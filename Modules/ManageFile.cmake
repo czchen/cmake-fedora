@@ -72,30 +72,45 @@ IF(NOT DEFINED _MANAGE_FILE_CMAKE_)
        	"LIB" "LIBEXEC"
 	)
 
-    MACRO(_MANAGE_FILE_INSTALL_FILE_OR_DIR)
+    MACRO(_MANAGE_FILE_SET_FILE_INSTALL_LIST fileType)
+	SET(FILE_INSTALL_${fileType}_LIST "${FILE_INSTALL_${fileType}_LIST}"
+	    CACHE INTERNAL "List of files install as ${fileType}" FORCE
+	    )
+    ENDMACRO(_MANAGE_FILE_SET_FILE_INSTALL_LIST fileType)
+
+    FOREACH(_fLT ${FILE_INSTALL_LIST_TYPES})
+	SET(FILE_INSTALL_${_fLT}_LIST "")
+	_MANAGE_FILE_SET_FILE_INSTALL_LIST(${_fLT})
+    ENDFOREACH(_fLT ${FILE_INSTALL_LIST_TYPES})
+
+
+    MACRO(_MANAGE_FILE_INSTALL_FILE_OR_DIR fileType)
 	FOREACH(_f ${_fileList})
 	    GET_FILENAME_COMPONENT(_a "${_f}" ABSOLUTE)
 	    SET(_absolute "")
 	    STRING(REGEX MATCH "^/" _absolute "${_f}")
-	    MESSAGE("# _f=${_f} _a=${_a} _destDir=${_destDir}")
 	    IF(IS_DIRECTORY "${_a}") 
 		INSTALL(DIRECTORY ${_f} DESTINATION "${_destDir}" ${ARGN})
+		IF(_absolute)
+		    GET_FILENAME_COMPONENT(_f "${_f}" NAME)
+		ENDIF(_absolute)
 	    ELSE(IS_DIRECTORY "${_a}") 
 		INSTALL(FILES ${_f} DESTINATION "${_destDir}" ${ARGN})
 		IF(_absolute)
-		    GET_FILENAME_COMPONENT(_bF "${_f}" NAME)
-		    LIST(APPEND FILE_INSTALL_${fileType}_LIST
-			"${_destDir}/${_bF}")
-		ELSE(_absolute)
-		    LIST(APPEND FILE_INSTALL_${fileType}_LIST
-			"${_destDir}/${_f}")
+		    GET_FILENAME_COMPONENT(_f "${_f}" NAME)
 		ENDIF(_absolute)
 	    ENDIF(IS_DIRECTORY "${_a}") 
+	    IF(_opt_DEST_SUBDIR)
+		LIST(APPEND FILE_INSTALL_${fileType}_LIST
+		    "${_opt_DEST_SUBDIR}/${_f}")
+	    ELSE(_opt_DEST_SUBDIR)
+		LIST(APPEND FILE_INSTALL_${fileType}_LIST
+		    "${_f}")
+	    ENDIF(_opt_DEST_SUBDIR)
 	ENDFOREACH(_f ${_fileList})
-	SET(FILE_INSTALL_${fileType}_LIST "${FILE_INSTALL_${fileType}_LIST}"
-	    CACHE INTERNAL "List of files install as ${fileType}"
-	    )
-    ENDMACRO(_MANAGE_FILE_INSTALL_FILE_OR_DIR)
+	_MANAGE_FILE_SET_FILE_INSTALL_LIST("${fileType}")
+
+    ENDMACRO(_MANAGE_FILE_INSTALL_FILE_OR_DIR fileType)
 
     MACRO(_MANAGE_FILE_INSTALL_TARGET)
 	SET(_installValidOptions "RUNTIME" "LIBEXEC" "LIBRARY" "ARCHIVE")
@@ -107,15 +122,11 @@ IF(NOT DEFINED _MANAGE_FILE_CMAKE_)
 		LIST(APPEND _installOptions RUNTIME)
 		IF(_oT_RUNTIME)
 		    LIST(APPEND FILE_INSTALL_BIN_LIST ${_f})
-		    SET(FILE_INSTALL_BIN_LIST "${FILE_INSTALL_BIN_LIST}"
-			CACHE INTERNAL "List of files install as BIN"
-			)
+		    _MANAGE_FILE_SET_FILE_INSTALL_LIST("BIN")
 		    LIST(APPEND _installOptions "${_oT_RUNTIME}")
 		ELSEIF(_oT_LIBEXEC)
 		    LIST(APPEND FILE_INSTALL_LIBEXEC_LIST ${_f})
-		    SET(FILE_INSTALL_LIBEXEC_LIST "${FILE_INSTALL_LIBEXEC_LIST}"
-		    	CACHE INTERNAL "List of files install as LIBEXEC"
-		    	)
+		    _MANAGE_FILE_SET_FILE_INSTALL_LIST("LIBEXEC")
 		    LIST(APPEND _installOptions "${_oT_LIBEXEC}")
 		ELSE(_oT_RUNTIME)
 		    M_MSG(${M_ERROR} 
@@ -123,9 +134,7 @@ IF(NOT DEFINED _MANAGE_FILE_CMAKE_)
 		ENDIF(_oT_RUNTIME)
 	    ELSEIF(_tP STREQUAL "SHARED_LIBRARY")
 		LIST(APPEND FILE_INSTALL_LIB_LIST ${_f})
-		SET(FILE_INSTALL_LIB_LIST "${FILE_INSTALL_LIB_LIST}"
-		    CACHE INTERNAL "List of files install as LIB"
-		    )
+		_MANAGE_FILE_SET_FILE_INSTALL_LIST("LIB")
 		LIST(APPEND _installOptions "LIBRARY" "${_oT_LIBRARY}")
 	    ELSEIF(_tP STREQUAL "STATIC_LIBRARY")
 		M_MSG(${M_OFF} 
@@ -147,32 +156,19 @@ IF(NOT DEFINED _MANAGE_FILE_CMAKE_)
 
 	IF("${fileType}" STREQUAL "SYSCONF_NO_REPLACE")
 	    SET(_destDir "${SYSCONF_DIR}/${_opt_DEST_SUBDIR}")
-	    _MANAGE_FILE_INSTALL_FILE_OR_DIR()
+	    _MANAGE_FILE_INSTALL_FILE_OR_DIR("${fileType}")
 	ELSEIF("${fileType}" STREQUAL "BIN")
 	    SET(_destDir "${${fileType}_DIR}/${_opt_DEST_SUBDIR}")
 	    INSTALL(PROGRAMS ${_fileList} DESTINATION "${_destDir}" ${_opt_ARGS})
+	    LIST(APPEND FILE_INSTALL_${fileType}_LIST
+		"${_fileList}")
+	    _MANAGE_FILE_SET_FILE_INSTALL_LIST("${fileType}")
 	ELSEIF("${fileType}" STREQUAL "TARGETS")
 	    _MANAGE_FILE_INSTALL_TARGET(${_opt_ARGS})
 	ELSE("${fileType}" STREQUAL "SYSCONF_NO_REPLACE")
 	    SET(_destDir "${${fileType}_DIR}/${_opt_DEST_SUBDIR}")
-	    _MANAGE_FILE_INSTALL_FILE_OR_DIR()
+	    _MANAGE_FILE_INSTALL_FILE_OR_DIR("${fileType}")
 	ENDIF("${fileType}" STREQUAL "SYSCONF_NO_REPLACE")
-
-	IF(_opt_DEST_SUBDIR)
-	    FOREACH(_f ${_fileList})
-		LIST(APPEND FILE_INSTALL_${fileType}_LIST 
-		    "${_opt_DEST_SUBDIR}/${_f}")
-	    ENDFOREACH(_f ${_fileList})
-	ELSE(_opt_DEST_SUBDIR)
-	    LIST(APPEND FILE_INSTALL_${fileType}_LIST 
-		"${_fileList}")
-	ENDIF(_opt_DEST_SUBDIR)
-	MESSAGE("#2 FILE_INSTALL_${fileType}_LIST=${FILE_INSTALL_${fileType}_LIST}")
-	SET(FILE_INSTALL_${fileType}_LIST 
-	    ${FILE_INSTALL_${fileType}_LIST} 
-	    CACHE STRING "File install type ${_fLT}" FORCE
-	    )
-	MESSAGE("#3 FILE_INSTALL_${fileType}_LIST=${FILE_INSTALL_${fileType}_LIST}")
     ENDMACRO(MANAGE_FILE_INSTALL fileType)
 
     FUNCTION(FIND_FILE_ERROR_HANDLING VAR)
