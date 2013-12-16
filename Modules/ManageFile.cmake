@@ -12,16 +12,17 @@
 #     [VERBOSE_LEVEL verboseLevel]
 #     [FIND_FILE_ARGS ...]
 #   )
-#     Find a file, with proper error handling.
-#     It is essentially a wrapper of FIND_FILE
-#     Parameter:
-#     + VAR: The variable that stores the path of the found program.
-#     + name: The filename of the command.
-#     + verboseLevel: See ManageMessage for semantic of each verbose level.
-#     + ERROR_MSG errorMessage: Error message to be append.
-#     + ERROR_VAR errorVar: Variable to be set as 1 when not found.
-#     + FIND_FILE_ARGS: A list of arguments to be passed 
-#       to FIND_FILE
+#     - Find a file, with proper error handling.
+#       It is essentially a wrapper of FIND_FILE
+#       * Parameter:
+#         + VAR: The variable that stores the path of the found program.
+#         + name: The filename of the command.
+#         + verboseLevel: See ManageMessage for semantic of 
+#           each verbose level.
+#         + ERROR_MSG errorMessage: Error message to be append.
+#         + ERROR_VAR errorVar: Variable to be set as 1 when not found.
+#         + FIND_FILE_ARGS: A list of arguments to be passed 
+#           to FIND_FILE
 #
 #   FIND_PROGRAM_ERROR_HANDLING(<VAR>
 #     [ERROR_MSG errorMessage]
@@ -29,63 +30,114 @@
 #     [VERBOSE_LEVEL verboseLevel]
 #     [FIND_PROGRAM_ARGS ...]
 #   )
-#     Find an executable program, with proper error handling.
-#     It is essentially a wrapper of FIND_PROGRAM
-#     Parameter:
-#     + VAR: The variable that stores the path of the found program.
-#     + name: The filename of the command.
-#     + verboseLevel: See ManageMessage for semantic of each verbose level.
-#     + ERROR_MSG errorMessage: Error message to be append.
-#     + ERROR_VAR errorVar: Variable to be set as 1 when not found.
-#     + FIND_PROGRAM_ARGS: A list of arguments to be passed 
-#       to FIND_PROGRAM
+#     - Find an executable program, with proper error handling.
+#       It is essentially a wrapper of FIND_PROGRAM
+#       * Parameter:
+#         + VAR: The variable that stores the path of the found program.
+#         + name: The filename of the command.
+#         + verboseLevel: See ManageMessage for semantic of 
+#           each verbose level.
+#         + ERROR_MSG errorMessage: Error message to be append.
+#         + ERROR_VAR errorVar: Variable to be set as 1 when not found.
+#         + FIND_PROGRAM_ARGS: A list of arguments to be passed 
+#           to FIND_PROGRAM
 #
 # Defines following macros:
 #   MANAGE_FILE_INSTALL(fileType
 #     [files | FILES files] [DEST_SUBDIR subDir] [ARGS args]
 #   )
-#   - Manage file installation.
-#     Parameter:
-#     + fileType: Type of files. Valid values:
-#       BIN, PRJ_DOC, DATA, PRJ_DATA, 
-#       SYSCONF, SYSCONF_NO_REPLACE, 
-#       LIB, LIBEXEC, TARGETS
-#     + DEST_SUBDIR subDir: Subdir of Destination dir
-#     + files: Files to be installed.
-#     + args: Arguments for INSTALL.
+#     - Manage file installation.
+#       * Parameter:
+#         + fileType: Type of files. Valid values:
+#           BIN, PRJ_DOC, DATA, PRJ_DATA, 
+#           SYSCONF, SYSCONF_NO_REPLACE, 
+#           LIB, LIBEXEC, TARGETS
+#         + DEST_SUBDIR subDir: Subdir of Destination dir
+#         + files: Files to be installed.
+#         + args: Arguments for INSTALL.
 #
 #   GIT_GLOB_TO_CMAKE_REGEX(var glob)
-#   - Convert git glob to cmake file regex
-#     This macro covert git glob used in gitignore to
-#     cmake file regex used in CPACK_SOURCE_IGNORE_FILES
-#     Parameter:
-#     + var: Variable that hold the result.
-#     + glob: Glob to be converted
+#     - Convert git glob to cmake file regex
+#       This macro covert git glob used in gitignore to
+#       cmake file regex used in CPACK_SOURCE_IGNORE_FILES
+#       * Parameter:
+#         + var: Variable that hold the result.
+#         + glob: Glob to be converted
 #
 
 IF(NOT DEFINED _MANAGE_FILE_CMAKE_)
     SET(_MANAGE_FILE_CMAKE_ "DEFINED")
-    SET(FILE_INSTALL_BIN_LIST "" )
-    SET(FILE_INSTALL_PRJ_DOC_LIST "")
-    SET(FILE_INSTALL_DATA_LIST "")
-    SET(FILE_INSTALL_PRJ_DATA_LIST "")
-    SET(FILE_INSTALL_SYSCONF_LIST "")
-    SET(FILE_INSTALL_SYSCONF_NO_REPLACE_LIST "")
-    SET(FILE_INSTALL_LIB_LIST "")
-    SET(FILE_INSTALL_LIBEXEC_LIST "")
-    SET(FILE_INSTALL_TARGETS "")
+    SET(FILE_INSTALL_LIST_TYPES 
+	"BIN" "PRJ_DOC" "DATA" "PRJ_DATA" "SYSCONF" "SYSCONF_NO_REPLACE"
+       	"LIB" "LIBEXEC"
+	)
 
     MACRO(_MANAGE_FILE_INSTALL_FILE_OR_DIR)
 	FOREACH(_f ${_fileList})
 	    GET_FILENAME_COMPONENT(_a "${_f}" ABSOLUTE)
+	    SET(_absolute "")
+	    STRING(REGEX MATCH "^/" _absolute "${_f}")
+	    MESSAGE("# _f=${_f} _a=${_a} _destDir=${_destDir}")
 	    IF(IS_DIRECTORY "${_a}") 
-		INSTALL(DIRECTORY ${_f} DESTINATION "${_destDir}" ${_argList})
+		INSTALL(DIRECTORY ${_f} DESTINATION "${_destDir}" ${ARGN})
 	    ELSE(IS_DIRECTORY "${_a}") 
-		INSTALL(FILES ${_f} DESTINATION "${_destDir}" ${_argList})
-
+		INSTALL(FILES ${_f} DESTINATION "${_destDir}" ${ARGN})
+		IF(_absolute)
+		    GET_FILENAME_COMPONENT(_bF "${_f}" NAME)
+		    LIST(APPEND FILE_INSTALL_${fileType}_LIST
+			"${_destDir}/${_bF}")
+		ELSE(_absolute)
+		    LIST(APPEND FILE_INSTALL_${fileType}_LIST
+			"${_destDir}/${_f}")
+		ENDIF(_absolute)
 	    ENDIF(IS_DIRECTORY "${_a}") 
 	ENDFOREACH(_f ${_fileList})
+	SET(FILE_INSTALL_${fileType}_LIST "${FILE_INSTALL_${fileType}_LIST}"
+	    CACHE INTERNAL "List of files install as ${fileType}"
+	    )
     ENDMACRO(_MANAGE_FILE_INSTALL_FILE_OR_DIR)
+
+    MACRO(_MANAGE_FILE_INSTALL_TARGET)
+	SET(_installValidOptions "RUNTIME" "LIBEXEC" "LIBRARY" "ARCHIVE")
+	VARIABLE_PARSE_ARGN(_oT _installValidOptions ${ARGN})
+	SET(_installOptions "")
+	FOREACH(_f ${_fileList})
+	    GET_TARGET_PROPERTY(_tP "${_f}" TYPE)
+	    IF(_tP STREQUAL "EXECUTABLE")
+		LIST(APPEND _installOptions RUNTIME)
+		IF(_oT_RUNTIME)
+		    LIST(APPEND FILE_INSTALL_BIN_LIST ${_f})
+		    SET(FILE_INSTALL_BIN_LIST "${FILE_INSTALL_BIN_LIST}"
+			CACHE INTERNAL "List of files install as BIN"
+			)
+		    LIST(APPEND _installOptions "${_oT_RUNTIME}")
+		ELSEIF(_oT_LIBEXEC)
+		    LIST(APPEND FILE_INSTALL_LIBEXEC_LIST ${_f})
+		    SET(FILE_INSTALL_LIBEXEC_LIST "${FILE_INSTALL_LIBEXEC_LIST}"
+		    	CACHE INTERNAL "List of files install as LIBEXEC"
+		    	)
+		    LIST(APPEND _installOptions "${_oT_LIBEXEC}")
+		ELSE(_oT_RUNTIME)
+		    M_MSG(${M_ERROR} 
+			"MANAGE_FILE_INSTALL_TARGETS: Type ${_tP} is not yet implemented.")
+		ENDIF(_oT_RUNTIME)
+	    ELSEIF(_tP STREQUAL "SHARED_LIBRARY")
+		LIST(APPEND FILE_INSTALL_LIB_LIST ${_f})
+		SET(FILE_INSTALL_LIB_LIST "${FILE_INSTALL_LIB_LIST}"
+		    CACHE INTERNAL "List of files install as LIB"
+		    )
+		LIST(APPEND _installOptions "LIBRARY" "${_oT_LIBRARY}")
+	    ELSEIF(_tP STREQUAL "STATIC_LIBRARY")
+		M_MSG(${M_OFF} 
+		    "MANAGE_FILE_INSTALL_TARGETS: Fedora does not recommend type ${_tP}, excluded from rpm")
+		LIST(APPEND _installOptions "ARCHIVE" "${_oT_ARCHIVE}")
+	    ELSE(_tP STREQUAL "EXECUTABLE")
+		M_MSG(${M_ERROR} 
+		    "MANAGE_FILE_INSTALL_TARGETS: Type ${_tP} is not yet implemented.")
+	    ENDIF(_tP STREQUAL "EXECUTABLE")
+	ENDFOREACH(_f ${_fileList})
+	INSTALL(TARGETS ${_fileList} ${_installOptions})
+    ENDMACRO(_MANAGE_FILE_INSTALL_TARGET)
 
     MACRO(MANAGE_FILE_INSTALL fileType)
 	SET(_validOptions "DEST_SUBDIR" "FILES" "ARGS")
@@ -100,7 +152,7 @@ IF(NOT DEFINED _MANAGE_FILE_CMAKE_)
 	    SET(_destDir "${${fileType}_DIR}/${_opt_DEST_SUBDIR}")
 	    INSTALL(PROGRAMS ${_fileList} DESTINATION "${_destDir}" ${_opt_ARGS})
 	ELSEIF("${fileType}" STREQUAL "TARGETS")
-	    INSTALL(TARGETS ${_fileList} ${_opt_ARGS})
+	    _MANAGE_FILE_INSTALL_TARGET(${_opt_ARGS})
 	ELSE("${fileType}" STREQUAL "SYSCONF_NO_REPLACE")
 	    SET(_destDir "${${fileType}_DIR}/${_opt_DEST_SUBDIR}")
 	    _MANAGE_FILE_INSTALL_FILE_OR_DIR()
@@ -115,10 +167,12 @@ IF(NOT DEFINED _MANAGE_FILE_CMAKE_)
 	    LIST(APPEND FILE_INSTALL_${fileType}_LIST 
 		"${_fileList}")
 	ENDIF(_opt_DEST_SUBDIR)
-	IF(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-	    SET(FILE_INSTALL_${fileType}_LIST ${FILE_INSTALL_${fileType}_LIST} PARENT_SCOPE)
-	ENDIF(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
-
+	MESSAGE("#2 FILE_INSTALL_${fileType}_LIST=${FILE_INSTALL_${fileType}_LIST}")
+	SET(FILE_INSTALL_${fileType}_LIST 
+	    ${FILE_INSTALL_${fileType}_LIST} 
+	    CACHE STRING "File install type ${_fLT}" FORCE
+	    )
+	MESSAGE("#3 FILE_INSTALL_${fileType}_LIST=${FILE_INSTALL_${fileType}_LIST}")
     ENDMACRO(MANAGE_FILE_INSTALL fileType)
 
     FUNCTION(FIND_FILE_ERROR_HANDLING VAR)
