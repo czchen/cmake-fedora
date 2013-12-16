@@ -40,3 +40,16 @@ TEST_STR_MATCH(BASE_URL "http://example.com/")
 TEST_STR_MATCH(FLIES_PATH "flies" )
 TEST_STR_MATCH(FLIES_URL "\\\${BASE_URL}\\\${FLIES_PATH}")
 
+SET(_valid_options "GITIGNORE" "INCLUDE")
+VARIABLE_PARSE_ARGN(_opt _valid_options "GITIGNORE" ".gitignore" 
+    "INCLUDE" ".pot")
+IF(NOT "${_opt}" STREQUAL "")
+    MESSAGE(SEND_ERROR "_opt should be empty instead of |${_opt}|")
+ENDIF(NOT "${_opt}" STREQUAL "")
+IF(NOT _opt_GITIGNORE STREQUAL ".gitignore")
+    MESSAGE(SEND_ERROR "_opt_GITGNORE should be '.gitignore'")
+ENDIF(NOT _opt_GITIGNORE STREQUAL ".gitignore")
+IF(NOT _opt_INCLUDE STREQUAL ".pot")
+    MESSAGE(SEND_ERROR "_opt_INCLUDE should be '.pot'")
+ENDIF(NOT _opt_INCLUDE STREQUAL ".pot")
+
