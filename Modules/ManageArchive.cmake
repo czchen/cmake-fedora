@@ -13,40 +13,45 @@
 #
 # Defines following target:
 #     pack_remove_old: Remove old source package files.
-# Defines following function:
+# Defines following macro:
 #   PACK_SOURCE_CPACK(var [GENERATOR cpackGenerator] 
-#     [GITIGNORE gitignoreFile] [INCLUDE fileList])
+#     [GITIGNORE gitignoreFile] [INCLUDE fileList]
+#   )
 #   - Pack with CPack. Thus cpack related targets
 #     such as 'package_source' will be added.
 #     Arguments:
 #     + var: Variable that hold cpack filename (without directory).
-#     + GENERATORE cpackGenerator: Specify CPack Generator to be used.
+#     + GENERATOR cpackGenerator: Specify CPack Generator to be used.
 #       Default: TGZ
 #     + GITIGNORE gitignoreFile: Use gitignore 
 #       file as bases of ignore_file list
 #     + INCLUDE fileList: List of files that to be packed disregarding
 #       the ignore file. This is useful for packing the generated file
 #       such as .pot or Changelog.
-# Defines following macro:
-#   PACK_SOURCE_ARCHIVE(outputDir [generator])
-#   - Pack source files as <projectName>-<PRJ_VER>-Source.<packFormat>,
-#     Arguments:
-#     + outputDir: Directory to write source archive.
-#     + generator: (Optional) Method to make archive. Basically this argument
-#       is passed as CPACK_GENERATOR. Default to TGZ.
-#     Read following variables:
+#     Read and Write to following variable:
+#     Define following variables:
 #     + PROJECT_NAME: Project name
-#     + VENDOR: Organization that issue this project.
 #     + PRJ_VER: Project version
 #     + PRJ_SUMMARY: (Optional) Project summary
-#     + SOURCE_ARCHIVE_IGNORE_FILES: A list of regex filename pattern
-#       that should be excluded from source archive file.
-#       (SOURCE_ARCHIVE_IGNORE_FILE_CMAKE) is already in this list.
-#     Define following variables:
+#     + VENDOR: Organization that issue this project.
 #     + SOURCE_ARCHIVE_CONTENTS: List of files to be packed to archive.
-#     + SOURCE_ARCHIVE_FILE_EXTENSION: File extension of the source package
-#       files.
+#     + SOURCE_ARCHIVE_FILE_EXTENSION: File extension of 
+#       the source package
+#     + SOURCE_ARCHIVE_IGNORE_FILES: List of files to be 
+#       ignored to archive.
 #     + SOURCE_ARCHIVE_NAME: Name of source archive (without path)
+#
+#   PACK_SOURCE_ARCHIVE([outputDir | OUTPUT_FILE file] 
+#     [GENERATOR cpackGenerator] 
+#     [GITIGNORE gitignoreFile] [INCLUDE fileList])[generator]
+#   )
+#   - Pack source archive, this provide an convenient wrapper
+#     of PACK_SOURCE_ARCHIVEfiles as <projectName>-<PRJ_VER>-Source.<packFormat>,
+#     Arguments:
+#     + outputDir: Directory to write source archive.
+#     + OUTPUT_FILE file: Output file with path.
+#     See PACK_SOURCE_CPACK for other parameters.
+#     Read following variables:
 #     + SOURCE_ARCHIVE_FILE: Path to source archive file
 #     Target:
 #     + pack_src: Pack source files like package_source.
@@ -165,15 +170,9 @@ IF(NOT DEFINED _MANAGE_ARCHIVE_CMAKE_)
 	SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PRJ_VER}-Source")
 	LIST(APPEND SOURCE_ARCHIVE_IGNORE_FILES "${PROJECT_NAME}-[^/]*-Source")
 	SET(SOURCE_ARCHIVE_NAME "${CPACK_SOURCE_PACKAGE_FILE_NAME}.${SOURCE_ARCHIVE_FILE_EXTENSION}" CACHE STRING "Source archive name" FORCE)
-	SET(SOURCE_ARCHIVE_FILE "${outputDir}/${SOURCE_ARCHIVE_NAME}" CACHE FILEPATH "Source archive file" FORCE)
+	SET(${var} "${SOURCE_ARCHIVE_NAME}")
 
-	SET(_ignore_list_opts "")
-	IF(_opt_INCLUDE)
-	    LIST(APPEND _ignore_list_opts "INCLULDE" ${_opt_INCLUDE})
-	ENDIF(_opt_INCLUDE)
-	IF(_opt_GITIGNORE)
-	    LIST(APPEND _ignore_list_opts "GITIGNORE" ${_opt_GITIGNORE})
-	ENDIF(_opt_GITIGNORE)
+	VARIABLE_TO_ARGN(_ignore_list_opts "_opt" "INCLUDE" "GITIGNORE")
 	SOURCE_ARCHIVE_GET_IGNORE_LIST( ${_ignore_list_opts})
 
 	LIST(APPEND CPACK_SOURCE_IGNORE_FILES ${SOURCE_ARCHIVE_IGNORE_FILES})
@@ -186,75 +185,81 @@ IF(NOT DEFINED _MANAGE_ARCHIVE_CMAKE_)
 	INCLUDE(CPack)
     ENDMACRO(PACK_SOURCE_CPACK var)
 
-    MACRO(PACK_SOURCE_ARCHIVE outputDir)
+    MACRO(PACK_SOURCE_ARCHIVE)
+	SET(_valid_options "OUTPUT_FILE" "GENERATOR" "INCLUDE" "GITIGNORE")
+	VARIABLE_PARSE_ARGN(_opt _valid_options ${ARGN})
 	IF(PRJ_VER STREQUAL "")
 	    M_MSG(${M_FATAL} "PRJ_VER not defined")
 	ENDIF(PRJ_VER STREQUAL "")
-	IF(${ARGV2})
-	    SET(CPACK_GENERATOR "${ARGV2}")
-	ELSE(${ARGV2})
-	    SET(CPACK_GENERATOR "TGZ")
-	ENDIF(${ARGV2})
-	SET(CPACK_SOURCE_GENERATOR ${CPACK_GENERATOR})
-	IF(${CPACK_GENERATOR} STREQUAL "TGZ")
-	    SET(SOURCE_ARCHIVE_FILE_EXTENSION "tar.gz")
-	ELSEIF(${CPACK_GENERATOR} STREQUAL "TBZ2")
-	    SET(SOURCE_ARCHIVE_FILE_EXTENSION "tar.bz2")
-	ELSEIF(${CPACK_GENERATOR} STREQUAL "ZIP")
-	    SET(SOURCE_ARCHIVE_FILE_EXTENSION "zip")
-	ENDIF(${CPACK_GENERATOR} STREQUAL "TGZ")
 
-	SET(CPACK_SOURCE_IGNORE_FILES ${SOURCE_ARCHIVE_IGNORE_FILES})
-	SET(CPACK_PACKAGE_VERSION ${PRJ_VER})
+	## PACK_SOURCE_CPACK to pack with default output file
+	VARIABLE_TO_ARGN(_cpack_source_pack_opts "_opt" "GENERATOR" "INCLUDE" "GITIGNORE")
+	PACK_SOURCE_CPACK(_source_archive_file
+	    ${_cpack_source_pack_opts})
 
-	IF(EXISTS ${CMAKE_SOURCE_DIR}/COPYING)
-	    SET(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/COPYING)
-	ENDIF(EXISTS ${CMAKE_SOURCE_DIR}/COPYING)
+	## Does user want his own output file or directory
+	SET(_own 0)
+	SET(_own_dir 0)
+	SET(_own_file 0)
+	IF(_opt)
+	    SET(_outputDir "${_opt}")
+	ENDIF(_opt)
+	IF(_opt_OUTPUT_FILE)
+	    GET_FILENAME_COMPONENT(_outputDir ${_opt_OUTPUT_FILE} PATH)
+	    GET_FILENAME_COMPONENT(_outputFile ${_opt_OUTPUT_FILE} NAME)
+	ENDIF(_opt_OUTPUT_FILE)
 
-	IF(EXISTS ${CMAKE_SOURCE_DIR}/README)
-	    SET(CPACK_PACKAGE_DESCRIPTION_FILE ${CMAKE_SOURCE_DIR}/README)
-	ENDIF(EXISTS ${CMAKE_SOURCE_DIR}/README)
+	GET_FILENAME_COMPONENT(_currentDir_real "." REALPATH)
+	IF(_outputDir)
+	    GET_FILENAME_COMPONENT(_outputDir_real ${_outputDir} REALPATH)
+	ELSE(_outputDir)
+	    SET(_outputDir_real ${_currentDir_real})
+	ENDIF(_outputDir)
 
-	IF(DEFINED PRJ_SUMMARY)
-	    SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PRJ_SUMMARY}")
-	ENDIF(DEFINED PRJ_SUMMARY)
+	IF(NOT _outputFile)
+	    SET(_outputFile "${_source_archive_file}")
+	ENDIF(NOT _outputFile)
 
-	SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PRJ_VER}-Source")
-	SET(SOURCE_ARCHIVE_NAME "${CPACK_SOURCE_PACKAGE_FILE_NAME}.${SOURCE_ARCHIVE_FILE_EXTENSION}" CACHE STRING "Source archive name" FORCE)
-	SET(SOURCE_ARCHIVE_FILE "${outputDir}/${SOURCE_ARCHIVE_NAME}" CACHE FILEPATH "Source archive file" FORCE)
+	IF(NOT _outputDir_real STREQUAL "${_currentDir_real}")
+	    SET(_own_dir 1)
+	    SET(_own 1)
+	ENDIF(NOT _outputDir_real STREQUAL "${_currentDir_real}")
+	IF(NOT _outputFile STREQUAL "${_source_archive_file}")
+	    SET(_own_file 1)
+	    SET(_own 1)
+	ENDIF(NOT _outputFile STREQUAL "${_source_archive_file}")
+	SET(SOURCE_ARCHIVE_FILE "${_outputDir_real}/${_outputFile}" 
+	    CACHE FILEPATH "Source archive file" FORCE)
 
-	SET(CPACK_PACKAGE_VENDOR "${VENDOR}")
-	SOURCE_ARCHIVE_GET_CONTENTS()
+	SET(_dep_list ${SOURCE_ARCHIVE_CONTENTS_ABSOLUTE})
+	## If own directory,
+	IF(_own_dir)
+	    ### Need to create it
+	    ADD_CUSTOM_COMMAND(OUTPUT _outputDir_real
+		COMMAND ${CMAKE_COMMAND} -E make_directory ${_outputDir_real}
+		COMMENT "Create dir for source archive output."
+		)
+	    LIST(APPEND _dep_list ${_outputDir_real})
+	ENDIF(_own_dir)
 
-	SET(SOURCE_ARCHIVE_CONTENTS_ABSOLUTE "")
-	FOREACH(_file ${SOURCE_ARCHIVE_CONTENTS})
-	    LIST(APPEND SOURCE_ARCHIVE_CONTENTS_ABSOLUTE "${CMAKE_HOME_DIRECTORY}/${_file}")
-	ENDFOREACH(_file ${SOURCE_ARCHIVE_CONTENTS})
-
-	INCLUDE(CPack)
-
-	# Get relative path of outputDir
-	FILE(RELATIVE_PATH _outputDir_rel ${CMAKE_BINARY_DIR} ${outputDir})
-	#MESSAGE("#_outputDir_rel=${_outputDir_rel}")
-
-	IF("${_outputDir_rel}" STREQUAL ".")
+	## If own, need to move to it.
+	IF(_own)
 	    ADD_CUSTOM_TARGET_COMMAND(pack_src
 		OUTPUT "${SOURCE_ARCHIVE_FILE}"
 		COMMAND make package_source
-		DEPENDS  ${SOURCE_ARCHIVE_CONTENTS}
+		COMMAND ${CMAKE_COMMAND} -E copy "${SOURCE_ARCHIVE_NAME}" "${SOURCE_ARCHIVE_FILE}"
+		COMMAND ${CMAKE_COMMAND} -E remove "${SOURCE_ARCHIVE_NAME}"
+		DEPENDS  ${_dep_list}
 		COMMENT "Packing the source as: ${SOURCE_ARCHIVE_FILE}"
 		)
-	ELSE("${_outputDir_rel}" STREQUAL ".")
-	    FILE(MAKE_DIRECTORY ${outputDir})
+	ELSE(_own)
 	    ADD_CUSTOM_TARGET_COMMAND(pack_src
 		OUTPUT "${SOURCE_ARCHIVE_FILE}"
 		COMMAND make package_source
-		COMMAND cmake -E copy "${SOURCE_ARCHIVE_NAME}" "${outputDir}"
-		COMMAND cmake -E remove ${SOURCE_ARCHIVE_NAME}
-		DEPENDS ${SOURCE_ARCHIVE_CONTENTS_ABSOLUTE}
+		DEPENDS  ${_dep_list}
 		COMMENT "Packing the source as: ${SOURCE_ARCHIVE_FILE}"
 		)
-	ENDIF("${_outputDir_rel}" STREQUAL ".")
+	ENDIF(_own)
 
 	ADD_CUSTOM_TARGET(clean_old_pack_src
 	    COMMAND find .
@@ -271,7 +276,7 @@ IF(NOT DEFINED _MANAGE_ARCHIVE_CMAKE_)
 	    -print -delete
 	    COMMENT "Cleaning all source archives"
 	    )
-    ENDMACRO(PACK_SOURCE_ARCHIVE outputDir)
+    ENDMACRO(PACK_SOURCE_ARCHIVE)
 
 ENDIF(NOT DEFINED _MANAGE_ARCHIVE_CMAKE_)
 
