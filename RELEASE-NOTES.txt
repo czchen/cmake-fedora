@@ -11,6 +11,8 @@ REDHAT_BUGZILLA=1040333
     - PACK_SOURCE_CPACK: Pack with CPack
     - Fixed Bug 1040333 - RFE: Support .gitignore file as 
       source of CPACK_SOURCE_IGNORE_FILES
+  + ManageString:
+    - STRING_APPEND: Append a string to a variable.
   + ManageVariable:
     - VARIABLE_TO_ARGN: Merge the variable and options to 
       the form of ARGN.
