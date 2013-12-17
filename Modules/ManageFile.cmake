@@ -44,7 +44,7 @@
 #
 # Defines following macros:
 #   MANAGE_FILE_INSTALL(fileType
-#     [files | FILES files] [DEST_SUBDIR subDir] [ARGS args]
+#     [files | FILES files] [DEST_SUBDIR subDir] [RENAME newName] [ARGS args]
 #   )
 #     - Manage file installation.
 #       * Parameter:
@@ -54,6 +54,7 @@
 #           LIB, LIBEXEC, TARGETS
 #         + DEST_SUBDIR subDir: Subdir of Destination dir
 #         + files: Files to be installed.
+#         + RENAME newName: Destination filename.
 #         + args: Arguments for INSTALL.
 #
 #   GIT_GLOB_TO_CMAKE_REGEX(var glob)
@@ -83,29 +84,41 @@ IF(NOT DEFINED _MANAGE_FILE_CMAKE_)
 	_MANAGE_FILE_SET_FILE_INSTALL_LIST(${_fLT})
     ENDFOREACH(_fLT ${FILE_INSTALL_LIST_TYPES})
 
-
     MACRO(_MANAGE_FILE_INSTALL_FILE_OR_DIR fileType)
+	IF(_opt_RENAME)
+	    SET(_install_options "RENAME" "${_opt_RENAME}")
+	ELSE(_opt_RENAME)
+	    SET(_install_options "")
+	ENDIF (_opt_RENAME)
 	FOREACH(_f ${_fileList})
 	    GET_FILENAME_COMPONENT(_a "${_f}" ABSOLUTE)
 	    SET(_absolute "")
 	    STRING(REGEX MATCH "^/" _absolute "${_f}")
 	    IF(IS_DIRECTORY "${_a}") 
-		INSTALL(DIRECTORY ${_f} DESTINATION "${_destDir}" ${ARGN})
-		IF(_absolute)
-		    GET_FILENAME_COMPONENT(_f "${_f}" NAME)
-		ENDIF(_absolute)
-	    ELSE(IS_DIRECTORY "${_a}") 
-		INSTALL(FILES ${_f} DESTINATION "${_destDir}" ${ARGN})
-		IF(_absolute)
-		    GET_FILENAME_COMPONENT(_f "${_f}" NAME)
-		ENDIF(_absolute)
-	    ENDIF(IS_DIRECTORY "${_a}") 
+		SET(_install_type "DIRECTORY")
+	    ELSE(IS_DIRECTORY "${_a}")
+		IF("${fileType}" STREQUAL "BIN")
+		    SET(_install_type "PROGRAMS")
+		ELSE("${fileType}" STREQUAL "BIN")
+		    SET(_install_type "FILES")
+		ENDIF("${fileType}" STREQUAL "BIN")
+	    ENDIF(IS_DIRECTORY "${_a}")
+	    INSTALL(${_install_type} ${_f} DESTINATION "${_destDir}"
+		${_install_options} ${ARGN})
+	    IF(_opt_RENAME)
+		SET(_n "${_opt_RENAME}")
+	    ELSEIF(_absolute)
+		GET_FILENAME_COMPONENT(_n "${_f}" NAME)
+	    ELSE(_opt_RENAME)
+		SET(_n "${_f}")
+	    ENDIF(_opt_RENAME)
+
 	    IF(_opt_DEST_SUBDIR)
 		LIST(APPEND FILE_INSTALL_${fileType}_LIST
-		    "${_opt_DEST_SUBDIR}/${_f}")
+		    "${_opt_DEST_SUBDIR}/${_n}")
 	    ELSE(_opt_DEST_SUBDIR)
 		LIST(APPEND FILE_INSTALL_${fileType}_LIST
-		    "${_f}")
+		    "${_n}")
 	    ENDIF(_opt_DEST_SUBDIR)
 	ENDFOREACH(_f ${_fileList})
 	_MANAGE_FILE_SET_FILE_INSTALL_LIST("${fileType}")
@@ -149,7 +162,7 @@ IF(NOT DEFINED _MANAGE_FILE_CMAKE_)
     ENDMACRO(_MANAGE_FILE_INSTALL_TARGET)
 
     MACRO(MANAGE_FILE_INSTALL fileType)
-	SET(_validOptions "DEST_SUBDIR" "FILES" "ARGS")
+	SET(_validOptions "DEST_SUBDIR" "FILES" "ARGS" "RENAME")
 	VARIABLE_PARSE_ARGN(_opt _validOptions ${ARGN})
 	SET(_fileList "")
 	LIST(APPEND _fileList ${_opt} ${_opt_FILES})
@@ -157,12 +170,6 @@ IF(NOT DEFINED _MANAGE_FILE_CMAKE_)
 	IF("${fileType}" STREQUAL "SYSCONF_NO_REPLACE")
 	    SET(_destDir "${SYSCONF_DIR}/${_opt_DEST_SUBDIR}")
 	    _MANAGE_FILE_INSTALL_FILE_OR_DIR("${fileType}")
-	ELSEIF("${fileType}" STREQUAL "BIN")
-	    SET(_destDir "${${fileType}_DIR}/${_opt_DEST_SUBDIR}")
-	    INSTALL(PROGRAMS ${_fileList} DESTINATION "${_destDir}" ${_opt_ARGS})
-	    LIST(APPEND FILE_INSTALL_${fileType}_LIST
-		"${_fileList}")
-	    _MANAGE_FILE_SET_FILE_INSTALL_LIST("${fileType}")
 	ELSEIF("${fileType}" STREQUAL "TARGETS")
 	    _MANAGE_FILE_INSTALL_TARGET(${_opt_ARGS})
 	ELSE("${fileType}" STREQUAL "SYSCONF_NO_REPLACE")
