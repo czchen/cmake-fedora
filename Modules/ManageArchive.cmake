@@ -86,23 +86,24 @@ IF(NOT DEFINED _MANAGE_ARCHIVE_CMAKE_)
     #     So no need to call it again.
     FUNCTION(SOURCE_ARCHIVE_GET_CONTENTS )
 	SET(_fileList "")
-	FILE(GLOB_RECURSE _ls "*")
+	FILE(GLOB_RECURSE _ls FOLLOW_SYMLINKS "*" )
 	STRING(REPLACE "\\\\" "\\" _ignore_files "${SOURCE_ARCHIVE_IGNORE_FILES}")
 	FOREACH(_file ${_ls})
 	    SET(_matched 0)
 	    FOREACH(filePattern ${_ignore_files})
 		M_MSG(${M_INFO3} "_file=${_file} filePattern=${filePattern}")
+
 		IF(_file MATCHES "${filePattern}")
 		    SET(_matched 1)
 		    BREAK()
 		ENDIF(_file MATCHES "${filePattern}")
 	    ENDFOREACH(filePattern ${_ignore_files})
 	    IF(NOT _matched)
-		FILE(RELATIVE_PATH _file ${CMAKE_SOURCE_DIR} "${_file}")
-		LIST(APPEND _fileList "${_file}")
+		FILE(RELATIVE_PATH _f ${CMAKE_SOURCE_DIR} "${_file}")
+		LIST(APPEND _fileList "${_f}")
 	    ENDIF(NOT _matched)
 	ENDFOREACH(_file ${_ls})
-	SET(SOURCE_ARCHIVE_CONTENTS ${_fileList} CACHE STRING "Source archive file list" FORCE)
+	SET(SOURCE_ARCHIVE_CONTENTS ${_fileList} CACHE INTERNAL "Source archive file list")
 	M_MSG(${M_INFO2} "SOURCE_ARCHIVE_CONTENTS=${SOURCE_ARCHIVE_CONTENTS}")
     ENDFUNCTION(SOURCE_ARCHIVE_GET_CONTENTS)
 
@@ -110,11 +111,9 @@ IF(NOT DEFINED _MANAGE_ARCHIVE_CMAKE_)
 	STRING(REPLACE "\\\\" "\\" ${var} "${cmrgx}")
     ENDMACRO(CMAKE_REGEX_TO_REGEX var cmrgx)
 
-    MACRO(SOURCE_ARCHIVE_GET_IGNORE_LIST)
-	SET(_valid_options "GITIGNORE" "INCLUDE")
-	VARIABLE_PARSE_ARGN(_opt _valid_options ${ARGN})
-	IF(_opt_GITIGNORE)
-	    FILE(STRINGS "${_opt_GITIGNORE}" _content REGEX "^[^#]")
+    MACRO(SOURCE_ARCHIVE_GET_IGNORE_LIST _ignoreListVar _includeListVar)
+	IF(${_ignoreListVar})
+	    FILE(STRINGS "${${_ignoreListVar}}" _content REGEX "^[^#]")
 	    FOREACH(_s ${_content})
 		STRING(STRIP "${_s}" _s)
 		STRING(LENGTH "${_s}" _l)
@@ -124,20 +123,20 @@ IF(NOT DEFINED _MANAGE_ARCHIVE_CMAKE_)
 		    LIST(APPEND SOURCE_ARCHIVE_IGNORE_FILES "${_cmrgx}")
 		ENDIF(_l GREATER 0)
 	    ENDFOREACH(_s ${_content})
-	ENDIF(_opt_GITIGNORE)
+	ENDIF(${_ignoreListVar})
 
 	## regex match one of include files
 	## then remove that line
 	FOREACH(_ignore_pattern ${SOURCE_ARCHIVE_IGNORE_FILES})
 	    CMAKE_REGEX_TO_REGEX(_ip "${_ignore_pattern}")
-	    FOREACH(_i ${_opt_INCLUDE})
+	    FOREACH(_i ${${_includeListVar}})
 		STRING(REGEX MATCH "${_ip}" _ret "${_i}")
 		IF(_ret)
 		    LIST(REMOVE_ITEM SOURCE_ARCHIVE_IGNORE_FILES "${_ignore_pattern}")
 		ENDIF(_ret)
-	    ENDFOREACH(_i ${_opt_INCLUDE})
+	    ENDFOREACH(_i ${${_includeListVar}})
 	ENDFOREACH(_ignore_pattern ${SOURCE_ARCHIVE_IGNORE_FILES})
-    ENDMACRO(SOURCE_ARCHIVE_GET_IGNORE_LIST)
+    ENDMACRO(SOURCE_ARCHIVE_GET_IGNORE_LIST _ignoreListVar _includeListVar)
 
     MACRO(PACK_SOURCE_CPACK var)
 	SET(_valid_options "GENERATOR" "INCLUDE" "GITIGNORE")
@@ -172,9 +171,7 @@ IF(NOT DEFINED _MANAGE_ARCHIVE_CMAKE_)
 	SET(SOURCE_ARCHIVE_NAME "${CPACK_SOURCE_PACKAGE_FILE_NAME}.${SOURCE_ARCHIVE_FILE_EXTENSION}" CACHE STRING "Source archive name" FORCE)
 	SET(${var} "${SOURCE_ARCHIVE_NAME}")
 
-	VARIABLE_TO_ARGN(_ignore_list_opts "_opt" "INCLUDE" "GITIGNORE")
-	SOURCE_ARCHIVE_GET_IGNORE_LIST( ${_ignore_list_opts})
-
+	SOURCE_ARCHIVE_GET_IGNORE_LIST(_opt_GITIGNORE _opt_INCLUDE)
 	LIST(APPEND CPACK_SOURCE_IGNORE_FILES ${SOURCE_ARCHIVE_IGNORE_FILES})
 	SOURCE_ARCHIVE_GET_CONTENTS()
 	SET(SOURCE_ARCHIVE_CONTENTS_ABSOLUTE "")
@@ -228,14 +225,18 @@ IF(NOT DEFINED _MANAGE_ARCHIVE_CMAKE_)
 	    SET(_own_file 1)
 	    SET(_own 1)
 	ENDIF(NOT _outputFile STREQUAL "${_source_archive_file}")
-	SET(SOURCE_ARCHIVE_FILE "${_outputDir_real}/${_outputFile}" 
+	GET_FILENAME_COMPONENT(SOURCE_ARCHIVE_FILE 
+	    "${_outputDir_real}/${_outputFile}" ABSOLUTE)
+	SET(SOURCE_ARCHIVE_FILE ${SOURCE_ARCHIVE_FILE}
 	    CACHE FILEPATH "Source archive file" FORCE)
+	SET(SOURCE_ARCHIVE_NAME "${_outputFile}" 
+	    CACHE FILEPATH "Source archive name" FORCE)
 
 	SET(_dep_list ${SOURCE_ARCHIVE_CONTENTS_ABSOLUTE})
 	## If own directory,
 	IF(_own_dir)
 	    ### Need to create it
-	    ADD_CUSTOM_COMMAND(OUTPUT _outputDir_real
+	    ADD_CUSTOM_COMMAND(OUTPUT ${_outputDir_real}
 		COMMAND ${CMAKE_COMMAND} -E make_directory ${_outputDir_real}
 		COMMENT "Create dir for source archive output."
 		)
@@ -245,19 +246,21 @@ IF(NOT DEFINED _MANAGE_ARCHIVE_CMAKE_)
 	## If own, need to move to it.
 	IF(_own)
 	    ADD_CUSTOM_TARGET_COMMAND(pack_src
-		OUTPUT "${SOURCE_ARCHIVE_FILE}"
-		COMMAND make package_source
-		COMMAND ${CMAKE_COMMAND} -E copy "${SOURCE_ARCHIVE_NAME}" "${SOURCE_ARCHIVE_FILE}"
-		COMMAND ${CMAKE_COMMAND} -E remove "${SOURCE_ARCHIVE_NAME}"
-		DEPENDS  ${_dep_list}
-		COMMENT "Packing the source as: ${SOURCE_ARCHIVE_FILE}"
+	    	OUTPUT ${SOURCE_ARCHIVE_FILE}
+	    	COMMAND make package_source
+	    	COMMAND ${CMAKE_COMMAND} -E copy "${_source_archive_file}" "${SOURCE_ARCHIVE_FILE}"
+	    	COMMAND ${CMAKE_COMMAND} -E remove "${_source_archive_file}"
+	    	DEPENDS  ${_dep_list}
+	    	COMMENT "Packing the source as: ${SOURCE_ARCHIVE_FILE}"
+		VERBATIM
 		)
 	ELSE(_own)
 	    ADD_CUSTOM_TARGET_COMMAND(pack_src
-		OUTPUT "${SOURCE_ARCHIVE_FILE}"
+		OUTPUT ${SOURCE_ARCHIVE_FILE}
 		COMMAND make package_source
 		DEPENDS  ${_dep_list}
 		COMMENT "Packing the source as: ${SOURCE_ARCHIVE_FILE}"
+		VERBATIM
 		)
 	ENDIF(_own)
 
