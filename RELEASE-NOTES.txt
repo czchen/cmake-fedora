@@ -20,8 +20,9 @@ REDHAT_BUGZILLA=1040333
     - VARIABLE_TO_ARGN: Merge the variable and options to 
       the form of ARGN.
   + Cached variables:
-    - RPM_SPEC_CMAKE_FLAG: Specify cmake flags in rpm build.
-- Changed Modules:
+    - RPM_SPEC_CMAKE_FLAG: cmake flags in rpm build.
+    - RPM_SPEC_MAKE_FLAG: make flags in rpm build.
+    - Changed Modules:
   + ManageArchive:
     - PACK_SOURCE_ARCHIVE: Can now pass either 
       empty, outputDir, or source File. 

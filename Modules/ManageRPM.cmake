@@ -54,7 +54,6 @@
 # Defines following Macros:
 #   PACK_RPM()
 #   - Generate spec and pack rpm  according to the spec file.
-#     Arguments:
 #     Targets:
 #     + srpm: Build srpm (rpmbuild -bs).
 #     + rpm: Build rpm and srpm (rpmbuild -bb)
@@ -67,8 +66,10 @@
 #     + PRJ_RELEASE: Project release with distribution tags. (e.g. 1.fc13)
 #     + RPM_RELEASE_NO: Project release number, without distribution tags. (e.g. 1)
 #     + PRJ_SRPM_FILE: Path to generated SRPM file, including relative path.
-#     + PRJ_RPM_BUILD_ARCH: Architecture to be build.
 #     + PRJ_RPM_FILES: Binary RPM files to be build.
+#     This macro reads following variables
+#     + RPM_SPEC_CMAKE_FLAGS: cmake flags in RPM spec.
+#     + RPM_SPEC_MAKE_FLAGS: "make flags in RPM spec.
 #
 #   RPM_MOCK_BUILD()
 #   - Add mock related targets.
@@ -107,19 +108,26 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
 	ERROR_VAR _manage_rpm_dependency_missing
 	VERBOSE_LEVEL ${M_OFF}
 	NAMES "${PROJECT_NAME}.spec.in" "project.spec.in"
-	PATHS "${CMAKE_SOURCE_DIR}/SPECS" "SPECS" "." "${RPM_BUILD_TOPDIR}/SPECS" 
+	PATHS "${CMAKE_CURRENT_SOURCE_DIR}/SPECS"
+	"${CMAKE_SOURCE_DIR}/SPECS" "SPECS" "rpm" "."
 	"${CMAKE_SOURCE_DIR}/Templates/fedora"
 	"${CMAKE_ROOT}/Templates/fedora"
 	)
 
+    FIND_FILE_ERROR_HANDLING(RPM_CHANGELOG_PREV_FILE
+	ERROR_MSG " rpm build support is disabled."
+	ERROR_VAR _manage_rpm_dependency_missing
+	VERBOSE_LEVEL ${M_OFF}
+	NAMES RPM-ChangeLog.prev
+	PATHS "${CMAKE_CURRENT_SOURCE_DIR}/SPECS"
+	"${CMAKE_SOURCE_DIR}/SPECS" "SPECS" "rpm" "."
+	)
+
     IF(NOT _manage_rpm_dependency_missing)
 	INCLUDE(ManageVariable)
+
 	SET (SPEC_FILE_WARNING "This file is generated, please modified the .spec.in file instead!")
 
-	SET(RPM_SPEC_CMAKE_FLAGS "-DCMAKE_FEDORA_ENABLE_FEDORA_BUILD=1"
-	    CACHE STRING "CMake flags in RPM SPEC"
-	    )
-    
 	# %{dist}
 	EXECUTE_PROCESS(COMMAND ${RPM_CMD} -E "%{dist}"
 	    COMMAND sed -e "s/^\\.//"
@@ -133,23 +141,21 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
 
 	SET(RPM_IGNORE_FILES "debug.*s.list")
 	FOREACH(_dir "SPECS" "SOURCES" "SRPMS" "RPMS" "BUILD" "BUILDROOT")
-	    SET(RPM_BUILD_${_dir} "${RPM_BUILD_TOPDIR}/${_dir}" 
-		CACHE PATH "RPM ${_dir} dir"
-		)
-	    MARK_AS_ADVANCED(RPM_BUILD_${_dir})
-	    IF(NOT "${_dir}" STREQUAL "SPECS")
-		LIST(APPEND RPM_IGNORE_FILES "/${_dir}/")
-		ADD_CUSTOM_COMMAND(OUTPUT ${RPM_BUILD_${_dir}}
-		    COMMAND ${CMAKE_COMMAND} -E make_directory 
-		    "${RPM_BUILD_${_dir}}"
+	    IF(NOT RPM_BUILD_${_dir})
+		SET(RPM_BUILD_${_dir} "${RPM_BUILD_TOPDIR}/${_dir}" 
+		    CACHE PATH "RPM ${_dir} dir"
 		    )
-	    ENDIF(NOT "${_dir}" STREQUAL "SPECS")
+		MARK_AS_ADVANCED(RPM_BUILD_${_dir})
+		IF(NOT "${_dir}" STREQUAL "SPECS")
+		    LIST(APPEND RPM_IGNORE_FILES "/${_dir}/")
+		ENDIF(NOT "${_dir}" STREQUAL "SPECS")
+		FILE(MAKE_DIRECTORY "${RPM_BUILD_${_dir}}")
+	    ENDIF(NOT RPM_BUILD_${_dir})
 	ENDFOREACH(_dir "SPECS" "SOURCES" "SRPMS" "RPMS" "BUILD" "BUILDROOT")
 
 	## RPM spec.in and RPM-ChangeLog.prev
 	SET(PRJ_RPM_SPEC_FILE "${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec" CACHE FILEPATH "spec")
 
-	SET(RPM_CHANGELOG_PREV_FILE "${CMAKE_SOURCE_DIR}/SPECS/RPM-ChangeLog.prev" CACHE FILEPATH "ChangeLog.prev for RPM")
 	SET(RPM_CHANGELOG_FILE "${RPM_BUILD_SPECS}/RPM-ChangeLog" CACHE FILEPATH "ChangeLog for RPM")
 
 	# Add RPM build directories in ignore file list.
@@ -158,6 +164,13 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
     ENDIF(NOT _manage_rpm_dependency_missing)
 
     MACRO(PRJ_RPM_SPEC_DATA_PREPARE)
+	SET(RPM_SPEC_CMAKE_FLAGS "-DCMAKE_FEDORA_ENABLE_FEDORA_BUILD=1"
+	    CACHE STRING "CMake flags in RPM SPEC"
+	    )
+
+	SET(RPM_SPEC_MAKE_FLAGS "VERBOSE=1 %{?_smp_mflags} %{optflags}"
+	    CACHE STRING "Make flags in RPM SPEC"
+	    )
 	# %{_build_arch}
 	IF("${RPM_SPEC_BUILD_ARCH}" STREQUAL "")
 	    EXECUTE_PROCESS(COMMAND ${RPM_CMD} -E "%{_build_arch}"
@@ -222,10 +235,11 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
 	    IF(_lang STREQUAL "")
 		SET(_lang "${_dT}")
 	    ELSE(_lang STREQUAL "")
-		SET(RPM_SPEC_DESCRIPTION_TRANSLATION_OUTPUT
-"${RPM_SPEC_DESCRIPTION_TRANSLATION_OUTPUT}\n
- %description -l ${_lang}
- ${_dT}"
+		STRING_APPEND(RPM_SPEC_DESCRIPTION_TRANSLATION_OUTPUT
+		    "%description -l ${_lang}" "\n"
+		    )
+		STRING_APPEND(RPM_SPEC_DESCRIPTION_TRANSLATION_OUTPUT
+		    "${_dT}\n" "\n"
 		    )
 		SET(_lang "")
 	    ENDIF(_lang STREQUAL "")
@@ -249,7 +263,6 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
 	    STRING_APPEND(RPM_SPEC_FILES_SECTION_OUTPUT 
 		"%doc ${PRJ_DOC_LIST}" "\n"
 		)
-	    MESSAGE("#1 RPM_SPEC_FILES_SECTION_OUTPUT=${RPM_SPEC_FILES_SECTION_OUTPUT}")
 	ENDIF(NOT PRJ_DOC_LIST STREQUAL "")
 
 	FOREACH(_f ${FILE_INSTALL_BIN_LIST})
@@ -317,8 +330,6 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
 		"%{_datadir}/%{name}/${_f}" "\n"
 		)
 	ENDFOREACH(_f ${FILE_INSTALL_PRJ_DATA_LIST})
-	MESSAGE("# RPM_SPEC_FILES_SECTION_OUTPUT=${RPM_SPEC_FILES_SECTION_OUTPUT}")
-
     ENDMACRO(PRJ_RPM_SPEC_DATA_PREPARE)
 
     MACRO(RPM_CHANGELOG_WRITE_FILE)
@@ -361,7 +372,7 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
 	    SET(PRJ_SRPM_FILE "${RPM_BUILD_SRPMS}/${PROJECT_NAME}-${PRJ_VER}-${RPM_RELEASE_NO}.${RPM_DIST_TAG}.src.rpm"
 		CACHE STRING "RPM files" FORCE)
 
-	    SET(PRJ_RPM_FILES "${RPM_BUILD_RPMS}/${PRJ_RPM_BUILD_ARCH}/${PROJECT_NAME}-${PRJ_VER}-${RPM_RELEASE_NO}.${RPM_DIST_TAG}.${PRJ_RPM_BUILD_ARCH}.rpm"
+	    SET(PRJ_RPM_FILES "${RPM_BUILD_RPMS}/${RPM_BUILD_ARCH}/${PROJECT_NAME}-${PRJ_VER}-${RPM_RELEASE_NO}.${RPM_DIST_TAG}.${RPM_BUILD_ARCH}.rpm"
 		CACHE STRING "RPM files" FORCE)
 
 	    PRJ_RPM_SPEC_DATA_PREPARE()
@@ -380,8 +391,7 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
 		--define '_srcrpmdir ${RPM_BUILD_SRPMS}'
 		--define '_rpmdir ${RPM_BUILD_RPMS}'
 		--define '_specdir ${RPM_BUILD_SPECS}'
-		DEPENDS ${PRJ_RPM_SPEC_FILE} ${SOURCE_ARCHIVE_FILE} 
-		  ${RPM_BUILD_SOURCES} ${RPM_BUILD_SRPMS}
+		DEPENDS ${PRJ_RPM_SPEC_FILE} ${SOURCE_ARCHIVE_FILE}
 		COMMENT "Building srpm"
 		)
 
@@ -392,21 +402,17 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
 		COMMAND ${RPMBUILD_CMD} -bb  ${PRJ_RPM_SPEC_FILE}
 		--define '_sourcedir ${RPM_BUILD_SOURCES}'
 		--define '_builddir ${RPM_BUILD_BUILD}'
-		--define '_buildrootdir ${RPM_BUILD_BUILDROOT}'
 		--define '_srcrpmdir ${RPM_BUILD_SRPMS}'
 		--define '_rpmdir ${RPM_BUILD_RPMS}'
 		--define '_specdir ${RPM_BUILD_SPECS}'
-		DEPENDS ${PRJ_RPM_SPEC_FILE} ${SOURCE_ARCHIVE_FILE} 
-		${PRJ_SRPM_FILE}
-		  ${RPM_BUILD_BUILD} ${RPM_BUILD_BUILDROOT} ${RPM_BUILD_RPMS}
+		DEPENDS ${PRJ_SRPM_FILE}
 		COMMENT "Building rpm"
 		)
 
-
 	    ADD_CUSTOM_TARGET(install_rpms
-		COMMAND find ${RPM_BUILD_RPMS}/${PRJ_RPM_BUILD_ARCH}
-		-name '${PROJECT_NAME}*-${PRJ_VER}-${RPM_RELEASE_NO}.*.${PRJ_RPM_BUILD_ARCH}.rpm' !
-		-name '${PROJECT_NAME}-debuginfo-${RPM_RELEASE_NO}.*.${PRJ_RPM_BUILD_ARCH}.rpm'
+		COMMAND find ${RPM_BUILD_RPMS}/${RPM_BUILD_ARCH}
+		-name '${PROJECT_NAME}*-${PRJ_VER}-${RPM_RELEASE_NO}.*.${RPM_BUILD_ARCH}.rpm' !
+		-name '${PROJECT_NAME}-debuginfo-${RPM_RELEASE_NO}.*.${RPM_BUILD_ARCH}.rpm'
 		-print -exec sudo rpm --upgrade --hash --verbose '{}' '\\;'
 		DEPENDS ${PRJ_RPM_FILES}
 		COMMENT "Install all rpms except debuginfo"
@@ -452,7 +458,7 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
 	    IF(MOCK_CMD STREQUAL "MOCK_CMD-NOTFOUND")
 		M_MSG(${M_OFF} "mock is not found in PATH, mock support disabled.")
 	    ELSE(MOCK_CMD STREQUAL "MOCK_CMD-NOTFOUND")
-		IF(NOT PRJ_RPM_BUILD_ARCH STREQUAL "noarch")
+		IF(NOT RPM_BUILD_ARCH STREQUAL "noarch")
 		    IF(NOT DEFINED MOCK_RPM_DIST_TAG)
 			STRING(REGEX MATCH "^fc([1-9][0-9]*)"  _fedora_mock_dist "${RPM_DIST_TAG}")
 			STRING(REGEX MATCH "^el([1-9][0-9]*)"  _el_mock_dist "${RPM_DIST_TAG}")
@@ -478,7 +484,7 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
 			COMMAND ${MOCK_CMD} -r  "${MOCK_RPM_DIST_TAG}-x86_64" --resultdir="${RPM_BUILD_RPMS}/x86_64" ${PRJ_SRPM_FILE}
 			DEPENDS ${PRJ_SRPM_FILE}
 			)
-		ENDIF(NOT PRJ_RPM_BUILD_ARCH STREQUAL "noarch")
+		ENDIF(NOT RPM_BUILD_ARCH STREQUAL "noarch")
 	    ENDIF(MOCK_CMD STREQUAL "MOCK_CMD-NOTFOUND")
 	ENDIF(NOT _manage_rpm_dependency_missing )
 
