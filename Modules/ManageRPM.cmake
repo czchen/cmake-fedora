@@ -168,7 +168,7 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
 	    CACHE STRING "CMake flags in RPM SPEC"
 	    )
 
-	SET(RPM_SPEC_MAKE_FLAGS "VERBOSE=1 %{?_smp_mflags} %{optflags}"
+	SET(RPM_SPEC_MAKE_FLAGS "VERBOSE=1 %{?_smp_mflags}"
 	    CACHE STRING "Make flags in RPM SPEC"
 	    )
 	# %{_build_arch}
