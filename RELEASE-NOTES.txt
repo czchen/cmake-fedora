@@ -13,6 +13,7 @@ REDHAT_BUGZILLA=1040333
     - PACK_SOURCE_ARCHIVE: Now can specify OUTPUT_FILE.
     - Fixed Bug 1040333 - RFE: Support .gitignore file as 
       source of CPACK_SOURCE_IGNORE_FILES
+  + ManageDependency: Manage dependencies.
   + ManageString:
     - STRING_APPEND: Append a string to a variable.
   + ManageVariable:
