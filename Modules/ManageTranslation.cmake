@@ -96,6 +96,7 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 
     INCLUDE(ManageMessage)
     INCLUDE(ManageFile)
+    INCLUDE(ManageDependency)
     IF(NOT TARGET translations)
 	ADD_CUSTOM_TARGET(translations
 	    COMMENT "Making translations"
