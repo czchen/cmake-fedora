@@ -79,7 +79,9 @@ IF(NOT DEFINED _MANAGE_DEPENDENCY_CMAKE_)
 
 	IF(${var}_PKG_CONFIG)
 	    IF(NOT PKG_CONFIG_VERSION)
-		FIND_PACKAGE(PkgConfig)
+		FIND_PACKAGE(PkgConfig REQUIRED)
+		## Auto-add pkgconfig as dependency
+		LIST(APPEND ${listVar} "pkgconfig")
 	    ENDIF(NOT PKG_CONFIG_VERSION)
 	    PKG_CHECK_MODULES(${var} ${_required}
 		"${${var}_PKG_CONFIG}${_rel}${_ver}")
@@ -118,6 +120,7 @@ IF(NOT DEFINED _MANAGE_DEPENDENCY_CMAKE_)
 	ELSE("${_ver}" STREQUAL "")
 	    LIST(APPEND ${listVar} "${_name} ${_rel} ${_ver}")
 	ENDIF("${_ver}" STREQUAL "")
+	SET(${listVar} "${${listVar}}" CACHE INTERNAL "${listVar}")
     ENDMACRO(MANAGE_DEPENDENCY listVar var)
 
 ENDIF(NOT DEFINED _MANAGE_DEPENDENCY_CMAKE_)
