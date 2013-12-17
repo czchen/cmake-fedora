@@ -16,6 +16,10 @@ REDHAT_BUGZILLA=1040333
   + ManageDependency: Manage dependencies.
   + ManageString:
     - STRING_APPEND: Append a string to a variable.
+  + ManageTranslation:
+    - MANAGE_GETTEXT: 
+      + Can specify MSGFMT_OPTIONS and MSGMERGE_OPTIONS
+      + Add gettext-devel to BUILD_REQUIRES.
   + ManageVariable:
     - VARIABLE_TO_ARGN: Merge the variable and options to 
       the form of ARGN.
