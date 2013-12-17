@@ -3,9 +3,10 @@ SUMMARY=gitignore file as sorce of CPACK_SOURCE_IGNORE_FILES
 REDHAT_BUGZILLA=1040333
 [Changes]
 - Enhancement:
-  + ManageFile
+  + ManageFile:
     - Add absolute file support
     - MANAGE_FILE_INSTALL: Add TARGETS support.
+    - MANAGE_FILE_INSTALL: Add RENAME support.
     - GIT_GLOB_TO_CMAKE_REGEX: Convert git glob to cmake regex
   + ManageArchive:
     - PACK_SOURCE_CPACK: Pack with CPack
@@ -17,6 +18,8 @@ REDHAT_BUGZILLA=1040333
   + ManageVariable:
     - VARIABLE_TO_ARGN: Merge the variable and options to 
       the form of ARGN.
+  + Cached variables:
+    - RPM_SPEC_CMAKE_FLAG: Specify cmake flags in rpm build.
 - Changed Modules:
   + ManageArchive:
     - PACK_SOURCE_ARCHIVE: Can now pass either 
