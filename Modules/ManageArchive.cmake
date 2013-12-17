@@ -190,7 +190,7 @@ IF(NOT DEFINED _MANAGE_ARCHIVE_CMAKE_)
 	ENDIF(PRJ_VER STREQUAL "")
 
 	## PACK_SOURCE_CPACK to pack with default output file
-	VARIABLE_TO_ARGN(_cpack_source_pack_opts "_opt" "GENERATOR" "INCLUDE" "GITIGNORE")
+	VARIABLE_TO_ARGN(_cpack_source_pack_opts _opt _valid_options)
 	PACK_SOURCE_CPACK(_source_archive_file
 	    ${_cpack_source_pack_opts})
 

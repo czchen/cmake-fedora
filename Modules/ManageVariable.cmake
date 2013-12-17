@@ -397,11 +397,11 @@ IF(NOT DEFINED _MANAGE_VARIABLE_CMAKE_)
 
     MACRO(VARIABLE_TO_ARGN var prefix validOptions)
 	SET(${var} "${${prefix}}")
-	FOREACH(_o ${validOptions})
+	FOREACH(_o ${${validOptions}})
 	    IF(DEFINED ${prefix}_${_o})
 		LIST(APPEND ${var} "${_o}" "${${prefix}_${_o}}")
 	    ENDIF(DEFINED ${prefix}_${_o})
-	ENDFOREACH(_o ${validOptions})
+	ENDFOREACH(_o ${${validOptions}})
     ENDMACRO(VARIABLE_TO_ARGN var prefix validOptions)
 
 ENDIF(NOT DEFINED _MANAGE_VARIABLE_CMAKE_)
