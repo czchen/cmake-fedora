@@ -40,6 +40,7 @@ TEST_STR_MATCH(BASE_URL "http://example.com/")
 TEST_STR_MATCH(FLIES_PATH "flies" )
 TEST_STR_MATCH(FLIES_URL "\\\${BASE_URL}\\\${FLIES_PATH}")
 
+## VARIABLE_PARSE_ARGN
 SET(_valid_options "GITIGNORE" "INCLUDE")
 VARIABLE_PARSE_ARGN(_opt _valid_options "GITIGNORE" ".gitignore" 
     "INCLUDE" ".pot")
@@ -52,4 +53,38 @@ ENDIF(NOT _opt_GITIGNORE STREQUAL ".gitignore")
 IF(NOT _opt_INCLUDE STREQUAL ".pot")
     MESSAGE(SEND_ERROR "_opt_INCLUDE should be '.pot'")
 ENDIF(NOT _opt_INCLUDE STREQUAL ".pot")
+
+SET(_valid_options "ALL" "COMMAND")
+VARIABLE_PARSE_ARGN(_opt _valid_options "target" "ALL"
+    "COMMAND" "command1" "command_arg1"
+    "COMMAND" "command2" "command_arg2"
+    "DEPENDS" "dep1" "dep2"
+    )
+IF(NOT "${_opt}" STREQUAL "target")
+    MESSAGE(SEND_ERROR "_opt should be 'target' instead of '${_opt}'")
+ENDIF(NOT "${_opt}" STREQUAL "target")
+IF(NOT DEFINED _opt_ALL)
+    MESSAGE(SEND_ERROR "_opt_ALL  should be defined")
+ENDIF(NOT DEFINED _opt_ALL)
+SET(_exp "command1;command_arg1;COMMAND;command2;command_arg2;DEPENDS;dep1;dep2")
+IF(NOT _opt_COMMAND STREQUAL "${_exp}")
+    MESSAGE(SEND_ERROR "_opt_INCLUDE should be '${_exp}' instead of '${_opt_COMMAND}'")
+ENDIF(NOT _opt_COMMAND STREQUAL "${_exp}")
+
+## Previous command should not interfere with new one
+SET(_valid_options "ALL" "COMMAND")
+VARIABLE_PARSE_ARGN(_opt _valid_options "target3"
+    "COMMAND" "command3" "command_arg3"
+    "DEPENDS" "dep3"
+    )
+IF(NOT "${_opt}" STREQUAL "target3")
+    MESSAGE(SEND_ERROR "_opt should be 'target3' instead of '${_opt}'")
+ENDIF(NOT "${_opt}" STREQUAL "target3")
+IF(DEFINED _opt_ALL)
+    MESSAGE(SEND_ERROR "_opt_ALL  should not be defined")
+ENDIF(DEFINED _opt_ALL)
+SET(_exp "command3;command_arg3;DEPENDS;dep3")
+IF(NOT _opt_COMMAND STREQUAL "${_exp}")
+    MESSAGE(SEND_ERROR "_opt_INCLUDE should be '${_exp}' instead of '${_opt_COMMAND}'")
+ENDIF(NOT _opt_COMMAND STREQUAL "${_exp}")
 

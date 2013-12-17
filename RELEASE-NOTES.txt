@@ -26,5 +26,7 @@ REDHAT_BUGZILLA=1040333
       empty, outputDir, or source File
   + ManageRPM
     - Add support of pre, post, and preun
+  + ManageVariable:
+    - VARIABLE_PARSE_ARGN can now handle multiple-appeared options.
     
 

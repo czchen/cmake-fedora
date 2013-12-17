@@ -368,7 +368,7 @@ IF(NOT DEFINED _MANAGE_VARIABLE_CMAKE_)
 
 	## Unset all, otherwise ghost from previous running exists.
 	UNSET(${var})
-	FOREACH(_o ${validOptions})
+	FOREACH(_o ${${validOptions}})
 	    UNSET(${var}_${_o})
 	ENDFOREACH(_o ${validOptions})
 
@@ -378,12 +378,19 @@ IF(NOT DEFINED _MANAGE_VARIABLE_CMAKE_)
 		## Not an option name. Append to existing options
 		LIST(APPEND ${_listName} "${_arg}")
 	    ELSE(_optIndex EQUAL -1)
-		## Is an option name.
-		## Obtain option name
-		LIST(GET ${validOptions} ${_optIndex} _optName)
-		# Init the option name, so it can be find by IF(DEFINED ...)
-		SET(_listName "${var}_${_optName}")
-		SET(${_listName} "")
+		## _arg is an option name.
+		SET(_listName "${var}_${_arg}")
+
+		## If the option already exists
+		IF(DEFINED ${var}_${_arg})
+		    ### then append to it with option name
+		    ### this is especiall useful for ADD_CUSTOM_TARGET_COMMAND
+		    LIST(APPEND ${_listName} "${_arg}")
+		ELSE(DEFINED ${var}_${_arg})
+		    ### otherwise init the option name,
+		    ### , so it can be find by IF(DEFINED ...)
+		    SET(${_listName} "")
+		ENDIF(DEFINED ${var}_${_arg})
 	    ENDIF(_optIndex EQUAL -1)
 	ENDFOREACH(_arg ${ARGN})
     ENDMACRO(VARIABLE_PARSE_ARGN var validOptions)
