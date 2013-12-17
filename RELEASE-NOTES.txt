@@ -23,7 +23,8 @@ REDHAT_BUGZILLA=1040333
 - Changed Modules:
   + ManageArchive:
     - PACK_SOURCE_ARCHIVE: Can now pass either 
-      empty, outputDir, or source File
+      empty, outputDir, or source File. 
+  + ManageGConf2: Fixed.
   + ManageRPM
     - Add support of pre, post, and preun
   + ManageVariable:
