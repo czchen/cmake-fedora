@@ -4,7 +4,6 @@
 *.orig
 *.so
 *~
-ChangeLog
 CMakeCache.txt
 CMakeFiles/
 cmake_*install.cmake

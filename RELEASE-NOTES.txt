@@ -1,8 +1,9 @@
 PRJ_VER=1.2.0
-SUMMARY=gitignore file as sorce of CPACK_SOURCE_IGNORE_FILES
+SUMMARY=gitignore file as sorce of CPACK_SOURCE_IGNORE_FILES;ChangeLog.prev is no longer required
 REDHAT_BUGZILLA=1040333
 [Changes]
 - Enhancement:
+  + ChangeLog.prev is no longer required.
   + ManageFile:
     - Add absolute file support
     - MANAGE_FILE_INSTALL: Add TARGETS support.

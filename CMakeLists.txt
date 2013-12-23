@@ -35,7 +35,7 @@ SET(SOURCE_DOWNLOAD_URL_TEMPLATE "https://fedorahosted.org/releases/c/m/%{name}/
 ####################################################################
 # Includes
 #
-SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/Modules ${CMAKE_ROOT}/Modules )
+LIST(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/Modules)
 INCLUDE(ManageEnvironment RESULT_VARIABLE MANAGE_ENVIRONMENT_PATH)
 INCLUDE(ManageVersion)
 RELEASE_NOTES_READ_FILE()
@@ -89,7 +89,6 @@ ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
 
 PACK_SOURCE_ARCHIVE("${SOURCE_ARCHIVE_DIR}"
     GITIGNORE ${CMAKE_SOURCE_DIR}/.gitignore
-    INCLUDE ChangeLog
     )
 
 IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
