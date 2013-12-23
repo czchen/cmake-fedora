@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 2.6.2)
 
-# CMP0011 should be set here, otherwise policy set in module won't affect
-# here.
-CMAKE_POLICY(SET CMP0011 OLD)
+# Included scripts do automatic cmake_policy PUSH and POP.
+# OLD: CMake policy in included script will affect the invoker.
+# CMAKE_POLICY(SET CMP0011 OLD)
 
 # Default CMAKE_INSTALL_PREFIX should be set before PROJECT()
 SET(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "Install dir prefix")
@@ -31,8 +31,6 @@ SET(PRJ_GROUP "System Environment/Libraries")
 SET(RPM_SPEC_BUILD_ARCH "noarch")
 SET(URL_TEMPLATE "https://fedorahosted.org/%{name}/")
 SET(SOURCE_DOWNLOAD_URL_TEMPLATE "https://fedorahosted.org/releases/c/m/%{name}/%{name}-%{version}-Source.tar.gz")
-SET(BUILD_REQUIRES "cmake >= 2.6")
-SET(REQUIRES "cmake >= 2.6")
 
 ####################################################################
 # Includes
@@ -41,11 +39,14 @@ SET(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/Modules ${CMAKE_ROOT}/Modules )
 INCLUDE(ManageEnvironment RESULT_VARIABLE MANAGE_ENVIRONMENT_PATH)
 INCLUDE(ManageVersion)
 RELEASE_NOTES_READ_FILE()
-INCLUDE(ManageUninstall)
-INCLUDE(ManageSourceVersionControl)
-INCLUDE(ManageFile)
 INCLUDE(ManageArchive)
+INCLUDE(ManageDependency)
+INCLUDE(ManageFile)
+INCLUDE(ManageSourceVersionControl)
 INCLUDE(ManageTarget)
+INCLUDE(ManageTranslation)
+INCLUDE(ManageUninstall)
+
 
 ####################################################################
 # Building

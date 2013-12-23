@@ -35,5 +35,5 @@ REDHAT_BUGZILLA=1040333
     - Add support of pre, post, and preun
   + ManageVariable:
     - VARIABLE_PARSE_ARGN can now handle multiple-appeared options.
-    
-
+- Changed:
+  + CMake policy no longer enforced by default.
