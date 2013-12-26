@@ -5,12 +5,18 @@ CMAKE_FEDORA_LIBEXEC_DIR=@LIBEXEC_DIR@
 #######################################
 # Local Cache 
 
-LOCAL_CACHE=0
+LOCAL_CACHE=1
 LOCAL_CACHE_DIR=$HOME/.cache/cmake-fedora/
 
 # How long should the cache be kept until update.
 # In seconds
 # e.g. 30 days expiry is 2592000
 LOCAL_CACHE_EXPIRY=2592000
+
+
+# How long should the koji history cache be kept until update.
+# In seconds
+# e.g. 12 hours expiry is 43200
+LOCAL_KOJI_HISTORY_CACHE_EXPIRY=43200
 
 

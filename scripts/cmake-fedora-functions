@@ -20,5 +20,28 @@ function find_program(){
     echo "$_cmd"
 }
 
+function cache_output_and_update(){
+    cacheFile=$1; shift
+	expiryTime=$1; shift
+	outputCommand="$@"
+	if [ "$LOCAL_CACHE" = "1" ];then
+	    if [ ! -e $LOCAL_CACHE_DIR ];then
+		mkdir -p $LOCAL_CACHE_DIR
+		    fi
+		    if [ ! -e ${cacheFile} ];then
+			${outputCommand} | tee "${cacheFile}"
+		    else
+			fileTime=`stat --format '%Y' "${cacheFile}"`
+			    currentTime=`date '+%s'`
+			    if expr "$fileTime" "+" "$expiryTime" "<" "$currentTime"; then
+				${outputCommand} | tee "${cacheFile}"
+			    else
+				cat "${cacheFile}"
+				    fi
+				    fi
+	    else
+		${outputCommand}
+    fi
+}
 
 
