@@ -13,10 +13,13 @@ LOCAL_CACHE_DIR=$HOME/.cache/cmake-fedora/
 # e.g. 30 days expiry is 2592000
 LOCAL_CACHE_EXPIRY=2592000
 
-
 # How long should the koji history cache be kept until update.
 # In seconds
 # e.g. 12 hours expiry is 43200
 LOCAL_KOJI_HISTORY_CACHE_EXPIRY=43200
 
+# How long should the koji pkg changelog cache be kept until update.
+# In seconds
+# e.g. 12 hours expiry is 43200
+LOCAL_PKG_CHANGELOG_CACHE_EXPIRY=43200
 

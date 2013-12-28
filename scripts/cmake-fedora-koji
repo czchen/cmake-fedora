@@ -8,6 +8,7 @@ NAME
 SYNOPSIS
     cmake-fedora-koji <ver|branch|git-branch|bodhi-branch> [scope1 [scope2] ....]]
     cmake-fedora-koji newest-build [package]
+    cmake-fedora-koji newest-changelog [package]
     cmake-fedora-koji clean
 
 DESCRIPTION
@@ -29,6 +30,13 @@ DESCRIPTION
 	
 	newest-build
 	    Return the newest build in n-v-r.t format.
+	    Note that koji latest-build only returns the updates pushed
+	    to stable, newest-build, however, returns the updates in
+	    testing as well.
+
+	newest-changelog
+	    Return the newest changelog of a package in
+	    release, updates, and update-testing
 	    Note that koji latest-build only returns the updates pushed
 	    to stable, newest-build, however, returns the updates in
 	    testing as well.
@@ -67,18 +75,43 @@ function get_koji_list_targets(){
     cache_output_and_update "${LOCAL_CACHE_FILE}" ${LOCAL_CACHE_EXPIRY:=2592000} $KOJI_CMD list-targets --quiet
 }
 
-function local_pkg_history_cache_file_name(){
+function local_koji_history_cache_file_name(){
     echo "${LOCAL_CACHE_DIR:=$HOME/.cache/cmake-fedora/}$1"
 }
 
-function local_pkg_history_command(){
+function local_koji_history_command(){
     $KOJI_CMD list-history --active --event --package $1 | grep "tagged into"
 }
 
-function get_koji_pkg_history(){
+function get_koji_history(){
     _pkg=$1
-    LOCAL_PKG_HISTORY_CACHE_FILE=`local_pkg_history_cache_file_name  ${_pkg}`
-    cache_output_and_update "${LOCAL_PKG_HISTORY_CACHE_FILE}" ${LOCAL_KOJI_HISTORY_CACHE_EXPIRY:=43200} local_pkg_history_command "${_pkg}"
+    LOCAL_KOJI_HISTORY_CACHE_FILE=`local_koji_history_cache_file_name  ${_pkg}`
+    cache_output_and_update "${LOCAL_KOJI_HISTORY_CACHE_FILE}" ${LOCAL_KOJI_HISTORY_CACHE_EXPIRY:=43200} local_koji_history_command "${_pkg}"
+}
+
+function local_pkg_changelog_cache_file_name(){
+    echo "${LOCAL_CACHE_DIR:=$HOME/.cache/cmake-fedora/}$1.ChangeLog"
+}
+
+function local_pkg_changelog_command(){
+    _start=0
+    $KOJI_CMD buildinfo --changelog $1 | while read _line;do
+	if [ ${_start} -eq 0 ]; then
+	    if [ "${_line}" =  "Changelog:" ];then
+		_start=1
+	    fi
+	else
+	    echo "1 _start=${_start}" > /dev/stderr
+	    echo "${_line}"
+	fi
+    done
+}
+
+function get_pkg_changelog(){
+    _pkg=$1
+    _nvr=$2
+    LOCAL_PKG_CHANGELOG_CACHE_FILE=`local_pkg_changelog_cache_file_name ${_pkg}`
+    cache_output_and_update "${LOCAL_PKG_CHANGELOG_CACHE_FILE}" ${LOCAL_PKG_CHANGELOG_CACHE_EXPIRY:=43200} local_pkg_changelog_command "${_nvr}"
 }
 
 function get_RAWHIDE_BRANCH(){
@@ -129,15 +162,40 @@ if [ "${subCmd}" = "clean" ];then
     exit 0
 elif [ "${subCmd}" = "newest-build" ];then
     pkg=$1
+    if [ -z "${pkg}" ];then
+	 print_usage
+	 echo "Please specify package name." > /dev/stderr
+    fi
     shift
-    _content=`get_koji_pkg_history "${pkg}"`
+    content=`get_koji_history "${pkg}"`
     if [ "$?" = "0" ] ; then
-	echo "${_content}" | tail -n 1 | sed -e "s/ tagged into.*$//" | sed -e "s/^.*(eid [0-9]*) //"
+	echo "${content}" | tail -n 1 | sed -e "s/ tagged into.*$//" | sed -e "s/^.*(eid [0-9]*) //"
 	exit 0
     else
 	echo "Cannot found package ${pkg}" > /dev/stderr
 	exit 1
     fi
+elif [ "${subCmd}" = "newest-changelog" ];then
+    pkg=$1
+    if [ -z "${pkg}" ];then
+	print_usage
+	echo "Please specify package name." > /dev/stderr
+	exit -1
+    fi
+    shift
+    nvr=`$0 newest-build ${pkg}`
+
+    if [ "$?" != "0" ] ; then
+	echo "Cannot found package ${pkg}" > /dev/stderr
+	exit 1
+    fi
+    content=`get_pkg_changelog ${pkg} ${nvr}`
+    if [ "$?" != "0" ];then
+	echo "Failed to retrieve changelog for ${nvr}" > /dev/stderr
+	exit 1
+    fi
+    echo "${content}" 
+    exit 0
 fi
 
 rawhide=0

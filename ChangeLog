@@ -1,5 +1,7 @@
-* Mon Dec 23 2013 Ding-Yi Chen <dchen at redhat.com> - 1.2.0
+* Fri Dec 27 2013 Ding-Yi Chen <dchen at redhat.com> - 1.2.0
 - Enhancement:
+  + ChangeLog.prev is no longer required.
+  + cmake-fedora-koji: new subcommand: newest-build.
   + ManageFile:
     - Add absolute file support
     - MANAGE_FILE_INSTALL: Add TARGETS support.
