@@ -6,7 +6,7 @@
 # before this module.
 #
 # Includes:
-#   ManageMessage
+#   ManageFile
 #   ManageTarget
 #
 # Reads and defines following variables if dependencies are satisfied:
@@ -84,7 +84,6 @@
 IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
     SET (_MANAGE_RPM_CMAKE_ "DEFINED")
 
-    INCLUDE(ManageMessage)
     INCLUDE(ManageFile)
     INCLUDE(ManageTarget)
     SET(_manage_rpm_dependency_missing 0)

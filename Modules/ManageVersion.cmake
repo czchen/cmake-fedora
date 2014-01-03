@@ -8,6 +8,17 @@
 #   PackSource
 #
 # Defines following functions:
+#   MANAGE_CHANGELOG_SPLIT(thisVar prevVar changeLogFile ver)
+#   - Split the changeLog into two parts:
+#     1. this: Current version, that is,
+#        ChangeLog under the version specified by "ver".
+#        Note that version info is not returned, 
+#        so it is easier to put a new version string.
+#     2. prev: Previous version.
+#        Note that version info are returned.
+#     Arguments:
+#     + thisVar: Variable hold th
+#
 #   RELEASE_NOTES_READ_FILE([releaseFile])
 #   - Load release file information.
 #     Arguments:
@@ -29,7 +40,6 @@
 #     + PRJ_DOC_DIR: Documentation for the project.
 #       Default: ${DOC_DIR}/${PROJECT_NAME}-${PRJ_VER}
 #
-#
 
 IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
     SET(_MANAGE_VERSION_CMAKE_ "DEFINED")
@@ -47,42 +57,55 @@ IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
 	COMMENT "${CHANGELOG_FILE} are saving as ${CHANGELOG_PREV_FILE}"
 	)
 
-    MACRO(_MANAGE_CHANGELOG_UPDATE_MERGE_LINES ver writeVerContent changeLogFile)
-	SET(_cV "")
-	FOREACH(_line ${_changeLogFileBuf})
-	    STRING(REGEX MATCH "^\\* [A-Za-z]+ [A-Za-z]+ [0-9]+ [0-9]+ .+ <.+> - (.*)$" _match  "${_line}")
-	    IF(_match STREQUAL "")
-		# Not a version line
-		IF(NOT "${_cV}" STREQUAL "${ver}" OR writeVerContent)
-		    ## Write to ChangeLog when
-		    ### version not the same
-		    ### or writeVerContent=1 (Nothing from ReleaseNote)
-		    FILE(APPEND "${changeLogFile}" "${_line}\n")
-		ENDIF(NOT "${_cV}" STREQUAL "${ver}" OR writeVerContent)
-	    ELSE(_match STREQUAL "")
-		# Is a version line
-		SET(_cV "${CMAKE_MATCH_1}")
-		IF(NOT "${_cV}" STREQUAL "${ver}")
-		    FILE(APPEND "${changeLogFile}" "${_line}\n")
-		ENDIF(NOT "${_cV}" STREQUAL "${ver}")
-	    ENDIF(_match STREQUAL "")
-	ENDFOREACH(_line ${_changeLogFileBuf})
-    ENDMACRO(_MANAGE_CHANGELOG_UPDATE_MERGE_LINES ver writeVerContent changeLogFile)
+    FUNCTION(MANAGE_CHANGELOG_SPLIT thisVar prevVar changeLogFile ver)
+	SET(_changeLogFileBuf "")
+	SET(_this "")
+	SET(_prev "")
+	IF(EXISTS "${changeLogFile}")
+	    SET(_isThis 0)
+	    SET(_isPrev 0)
+	    FILE(STRINGS "${changeLogFile}" _changeLogFileBuf NEWLINE_CONSUME)
+	    FOREACH(_line ${_changeLogFileBuf})
+		STRING(REGEX MATCH "^\\* [A-Za-z]+ [A-Za-z]+ [0-9]+ [0-9]+ .+ <.+> - (.*)$" _match  "${_line}")
+		IF(_match STREQUAL "")
+		    # Not a version line
+		    IF(_isThis)
+			STRING_APPEND(_this "${_line}" "\n")
+		    ELSEIF(_isPrev)
+			STRING_APPEND(_prev "${_line}" "\n")
+		    ELSE(_isThis)
+			M_MSG(${M_ERROR} "ChangeLog: Cannot distinguish version")
+		    ENDIF(_isThis)
+		ELSE(_match STREQUAL "")
+		    # Is a version line
+		    SET(_cV "${CMAKE_MATCH_1}")
+		    IF("${_cV}" STREQUAL "${ver}")
+			SET(_isThis 1)
+			SET(_isPrev 0)
+		    ELSE("${_cV}" STREQUAL "${ver}")
+			SET(_isThis 0)
+			SET(_isPrev 1)
+			STRING_APPEND(_prev "${_line}" "\n")
+		    ENDIF("${_cV}" STREQUAL "${ver}")
+		ENDIF(_match STREQUAL "")
+	    ENDFOREACH(_line ${_changeLogFileBuf})
+	ENDIF(EXISTS "${changeLogFile}")
+	SET(${thisVar} "${_this}" PARENT_SCOPE)
+	SET(${prevVar} "${_prev}" PARENT_SCOPE)
+    ENDFUNCTION(MANAGE_CHANGELOG_SPLIT thisVar prevVar changeLogFile ver)
 
     FUNCTION(MANAGE_CHANGELOG_UPDATE changeLogFile ver newChangeStr)
-	SET(_changeLogFileBuf "")
-	IF(EXISTS "${changeLogFile}")
-	    FILE(STRINGS "${changeLogFile}" _changeLogFileBuf)
-	ENDIF(EXISTS "${changeLogFile}")
+	MANAGE_CHANGELOG_SPLIT(thisVar prevVar "${changeLogFile}" "${ver}")
 	
 	INCLUDE(DateTimeFormat)
 
 	FILE(WRITE ${CHANGELOG_FILE} "* ${TODAY_CHANGELOG} ${MAINTAINER} - ${PRJ_VER}\n")
 	IF (newChangeStr)
 	    FILE(APPEND ${CHANGELOG_FILE} "${newChangeStr}\n\n")
-	    _MANAGE_CHANGELOG_UPDATE_MERGE_LINES(${ver} 0 "${CHANGELOG_FILE}")
+	    FILE(APPEND ${CHANGELOG_FILE} "${prevVar}\n")
 	ELSE(newChangeStr)
-	    _MANAGE_CHANGELOG_UPDATE_MERGE_LINES(${ver} 1 "${CHANGELOG_FILE}")
+	    FILE(APPEND ${CHANGELOG_FILE} "${thisVar}\n\n")
+	    FILE(APPEND ${CHANGELOG_FILE} "${prevVar}\n")
 	ENDIF(newChangeStr)
     ENDFUNCTION(MANAGE_CHANGELOG_UPDATE var changeLogFile ver newChangeStr)
 
