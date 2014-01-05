@@ -80,7 +80,7 @@ function local_koji_history_cache_file_name(){
 }
 
 function local_koji_history_command(){
-    $KOJI_CMD list-history --active --event --package $1 | grep "tagged into"
+    $KOJI_CMD list-history --active --event --package $1 | grep "tagged into" | grep -v "trashcan"
 }
 
 function get_koji_history(){
@@ -95,16 +95,9 @@ function local_pkg_changelog_cache_file_name(){
 
 function local_pkg_changelog_command(){
     _start=0
-    $KOJI_CMD buildinfo --changelog $1 | while read _line;do
-	if [ ${_start} -eq 0 ]; then
-	    if [ "${_line}" =  "Changelog:" ];then
-		_start=1
-	    fi
-	else
-	    echo "1 _start=${_start}" > /dev/stderr
-	    echo "${_line}"
-	fi
-    done
+    _prefix="/tmp/cmake-fedora-$1-"
+    $KOJI_CMD buildinfo --changelog $1 | csplit -f ${_prefix} - "%^Changelog:%1"
+    cat "${_prefix}00"
 }
 
 function get_pkg_changelog(){
