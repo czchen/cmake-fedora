@@ -90,3 +90,5 @@ STRING_SPLIT_TEST("STRING_SPLIT_allow_empty_0" "hi; ;hello; how are you;I'm fine
 
 STRING_SPLIT_TEST("STRING_SPLIT_allow_empty_1" "hi; ;;hello; how are you;I'm fine" "=" "hi= ==hello= how are you=I'm fine" ALLOW_EMPTY)
 
+STRING_SPLIT_TEST("STRING_SPLIT_allow_empty_2" "* Tue;-Enhancement;;* Fri;" "\n" "* Tue\n-Enhancement\n\n* Fri\n" ALLOW_EMPTY)
+
