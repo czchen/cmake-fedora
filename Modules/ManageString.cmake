@@ -4,7 +4,7 @@
 #   ManageVarible
 #
 # Defines the following functions:
-#   STRING_SPLIT(var delimiter str [NOESCAPE_SEMICOLON] [ESCAPE_VARIABLE])
+#   STRING_SPLIT(var delimiter str [NOESCAPE_SEMICOLON] [ESCAPE_VARIABLE] [ALLOW_EMPTY])
 #     - Split a string into a list using a delimiter, 
 #       which can be in 1 or more characters long.
 #       * Parameters:
@@ -12,7 +12,8 @@
 #         + delimiter: To separate a string.
 #         + str: A string.
 #         + NOESCAPE_SEMICOLON: (Optional) Do not escape semicolons.
-#         + ESCAPE_VARIABLE (Optional) Escape variables.
+#         + ESCAPE_VARIABLE: (Optional) Escape variables.
+#         + ALLOW_EMPTY: (Optional) Allow empty element exist in the array.
 #
 #   STRING_TRIM(var str [NOUNQUOTE])
 #     - Trim a string by removing the leading and trailing spaces,
@@ -299,11 +300,14 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 	SET(_max_tokens "")
 	SET(_NOESCAPE_SEMICOLON "")
 	SET(_ESCAPE_VARIABLE "")
+	SET(_ALLOW_EMPTY "")
 	FOREACH(_arg ${ARGN})
 	    IF(${_arg} STREQUAL "NOESCAPE_SEMICOLON")
 		SET(_NOESCAPE_SEMICOLON "NOESCAPE_SEMICOLON")
 	    ELSEIF(${_arg} STREQUAL "ESCAPE_VARIABLE")
 		SET(_ESCAPE_VARIABLE "ESCAPE_VARIABLE")
+	    ELSEIF(${_arg} STREQUAL "ALLOW_EMPTY")
+		SET(_ALLOW_EMPTY "ALLOW_EMPTY")
 	    ELSE(${_arg} STREQUAL "NOESCAPE_SEMICOLON")
 		SET(_max_tokens ${_arg})
 	    ENDIF(${_arg} STREQUAL "NOESCAPE_SEMICOLON")
@@ -320,9 +324,11 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 
 	WHILE(NOT _token_count EQUAL _max_tokens)
 	    STRING_SPLIT_2(_token _str "${_delimiter}" "${_str}")
-	    #MESSAGE("_token_count=${_token_count} _max_tokens=${_max_tokens} _token=${_token} _str=${_str}")
+	    #MESSAGE("_token_count=${_token_count} _max_tokens=${_max_tokens} _token=|${_token}| _str=${_str}")
 	    MATH(EXPR _token_count ${_token_count}+1)
-	    LIST(APPEND _str_list "${_token}")
+	    IF(NOT "${_token}" STREQUAL "" OR _ALLOW_EMPTY)
+		LIST(APPEND _str_list "${_token}")
+	    ENDIF(NOT "${_token}" STREQUAL "" OR _ALLOW_EMPTY)
 	    IF("${_str}" STREQUAL "")
 		## No more tokens
 		BREAK()

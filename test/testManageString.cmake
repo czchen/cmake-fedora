@@ -70,7 +70,7 @@ FUNCTION(STRING_SPLIT_TEST testName expected delimiter input)
     IF(var STREQUAL "${expected}")
 	MESSAGE(STATUS "Test ${testName} passed")
     ELSE(var STREQUAL "${expected}")
-	MESSAGE(SEND_ERROR "Test ${testName} failed: actual=|${${var}}| expected=|${expected}|")
+	MESSAGE(SEND_ERROR "Test ${testName} failed: actual=|${var}| expected=|${expected}|")
     ENDIF(var STREQUAL "${expected}")
 ENDFUNCTION(STRING_SPLIT_TEST)
 
@@ -85,4 +85,8 @@ STRING_SPLIT_TEST("STRING_SPLIT_2c" "hi; hello; how are you;I am fine" ";" "hi; 
 STRING_SPLIT_TEST("STRING_SPLIT_2d" "hi; hello\\; how are you\\;I am fine" ";" "hi; hello; how are you;I am fine" 2)
 
 STRING_SPLIT_TEST("STRING_SPLIT_backslash" "Have '\\';Next line" "\n" "Have '\\'\nNext line")
+
+STRING_SPLIT_TEST("STRING_SPLIT_allow_empty_0" "hi; ;hello; how are you;I'm fine" "=" "hi= ==hello= how are you=I'm fine")
+
+STRING_SPLIT_TEST("STRING_SPLIT_allow_empty_1" "hi; ;;hello; how are you;I'm fine" "=" "hi= ==hello= how are you=I'm fine" ALLOW_EMPTY)
 
