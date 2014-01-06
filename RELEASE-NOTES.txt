@@ -41,3 +41,5 @@ REDHAT_BUGZILLA=1040333
     - VARIABLE_PARSE_ARGN can now handle multiple-appeared options.
 - Changed:
   + CMake policy no longer enforced by default.
+  + ManageString: STRING_SPLIT is changed from macro to function,
+    so no need to put excessive backslashes.

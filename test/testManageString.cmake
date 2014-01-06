@@ -65,32 +65,24 @@ STRING_JOIN(str_join_1 " " "Are" "you sure" " it" "is" "right?" " ")
 TEST_STR_MATCH(str_join_1 "Are you sure  it is right?  ")
 
 # STRING_SPLIT
-SET(STR_SPLIT_1 "hi=hello=how are you=fine")
-STRING_SPLIT(_str_split_1 "=" "${STR_SPLIT_1}")
-#MESSAGE("_str_split_1=${_str_split_1}")
-TEST_STR_MATCH(_str_split_1 "hi;hello;how are you;fine")
-STRING_SPLIT(_str_split_1 "=" "${STR_SPLIT_1}" 2)
-TEST_STR_MATCH(_str_split_1 "hi;hello=how are you=fine")
+FUNCTION(STRING_SPLIT_TEST testName expected delimiter input)
+    STRING_SPLIT(var "${delimiter}" "${input}" ${ARGN})
+    IF(var STREQUAL "${expected}")
+	MESSAGE(STATUS "Test ${testName} passed")
+    ELSE(var STREQUAL "${expected}")
+	MESSAGE(SEND_ERROR "Test ${testName} failed: actual=|${${var}}| expected=|${expected}|")
+    ENDIF(var STREQUAL "${expected}")
+ENDFUNCTION(STRING_SPLIT_TEST)
 
-SET(STR_SPLIT_2 "hi; hello; how are you;I am fine")
+STRING_SPLIT_TEST("STRING_SPLIT_1" "hi;hello;how are you;fine" "=" "hi=hello=how are you=fine")
 
-STRING_SPLIT(_str_split_2a " " "${STR_SPLIT_2}")
-SET(_str_split_2a_a "hi\\;" "hello\\;" "how" "are" "you\\;I" "am" "fine")
-TEST_STR_MATCH(_str_split_2a "${_str_split_2a_a}")
+STRING_SPLIT_TEST("STRING_SPLIT_2a" "hi\\;;hello\\;;how;are;you\\;I;am;fine" " " "hi; hello; how are you;I am fine")
 
-STRING_SPLIT(_str_split_2b " " "${STR_SPLIT_2}" 2)
-SET(_str_split_2b_a "hi\\;" "hello\\; how are you\\;I am fine")
-#FOREACH(_tok ${_str_split_2b})
-#    MESSAGE("  2b_tok=${_tok}")
-#ENDFOREACH()
-TEST_STR_MATCH(_str_split_2b "${_str_split_2b_a}")
+STRING_SPLIT_TEST("STRING_SPLIT_2b" "hi\\;;hello\\; how are you\\;I am fine" " " "hi; hello; how are you;I am fine" 2)
 
-STRING_SPLIT(_str_split_2c ";" "${STR_SPLIT_2}")
-SET(_str_split_2c_a "hi" " hello" " how are you" "I am fine")
-TEST_STR_MATCH(_str_split_2c "${_str_split_2c_a}")
+STRING_SPLIT_TEST("STRING_SPLIT_2c" "hi; hello; how are you;I am fine" ";" "hi; hello; how are you;I am fine")
 
-STRING_SPLIT(_str_split_2d ";" "${STR_SPLIT_2}" 2)
-SET(_str_split_2d_a "hi" " hello\\; how are you\\;I am fine")
-TEST_STR_MATCH(_str_split_2d "${_str_split_2d_a}")
+STRING_SPLIT_TEST("STRING_SPLIT_2d" "hi; hello\\; how are you\\;I am fine" ";" "hi; hello; how are you;I am fine" 2)
 
+STRING_SPLIT_TEST("STRING_SPLIT_backslash" "Have '\\';Next line" "\n" "Have '\\'\nNext line")
 
