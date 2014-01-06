@@ -8,16 +8,14 @@
 #   PackSource
 #
 # Defines following functions:
-#   MANAGE_CHANGELOG_SPLIT(thisVar prevVar changeLogFile ver)
+#   MANAGE_CHANGELOG_SPLIT(changeLogItemVar prevVar changeLogFile ver)
 #   - Split the changeLog into two parts:
-#     1. this: Current version, that is,
+#     1. changeLogItemVar: Current version, that is,
 #        ChangeLog under the version specified by "ver".
-#        Note that version info is not returned, 
-#        so it is easier to put a new version string.
 #     2. prev: Previous version.
 #        Note that version info are returned.
 #     Arguments:
-#     + thisVar: Variable hold th
+#     + changeLogItemVar: Variable hold th
 #
 #   RELEASE_NOTES_READ_FILE([releaseFile])
 #   - Load release file information.
@@ -57,17 +55,26 @@ IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
 	COMMENT "${CHANGELOG_FILE} are saving as ${CHANGELOG_PREV_FILE}"
 	)
 
-    FUNCTION(MANAGE_CHANGELOG_SPLIT thisVar prevVar changeLogFile ver)
+    FUNCTION(MANAGE_CHANGELOG_SPLIT changeLogItemVar prevVar changeLogFile ver)
 	SET(_changeLogFileBuf "")
 	SET(_this "")
 	SET(_prev "")
 	IF(EXISTS "${changeLogFile}")
 	    SET(_isThis 0)
 	    SET(_isPrev 0)
-	    FILE(STRINGS "${changeLogFile}" _changeLogFileBuf NEWLINE_CONSUME)
-	    FOREACH(_line ${_changeLogFileBuf})
+	    # Use this instead of FILE(READ is to avoid error when reading '\'
+	    # character.
+	    EXECUTE_PROCESS(COMMAND cat "${changeLogFile}"
+		OUTPUT_VARIABLE _changeLogFileBuf
+		OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+	    #MESSAGE("# _changeLogFileBuf=|${_changeLogFileBuf}|")
+	    STRING_SPLIT(_lines "\n" "${_changeLogFileBuf}" ALLOW_EMPTY)
+	    #MESSAGE("# _lines=|${_lines}|")
+
+	    FOREACH(_line IN LISTS _lines)
 		STRING(REGEX MATCH "^\\* [A-Za-z]+ [A-Za-z]+ [0-9]+ [0-9]+ .+ <.+> - (.*)$" _match  "${_line}")
-		IF(_match STREQUAL "")
+		IF("${_match}" STREQUAL "")
 		    # Not a version line
 		    IF(_isThis)
 			STRING_APPEND(_this "${_line}" "\n")
@@ -76,7 +83,7 @@ IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
 		    ELSE(_isThis)
 			M_MSG(${M_ERROR} "ChangeLog: Cannot distinguish version")
 		    ENDIF(_isThis)
-		ELSE(_match STREQUAL "")
+		ELSE("${_match}" STREQUAL "")
 		    # Is a version line
 		    SET(_cV "${CMAKE_MATCH_1}")
 		    IF("${_cV}" STREQUAL "${ver}")
@@ -87,27 +94,30 @@ IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
 			SET(_isPrev 1)
 			STRING_APPEND(_prev "${_line}" "\n")
 		    ENDIF("${_cV}" STREQUAL "${ver}")
-		ENDIF(_match STREQUAL "")
-	    ENDFOREACH(_line ${_changeLogFileBuf})
+		ENDIF("${_match}" STREQUAL "")
+	    ENDFOREACH(_line IN LISTS _lines)
 	ENDIF(EXISTS "${changeLogFile}")
-	SET(${thisVar} "${_this}" PARENT_SCOPE)
+	SET(${changeLogItemVar} "${_this}" PARENT_SCOPE)
 	SET(${prevVar} "${_prev}" PARENT_SCOPE)
-    ENDFUNCTION(MANAGE_CHANGELOG_SPLIT thisVar prevVar changeLogFile ver)
+    ENDFUNCTION(MANAGE_CHANGELOG_SPLIT changeLogItemVar prevVar changeLogFile ver)
 
     FUNCTION(MANAGE_CHANGELOG_UPDATE changeLogFile ver newChangeStr)
-	MANAGE_CHANGELOG_SPLIT(thisVar prevVar "${changeLogFile}" "${ver}")
-	
+	SET(CHANGELOG_ITEM_FILE "${CMAKE_FEDORA_TMP_DIR}/ChangeLog.Item"
+	    CACHE INTERNAL "ChangeLog Item file")
+	MANAGE_CHANGELOG_SPLIT(changeLogItemVar prevVar "${changeLogFile}" "${ver}")
+
 	INCLUDE(DateTimeFormat)
 
 	FILE(WRITE ${CHANGELOG_FILE} "* ${TODAY_CHANGELOG} ${MAINTAINER} - ${PRJ_VER}\n")
 	IF (newChangeStr)
+	    FILE(WRITE ${CHANGELOG_ITEM_FILE} "${newChangeStr}")
 	    FILE(APPEND ${CHANGELOG_FILE} "${newChangeStr}\n\n")
-	    FILE(APPEND ${CHANGELOG_FILE} "${prevVar}\n")
 	ELSE(newChangeStr)
-	    FILE(APPEND ${CHANGELOG_FILE} "${thisVar}\n\n")
-	    FILE(APPEND ${CHANGELOG_FILE} "${prevVar}\n")
+	    FILE(WRITE ${CHANGELOG_ITEM_FILE} "${changeLogItemVar}")
+	    FILE(APPEND ${CHANGELOG_FILE} "${changeLogItemVar}\n\n")
 	ENDIF(newChangeStr)
-    ENDFUNCTION(MANAGE_CHANGELOG_UPDATE var changeLogFile ver newChangeStr)
+	FILE(APPEND ${CHANGELOG_FILE} "${prevVar}")
+    ENDFUNCTION(MANAGE_CHANGELOG_UPDATE changeLogFile ver newChangeStr)
 
     FUNCTION(RELEASE_NOTES_READ_FILE)
 	INCLUDE(ManageString)
@@ -150,7 +160,6 @@ IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
 	    ENDIF(_changeItemSection)
 	ENDFOREACH(_line ${_release_line})
 
-	FILE(WRITE "${CMAKE_FEDORA_TMP_DIR}/ChangeLog.this" "${CHANGELOG_ITEMS}")
 
 	SET_COMPILE_ENV(PRJ_DOC_DIR "${DOC_DIR}/${PROJECT_NAME}-${PRJ_VER}"
 	    CACHE PATH "Project docdir prefix" FORCE
@@ -158,6 +167,12 @@ IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
 
 	MANAGE_CHANGELOG_UPDATE(${CHANGELOG_FILE} ${PRJ_VER} "${CHANGELOG_ITEMS}")
 
+	ADD_CUSTOM_COMMAND(OUTPUT ${CHANGELOG_ITEM_FILE}
+	    COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR}
+	    DEPENDS ${RELEASE_NOTE_FILE}
+	    VERBATIM
+	    )
+	    
 	ADD_CUSTOM_COMMAND(OUTPUT ${CHANGELOG_FILE}
 	    COMMAND ${CMAKE_COMMAND} ${CMAKE_SOURCE_DIR}
 	    DEPENDS ${RELEASE_NOTES_FILE}
