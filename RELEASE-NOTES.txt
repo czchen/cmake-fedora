@@ -4,8 +4,9 @@ REDHAT_BUGZILLA=1040333
 [Changes]
 - Enhancement:
   + ChangeLog.prev is no longer required.
-  + cmake-fedora-koji: new subcommand: newest-build.
-  + cmake-fedora-koji: new subcommand: newest-changelog.
+  + cmake-fedora-koji: 
+    - new subcommand: newest-build and newest-changelog.
+  + cmake-fedora-changelog: new script. 
   + ManageFile:
     - Add absolute file support
     - MANAGE_FILE_INSTALL: Add TARGETS support.

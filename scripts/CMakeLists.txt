@@ -1,8 +1,10 @@
-SET(EXECUTABLES cmake-fedora-fedpkg 
+SET(EXECUTABLES 
+    cmake-fedora-changelog 
+    cmake-fedora-fedpkg 
     cmake-fedora-koji 
     cmake-fedora-newprj 
     koji-build-scratch
-    )
+)
 SET(LIBEXEC_FUNCTIONS cmake-fedora-functions)
 
 MANAGE_FILE_INSTALL(BIN ${EXECUTABLES})
