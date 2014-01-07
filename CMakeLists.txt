@@ -47,6 +47,22 @@ INCLUDE(ManageTarget)
 INCLUDE(ManageTranslation)
 INCLUDE(ManageUninstall)
 
+####################################################################
+# Dependencies
+#
+
+# Enable GNOME_SHELL support by set the value to 1
+SET_COMPILE_ENV(GNOME_SHELL 1 DISPLAY BOOL "Enable GNOME Shell support")
+
+SET(IBUS_MIN_VER "1.3")
+SET(CHEWING_MIN_VER "0.3.3")
+## Requires
+MANAGE_DEPENDENCY(REQUIRES CMAKE VER "2.6.2" REQUIRED)
+MANAGE_DEPENDENCY(REQUIRES KOJI  REQUIRED)
+MANAGE_DEPENDENCY(REQUIRES FEDPKG REQUIRED)
+
+## Build requires
+MANAGE_DEPENDENCY(BUILD_REQUIRES CMAKE VER "2.6.2" REQUIRED)
 
 ####################################################################
 # Building
@@ -92,7 +108,7 @@ PACK_SOURCE_ARCHIVE("${SOURCE_ARCHIVE_DIR}"
     )
 
 IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
-    PACK_RPM()
+    PACK_RPM(SPEC_IN "Templates/fedora/project.spec.in")
     RELEASE_FEDORA(fedora epel)
     # "Off" Warning is displayed if mock is not installed.
     RPM_MOCK_BUILD()

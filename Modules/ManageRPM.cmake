@@ -52,8 +52,12 @@
 #   RPM_FILES_SECTION_CONTENT: A list of string  
 #
 # Defines following Macros:
-#   PACK_RPM()
+#   PACK_RPM([SPEC_IN specInFile] [SPEC specFile])
 #   - Generate spec and pack rpm  according to the spec file.
+#     Parameters:
+#     SPEC_IN specInFile: RPM SPEC template file as .spec.in
+#     SPEC specFile: Output RPM SPEC file 
+#       Default: ${RPM_BUILD_SPEC}/${PROJECT_NAME}.spec
 #     Targets:
 #     + srpm: Build srpm (rpmbuild -bs).
 #     + rpm: Build rpm and srpm (rpmbuild -bb)
@@ -87,6 +91,8 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
     INCLUDE(ManageFile)
     INCLUDE(ManageTarget)
     SET(_manage_rpm_dependency_missing 0)
+    SET(_cmake_fedora_dependency_missing 0)
+    SET(RPM_SPEC_TAG_PADDING 16 CACHE STRING "RPM SPEC Tag padding")
 
     FIND_PROGRAM_ERROR_HANDLING(RPM_CMD
 	ERROR_MSG " rpm build support is disabled."
@@ -102,24 +108,12 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
 	NAMES "rpmbuild-md5" "rpmbuild"
 	)
 
-    FIND_FILE_ERROR_HANDLING(PRJ_RPM_SPEC_IN_FILE
-	ERROR_MSG " rpm build support is disabled."
-	ERROR_VAR _manage_rpm_dependency_missing
+    FIND_PROGRAM_ERROR_HANDLING(CMAKE_FEDORA_KOJI_CMD
+	ERROR_MSG " cmake-fedora support is disabled."
+	ERROR_VAR _cmake_fedora_dependency_missing
 	VERBOSE_LEVEL ${M_OFF}
-	NAMES "${PROJECT_NAME}.spec.in" "project.spec.in"
-	PATHS "${CMAKE_CURRENT_SOURCE_DIR}/SPECS"
-	"${CMAKE_SOURCE_DIR}/SPECS" "SPECS" "rpm" "."
-	"${CMAKE_SOURCE_DIR}/Templates/fedora"
-	"${CMAKE_ROOT}/Templates/fedora"
-	)
-
-    FIND_FILE_ERROR_HANDLING(RPM_CHANGELOG_PREV_FILE
-	ERROR_MSG " rpm build support is disabled."
-	ERROR_VAR _manage_rpm_dependency_missing
-	VERBOSE_LEVEL ${M_OFF}
-	NAMES RPM-ChangeLog.prev
-	PATHS "${CMAKE_CURRENT_SOURCE_DIR}/SPECS"
-	"${CMAKE_SOURCE_DIR}/SPECS" "SPECS" "rpm" "."
+	"cmake-fedora-koji"
+	PATH ${CMAKE_SOURCE_DIR}/scripts
 	)
 
     IF(NOT _manage_rpm_dependency_missing)
@@ -161,6 +155,34 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
 	LIST(APPEND SOURCE_ARCHIVE_IGNORE_FILES ${RPM_IGNORE_FILES})
 
     ENDIF(NOT _manage_rpm_dependency_missing)
+
+
+    MACRO(MANAGE_RPM_CHANGELOG)
+	EXECUTE_PROCESS(COMMAND cat "${CHANGELOG_ITEM_FILE}"
+	    OUTPUT_VARIABLE CHANGELOG_ITEMS
+	    OUTPUT_STRIP_TRAILING_WHITESPACE
+	    )
+	SET(RPM_CHANGELOG_FILE "${RPM_BUILD_SPECS}/RPM-ChangeLog")
+	SET(RPM_CHANGELOG_PREV_FILE "${RPM_CHANGELOG_FILE}.prev")
+	IF(NOT _cmake_fedora_dependency_missing)
+	    M_MSG(${M_INFO1} "Requesting newest changelog from koji")
+	    EXECUTE_PROCESS(
+		COMMAND ${CMAKE_FEDORA_KOJI_CMD} newest-changelog "${PROJECT_NAME}"
+	        OUTPUT_FILE ${RPM_CHANGELOG_PREV_FILE}
+	    )
+	ENDIF(NOT _cmake_fedora_dependency_missing)
+	IF(EXISTS ${RPM_CHANGELOG_PREV_FILE})
+	    # Update RPM_ChangeLog
+	    # Use this instead of FILE(READ is to avoid error when reading '\'
+	    # character.
+	    EXECUTE_PROCESS(COMMAND cat "${RPM_CHANGELOG_PREV_FILE}"
+		OUTPUT_VARIABLE RPM_CHANGELOG_PREV
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+		)
+	ELSE(EXISTS ${RPM_CHANGELOG_PREV_FILE})
+	    SET(RPM_CHNAGELOG_PREV "")
+	ENDIF(EXISTS ${RPM_CHANGELOG_PREV_FILE})
+    ENDMACRO(MANAGE_RPM_CHANGELOG)
 
     MACRO(PRJ_RPM_SPEC_DATA_PREPARE)
 	SET(RPM_SPEC_CMAKE_FLAGS "-DCMAKE_FEDORA_ENABLE_FEDORA_BUILD=1"
@@ -335,7 +357,9 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
 	INCLUDE(DateTimeFormat)
 
 	FILE(WRITE ${RPM_CHANGELOG_FILE} "* ${TODAY_CHANGELOG} ${MAINTAINER} - ${PRJ_VER}-${RPM_RELEASE_NO}\n")
-	#	FILE(READ "${CMAKE_FEDORA_TMP_DIR}/ChangeLog.this" CHANGELOG_ITEMS)
+	EXECUTE_PROCESS(COMMAND cat "${CMAKE_FEDORA_CHANGELOG_ITEM_FILE}"
+	    OUTPUT_VARIABLE CHANGELOG_ITEMS
+	    OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 	FILE(APPEND ${RPM_CHANGELOG_FILE} "${CHANGELOG_ITEMS}\n\n")
 
@@ -368,6 +392,13 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
 
     MACRO(PACK_RPM)
 	IF(NOT _manage_rpm_dependency_missing )
+	    SET(_validOptions "SPEC_IN" "SPEC")
+	    VARIABLE_PARSE_ARGN(_opt _validOptions ${ARGN})
+
+	    IF(NOT DEFINED _opt_SPEC)
+		SET(_opt_SPEC "${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec")
+	    ENDIF(NOT DEFINED _opt_SPEC)
+	    
 	    SET(PRJ_SRPM_FILE "${RPM_BUILD_SRPMS}/${PROJECT_NAME}-${PRJ_VER}-${RPM_RELEASE_NO}.${RPM_DIST_TAG}.src.rpm"
 		CACHE STRING "RPM files" FORCE)
 
@@ -375,10 +406,13 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
 		CACHE STRING "RPM files" FORCE)
 
 	    PRJ_RPM_SPEC_DATA_PREPARE()
-   	    RPM_CHANGELOG_WRITE_FILE()
+	    INCLUDE(DateTimeFormat)
+	    MANAGE_RPM_CHANGELOG()
 
 	    # Generate spec
-	    CONFIGURE_FILE(${PRJ_RPM_SPEC_IN_FILE} ${PRJ_RPM_SPEC_FILE})
+	    IF(NOT "${_opt_SPEC_IN}" STREQUAL "")
+		CONFIGURE_FILE(${_opt_SPEC_IN} ${_opt_SPEC})
+	    ENDIF(NOT "${_opt_SPEC_IN}" STREQUAL "")
 	    #-------------------------------------------------------------------
 	    # RPM build commands and targets
 
