@@ -50,3 +50,6 @@ REDHAT_BUGZILLA=1040333,1046213
   + CMake policy no longer enforced by default.
   + ManageString: STRING_SPLIT is changed from macro to function,
     so no need to put excessive backslashes.
+- Removed:
+  + Target after_release_commit and related are no longer required 
+    and thus removed.

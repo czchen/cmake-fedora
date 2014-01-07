@@ -47,6 +47,9 @@
   + CMake policy no longer enforced by default.
   + ManageString: STRING_SPLIT is changed from macro to function,
     so no need to put excessive backslashes.
+- Removed:
+  + Target after_release_commit and related are no longer required 
+    and thus removed.
 
 * Mon Dec 23 2013 Ding-Yi Chen <dchen at redhat.com> - 1.1.6
 - Enhancement:
