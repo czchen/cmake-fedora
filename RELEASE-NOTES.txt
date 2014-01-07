@@ -18,8 +18,11 @@ REDHAT_BUGZILLA=1040333
     - Fixed Bug 1040333 - RFE: Support .gitignore file as 
       source of CPACK_SOURCE_IGNORE_FILES
   + ManageDependency: Manage dependencies.
+  + ManageRPM: 
+    - PACK_RPM: New options: SPEC_IN and SPEC.
   + ManageString:
     - STRING_APPEND: Append a string to a variable.
+    - STRING_PADDING: Padding the string to specified length
   + ManageTranslation:
     - MANAGE_GETTEXT: 
       + Can specify MSGFMT_OPTIONS and MSGMERGE_OPTIONS

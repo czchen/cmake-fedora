@@ -64,6 +64,28 @@ TEST_STR_MATCH(str_trim_6 "Left outside \" Right Inside \"")
 STRING_JOIN(str_join_1 " " "Are" "you sure" " it" "is" "right?" " ")
 TEST_STR_MATCH(str_join_1 "Are you sure  it is right?  ")
 
+# STRING_PADDING
+FUNCTION(STRING_PADDING_TEST testName expected str length)
+    STRING_PADDING(var "${str}" "${length}" $ARGN)
+    IF(var STREQUAL "${expected}")
+	MESSAGE(STATUS "Test ${testName} passed")
+    ELSE(var STREQUAL "${expected}")
+	MESSAGE(SEND_ERROR "Test ${testName} failed: actual=|${var}| expected=|${expected}|")
+    ENDIF(var STREQUAL "${expected}")
+ENDFUNCTION(STRING_PADDING_TEST testName expected str length)
+
+STRING_PADDING_TEST("STRING_PADING_TEST_need_padding_0" 
+    "test      " "test" 10)
+
+STRING_PADDING_TEST("STRING_PADING_TEST_need_padding_1" 
+    "test12345 " "test12345" 10)
+
+STRING_PADDING_TEST("STRING_PADING_TEST_no_need_padding_0" 
+    "test123456" "test123456" 10)
+
+STRING_PADDING_TEST("STRING_PADING_TEST_no_need_padding_1" 
+    "test1234567" "test1234567" 10)
+
 # STRING_SPLIT
 FUNCTION(STRING_SPLIT_TEST testName expected delimiter input)
     STRING_SPLIT(var "${delimiter}" "${input}" ${ARGN})

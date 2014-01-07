@@ -4,6 +4,21 @@
 #   ManageVarible
 #
 # Defines the following functions:
+#   STRING_APPEND(var str [separator])
+#     - Append a string to a variable
+#       * Parameters:
+#         + var: A variable that stores the result.
+#         + str: A string to be appended to end of line.
+#         + separator: Separator to separate between strings.
+#
+#   STRING_PADDING(var str length [padStr])
+#     - Padding the string to specified length
+#       * Parameters:
+#         + var: A variable that stores the result.
+#         + str: A string.
+#         + length: Required length.
+#         + padStr: String that used in padding. Default: " "
+#
 #   STRING_SPLIT(var delimiter str [NOESCAPE_SEMICOLON] [ESCAPE_VARIABLE] [ALLOW_EMPTY])
 #     - Split a string into a list using a delimiter, 
 #       which can be in 1 or more characters long.
@@ -28,13 +43,6 @@
 #           around the string.
 #
 # Defines the following macros:
-#   STRING_APPEND(var str [separator])
-#     - Append a string to a variable
-#       * Parameters:
-#         + var: A variable that stores the result.
-#         + str: A string to be appended to end of line.
-#         + separator: Separator to separate between strings.
-#
 #   STRING_ESCAPE_SEMICOLON(var str)
 #     - Escape the semicolon
 #       * Parameters:
@@ -72,6 +80,22 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 	    SET(${var} "${${var}}${_sep}${str}" PARENT_SCOPE)
 	ENDIF(${var} STREQUAL "")
     ENDFUNCTION(STRING_APPEND var str)
+
+    FUNCTION(STRING_PADDING var str length)
+	SET(_ret "${str}")
+	IF(${ARGN})
+	    SET(_padStr ${ARGN})
+	ELSE(${ARGN})
+	    SET(_padStr " ")
+	ENDIF(${ARGN})
+	STRING(LENGTH "${str}" _strLen)
+	STRING(LENGTH "${_padStr}" _padLen)
+	WHILE( _strLen LESS length)
+	    SET(_ret "${_ret}${_padStr}")
+	    MATH(EXPR _strLen ${_strLen}+${_padLen})
+	ENDWHILE( _strLen LESS length)
+	SET(${var} "${_ret}" PARENT_SCOPE)
+    ENDFUNCTION(STRING_PADDING var str length)
 
     # Return (index of lefttmost non match character)
     # Return _strLen if all characters matches regex
