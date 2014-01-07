@@ -94,7 +94,6 @@ function local_pkg_changelog_cache_file_name(){
 }
 
 function local_pkg_changelog_command(){
-    _start=0
     _prefix="/tmp/cmake-fedora-$1-"
     $KOJI_CMD buildinfo --changelog $1 | csplit -s -f ${_prefix} - "%^Changelog:%1"
     cat "${_prefix}00"
