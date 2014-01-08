@@ -112,7 +112,7 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
 	ERROR_VAR _cmake_fedora_dependency_missing
 	VERBOSE_LEVEL ${M_OFF}
 	"cmake-fedora-koji"
-	PATH ${CMAKE_SOURCE_DIR}/scripts
+	PATHS ${CMAKE_SOURCE_DIR}/scripts
 	)
 
     IF(NOT _manage_rpm_dependency_missing)
@@ -371,7 +371,7 @@ make ${RPM_SPEC_MAKE_FLAGS}"
 		    ERROR_MSG " spec.in is not found"
 		    VERBOSE_LEVEL ${M_ERROR}
 		    NAMES "project.spec.in" "${PROJECT_NAME}.spec.in"
-		    PATH ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR}
+		    PATHS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR}
 			${CMAKE_CURRENT_SOURCE_DIR}/SPECS
 			${CMAKE_SOURCE_DIR}/SPECS
 			${CMAKE_CURRENT_SOURCE_DIR}/rpm
