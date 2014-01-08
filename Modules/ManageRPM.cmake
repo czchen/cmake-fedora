@@ -10,7 +10,6 @@
 #   ManageTarget
 #
 # Reads and defines following variables if dependencies are satisfied:
-#   PRJ_RPM_SPEC_IN_FILE: spec.in that generate spec
 #   PRJ_RPM_SPEC_FILE: spec file for rpmbuild.
 #   RPM_SPEC_BUILD_ARCH: (optional) Set "BuildArch:"
 #   RPM_BUILD_ARCH: (optional) Arch that will be built."
@@ -119,13 +118,28 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
     IF(NOT _manage_rpm_dependency_missing)
 	INCLUDE(ManageVariable)
 
-	SET (SPEC_FILE_WARNING "This file is generated, please modified the .spec.in file instead!")
+	SET(RPM_SPEC_CMAKE_FLAGS "-DCMAKE_FEDORA_ENABLE_FEDORA_BUILD=1"
+	    CACHE STRING "CMake flags in RPM SPEC"
+	)
+	SET(RPM_SPEC_MAKE_FLAGS "VERBOSE=1 %{?_smp_mflags}"
+	    CACHE STRING "Make flags in RPM SPEC"
+	)
+	SET(RPM_SPEC_BUILD_OUTPUT 
+	    "%cmake ${RPM_SPEC_CMAKE_FLAGS} .
+make ${RPM_SPEC_MAKE_FLAGS}"
+	)
+
+	SET(RPM_SPEC_INSTALL_OUTPUT
+	    "%__rm -rf $RPM_BUILD_ROOT
+make install DESTDIR=$RPM_BUILD_ROOT"
+	)
 
 	# %{dist}
 	EXECUTE_PROCESS(COMMAND ${RPM_CMD} -E "%{dist}"
 	    COMMAND sed -e "s/^\\.//"
 	    OUTPUT_VARIABLE _RPM_DIST_TAG
-	    OUTPUT_STRIP_TRAILING_WHITESPACE)
+	    OUTPUT_STRIP_TRAILING_WHITESPACE
+	)
 	SET(RPM_DIST_TAG "${_RPM_DIST_TAG}" CACHE STRING "RPM Dist Tag")
 
 	SET(RPM_RELEASE_NO "1" CACHE STRING "RPM Release Number")
@@ -145,29 +159,11 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
 		FILE(MAKE_DIRECTORY "${RPM_BUILD_${_dir}}")
 	    ENDIF(NOT RPM_BUILD_${_dir})
 	ENDFOREACH(_dir "SPECS" "SOURCES" "SRPMS" "RPMS" "BUILD" "BUILDROOT")
-
-	## RPM spec.in and RPM-ChangeLog.prev
-	SET(PRJ_RPM_SPEC_FILE "${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec" CACHE FILEPATH "spec")
-
-	SET(RPM_CHANGELOG_FILE "${RPM_BUILD_SPECS}/RPM-ChangeLog" CACHE FILEPATH "ChangeLog for RPM")
-
+	
 	# Add RPM build directories in ignore file list.
 	LIST(APPEND SOURCE_ARCHIVE_IGNORE_FILES ${RPM_IGNORE_FILES})
 
     ENDIF(NOT _manage_rpm_dependency_missing)
-
-    MACRO(RPM_SPEC_ADD_TAG tag value)
-	SET(_validOptions "SECTION")
-	VARIABLE_PARSE_ARGN(_opt _validOptions ${ARGN})
-	IF(NOT DEFINED _opt_SECTION)
-	    SET(_opt_SECTION "header")
-	ENDIF(NOT DEFINED _opt_SECTION)
-
-	STRING_PADDING(_str "${tag}:" ${RPM_SPEC_TAG_PADDING})
-	STRING_APPEND(RPM_SPEC_SECTION_${_opt_SECTION} 
-	    "${_str}${value}" "\n"
-	)
-    ENDMACRO(RPM_SPEC_ADD_TAG tag value)
 
     MACRO(MANAGE_RPM_CHANGELOG)
 	EXECUTE_PROCESS(COMMAND cat "${CHANGELOG_ITEM_FILE}"
@@ -190,197 +186,216 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
 	    EXECUTE_PROCESS(COMMAND cat "${RPM_CHANGELOG_PREV_FILE}"
 		OUTPUT_VARIABLE RPM_CHANGELOG_PREV
 		OUTPUT_STRIP_TRAILING_WHITESPACE
-		)
+	    )
 	ELSE(EXISTS ${RPM_CHANGELOG_PREV_FILE})
 	    SET(RPM_CHNAGELOG_PREV "")
 	ENDIF(EXISTS ${RPM_CHANGELOG_PREV_FILE})
     ENDMACRO(MANAGE_RPM_CHANGELOG)
 
-    MACRO(PRJ_RPM_SPEC_DATA_PREPARE)
-	SET(RPM_SPEC_CMAKE_FLAGS "-DCMAKE_FEDORA_ENABLE_FEDORA_BUILD=1"
-	    CACHE STRING "CMake flags in RPM SPEC"
+    MACRO(RPM_SPEC_OUTPUT_ADD_TAG var tag attribute value)
+	IF("${attribute}" STREQUAL "")
+	    SET(_str "${tag}:")
+	ELSE("${attribute}" STREQUAL "")
+	    SET(_str "${tag}(${attribute}):")
+	ENDIF("${attribute}" STREQUAL "")
+	STRING_PADDING(_str "${_str}" ${RPM_SPEC_TAG_PADDING})
+	STRING_APPEND(_str "${value}")
+	RPM_SPEC_OUTPUT_ADD(${var} "${_str}" ${ARGN})
+    ENDMACRO(RPM_SPEC_OUTPUT_ADD_TAG var tag attribute value)
+
+    MACRO(RPM_SPEC_OUTPUT_ADD_DIRECTIVE var directive attribute content)
+	SET(_str "%${directive}")
+	IF(NOT "${attribute}" STREQUAL "")
+	    STRING_APPEND(_str " ${attribute}")
+	ENDIF(NOT "${attribute}" STREQUAL "")
+
+	IF(NOT "${content}" STREQUAL "")
+	    STRING_APPEND(_str "\n${content}")
+	ENDIF(NOT "${content}" STREQUAL "")
+	RPM_SPEC_OUTPUT_ADD(${var} "${_str}" ${ARGN})
+    ENDMACRO(RPM_SPEC_OUTPUT_ADD_DIRECTIVE var directive attribute content)
+
+    MACRO(RPM_SPEC_OUTPUT_ADD var str)
+	IF(NOT "${ARGN}" STREQUAL "")
+	    SET(pos "${ARGN}")
+	ELSE(NOT "${ARGN}" STREQUAL "")
+	    SET(pos "")
+	ENDIF(NOT "${ARGN}" STREQUAL "")
+	IF(pos STREQUAL "FRONT")
+	    IF("${${var}}" STREQUAL "")
+		SET(${var} "${str}")
+	    ELSE("${${var}}" STREQUAL "")
+		SET(${var} "${str}\n${${var}}")
+            ENDIF("${${var}}" STREQUAL "")
+	ELSE(pos STREQUAL "FRONT")
+	    STRING_APPEND(${var} "${str}" "\n")
+	ENDIF(pos STREQUAL "FRONT")
+    ENDMACRO(RPM_SPEC_OUTPUT_ADD var str)
+
+    MACRO(PRJ_RPM_SPEC_PREPARE_FILES fileType pathPrefix)
+	FOREACH(_f ${FILE_INSTALL_${fileType}_LIST})
+	    RPM_SPEC_OUTPUT_ADD(RPM_SPEC_FILES_SECTION_OUTPUT 
+		"${pathPrefix}${_f}" "\n"
 	    )
+	ENDFOREACH(_f ${FILE_INSTALL_${fileType}_LIST})
+    ENDMACRO(PRJ_RPM_SPEC_PREPARE_FILES)
 
-	SET(RPM_SPEC_MAKE_FLAGS "VERBOSE=1 %{?_smp_mflags}"
-	    CACHE STRING "Make flags in RPM SPEC"
-	    )
-	# %{_build_arch}
-	IF("${RPM_SPEC_BUILD_ARCH}" STREQUAL "")
-	    EXECUTE_PROCESS(COMMAND ${RPM_CMD} -E "%{_build_arch}"
-		OUTPUT_VARIABLE _RPM_BUILD_ARCH
-		OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-	    SET(RPM_BUILD_ARCH "${_RPM_BUILD_ARCH}" 
-		CACHE STRING "RPM Arch")
-	    SET(RPM_SPEC_BUILD_ARCH_OUTPUT "")
-	ELSE("${RPM_SPEC_BUILD_ARCH}" STREQUAL "")
-	    SET(RPM_BUILD_ARCH "${RPM_SPEC_BUILD_ARCH}" 
-		CACHE STRING "RPM Arch")
-	    SET(RPM_SPEC_BUILD_ARCH_OUTPUT 
-		"BuildArch:  ${RPM_SPEC_BUILD_ARCH}")
-	ENDIF("${RPM_SPEC_BUILD_ARCH}" STREQUAL "")
-
-	SET(RPM_SPEC_SUMMARY_TRANSLATION_OUTPUT "")
+    MACRO(PRJ_RPM_SPEC_PREPARE)
+	## Summary
+	RPM_SPEC_OUTPUT_ADD_TAG(RPM_SPEC_SUMMARY_OUTPUT
+	    "Summary" "" "${PRJ_SUMMARY}"
+	)
 	SET(_lang "")
 	FOREACH(_sT ${SUMMARY_TRANSLATIONS})
 	    IF(_lang STREQUAL "")
 		SET(_lang "${_sT}")
 	    ELSE(_lang STREQUAL "")
-		STRING_APPEND(RPM_SPEC_SUMMARY_TRANSLATION_OUTPUT
-		    "Summary(${_lang}): ${_sT}" "\n"
-		    )
+		RPM_SPEC_OUTPUT_ADD_TAG(RPM_SPEC_SUMMARY_OUTPUT
+		    "Summary" "${lang}" "${PRJ_SUMMARY}"
+		)
 		SET(_lang "")
 	    ENDIF(_lang STREQUAL "")
 	ENDFOREACH(_sT ${SUMMARY_TRANSLATIONS})
-	SET(RPM_SPEC_URL_OUTPUT ${URL_TEMPLATE})
-	SET(RPM_SPEC_SOURCE0_OUTPUT ${SOURCE_DOWNLOAD_URL_TEMPLATE})
-	
-	SET(RPM_SPEC_BUILD_REQUIRES_OUTPUT "")
-	FOREACH(_d ${BUILD_REQUIRES})
-	    STRING_APPEND(RPM_SPEC_BUILD_REQUIRES_OUTPUT
-		"BuildRequires:   ${_d}"  "\n"
-		)
-	ENDFOREACH(_d ${BUILD_REQUIRES})
 
-	SET(RPM_SPEC_REQUIRES_OUTPUT "")
-	FOREACH(_d ${REQUIRES})
-	    STRING_APPEND(RPM_SPEC_REQUIRES_OUTPUT "Requires:   ${_d}" "\n")
-	ENDFOREACH(_d ${REQUIRES})
-	FOREACH(_d ${REQUIRES_PRE})
-	    STRING_APPEND(RPM_SPEC_REQUIRES_PRE_OUTPUT 
-		"Requires(pre):   ${_d}" "\n"
-		)
-	ENDFOREACH(_d ${REQUIRES_PRE})
-	FOREACH(_d ${REQUIRES_PREUN})
-	    STRING_APPEND(RPM_SPEC_REQUIRES_PREUN_OUTPUT 	
-		"Requires(preun): ${_d}" "\n"
-		)
-	ENDFOREACH(_d ${REQUIRES_PREUN})
-	FOREACH(_d ${REQUIRES_POST})
-	    STRING_APPEND(RPM_SPEC_REQUIRES_POST_OUTPUT
-		"Requires(preun): ${_d}" "\n"
-		)
-	ENDFOREACH(_d ${REQUIRES_POST})
+	## Url
+	SET(RPM_SPEC_URL_OUTPUT "${RPM_SPEC_URL}")
 
-	SET(RPM_SPEC_DESCRIPTION_TRANSLATION_OUTPUT "")
+	## Source
+	SET(_buf "")
+	SET(_i 0)
+	FOREACH(_s ${RPM_SPEC_SOURCES})
+	    RPM_SPEC_OUTPUT_ADD_TAG(_buf "Source${_i}" "" "${_s}")
+	    MATH(EXPR _i ${_i}+1)
+	ENDFOREACH(_s ${RPM_SPEC_SOURCES})
+	RPM_SPEC_OUTPUT_ADD(RPM_SPEC_SOURCE_OUTPUT "${_buf}" FRONT)
+
+	## Requires (and BuildRequires)
+	SET(_buf "")
+	FOREACH(_s ${BUILD_REQUIRES})
+	    RPM_SPEC_OUTPUT_ADD_TAG(_buf "BuildRequires" "" "${_s}")
+	ENDFOREACH(_s ${RPM_SPEC_SOURCES})
+
+	FOREACH(_s ${REQUIRES})
+	    RPM_SPEC_OUTPUT_ADD_TAG(_buf "Requires" "" "${_s}")
+	ENDFOREACH(_s ${RPM_SPEC_SOURCES})
+	RPM_SPEC_OUTPUT_ADD(RPM_SPEC_REQUIRES_OUTPUT "${_buf}" FRONT)
+
+	## Description
+	RPM_SPEC_OUTPUT_ADD_DIRECTIVE(RPM_SPEC_DESCRIPTION_OUTPUT
+	    "description" "" "${PRJ_DESCRIPTION}"
+	)
 	SET(_lang "")
-	FOREACH(_dT ${DESCRIPTION_TRANSLATIONS})
+	FOREACH(_sT ${DESCRIPTION_TRANSLATIONS})
 	    IF(_lang STREQUAL "")
-		SET(_lang "${_dT}")
+		SET(_lang "${_sT}")
 	    ELSE(_lang STREQUAL "")
-		STRING_APPEND(RPM_SPEC_DESCRIPTION_TRANSLATION_OUTPUT
-		    "%description -l ${_lang}" "\n"
-		    )
-		STRING_APPEND(RPM_SPEC_DESCRIPTION_TRANSLATION_OUTPUT
-		    "${_dT}\n" "\n"
-		    )
+		RPM_SPEC_OUTPUT_ADD_DIRECTIVE(RPM_SPEC_DESCRIPTION_OUTPUT
+		    "description" "-l ${_lang}" "${_sT}" "\n"
+		)
 		SET(_lang "")
 	    ENDIF(_lang STREQUAL "")
-	ENDFOREACH(_dT ${DESCRIPTION_TRANSLATIONS})
+	ENDFOREACH(_sT ${DESCRIPTION_TRANSLATIONS})
 
-	IF(HAS_TRANSLATION)
-	    SET(RPM_SPEC_FIND_LANG_SECTION_OUTPUT "%find_lang %{name}")
-	    SET(RPM_SPEC_FILES_SECTION_OUTPUT "%files -f %{name}.lang")
-	ELSE(HAS_TRANSLATION)
-	    SET(RPM_SPEC_FILES_SECTION_OUTPUT "%files")
-	ENDIF(HAS_TRANSLATION)
 
+	## Header
+	## %{_build_arch}
+	IF("${BUILD_ARCH}" STREQUAL "")
+	    EXECUTE_PROCESS(COMMAND ${RPM_CMD} -E "%{_build_arch}"
+		OUTPUT_VARIABLE _RPM_BUILD_ARCH
+		OUTPUT_STRIP_TRAILING_WHITESPACE)
+	    SET(RPM_BUILD_ARCH "${_RPM_BUILD_ARCH}" 
+		CACHE STRING "RPM Arch")
+	ELSE("${BUILD_ARCH}" STREQUAL "")
+	    SET(RPM_BUILD_ARCH "${BUILD_ARCH}" 
+		CACHE STRING "RPM Arch")
+	    RPM_SPEC_OUTPUT_ADD_TAG(RPM_SPEC_HEADER_OUTPUT
+	        "BuildArch" "" "${BUILD_ARCH}"
+	    )
+	ENDIF("${BUILD_ARCH}" STREQUAL "")
+
+	## Build
+	IF(NOT RPM_SPEC_BUILD_OUTPUT)
+	    SET(RPM_SPEC_BUILD_OUTPUT
+		"%cmake ${RPM_SPEC_CMAKE_FLAGS} .
+make ${RPM_SPEC_MAKE_FLAGS}"
+	    )
+	ENDIF(NOT RPM_SPEC_BUILD_OUTPUT)
+
+	## Install
 	STRING_JOIN(PRJ_DOC_LIST " " ${FILE_INSTALL_PRJ_DOC_LIST})
 	IF(NOT PRJ_DOC_LIST STREQUAL "")
 	    SET(RPM_SPEC_PRJ_DOC_REMOVAL_OUTPUT 
-		"# We install document using doc
+		"# We install document using doc 
 (cd \$RPM_BUILD_ROOT${PRJ_DOC_DIR}
-    rm -fr *
+   rm -fr *
 )"
-		)
-	    STRING_APPEND(RPM_SPEC_FILES_SECTION_OUTPUT 
-		"%doc ${PRJ_DOC_LIST}" "\n"
-		)
+	    )
+	    RPM_SPEC_OUTPUT_ADD(RPM_SPEC_FILES_SECTION_OUTPUT
+		"%doc ${PRJ_DOC_LIST}"
+	    )
 	ENDIF(NOT PRJ_DOC_LIST STREQUAL "")
 
-	FOREACH(_f ${FILE_INSTALL_BIN_LIST})
-	    STRING_APPEND(RPM_SPEC_FILES_SECTION_OUTPUT 
-		"%{_bindir}/${_f}" "\n"
-		)
-	ENDFOREACH(_f ${FILE_INSTALL_BIN_LIST})
+	IF(HAS_TRANSLATION)
+	    RPM_SPEC_OUTPUT_ADD_DIRECTIVE(RPM_SPEC_SCRIPT_OUTPUT
+		"find_lang" "%{name}" "" FRONT
+	    )
+	    RPM_SPEC_OUTPUT_ADD_DIRECTIVE(RPM_SPEC_FILES_SECTION_OUTPUT
+		"files" "-f %{name}.lang" "" FRONT
+	    )
+	ELSE(HAS_TRANSLATION)
+	    RPM_SPEC_OUTPUT_ADD_DIRECTIVE(RPM_SPEC_FILES_SECTION_OUTPUT
+		"files" "" "" FRONT
+	    )
+	ENDIF(HAS_TRANSLATION)
 
-	FOREACH(_f ${FILE_INSTALL_LIB_LIST})
-	    STRING_APPEND(RPM_SPEC_FILES_SECTION_OUTPUT 
-		"%{_libdir}/${_f}" "\n"
-		)
-	ENDFOREACH(_f ${FILE_INSTALL_LIB_LIST})
-
-	FOREACH(_f ${FILE_INSTALL_PRJ_LIB_LIST})
-	    STRING_APPEND(RPM_SPEC_FILES_SECTION_OUTPUT 
-		"%{_libdir}/%{name}/${_f}" "\n"
-		)
-	ENDFOREACH(_f ${FILE_INSTALL_PRJ_LIB_LIST})
-
-	FOREACH(_f ${FILE_INSTALL_LIBEXEC_LIST})
-	    STRING_APPEND(RPM_SPEC_FILES_SECTION_OUTPUT 
-		"%{_libexecdir}/${_f}" "\n"
-		)
-	ENDFOREACH(_f ${FILE_INSTALL_LIBEXEC_LIST})
-
-	FOREACH(_f ${FILE_INSTALL_PRJ_LIBEXEC_LIST})
-	    STRING_APPEND(RPM_SPEC_FILES_SECTION_OUTPUT 
-		"%{_libexecdir}/%{name}${_f}" "\n"
-		)
-	ENDFOREACH(_f ${FILE_INSTALL_PRJ_LIBEXEC_LIST})
-
-	FOREACH(_f ${FILE_INSTALL_SYSCONF_LIST})
-	    STRING_APPEND(RPM_SPEC_FILES_SECTION_OUTPUT 
-		"%config %{_sysconfdir}/${_f}" "\n"
-		)
-	ENDFOREACH(_f ${FILE_INSTALL_SYSCONF_LIST})
-
-	FOREACH(_f ${FILE_INSTALL_PRJ_SYSCONF_LIST})
-	    STRING_APPEND(RPM_SPEC_FILES_SECTION_OUTPUT 
-		"%config %{_sysconfdir}/%{name}/${_f}" "\n"
-		)
-	ENDFOREACH(_f ${FILE_INSTALL_PRJ_SYSCONF_LIST})
-
-	FOREACH(_f ${FILE_INSTALL_SYSCONF_NO_REPLACE_LIST})
-	    STRING_APPEND(RPM_SPEC_FILES_SECTION_OUTPUT 
-		"%config(noreplce) %{_sysconfdir}/${_f}" "\n"
-		)
-	ENDFOREACH(_f ${FILE_INSTALL_SYSCONF_NO_REPLACE_LIST})
-
-	FOREACH(_f ${FILE_INSTALL_PRJ_SYSCONF_NO_REPLACE_LIST})
-	    STRING_APPEND(RPM_SPEC_FILES_SECTION_OUTPUT 
-		"%config(noreplce) %{_sysconfdir}/%{name}/${_f}" "\n"
-		)
-	ENDFOREACH(_f ${FILE_INSTALL_PRJ_SYSCONF_NO_REPLACE_LIST})
-
-	FOREACH(_f ${FILE_INSTALL_DATA_LIST})
-	    STRING_APPEND(RPM_SPEC_FILES_SECTION_OUTPUT 
-		"%{_datadir}/${_f}" "\n"
-		)
-	ENDFOREACH(_f ${FILE_INSTALL_DATA_LIST})
-
-	FOREACH(_f ${FILE_INSTALL_PRJ_DATA_LIST})
-	    STRING_APPEND(RPM_SPEC_FILES_SECTION_OUTPUT 
-		"%{_datadir}/%{name}/${_f}" "\n"
-		)
-	ENDFOREACH(_f ${FILE_INSTALL_PRJ_DATA_LIST})
-    ENDMACRO(PRJ_RPM_SPEC_DATA_PREPARE)
+	PRJ_RPM_SPEC_PREPARE_FILES("BIN" "%{_bindir}/")
+	PRJ_RPM_SPEC_PREPARE_FILES("LIB" "%{_libdir}/")
+	PRJ_RPM_SPEC_PREPARE_FILES("PRJ_LIB" "%{_libdir}/%{name}/")
+	PRJ_RPM_SPEC_PREPARE_FILES("LIBEXEC" "%{_libexecdir}/")
+	PRJ_RPM_SPEC_PREPARE_FILES("PRJ_LIBEXEC" "%{_libexecdir}/%{name}/")
+	PRJ_RPM_SPEC_PREPARE_FILES("SYSCONF" "%config %{_sysconfdir}/")
+	PRJ_RPM_SPEC_PREPARE_FILES("PRJ_SYSCONF" "%config %{_sysconfdir}/%{name}/")
+	PRJ_RPM_SPEC_PREPARE_FILES("SYSCONF_NO_REPLACE" "%config(noreplace) %{_sysconfdir}/")
+	PRJ_RPM_SPEC_PREPARE_FILES("PRJ_SYSCONF_NO_REPLACE" "%config(noreplace) %{_sysconfdir}/%{name}/")
+	PRJ_RPM_SPEC_PREPARE_FILES("DATA" "%{_datadir}/")
+	PRJ_RPM_SPEC_PREPARE_FILES("PRJ_DATA" "%{_datadir}/%{name}")
+    ENDMACRO(PRJ_RPM_SPEC_PREPARE)
 
     MACRO(PACK_RPM)
 	IF(NOT _manage_rpm_dependency_missing )
 	    SET(_validOptions "SPEC_IN" "SPEC")
 	    VARIABLE_PARSE_ARGN(_opt _validOptions ${ARGN})
 
-	    IF(NOT DEFINED _opt_SPEC)
+	    IF(NOT _opt_SPEC_IN)
+		FIND_FILE_ERROR_HANDLING(_opt_SPEC_IN
+		    ERROR_MSG " spec.in is not found"
+		    VERBOSE_LEVEL ${M_ERROR}
+		    NAMES "project.spec.in" "${PROJECT_NAME}.spec.in"
+		    PATH ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR}
+			${CMAKE_CURRENT_SOURCE_DIR}/SPECS
+			${CMAKE_SOURCE_DIR}/SPECS
+			${CMAKE_CURRENT_SOURCE_DIR}/rpm
+			${CMAKE_SOURCE_DIR}/rpm
+			${RPM_BUILD_SPECS}
+			${CMAKE_ROOT_DIR}/Templates/fedora
+		)
 		SET(_opt_SPEC "${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec")
-	    ENDIF(NOT DEFINED _opt_SPEC)
-	    
+	    ENDIF(NOT _opt_SPEC_IN)
+
+	    IF(NOT _opt_SPEC)
+		SET(_opt_SPEC "${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec")
+	    ENDIF(NOT _opt_SPEC)
+	    ## RPM spec.in and RPM-ChangeLog.prev
+
+	    SET(PRJ_RPM_SPEC_FILE "${_opt_SPEC}" CACHE FILEPATH "spec")
+
 	    SET(PRJ_SRPM_FILE "${RPM_BUILD_SRPMS}/${PROJECT_NAME}-${PRJ_VER}-${RPM_RELEASE_NO}.${RPM_DIST_TAG}.src.rpm"
 		CACHE STRING "RPM files" FORCE)
 
 	    SET(PRJ_RPM_FILES "${RPM_BUILD_RPMS}/${RPM_BUILD_ARCH}/${PROJECT_NAME}-${PRJ_VER}-${RPM_RELEASE_NO}.${RPM_DIST_TAG}.${RPM_BUILD_ARCH}.rpm"
 		CACHE STRING "RPM files" FORCE)
 
-	    PRJ_RPM_SPEC_DATA_PREPARE()
+	    PRJ_RPM_SPEC_PREPARE()
 	    INCLUDE(DateTimeFormat)
 	    MANAGE_RPM_CHANGELOG()
 
