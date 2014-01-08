@@ -2,7 +2,24 @@
 INCLUDE(test/testCommon.cmake)
 INCLUDE(ManageString)
 
-# STRING QUOTE
+## STRING APPEND
+MACRO(STRING_APPEND_TEST testName expected var str)
+    STRING_APPEND(${var} "${str}" ${ARGN})
+    IF("${${var}}" STREQUAL "${expected}")
+	MESSAGE(STATUS "Test STRING_APPEND_${testName} passed")
+    ELSE("${${var}}" STREQUAL "${expected}")
+	MESSAGE(SEND_ERROR "Test STRING_APPEND_${testName} failed: actual=|${${var}}| expected=|${expected}|")
+    ENDIF("${${var}}" STREQUAL "${expected}")
+ENDMACRO(STRING_APPEND_TEST testName expected var var)
+SET(_str "")
+STRING_APPEND_TEST("no_prev" "Hi" _str "Hi")
+STRING_APPEND_TEST("default" "Hi Hello" _str " Hello")
+STRING_APPEND_TEST("linebreak" "Hi Hello\nHow are you" _str
+    "How are you" "\n")
+STRING_APPEND_TEST("noseparator" "Hi Hello\nHow are you?" _str
+    "?")
+
+## STRING QUOTE
 SET(STR_QUOTE_1 "\"hi=hello=how are you=fine\"")
 STRING_UNQUOTE(str_quote_1 "${STR_QUOTE_1}")
 TEST_STR_MATCH(str_quote_1 "hi=hello=how are you=fine")
