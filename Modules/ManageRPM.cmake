@@ -161,13 +161,11 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
 	SET(RPM_SPEC_BUILD_OUTPUT 
 	    "%cmake ${RPM_SPEC_CMAKE_FLAGS} .
 make ${RPM_SPEC_MAKE_FLAGS}"
-	    CACHE INTERNAL "%build section of RPM SPEC"
 	)
 
 	SET(RPM_SPEC_INSTALL_OUTPUT
 	    "%__rm -rf %{buildroot}
 make install DESTDIR=%{buildroot}"
-	    CACHE INTERNAL "%install section of RPM SPEC"
 	)
 
 	# %{dist}
