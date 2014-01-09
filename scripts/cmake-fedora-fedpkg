@@ -115,7 +115,7 @@ BODHI_CMD=`find_program bodhi`
 BODHI_USER=${BODHI_USER:=$LOGNAME}
 echo "BODHI_USER=$BODHI_USER"
 
-SCRIPT_DIR=$(realpath `dirname $0`)
+SCRIPT_DIR=$(readlink -f `dirname $0`)
 CMAKE_FEDORA_KOJI_CMD=`find_program cmake-fedora-koji $SCRIPT_DIR`
 
 WORK_DIR=${FEDPKG_DIR:-$PWD}
@@ -155,7 +155,7 @@ if [[ -z $SRPM ]];then
     print_usage
     exit -1
 else
-    SRPM=`realpath $SRPM`
+    SRPM=`readlink -f $SRPM`
 fi
 
 if [[ -n "$BUGS" ]];then
