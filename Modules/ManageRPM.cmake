@@ -259,6 +259,7 @@ make install DESTDIR=%{buildroot}"
 	IF(NOT content STREQUAL "")
 	    STRING_APPEND(_str "\n${content}")
 	ENDIF(NOT content STREQUAL "")
+	STRING_APPEND(_str "\n")
 	RPM_SPEC_STRING_ADD(${var} "${_str}" ${ARGN})
 	SET(${var} "${${var}}" PARENT_SCOPE)
     ENDFUNCTION(RPM_SPEC_STRING_ADD_DIRECTIVE var directive attribute content)
