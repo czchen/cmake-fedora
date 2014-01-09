@@ -1,4 +1,4 @@
-PRJ_VER=1.2.0
+PRJ_VER=1.2.1
 SUMMARY=Fixed Bug 1040333, 1046213
 REDHAT_BUGZILLA=1040333,1046213
 [Changes]
@@ -20,7 +20,10 @@ REDHAT_BUGZILLA=1040333,1046213
   + ManageArchive:
     - PACK_SOURCE_CPACK: Pack with CPack
     - PACK_SOURCE_ARCHIVE: Now can specify OUTPUT_FILE.
-  + ManageDependency: Manage dependencies.
+    - SOURCE_ARCHIVE_CONTENTS_ADD: Add file to source archive.
+    - SOURCE_ARCHIVE_CONTENTS_ADD_NO_CHECK: 
+      Add file to source archive without checking.
+    + ManageDependency: Manage dependencies.
   + ManageRPM: 
     - PACK_RPM: New options: SPEC_IN and SPEC.
   + ManageString:
