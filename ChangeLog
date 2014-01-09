@@ -9,6 +9,8 @@
   + cmake-fedora-koji: 
     - new subcommand: newest-build and newest-changelog.
   + cmake-fedora-changelog: new script. 
+  + New targets:
+    - tag_push: Push to git.
   + ManageFile:
     - Add absolute file support
     - MANAGE_FILE_INSTALL: Add TARGETS support.
