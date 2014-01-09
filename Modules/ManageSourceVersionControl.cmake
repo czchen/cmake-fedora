@@ -45,7 +45,9 @@ IF(NOT DEFINED _MANAGE_SOURCE_VERSION_CONTROL_CMAKE_)
 	    )
 
 	ADD_CUSTOM_TARGET(tag_push
+	    COMMAND git push
 	    COMMAND git push --tags
+	    DEPENDS "${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}"
 	    COMMENT "Push to git"
 	    )
 
