@@ -19,8 +19,7 @@ Makefile
 *.loT
 *NO_PACK*
 *.pot
-SPECS/RPM-ChangeLog
-SPECS/cmake-fedora.spec
+SPECS/
 RPMS/
 SRPMS/
 BUILD/
