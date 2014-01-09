@@ -51,11 +51,45 @@
 #   RPM_FILES_SECTION_CONTENT: A list of string  
 #
 # Defines following Macros:
+#   RPM_SPEC_STRING_ADD(var str [position])
+#   - Add a string to SPEC string.
+#     * Parameters:
+#       + var: Variable that hold results in string format.
+#       + str: String to be added.
+#       + position: (Optional) position to put the tag. 
+#       Valid value: FRONT for inserting in the beginning.
+#       Default: Append in the end of string.
+#       of string.
+#
+#   RPM_SPEC_STRING_ADD_DIRECTIVE var directive attribute content)
+#   - Add a SPEC directive (e.g. %description -l zh_TW) to SPEC string.
+#     Parameters:
+#     + var: Variable that hold results in string format.
+#     + directive: Directive to be added.
+#     + attribute: Attribute of tag. That is, string between '()'
+#     + value: Value fot the tag.
+#     + position: (Optional) position to put the tag. 
+#       Valid value: FRONT for inserting in the beginning.
+#       Default: Append in the end of string.
+#       of string.
+#
+#   RPM_SPEC_STRING_ADD_TAG(var tag attribute value [position])
+#   - Add a SPEC tag (e.g. BuildArch: noarch) to SPEC string.
+#     Parameters:
+#     + var: Variable that hold results in string format.
+#     + tag: Tag to be added.
+#     + attribute: Attribute of tag. That is, string between '()'
+#     + value: Value fot the tag.
+#     + position: (Optional) position to put the tag. 
+#       Valid value: FRONT for inserting in the beginning.
+#       Default: Append in the end of string.
+#       of string.
+#
 #   PACK_RPM([SPEC_IN specInFile] [SPEC specFile])
 #   - Generate spec and pack rpm  according to the spec file.
 #     Parameters:
-#     SPEC_IN specInFile: RPM SPEC template file as .spec.in
-#     SPEC specFile: Output RPM SPEC file 
+#     + SPEC_IN specInFile: RPM SPEC template file as .spec.in
+#     + SPEC specFile: Output RPM SPEC file 
 #       Default: ${RPM_BUILD_SPEC}/${PROJECT_NAME}.spec
 #     Targets:
 #     + srpm: Build srpm (rpmbuild -bs).
@@ -127,11 +161,13 @@ IF(NOT DEFINED _MANAGE_RPM_CMAKE_)
 	SET(RPM_SPEC_BUILD_OUTPUT 
 	    "%cmake ${RPM_SPEC_CMAKE_FLAGS} .
 make ${RPM_SPEC_MAKE_FLAGS}"
+	    CACHE INTERNAL "%build section of RPM SPEC"
 	)
 
 	SET(RPM_SPEC_INSTALL_OUTPUT
-	    "%__rm -rf $RPM_BUILD_ROOT
-make install DESTDIR=$RPM_BUILD_ROOT"
+	    "%__rm -rf %{buildroot}
+make install DESTDIR=%{buildroot}"
+	    CACHE INTERNAL "%install section of RPM SPEC"
 	)
 
 	# %{dist}
@@ -192,7 +228,30 @@ make install DESTDIR=$RPM_BUILD_ROOT"
 	ENDIF(EXISTS ${RPM_CHANGELOG_PREV_FILE})
     ENDMACRO(MANAGE_RPM_CHANGELOG)
 
-    MACRO(RPM_SPEC_OUTPUT_ADD_TAG var tag attribute value)
+    FUNCTION(RPM_SPEC_STRING_ADD var str)
+	IF("${ARGN}" STREQUAL "FRONT")
+	    STRING_PREPEND(${var} "${str}" "\n")
+	    SET(pos "${ARGN}")
+	ELSE("${ARGN}" STREQUAL "FRONT")
+	    STRING_APPEND(${var} "${str}" "\n")
+	ENDIF("${ARGN}" STREQUAL "FRONT")
+	SET(${var} "${${var}}" PARENT_SCOPE)
+    ENDFUNCTION(RPM_SPEC_STRING_ADD var str)
+
+    FUNCTION(RPM_SPEC_STRING_ADD_DIRECTIVE var directive attribute content)
+	SET(_str "%${directive}")
+	IF(NOT attribute STREQUAL "")
+	    STRING_APPEND(_str " ${attribute}")
+	ENDIF(NOT attribute STREQUAL "")
+
+	IF(NOT content STREQUAL "")
+	    STRING_APPEND(_str "\n${content}")
+	ENDIF(NOT content STREQUAL "")
+	RPM_SPEC_STRING_ADD(${var} "${_str}" ${ARGN})
+	SET(${var} "${${var}}" PARENT_SCOPE)
+    ENDFUNCTION(RPM_SPEC_STRING_ADD_DIRECTIVE var directive attribute content)
+
+    FUNCTION(RPM_SPEC_STRING_ADD_TAG var tag attribute value)
 	IF("${attribute}" STREQUAL "")
 	    SET(_str "${tag}:")
 	ELSE("${attribute}" STREQUAL "")
@@ -200,41 +259,13 @@ make install DESTDIR=$RPM_BUILD_ROOT"
 	ENDIF("${attribute}" STREQUAL "")
 	STRING_PADDING(_str "${_str}" ${RPM_SPEC_TAG_PADDING})
 	STRING_APPEND(_str "${value}")
-	RPM_SPEC_OUTPUT_ADD(${var} "${_str}" ${ARGN})
-    ENDMACRO(RPM_SPEC_OUTPUT_ADD_TAG var tag attribute value)
-
-    MACRO(RPM_SPEC_OUTPUT_ADD_DIRECTIVE var directive attribute content)
-	SET(_str "%${directive}")
-	IF(NOT "${attribute}" STREQUAL "")
-	    STRING_APPEND(_str " ${attribute}")
-	ENDIF(NOT "${attribute}" STREQUAL "")
-
-	IF(NOT "${content}" STREQUAL "")
-	    STRING_APPEND(_str "\n${content}")
-	ENDIF(NOT "${content}" STREQUAL "")
-	RPM_SPEC_OUTPUT_ADD(${var} "${_str}" ${ARGN})
-    ENDMACRO(RPM_SPEC_OUTPUT_ADD_DIRECTIVE var directive attribute content)
-
-    MACRO(RPM_SPEC_OUTPUT_ADD var str)
-	IF(NOT "${ARGN}" STREQUAL "")
-	    SET(pos "${ARGN}")
-	ELSE(NOT "${ARGN}" STREQUAL "")
-	    SET(pos "")
-	ENDIF(NOT "${ARGN}" STREQUAL "")
-	IF(pos STREQUAL "FRONT")
-	    IF("${${var}}" STREQUAL "")
-		SET(${var} "${str}")
-	    ELSE("${${var}}" STREQUAL "")
-		SET(${var} "${str}\n${${var}}")
-            ENDIF("${${var}}" STREQUAL "")
-	ELSE(pos STREQUAL "FRONT")
-	    STRING_APPEND(${var} "${str}" "\n")
-	ENDIF(pos STREQUAL "FRONT")
-    ENDMACRO(RPM_SPEC_OUTPUT_ADD var str)
+	RPM_SPEC_STRING_ADD(${var} "${_str}" ${ARGN})
+	SET(${var} "${${var}}" PARENT_SCOPE)
+    ENDFUNCTION(RPM_SPEC_STRING_ADD_TAG var tag attribute value)
 
     MACRO(PRJ_RPM_SPEC_PREPARE_FILES fileType pathPrefix)
 	FOREACH(_f ${FILE_INSTALL_${fileType}_LIST})
-	    RPM_SPEC_OUTPUT_ADD(RPM_SPEC_FILES_SECTION_OUTPUT 
+	    RPM_SPEC_STRING_ADD(RPM_SPEC_FILES_SECTION_OUTPUT 
 		"${pathPrefix}${_f}" "\n"
 	    )
 	ENDFOREACH(_f ${FILE_INSTALL_${fileType}_LIST})
@@ -242,7 +273,7 @@ make install DESTDIR=$RPM_BUILD_ROOT"
 
     MACRO(PRJ_RPM_SPEC_PREPARE)
 	## Summary
-	RPM_SPEC_OUTPUT_ADD_TAG(RPM_SPEC_SUMMARY_OUTPUT
+	RPM_SPEC_STRING_ADD_TAG(RPM_SPEC_SUMMARY_OUTPUT
 	    "Summary" "" "${PRJ_SUMMARY}"
 	)
 	SET(_lang "")
@@ -250,7 +281,7 @@ make install DESTDIR=$RPM_BUILD_ROOT"
 	    IF(_lang STREQUAL "")
 		SET(_lang "${_sT}")
 	    ELSE(_lang STREQUAL "")
-		RPM_SPEC_OUTPUT_ADD_TAG(RPM_SPEC_SUMMARY_OUTPUT
+		RPM_SPEC_STRING_ADD_TAG(RPM_SPEC_SUMMARY_OUTPUT
 		    "Summary" "${lang}" "${PRJ_SUMMARY}"
 		)
 		SET(_lang "")
@@ -264,24 +295,24 @@ make install DESTDIR=$RPM_BUILD_ROOT"
 	SET(_buf "")
 	SET(_i 0)
 	FOREACH(_s ${RPM_SPEC_SOURCES})
-	    RPM_SPEC_OUTPUT_ADD_TAG(_buf "Source${_i}" "" "${_s}")
+	    RPM_SPEC_STRING_ADD_TAG(_buf "Source${_i}" "" "${_s}")
 	    MATH(EXPR _i ${_i}+1)
 	ENDFOREACH(_s ${RPM_SPEC_SOURCES})
-	RPM_SPEC_OUTPUT_ADD(RPM_SPEC_SOURCE_OUTPUT "${_buf}" FRONT)
+	RPM_SPEC_STRING_ADD(RPM_SPEC_SOURCE_OUTPUT "${_buf}" FRONT)
 
 	## Requires (and BuildRequires)
 	SET(_buf "")
 	FOREACH(_s ${BUILD_REQUIRES})
-	    RPM_SPEC_OUTPUT_ADD_TAG(_buf "BuildRequires" "" "${_s}")
+	    RPM_SPEC_STRING_ADD_TAG(_buf "BuildRequires" "" "${_s}")
 	ENDFOREACH(_s ${RPM_SPEC_SOURCES})
 
 	FOREACH(_s ${REQUIRES})
-	    RPM_SPEC_OUTPUT_ADD_TAG(_buf "Requires" "" "${_s}")
+	    RPM_SPEC_STRING_ADD_TAG(_buf "Requires" "" "${_s}")
 	ENDFOREACH(_s ${RPM_SPEC_SOURCES})
-	RPM_SPEC_OUTPUT_ADD(RPM_SPEC_REQUIRES_OUTPUT "${_buf}" FRONT)
+	RPM_SPEC_STRING_ADD(RPM_SPEC_REQUIRES_OUTPUT "${_buf}" FRONT)
 
 	## Description
-	RPM_SPEC_OUTPUT_ADD_DIRECTIVE(RPM_SPEC_DESCRIPTION_OUTPUT
+	RPM_SPEC_STRING_ADD_DIRECTIVE(RPM_SPEC_DESCRIPTION_OUTPUT
 	    "description" "" "${PRJ_DESCRIPTION}"
 	)
 	SET(_lang "")
@@ -289,7 +320,7 @@ make install DESTDIR=$RPM_BUILD_ROOT"
 	    IF(_lang STREQUAL "")
 		SET(_lang "${_sT}")
 	    ELSE(_lang STREQUAL "")
-		RPM_SPEC_OUTPUT_ADD_DIRECTIVE(RPM_SPEC_DESCRIPTION_OUTPUT
+		RPM_SPEC_STRING_ADD_DIRECTIVE(RPM_SPEC_DESCRIPTION_OUTPUT
 		    "description" "-l ${_lang}" "${_sT}" "\n"
 		)
 		SET(_lang "")
@@ -308,7 +339,7 @@ make install DESTDIR=$RPM_BUILD_ROOT"
 	ELSE("${BUILD_ARCH}" STREQUAL "")
 	    SET(RPM_BUILD_ARCH "${BUILD_ARCH}" 
 		CACHE STRING "RPM Arch")
-	    RPM_SPEC_OUTPUT_ADD_TAG(RPM_SPEC_HEADER_OUTPUT
+	    RPM_SPEC_STRING_ADD_TAG(RPM_SPEC_HEADER_OUTPUT
 	        "BuildArch" "" "${BUILD_ARCH}"
 	    )
 	ENDIF("${BUILD_ARCH}" STREQUAL "")
@@ -326,24 +357,24 @@ make ${RPM_SPEC_MAKE_FLAGS}"
 	IF(NOT PRJ_DOC_LIST STREQUAL "")
 	    SET(RPM_SPEC_PRJ_DOC_REMOVAL_OUTPUT 
 		"# We install document using doc 
-(cd \$RPM_BUILD_ROOT${PRJ_DOC_DIR}
+(cd %{buildroot}${DOC_DIR}/%{name}-%{version}
    rm -fr *
 )"
 	    )
-	    RPM_SPEC_OUTPUT_ADD(RPM_SPEC_FILES_SECTION_OUTPUT
+	    RPM_SPEC_STRING_ADD(RPM_SPEC_FILES_SECTION_OUTPUT
 		"%doc ${PRJ_DOC_LIST}"
 	    )
 	ENDIF(NOT PRJ_DOC_LIST STREQUAL "")
 
 	IF(HAS_TRANSLATION)
-	    RPM_SPEC_OUTPUT_ADD_DIRECTIVE(RPM_SPEC_SCRIPT_OUTPUT
+	    RPM_SPEC_STRING_ADD_DIRECTIVE(RPM_SPEC_SCRIPT_OUTPUT
 		"find_lang" "%{name}" "" FRONT
 	    )
-	    RPM_SPEC_OUTPUT_ADD_DIRECTIVE(RPM_SPEC_FILES_SECTION_OUTPUT
+	    RPM_SPEC_STRING_ADD_DIRECTIVE(RPM_SPEC_FILES_SECTION_OUTPUT
 		"files" "-f %{name}.lang" "" FRONT
 	    )
 	ELSE(HAS_TRANSLATION)
-	    RPM_SPEC_OUTPUT_ADD_DIRECTIVE(RPM_SPEC_FILES_SECTION_OUTPUT
+	    RPM_SPEC_STRING_ADD_DIRECTIVE(RPM_SPEC_FILES_SECTION_OUTPUT
 		"files" "" "" FRONT
 	    )
 	ENDIF(HAS_TRANSLATION)
@@ -358,7 +389,7 @@ make ${RPM_SPEC_MAKE_FLAGS}"
 	PRJ_RPM_SPEC_PREPARE_FILES("SYSCONF_NO_REPLACE" "%config(noreplace) %{_sysconfdir}/")
 	PRJ_RPM_SPEC_PREPARE_FILES("PRJ_SYSCONF_NO_REPLACE" "%config(noreplace) %{_sysconfdir}/%{name}/")
 	PRJ_RPM_SPEC_PREPARE_FILES("DATA" "%{_datadir}/")
-	PRJ_RPM_SPEC_PREPARE_FILES("PRJ_DATA" "%{_datadir}/%{name}")
+	PRJ_RPM_SPEC_PREPARE_FILES("PRJ_DATA" "%{_datadir}/%{name}/")
     ENDMACRO(PRJ_RPM_SPEC_PREPARE)
 
     MACRO(PACK_RPM)
@@ -387,6 +418,7 @@ make ${RPM_SPEC_MAKE_FLAGS}"
 	    ENDIF(NOT _opt_SPEC)
 	    ## RPM spec.in and RPM-ChangeLog.prev
 
+	    PRJ_RPM_SPEC_PREPARE()
 	    SET(PRJ_RPM_SPEC_FILE "${_opt_SPEC}" CACHE FILEPATH "spec")
 
 	    SET(PRJ_SRPM_FILE "${RPM_BUILD_SRPMS}/${PROJECT_NAME}-${PRJ_VER}-${RPM_RELEASE_NO}.${RPM_DIST_TAG}.src.rpm"
@@ -395,7 +427,6 @@ make ${RPM_SPEC_MAKE_FLAGS}"
 	    SET(PRJ_RPM_FILES "${RPM_BUILD_RPMS}/${RPM_BUILD_ARCH}/${PROJECT_NAME}-${PRJ_VER}-${RPM_RELEASE_NO}.${RPM_DIST_TAG}.${RPM_BUILD_ARCH}.rpm"
 		CACHE STRING "RPM files" FORCE)
 
-	    PRJ_RPM_SPEC_PREPARE()
 	    INCLUDE(DateTimeFormat)
 	    MANAGE_RPM_CHANGELOG()
 
