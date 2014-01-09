@@ -18,6 +18,11 @@ STRING_APPEND_TEST("linebreak" "Hi Hello\nHow are you" _str
     "How are you" "\n")
 STRING_APPEND_TEST("noseparator" "Hi Hello\nHow are you?" _str
     "?")
+SET(_str "%find_lang")
+STRING_APPEND_TEST("1" "%find_lang %{name}" _str " %{name}")
+SET(_str "%find_lang")
+STRING_APPEND_TEST("1" "%find_lang %{name}" _str "%{name}" " ")
+
 
 ## STRING QUOTE
 SET(STR_QUOTE_1 "\"hi=hello=how are you=fine\"")

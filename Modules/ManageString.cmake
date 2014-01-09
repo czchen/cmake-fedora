@@ -19,6 +19,13 @@
 #         + length: Required length.
 #         + padStr: String that used in padding. Default: " "
 #
+#   STRING_PREPEND(var str [separator])
+#     - Prepend a string to a variable
+#       * Parameters:
+#         + var: A variable that stores the result.
+#         + str: A string to be appended to end of line.
+#         + separator: Separator to separate between strings.
+#
 #   STRING_SPLIT(var delimiter str [NOESCAPE_SEMICOLON] [ESCAPE_VARIABLE] [ALLOW_EMPTY])
 #     - Split a string into a list using a delimiter, 
 #       which can be in 1 or more characters long.
@@ -69,11 +76,11 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
     SET(_MANAGE_STRING_CMAKE_ "DEFINED")
 
     FUNCTION(STRING_APPEND var str)
-	IF(DEFINED ARGV2)
+	IF(${ARGC} GREATER 2)
 	    SET(_sep "${ARGV2}")
-	ELSE(DEFINED ARGV2)
+	ELSE(${ARGC} GREATER 2)
 	    SET(_sep "")
-	ENDIF(DEFINED ARGV2)
+	ENDIF(${ARGC} GREATER 2)
 	IF("${${var}}" STREQUAL "")
 	    SET(${var} "${str}" PARENT_SCOPE)
 	ELSE("${${var}}" STREQUAL "")
@@ -96,6 +103,19 @@ IF(NOT DEFINED _MANAGE_STRING_CMAKE_)
 	ENDWHILE( _strLen LESS length)
 	SET(${var} "${_ret}" PARENT_SCOPE)
     ENDFUNCTION(STRING_PADDING var str length)
+
+    FUNCTION(STRING_PREPEND var str)
+	IF(${ARGC} GREATER 2)
+	    SET(_sep "${ARGV2}")
+	ELSE(${ARGC} GREATER 2)
+	    SET(_sep "")
+	ENDIF(${ARGC} GREATER 2)
+	IF("${${var}}" STREQUAL "")
+	    SET(${var} "${str}" PARENT_SCOPE)
+	ELSE("${${var}}" STREQUAL "")
+	    SET(${var} "${str}${_sep}${${var}}" PARENT_SCOPE)
+	ENDIF("${${var}}" STREQUAL "")
+    ENDFUNCTION(STRING_PREPEND var str)
 
     # Return (index of lefttmost non match character)
     # Return _strLen if all characters matches regex

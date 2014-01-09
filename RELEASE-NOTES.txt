@@ -26,12 +26,13 @@ REDHAT_BUGZILLA=1040333,1046213
     + ManageDependency: Manage dependencies.
   + ManageRPM: 
     - PACK_RPM: New options: SPEC_IN and SPEC.
-    - RPM_SPEC_STRING_ADD: Add a string to SPEC string
-    - RPM_SPEC_STRING_ADD_DIRECTIVE: Add a directive to SPEC string
-    - RPM_SPEC_STRING_ADD_TAG: Add a string to SPEC string
+    - RPM_SPEC_STRING_ADD: Add a string to SPEC string.
+    - RPM_SPEC_STRING_ADD_DIRECTIVE: Add a directive to SPEC string.
+    - RPM_SPEC_STRING_ADD_TAG: Add a string to SPEC string.
   + ManageString:
     - STRING_APPEND: Append a string to a variable.
     - STRING_PADDING: Padding the string to specified length
+    - STRING_PREPEND: Prepend a string to a variable.
   + ManageTranslation:
     - MANAGE_GETTEXT: 
       + Can specify MSGFMT_OPTIONS and MSGMERGE_OPTIONS
