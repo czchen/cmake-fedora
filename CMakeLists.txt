@@ -107,16 +107,6 @@ PACK_SOURCE_ARCHIVE("${SOURCE_ARCHIVE_DIR}"
     GITIGNORE ${CMAKE_SOURCE_DIR}/.gitignore
     )
 
-IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
-    PACK_RPM(SPEC_IN "Templates/fedora/project.spec.in")
-    RELEASE_FEDORA(fedora epel)
-    # "Off" Warning is displayed if mock is not installed.
-    RPM_MOCK_BUILD()
-    MANAGE_RELEASE(tag_push upload release_fedora)
-ELSE(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
-    MANAGE_RELEASE(tag_push upload)
-ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
-
 ####################################################################
 # Hosting and Release
 #
@@ -146,6 +136,19 @@ ADD_CUSTOM_TARGET_COMMAND(module-only
 MANAGE_UPLOAD_FEDORAHOSTED(upload_fedorahosted_modules 
     UPLOAD_FILES ${MODULE_ONLY_ARCHIVE} ${MODULE_ONLY_LATEST_ARCHIVE})
 ADD_DEPENDENCIES(upload upload_fedorahosted_modules)
+
+####################################################################
+# Release
+#
+IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
+    PACK_RPM(SPEC_IN "Templates/fedora/project.spec.in")
+    RELEASE_FEDORA(fedora epel)
+    # "Off" Warning is displayed if mock is not installed.
+    RPM_MOCK_BUILD()
+    MANAGE_RELEASE(tag_push upload release_fedora)
+ELSE(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
+    MANAGE_RELEASE(tag_push upload)
+ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
 
 ####################################################################
 # Test Suites.
