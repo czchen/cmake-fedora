@@ -140,14 +140,15 @@ ADD_DEPENDENCIES(upload upload_fedorahosted_modules)
 ####################################################################
 # Release
 #
+ADD_DEPENDENCIES(upload tag_push)
 IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
     PACK_RPM(SPEC_IN "Templates/fedora/project.spec.in")
     RELEASE_FEDORA(fedora epel)
     # "Off" Warning is displayed if mock is not installed.
     RPM_MOCK_BUILD()
-    MANAGE_RELEASE(tag_push upload release_fedora)
+    MANAGE_RELEASE(upload release_fedora)
 ELSE(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
-    MANAGE_RELEASE(tag_push upload)
+    MANAGE_RELEASE(upload)
 ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
 
 ####################################################################
