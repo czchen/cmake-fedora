@@ -168,6 +168,8 @@ make ${RPM_SPEC_MAKE_FLAGS}"
 make install DESTDIR=%{buildroot}"
 	)
 
+        SET(RPM_SPEC_FILES_SECTION_OUTPUT "%defattr(-,root,root-)")
+
 	# %{dist}
 	EXECUTE_PROCESS(COMMAND ${RPM_CMD} -E "%{dist}"
 	    COMMAND sed -e "s/^\\.//"
@@ -207,11 +209,23 @@ make install DESTDIR=%{buildroot}"
 	SET(RPM_CHANGELOG_FILE "${RPM_BUILD_SPECS}/RPM-ChangeLog")
 	SET(RPM_CHANGELOG_PREV_FILE "${RPM_CHANGELOG_FILE}.prev")
 	IF(NOT _cmake_fedora_dependency_missing)
-	    M_MSG(${M_INFO1} "Requesting newest changelog from koji")
-	    EXECUTE_PROCESS(
-		COMMAND ${CMAKE_FEDORA_KOJI_CMD} newest-changelog "${PROJECT_NAME}"
-	        OUTPUT_FILE ${RPM_CHANGELOG_PREV_FILE}
-	    )
+	    IF(EXISTS "${RPM_CHANGELOG_PREV_FILE}")
+		IF("${RELEASE_NOTES_FILE}" IS_NEWER_THAN "${RPM_CHANGELOG_PREV_FILE}")
+		    M_MSG(${M_INFO1} "Updating RPM-ChangeLog.prev from koji")
+		    EXECUTE_PROCESS(
+			COMMAND ${CMAKE_FEDORA_KOJI_CMD} newest-changelog "${PROJECT_NAME}"
+			OUTPUT_FILE ${RPM_CHANGELOG_PREV_FILE}
+			)
+		ELSE("${RELEASE_NOTES_FILE}" IS_NEWER_THAN "${RPM_CHANGELOG_PREV_FILE}")
+		    M_MSG(${M_INFO1} "RPM-ChangeLog.prev is newer than RELEASE-NOTES, no need to update")
+		ENDIF("${RELEASE_NOTES_FILE}" IS_NEWER_THAN "${RPM_CHANGELOG_PREV_FILE}")
+	    ELSE(EXISTS "${RPM_CHANGELOG_PREV_FILE}")
+		M_MSG(${M_INFO1} "Create newest RPM-ChangeLog.prev from koji")
+		EXECUTE_PROCESS(
+		    COMMAND ${CMAKE_FEDORA_KOJI_CMD} newest-changelog "${PROJECT_NAME}"
+		    OUTPUT_FILE ${RPM_CHANGELOG_PREV_FILE}
+		    )
+	    ENDIF(EXISTS "${RPM_CHANGELOG_PREV_FILE}")
 	ENDIF(NOT _cmake_fedora_dependency_missing)
 	IF(EXISTS ${RPM_CHANGELOG_PREV_FILE})
 	    # Update RPM_ChangeLog
@@ -220,7 +234,7 @@ make install DESTDIR=%{buildroot}"
 	    EXECUTE_PROCESS(COMMAND cat "${RPM_CHANGELOG_PREV_FILE}"
 		OUTPUT_VARIABLE RPM_CHANGELOG_PREV
 		OUTPUT_STRIP_TRAILING_WHITESPACE
-	    )
+		)
 	ELSE(EXISTS ${RPM_CHANGELOG_PREV_FILE})
 	    SET(RPM_CHNAGELOG_PREV "")
 	ENDIF(EXISTS ${RPM_CHANGELOG_PREV_FILE})
@@ -473,7 +487,7 @@ make ${RPM_SPEC_MAKE_FLAGS}"
 	    ADD_CUSTOM_TARGET(rpmlint
 		COMMAND find .
 		-name '${PROJECT_NAME}*-${PRJ_VER}-${RPM_RELEASE_NO}.*.rpm'
-		-print -exec rpmlint '{}' '\\;'
+		-print -exec rpmlint -I '{}' '\\;'
 		DEPENDS ${PRJ_SRPM_FILE} ${PRJ_RPM_FILES}
 		)
 
