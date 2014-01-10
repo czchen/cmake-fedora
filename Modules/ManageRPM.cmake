@@ -333,6 +333,7 @@ make install DESTDIR=%{buildroot}"
 	    IF(_lang STREQUAL "")
 		SET(_lang "${_sT}")
 	    ELSE(_lang STREQUAL "")
+		RPM_SPEC_STRING_ADD(RPM_SPEC_DESCRIPTION_OUTPUT "\n")
 		RPM_SPEC_STRING_ADD_DIRECTIVE(RPM_SPEC_DESCRIPTION_OUTPUT
 		    "description" "-l ${_lang}" "${_sT}" "\n"
 		)
