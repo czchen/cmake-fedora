@@ -128,7 +128,7 @@ IF(NOT DEFINED _MANAGE_ENVIRONMENT_CMAKE_)
 	    CMAKE_POLICY(GET "${policyName}" _cmake_policy_value)
 	    IF(_cmake_policy_value STREQUAL "")
 		# Policy not defined yet
-		#CMAKE_POLICY(SET "${policyName}" "${defaultValue}")
+		CMAKE_POLICY(SET "${policyName}" "${defaultValue}")
 	    ENDIF(_cmake_policy_value STREQUAL "")
 	ENDIF(POLICY ${policyName})
     ENDMACRO(MANAGE_CMAKE_POLICY policyName defaultValue)
