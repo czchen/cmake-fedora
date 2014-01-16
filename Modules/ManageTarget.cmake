@@ -14,14 +14,14 @@
 #
 #     If you also want a target that run only if output files 
 #     do not exist or outdated. Specify "NO_FORCE".
-#     The target for that will be "<target>/make".
+#     The target for that will be "<target>_no_force".
 #
 #     * Parameters:
 #       + target: target for this command
 #       + OUTPUT file1, file2 ... : Files to be outputted by this command
 #       + ALL: (Optional) The target is built with target 'all'
-#       + NO_FORCE: (Optional) Produce a target that run only if output files
-#         do not exist or outdated. 
+#       + NO_FORCE: (Optional) Produce a target that run only if 
+#         output files do not exist or outdated. 
 #       + command1 ... : Command to be run. 
 #         The rest arguments are same with  ADD_CUSTOM_TARGET.
 #
@@ -47,7 +47,7 @@ IF(NOT DEFINED _MANAGE_TARGET_CMAKE_)
 	    )
 
 	IF(DEFINED _opt_NO_FORCE)
-	    ADD_CUSTOM_TARGET(${target}/no_force
+	    ADD_CUSTOM_TARGET(${target}_no_force
 		DEPENDS ${_opt_OUTPUT}
 		)
 	ENDIF(DEFINED _opt_NO_FORCE)
