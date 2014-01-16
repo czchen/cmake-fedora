@@ -1,6 +1,8 @@
 * Thu Jan 16 2014 Ding-Yi Chen <dchen at redhat.com> - 1.2.4
 - Enhancement:
-  + ManageTranslation: ADD_CUSTOM_TARGET_COMMAND: MAKE: new option.
+  + ManageTarget: ADD_CUSTOM_TARGET_COMMAND: NO_FORCE: new option.
+- Changed:
+  + ManageTranslation: Fix po build
 
 * Thu Jan 09 2014 Ding-Yi Chen <dchen at redhat.com> - 1.2.3
 - Resolves Bug 1040333 - RFE: Suiport .gitignore file as 

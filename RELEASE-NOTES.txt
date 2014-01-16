@@ -3,5 +3,7 @@ SUMMARY=
 REDHAT_BUGZILLA=
 [Changes]
 - Enhancement:
-  + ManageTranslation: ADD_CUSTOM_TARGET_COMMAND: MAKE: new option.
+  + ManageTarget: ADD_CUSTOM_TARGET_COMMAND: NO_FORCE: new option.
+- Changed:
+  + ManageTranslation: Fix po build
 
