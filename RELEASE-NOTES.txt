@@ -2,4 +2,6 @@ PRJ_VER=1.2.4
 SUMMARY=
 REDHAT_BUGZILLA=
 [Changes]
+- Enhancement:
+  + ManageTranslation: ADD_CUSTOM_TARGET_COMMAND: MAKE: new option.
 

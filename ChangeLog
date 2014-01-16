@@ -1,3 +1,7 @@
+* Thu Jan 16 2014 Ding-Yi Chen <dchen at redhat.com> - 1.2.4
+- Enhancement:
+  + ManageTranslation: ADD_CUSTOM_TARGET_COMMAND: MAKE: new option.
+
 * Thu Jan 09 2014 Ding-Yi Chen <dchen at redhat.com> - 1.2.3
 - Resolves Bug 1040333 - RFE: Suiport .gitignore file as 
   source of CPACK_SOURCE_IGNORE_FILES
