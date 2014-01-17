@@ -6,4 +6,5 @@ REDHAT_BUGZILLA=
   + ManageTarget: ADD_CUSTOM_TARGET_COMMAND: NO_FORCE: new option.
 - Changed:
   + ManageTranslation: Fix po build
+  + ManageRPM: Fix defattr
 

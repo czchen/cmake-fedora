@@ -168,7 +168,7 @@ make ${RPM_SPEC_MAKE_FLAGS}"
 make install DESTDIR=%{buildroot}"
 	)
 
-        SET(RPM_SPEC_FILES_SECTION_OUTPUT "%defattr(-,root,root-)")
+        SET(RPM_SPEC_FILES_SECTION_OUTPUT "%defattr(-,root,root,-)")
 
 	# %{dist}
 	EXECUTE_PROCESS(COMMAND ${RPM_CMD} -E "%{dist}"
