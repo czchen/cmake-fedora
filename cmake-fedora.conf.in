@@ -1,5 +1,3 @@
-CMAKE_FEDORA_VERSION=@PRJ_VER@
-
 CMAKE_FEDORA_LIBEXEC_DIR=@LIBEXEC_DIR@
 
 #######################################

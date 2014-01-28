@@ -118,11 +118,16 @@ function get_epel_branches(){
     get_koji_list_targets | awk '{if ($1 ~ "^el[0-9]+-candidate$") print $1}' | sed -e 's/-.*$//' |  sort -r
 }
 
-for f in /etc/cmake-fedora.conf $PWD/cmake-fedora.conf; do
-    if [ -e $f ];then
-	source $f
-    fi
-done
+if [ -r /etc/cmake-fedora.conf ];then
+    source $f
+else
+    for d in $PWD $PWD/cmake-fedora; do
+	if [ -r $d/cmake-fedora.conf.in ];then
+	    source $d/cmake-fedora.conf.in
+	fi
+    done
+    CMAKE_FEDORA_LIBEXEC_DIR=
+fi
 
 for p in $CMAKE_FEDORA_LIBEXEC_DIR $PWD $PWD/scripts `dirname $0`;do
     FUNCTION_FILE=$p/cmake-fedora-functions
