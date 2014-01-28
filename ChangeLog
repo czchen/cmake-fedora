@@ -2,6 +2,7 @@
 - Resolves Bug 1058631 - ManagePRM generate Broken %defattr
 - Enhancement:
   + ManageTarget: ADD_CUSTOM_TARGET_COMMAND: NO_FORCE: new option.
+  + Projects that includes cmake-fedora as submodule are no longer requires cmake-fedora.conf
 - Changed:
   + ManageTranslation: Fix po build
   + ManageRPM: Fix defattr
