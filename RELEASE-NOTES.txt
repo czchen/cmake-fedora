@@ -7,4 +7,5 @@ REDHAT_BUGZILLA=
 - Changed:
   + ManageTranslation: Fix po build
   + ManageRPM: Fix defattr
-
+  + ManageReleaseFedora: helper scripts in CMAKE_SOURCE_DIR/cmake-fedora 
+    can also be located
