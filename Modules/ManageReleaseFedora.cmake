@@ -82,8 +82,8 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
     INCLUDE(ManageMessage)
     INCLUDE(ManageFile)
     INCLUDE(ManageTarget)
+    INCLUDE(ManageRPM)
     SET(_manage_release_fedora_dependencies_missing 0)
-    SET(KOJI_BUILD_SCRATCH "koji-build-scratch" CACHE INTERNAL "Koji build scratch name")
 
     FIND_FILE(CMAKE_FEDORA_CONF cmake-fedora.conf "." "${CMAKE_SOURCE_DIR}" "${SYSCONF_DIR}")
     M_MSG(${M_INFO1} "CMAKE_FEDORA_CONF=${CMAKE_FEDORA_CONF}")
@@ -100,7 +100,6 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 	    ${ARGN}
 	    )
     ENDFUNCTION(RELEASE_FEDORA_FIND_DEPENDENCY var)
-    SET(CMAKE_FEDORA_ADDITIONAL_SCRIPT_PATH ${CMAKE_SOURCE_DIR}/scripts ${CMAKE_SOURCE_DIR}/cmake-fedora/scripts)
 
     RELEASE_FEDORA_FIND_DEPENDENCY(FEDPKG_CMD fedpkg)
     RELEASE_FEDORA_FIND_DEPENDENCY(KOJI_CMD koji)
