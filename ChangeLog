@@ -6,8 +6,9 @@
 - Changed:
   + ManageTranslation: Fix po build
   + ManageRPM: Fix defattr
-  + ManageReleaseFedora: helper scripts in CMAKE_SOURCE_DIR/cmake-fedora 
-    can also be located
+  + ManageReleaseFedora: 
+    - Helper scripts in CMAKE_SOURCE_DIR/cmake-fedora can also be located.
+    - FedPkg default directory is changed to CMAKE_FEDORA_TMP_DIR/FedPkg
 
 * Thu Jan 09 2014 Ding-Yi Chen <dchen at redhat.com> - 1.2.3
 - Resolves Bug 1040333 - RFE: Suiport .gitignore file as 
