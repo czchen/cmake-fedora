@@ -1,4 +1,4 @@
-PRJ_VER=1.2.4
+PRJ_VER=1.2.5
 SUMMARY=Resolves Bug 1058631
 REDHAT_BUGZILLA=1058631
 [Changes]
@@ -9,6 +9,7 @@ REDHAT_BUGZILLA=1058631
 - Changed:
   + ManageTranslation: Fix po build
   + ManageRPM: Fix defattr
-  + ManageReleaseFedora: helper scripts in CMAKE_SOURCE_DIR/cmake-fedora 
-    can also be located
+  + ManageReleaseFedora: 
+    - Helper scripts in CMAKE_SOURCE_DIR/cmake-fedora can also be located.
+    - FedPkg default directory is changed to CMAKE_FEDORA_TMP_DIR/FedPkg
 
