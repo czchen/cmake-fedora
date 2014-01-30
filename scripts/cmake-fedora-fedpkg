@@ -168,8 +168,10 @@ if [[ -n "$BUGS" ]];then
 fi
 
 if [[ ! -w $WORK_DIR ]];then
-    echo "$WORK_DIR is not writable." > /dev/stderr
-    exit -2
+    if ! mkdir -p $WORK_DIR; then
+	echo "$WORK_DIR is not writable." > /dev/stderr
+	exit 2
+    fi
 fi
 echo "WORK_DIR=$WORK_DIR" > /dev/stderr
 

@@ -1,4 +1,4 @@
-* Tue Jan 28 2014 Ding-Yi Chen <dchen at redhat.com> - 1.2.4
+* Thu Jan 30 2014 Ding-Yi Chen <dchen at redhat.com> - 1.2.6
 - Resolves Bug 1058631 - ManagePRM generate Broken %defattr
 - Enhancement:
   + ManageTarget: ADD_CUSTOM_TARGET_COMMAND: NO_FORCE: new option.
