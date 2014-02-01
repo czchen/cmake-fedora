@@ -85,12 +85,14 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
     INCLUDE(ManageRPM)
     SET(_manage_release_fedora_dependencies_missing 0)
 
-    FIND_FILE(CMAKE_FEDORA_CONF cmake-fedora.conf "." "${CMAKE_SOURCE_DIR}" "${SYSCONF_DIR}")
-    M_MSG(${M_INFO1} "CMAKE_FEDORA_CONF=${CMAKE_FEDORA_CONF}")
-    IF("${CMAKE_FEDORA_CONF}" STREQUAL "CMAKE_FEDORA_CONF-NOTFOUND")
-	M_MSG(${M_OFF} "cmake-fedora.conf cannot be found! Fedora release support disabled.")
-	SET(_manage_release_fedora_dependencies_missing 1)
-    ENDIF("${CMAKE_FEDORA_CONF}" STREQUAL "CMAKE_FEDORA_CONF-NOTFOUND")
+    FIND_FILE_ERROR_HANDLING(CMAKE_FEDORA_CONF 
+	ERROR_MSG " Fedora release support disabled."
+	ERROR_VAR _manage_release_fedora_dependencies_missing
+	VERBOSE_LEVEL ${M_OFF}
+	NAMES cmake-fedora.conf cmake-fedora.conf.in
+	PATHS /etc ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR} 
+	${CMAKE_SOURCE_DIR}/cmake-fedora ${CMAKE_CURRENT_SOURCE_DIR}/cmake-fedora
+	)
 
     FUNCTION(RELEASE_FEDORA_FIND_DEPENDENCY var)
 	FIND_PROGRAM_ERROR_HANDLING(${var}

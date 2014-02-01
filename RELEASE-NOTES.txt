@@ -1,15 +1,7 @@
-PRJ_VER=1.2.6
-SUMMARY=Resolves Bug 1058631
-REDHAT_BUGZILLA=1058631
+PRJ_VER=1.2.7
+SUMMARY=cmake-fedora.conf.in is also located if cmake-fedora.conf
+REDHAT_BUGZILLA=
 [Changes]
-- Resolves Bug 1058631 - ManagePRM generate Broken %defattr
-- Enhancement:
-  + ManageTarget: ADD_CUSTOM_TARGET_COMMAND: NO_FORCE: new option.
-  + Projects that includes cmake-fedora as submodule are no longer requires cmake-fedora.conf
 - Changed:
-  + ManageTranslation: Fix po build
-  + ManageRPM: Fix defattr
-  + ManageReleaseFedora: 
-    - Helper scripts in CMAKE_SOURCE_DIR/cmake-fedora can also be located.
-    - FedPkg default directory is changed to CMAKE_FEDORA_TMP_DIR/FedPkg
+  + cmake-fedora.conf.in will also be searched if cmake-fedora.conf does not exist.
 

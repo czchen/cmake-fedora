@@ -94,7 +94,7 @@ function is_update_enhancement(){
 }
 
 if [ -r /etc/cmake-fedora.conf ];then
-    source $f
+    source /etc/cmake-fedora.conf
 else
     for d in $PWD $PWD/cmake-fedora; do
 	if [ -r $d/cmake-fedora.conf.in ];then
