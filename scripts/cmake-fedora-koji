@@ -129,13 +129,18 @@ else
     CMAKE_FEDORA_LIBEXEC_DIR=
 fi
 
-for p in $CMAKE_FEDORA_LIBEXEC_DIR $PWD $PWD/scripts `dirname $0`;do
+for p in $CMAKE_FEDORA_LIBEXEC_DIR `dirname $0` ;do
     FUNCTION_FILE=$p/cmake-fedora-functions
     if  [ -r $FUNCTION_FILE ];then
 	source $FUNCTION_FILE
 	break
     fi
 done
+if [[ -z "${FUNCTION_FILE}" ]];then
+    echo "Cannot find cmake-fedora-functions" > /dev/stderr
+    exit -1
+fi
+
 LOCAL_CACHE_FILE="${LOCAL_CACHE_DIR:=$HOME/.cache/cmake-fedora/}koji"
 
 KOJI_CMD=`find_program koji`

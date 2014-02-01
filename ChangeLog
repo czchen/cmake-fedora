@@ -1,7 +1,7 @@
 * Sat Feb 01 2014 Ding-Yi Chen <dchen at redhat.com> - 1.2.7
 - Changed:
   + cmake-fedora.conf.in will also be searched if cmake-fedora.conf does not exist.
-  + Target test is built before pack_src
+  + Target test is built before pack_src.
 
 * Fri Jan 31 2014 Ding-Yi Chen <dchen at redhat.com> - 1.2.6
 - Resolves Bug 1058631 - ManagePRM generate Broken %defattr
