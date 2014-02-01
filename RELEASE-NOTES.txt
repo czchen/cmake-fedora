@@ -4,4 +4,5 @@ REDHAT_BUGZILLA=
 [Changes]
 - Changed:
   + cmake-fedora.conf.in will also be searched if cmake-fedora.conf does not exist.
+  + Target test is built before pack_src.
 
