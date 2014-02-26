@@ -1,8 +1,7 @@
-PRJ_VER=1.2.7
-SUMMARY=cmake-fedora.conf.in is also located if cmake-fedora.conf
+PRJ_VER=1.2.8
+SUMMARY=
 REDHAT_BUGZILLA=
 [Changes]
-- Changed:
-  + cmake-fedora.conf.in will also be searched if cmake-fedora.conf does not exist.
-  + Target test is built before pack_src.
+- Enhaned:
+  + New targets: pack_src_no_force.
 

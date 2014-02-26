@@ -285,6 +285,7 @@ IF(NOT DEFINED _MANAGE_ARCHIVE_CMAKE_)
 	## If own, need to move to it.
 	IF(_own)
 	    ADD_CUSTOM_TARGET_COMMAND(pack_src
+		NO_FORCE
 	    	OUTPUT ${SOURCE_ARCHIVE_FILE}
 	    	COMMAND make package_source
 	    	COMMAND ${CMAKE_COMMAND} -E copy "${_source_archive_file}" "${SOURCE_ARCHIVE_FILE}"
@@ -295,6 +296,7 @@ IF(NOT DEFINED _MANAGE_ARCHIVE_CMAKE_)
 		)
 	ELSE(_own)
 	    ADD_CUSTOM_TARGET_COMMAND(pack_src
+		NO_FORCE
 		OUTPUT ${SOURCE_ARCHIVE_FILE}
 		COMMAND make package_source
 		DEPENDS  ${_dep_list}
