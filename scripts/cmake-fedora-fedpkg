@@ -44,7 +44,7 @@ Parameters:
 
           epel_2: Build the second latest supported EPEL releases.
 
-          el7 el6 ... : The EPEL releases to be built.
+          epel7 el6 ... : The EPEL releases to be built.
 
          If scopes is not specified, then it works 
          as if "fedora epel" are specified.
@@ -232,6 +232,9 @@ for b in `$CMAKE_FEDORA_KOJI_CMD git-branch $@ | xargs `;do
 	    bodhi_branch=`echo $b | sed -e 's/^f/fc/'`
 	    ;;
 	el* )
+	    bodhi_branch=$b
+	    ;;
+	epel* )
 	    bodhi_branch=$b
 	    ;;
 	* )

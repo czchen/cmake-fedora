@@ -1,7 +1,8 @@
 PRJ_VER=1.2.8
-SUMMARY=
+SUMMARY=Support EPEL7
 REDHAT_BUGZILLA=
 [Changes]
-- Enhaned:
+- Enhanced:
+  + Support EPEL7
   + New targets: pack_src_no_force.
 

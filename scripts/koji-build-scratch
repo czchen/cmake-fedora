@@ -28,7 +28,7 @@ Parameters:
 
 	    epel_2: Build the second latest supported EPEL releases.
 
-	    el7 el6 ... : The EPEL releases to be built.
+	    epel7 el6 ... : The EPEL releases to be built.
 
         If scopes is not specified, then rawhide and active 
 	fedora and EPEL releases are built,
@@ -90,3 +90,4 @@ if [ -n "$FAILED" ]; then
     exit 1
 fi
 exit 0
+

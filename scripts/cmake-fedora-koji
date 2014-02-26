@@ -64,7 +64,7 @@ DESCRIPTION
 
         epel_2: Build the second latest supported EPEL releases.
 
-        el7 el6 ... : The EPEL releases to be built.
+        epel7 el6 ... : The EPEL releases to be built.
 
         If scopes is not specified, then "fedora epel" is assumed.
 
@@ -115,7 +115,7 @@ function get_fedora_nr_branches(){
 }
 
 function get_epel_branches(){
-    get_koji_list_targets | awk '{if ($1 ~ "^el[0-9]+-candidate$") print $1}' | sed -e 's/-.*$//' |  sort -r
+get_koji_list_targets | awk '{if ($1 ~ "^e(pe)?l[0-9]+-candidate$") print $1}' | sed -e 's/-.*$//' |  sort -r
 }
 
 if [ -r /etc/cmake-fedora.conf ];then
@@ -258,6 +258,21 @@ else
 		;;
 	    el[0-9]* )
 		if [[ $epel -eq 0 ]];then
+		    if [ ${scopeCmd#el} -gt 6 ];then
+			scopeCmd="epel${scopeCmd#el}"
+		    fi
+		    if [[ -z "$epelList" ]];then
+			epelList="$scopeCmd"
+		    else
+			epelList="$epelList $scopeCmd"
+		    fi
+		fi
+		;;
+	    epel[0-9]* )
+		if [[ $epel -eq 0 ]];then
+		    if [ ${scopeCmd#epel} -le 6 ];then
+			scopeCmd="el${scopeCmd#epel}"
+		    fi
 		    if [[ -z "$epelList" ]];then
 			epelList="$scopeCmd"
 		    else
