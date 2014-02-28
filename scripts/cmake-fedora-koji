@@ -181,14 +181,18 @@ elif [ "${subCmd}" = "newest-changelog" ];then
     pkg=$1
     if [ -z "${pkg}" ];then
 	print_usage
-	echo "Please specify package name." > /dev/stderr
+	echo "[Error] Package name is not specified." > /dev/stderr
 	exit -1
     fi
     shift
     nvr=`$0 newest-build ${pkg}`
 
     if [ "$?" != "0" ] ; then
-	echo "Cannot found package ${pkg}" > /dev/stderr
+	echo "[Error] Cannot found package ${pkg}" > /dev/stderr
+	exit 1
+    fi
+    if [ -z "$nvr" ];then
+	echo "[Error] nvr for ${pkg} is not found. Perhaps network is down." > /dev/stderr
 	exit 1
     fi
     content=`get_pkg_changelog ${pkg} ${nvr}`

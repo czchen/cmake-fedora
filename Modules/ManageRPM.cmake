@@ -423,7 +423,8 @@ make ${RPM_SPEC_MAKE_FLAGS}"
 			${CMAKE_SOURCE_DIR}/rpm
 			${RPM_BUILD_SPECS}
 			${CMAKE_ROOT_DIR}/Templates/fedora
-		)
+			${CMAKE_CURRENT_SOURCE_DIR}/cmake-fedora/Templates/fedora
+			)
 		SET(_opt_SPEC "${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec")
 	    ENDIF(NOT _opt_SPEC_IN)
 

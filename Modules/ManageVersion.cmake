@@ -77,7 +77,7 @@ IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
 	    FOREACH(_i RANGE ${_lineCount})
 		LIST(GET _lines ${_i} _line)
 		#MESSAGE("# _i=${_i} _line=${_line}")
-		STRING(REGEX MATCH "^\\* [A-Za-z]+ [A-Za-z]+ [0-9]+ [0-9]+ .+ <.+> - (.*)$" _match  "${_line}")
+		STRING(REGEX MATCH "^\\* [A-Za-z]+ [A-Za-z]+ [0-9]+ [0-9]+ .*<.+> - (.*)$" _match  "${_line}")
 		IF("${_match}" STREQUAL "")
 		    # Not a version line
 		    IF(_isThis)

@@ -28,89 +28,123 @@ SET(MAINTAINER "<PRJ_MAINTAINER>")
 SET(VENDOR "<PRJ_VENDOR>")
 SET(LICENSE "<PRJ_LICENSE>")
 
+# Groups as in /usr/share/doc/GROUPS
+SET(PRJ_GROUP "<PRJ_GROUP>")
+SET(RPM_SPEC_URL "<RPM_SPEC_URL>")
+SET(RPM_SPEC_SOURCES "<RPM_SPEC_SOURCE_URL>/%{name}-%{version}-Source.tar.gz")
+#SET(HAS_TRANSLATION 1)
+
 ####################################################################
 # Includes
 #
+LIST(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/Modules)
+
+# Create a link if Modules/ does not exists
+IF(EXISTS ${CMAKE_SOURCE_DIR}/cmake-fedora/Modules)
+    IF(NOT EXISTS ${CMAKE_SOURCE_DIR}/Modules)
+        EXECUTE_PROCESS(COMMAND ln -s ${CMAKE_SOURCE_DIR}/cmake-fedora/Modules .)
+    ENDIF(NOT EXISTS ${CMAKE_SOURCE_DIR}/Modules)
+ENDIF(EXISTS ${CMAKE_SOURCE_DIR}/cmake-fedora/Modules)
+
+# Use standard FHS if Fedora build is not enabled
+IF(NOT CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
+    IF(CMAKE_SYSTEM_PROCESSOR MATCHES "64")
+        SET(LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib64" CACHE PATH "Library dir")
+    ELSE(CMAKE_SYSTEM_PROCESSOR MATCHES "64")
+        SET(LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib" CACHE PATH "Library dir")
+    ENDIF(CMAKE_SYSTEM_PROCESSOR MATCHES "64")
+    SET(LIBEXEC_DIR "${LIB_DIR}" CACHE PATH "LIBEXEC dir")
+ENDIF(NOT CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
+
+INCLUDE(ManageEnvironment RESULT_VARIABLE MANAGE_ENVIRONMENT_PATH)
 IF(MANAGE_ENVIRONMENT_PATH STREQUAL "NOTFOUND")
-MESSAGE(FATAL_ERROR "ManageEnvironment is not found in CMAKE_MODULE_PATH,
-	please install cmake-fedora as:
-	1) Git submodule:
-	   git submodule init; git submodule update
-	   ln -s cmake-fedora/Modules .
-	2) software package:
-	   Please refer the software package repositories of your system.
-	3) Module-only tarball:
-	   wget -P SOURCES https://fedorahosted.org/releases/c/m/cmake-fedora/cmake-fedora-modules-only-latest.tar.gz
-	   tar zxvf SOURCES/cmake-fedora-modules-only-latest.tar.gz")
+    MESSAGE(FATAL_ERROR "ManageEnvironment is not found in CMAKE_MODULE_PATH,
+    please:
+    1) git submodule init; git submodule update
+    2) or install cmake-fedora/
+    3) wget -P SOURCES https://fedorahosted.org/releases/c/m/cmake-fedora/cmake-fedora-modules-only-latest.tar.gz
+    tar zxvf SOURCES/cmake-fedora-modules-only-latest.tar.gz")
 ENDIF(MANAGE_ENVIRONMENT_PATH STREQUAL "NOTFOUND")
 
+INCLUDE(ManageMessage)
 INCLUDE(ManageVersion)
 RELEASE_NOTES_READ_FILE()
+INCLUDE(ManageFile)
+INCLUDE(ManageSourceVersionControl)
 INCLUDE(ManageUninstall)
+INCLUDE(ManageVariable)
+INCLUDE(ManageDependency)
+
+####################################################################
+# Dependencies
+#
+
+## Requires
+# MANAGE_DEPENDENCY(REQUIRES PACKAGE1 REQUIRED)
+# MANAGE_DEPENDENCY(REQUIRES PACKAGE2 VER PACKAGE2_MIN_VER REQUIRED 
+#   FEDORA_NAME "PACKAGE2_NAME_IN_FEDORA")
+
+## Build requires
+# MANAGE_DEPENDENCY(REQUIRES PACKAGE3 REQUIRED)
+# MANAGE_DEPENDENCY(REQUIRES PACKAGE4 VER PACKAGE2_MIN_VER REQUIRED 
+#   FEDORA_NAME "PACKAGE4_NAME_IN_FEDORA")
 
 ####################################################################
 # Building
 #
+#ADD_SUBDIRECTORY(po)
+#ADD_SUBDIRECTORY(src bin)
 
 ####################################################################
 # Installing
 #
-SET(INSTALL_DOCS ${RELEASE_NOTES_FILE} AUTHORS README ChangeLog COPYING TODO)
-STRING_JOIN(PRJ_DOC_LIST " " ${INSTALL_DOCS})
-
-INSTALL(FILES ${INSTALL_DOCS}
-	    DESTINATION "${PRJ_DOC_DIR}")
-
-####################################################################
-# Source Version Control
-#
-INCLUDE(ManageSourceVersionControl)
 
 MANAGE_SOURCE_VERSION_CONTROL_<PRJ_SOURCE_VERSION_CONTROL>()
+MANAGE_FILE_INSTALL(PRJ_DOC <PRJ_LICENSE_FILES> ChangeLog )
+
+## Schemas
+#SET(GCONF_SCHEMAS_FILE ${IBUS_CHEWING_SCHEMAS})
 
 ####################################################################
 # Packing
 #
+INCLUDE(ManageArchive)
+PACK_SOURCE_ARCHIVE(${RPM_BUILD_SOURCES}
+    GITIGNORE ${CMAKE_SOURCE_DIR}/.gitignore
+    )
+
+INCLUDE(ManageRelease)
+SET(SOURCE_ARCHIVE_DIR ".")
+SET(_release_targets "tag_push")
 IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
+    SET(RPM_BUILD_TOPDIR ${CMAKE_BINARY_DIR}/rpm CACHE FILEPATH "RPM top dir")
+    SET(RPM_BUILD_SOURCES ${CMAKE_BINARY_DIR} CACHE FILEPATH "RPM Source dir")
     INCLUDE(ManageRPM)
     INCLUDE(ManageReleaseFedora)
-    ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
-INCLUDE(ManageRelease)
-
-    SET(PRJ_IGNORE_FILES_COMMON
-	    "/doc/"  "\\\\.spec$" "messages.po$" "\\\\.orig$"
-       )
-    LIST(APPEND SOURCE_ARCHIVE_IGNORE_FILES ${PRJ_IGNORE_FILES_COMMON} "/bin/" "${KOJI_BUILD_SCRATCH}$")
-
-    IF(RPM_BUILD_SOURCES)
-SET(SOURCE_ARCHIVE_DIR ${RPM_BUILD_SOURCES})
-    ELSE(RPM_BUILD_SOURCES)
-SET(SOURCE_ARCHIVE_DIR ${CMAKE_BINARY_DIR}/SOURCES)
-ENDIF(RPM_BUILD_SOURCES)
-
-    PACK_SOURCE_ARCHIVE("${SOURCE_ARCHIVE_DIR}")
-    IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
     PACK_RPM()
-RELEASE_FEDORA(fedora epel)
-# "Off" Warning is displayed if mock is not installed.
+    RELEASE_FEDORA(fedora)
+    # "Off" Warning is displayed if mock is not installed.
     RPM_MOCK_BUILD()
-    MANAGE_RELEASE(release_fedora)
-    ELSE(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
-    MANAGE_RELEASE()
+    LIST(APPEND _releaset_targets "release_fedora")
 ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
-
+MANAGE_RELEASE(${_release_targets})
 
 ####################################################################
 # Hosting and Release
 #
+
 INCLUDE(ManageUpload)
-ADD_CUSTOM_TARGET(upload
-    COMMENT "Uploading all files"
-    )
+# Uncomment the following if you have setup the upload target
+#ADD_CUSTOM_TARGET(upload
+#    COMMENT "Uploading all files"
+#    )
 
-MANAGE_UPLOAD_CMD(scp src UPLOAD_FILES ${SOURCE_ARCHIVE_FILE})
-ADD_DEPENDENCIES(upload upload_src)
-
+# Uncomment the following if the project is hosted on fedorahost
+#MANAGE_UPLOAD_FEDORAHOSTED(upload_fedorahosted_src 
+#    UPLOAD_FILES ${SOURCE_ARCHIVE_FILE}
+#    )
+#
+#ADD_DEPENDENCIES(upload upload_fedorahosted_src)
 
 ####################################################################
 # Custom

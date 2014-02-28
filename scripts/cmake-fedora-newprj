@@ -1,6 +1,4 @@
 #!/bin/sh
-#
-CMAKE_TEMPLATES_PATH="/usr/share/cmake/Templates;Templates"
 
 function print_usage(){
     cat <<END
@@ -13,132 +11,60 @@ Options:
        possible.
     -B { cmake_templates_path }: Pathes which contain cmake templates.
        Pathes are splited with ';'.
-       Default path is "/usr/share/cmake/Templates;Templates", use this option to
-       override.
+       Default path is "$TEMPLATES_PATH"
     -L { GPLv2+ | LGPLv2+ | GPLv3+ | LGPLv3+ | BSD }:
        LICENSE for this project. Licence files will be copied to current
        directory. Authors and vendor will also applied if -A and -V are
        given.
+       Default is "GPLv3+".
     -M { maintainer_contact}: name and email of a maintainer.
     -V { vendor }: Vendor. This will also apply to license document if
         possible.
     -e { old_spec(.in) }: Extract values from original spec or spec.in.
        This maybe handy when converting an old project to cmake-fedora.
     -i { initial_version }: Inital project version.
-	Default value is 0.1.0 if this option is not given.
-    -m { project_summary}: Project summary.
+	Default value is "0.1.0".
+    -m { project_summary }: Project summary.
     -s { git | hg | svn }: source version control.
+        Default value is "git".
 END
 }
 
-#Default Values
-PRJ_AUTHORS="<PRJ_AUTHORS>"
-PRJ_MAINTAINER="<PRJ_MAINTAINER>"
-PRJ_VENDOR="<PRJ_VENDOR>"
-PRJ_VER_INIT="0.1.0"
-PRJ_SUMMARY="<PRJ_SUMMARY>"
-PRJ_TEMPLATES_PATH="$CMAKE_TEMPLATES_PATH"
-PRJ_LICENSE=""
-PRJ_SOURCE_VERSION_CONTROL=""
-OPT_EXTRACT_SPEC=""
-if [ -e /etc/cmake-fedora.conf ]; then
-    source /etc/cmake-fedora.conf
-fi
-
-# extract_from_spec
-function extract_from_spec(){
-    var=$1;
-    value=$(eval echo \$${var});
-
-    case $var in
-	PRJ_AUTHORS )
-	    newValue=`grep -e '^\* [A-Za-z]\+ [A-Za-z]\+ [0-9]\+ [0-9]\+ .*<' $OPT_EXTRACT_SPEC\
-	    | sed -e 's/^\* [A-Za-z]\+ [A-Za-z]\+ [0-9]\+ [0-9]\+ \([^<]*\) *<.*/\1/' \
-	    | head -n 1`
-	    ;;
-	PRJ_LICENSE )
-	    newValue=`grep -e '^License:[[:space:]]*' $OPT_EXTRACT_SPEC \
-	    | sed -e 's/License:[[:space:]]*//'`
-	    ;;
-	PRJ_MAINTAINER )
-	    newValue=`grep -e '^\* [A-Za-z]\+ [A-Za-z]\+ [0-9]\+ [0-9]\+ .*<' $OPT_EXTRACT_SPEC \
-	    | sed -e 's/^\* [A-Za-z]\+ [A-Za-z]\+ [0-9]\+ [0-9]\+ \([^>]*>\).*/\1/' \
-	    | head -n 1`
-	    ;;
-	PRJ_VER_INIT )
-	    newValue=`grep -e '^Version:[[:space:]]*[0-9]' $OPT_EXTRACT_SPEC\
-	    | sed -e 's/Version:[[:space:]]*//'`
-	    ;;
-	PRJ_SUMMARY )
-	    newValue=`grep -e '^Summary:[[:space:]]*' $OPT_EXTRACT_SPEC\
-	    | sed -e 's/Summary:[[:space:]]*//'`
-	    ;;
-	*)
-	    ;;
-    esac
-
-    if [ -n "$newValue" ];then
-	echo "$newValue";
-    else
-	echo "$value";
+function set_value(){
+    if [ -n "$2" ];then
+	eval "$1=$2"
     fi
 }
 
-while getopts "hA:B:L:M:V:e:i:m:s:" opt; do
-    case $opt in
-	h)
-	    print_usage;
-	    exit 0;
-	    ;;
-	A)
-	    PRJ_AUTHORS="$OPTARG";
-	    ;;
-	B)
-	    PRJ_TEMPLATES_PATH="$OPTARG";
-	    ;;
-	L)
-	    PRJ_LICENSE="$OPTARG";
-	    ;;
-	M)
-	    PRJ_MAINTAINER="$OPTARG";
-	    ;;
-	V)
-	    PRJ_VENDOR="$OPTARG";
-	    ;;
-	e)
-	    OPT_EXTRACT_SPEC=$OPTARG;
-	    PRJ_AUTHORS=`extract_from_spec PRJ_AUTHORS`;
-	    PRJ_LICENSE=`extract_from_spec PRJ_LICENSE`;
-	    PRJ_MAINTAINER=`extract_from_spec PRJ_MAINTAINER`;
-	    PRJ_VER_INIT=`extract_from_spec PRJ_VER_INIT`;
-	    PRJ_SUMMARY=`extract_from_spec PRJ_SUMMARY`;
-	    ;;
-	i)
-	    PRJ_VER_INIT="$OPTARG";
-	    ;;
-	m)
-	    PRJ_SUMMARY=$OPTARG;
-	    ;;
-	s)
-	    PRJ_SOURCE_VERSION_CONTROL=`echo $OPTARG | sed -e 'y/[a-z]/[A-Z]/'`;
-	    ;;
-	*)
-	    ;;
-    esac
-done
-shift $((OPTIND-1));
-PRJ_NAME=$1;
-if [ -z $PRJ_NAME ];then
-    print_usage
-    exit 1
-fi
+function extract_key_from_spec(){
+    newValue=`grep -e "^$2:[[:space:]]*" $OPT_EXTRACT_SPEC \
+    | sed -e "s/$2:[[:space:]]*//"`
+    set_value $1 "$newValue"
+    echo "From spec: $1: $newValue" > /dev/stderr
+}
 
-if [ -n "$OPT_EXTRACT_SPEC" ];then
-    for v in PRJ_AUTHORS PRJ_LICENSE PRJ_MAINTAINER PRJ_VER_INIT PRJ_SUMMARY;do
-	value=$(eval echo \$${v})
-	echo "Detected $v=$value"
-    done
-fi
+## extract_from_spec
+function extract_from_spec(){
+    ## PRJ_AUTHORS
+    newValue=`grep -e '^\* [A-Za-z]\+ [A-Za-z]\+ [0-9]\+ [0-9]\+ .*<' $OPT_EXTRACT_SPEC\
+    | sed -e 's/^\* [A-Za-z]\+ [A-Za-z]\+ [0-9]\+ [0-9]\+ \([^<]*\) *<.*/\1/' \
+    | head -n 1`
+    set_value PRJ_AUTHORS "$newValue"
+
+    extract_key_from_spec PRJ_LICENSE "License"
+
+    ## PRJ_MAINTAINER
+    newValue=`grep -e '^\* [A-Za-z]\+ [A-Za-z]\+ [0-9]\+ [0-9]\+ .*<' $OPT_EXTRACT_SPEC \
+	| sed -e 's/^\* [A-Za-z]\+ [A-Za-z]\+ [0-9]\+ [0-9]\+ \([^>]*>\).*/\1/' \
+	| head -n 1`
+    set_value PRJ_MAINTAINER "$newValue"
+
+    extract_key_from_spec PRJ_VER_INIT "Version"
+    extract_key_from_spec PRJ_SUMMARY "Summary"
+    extract_key_from_spec PRJ_GROUP "Group"
+    extract_key_from_spec PRJ_URL "URL"
+    extract_key_from_spec RPM_SPEC_SOURCES "Source0"
+}
 
 function find_file(){
     _file=$1
@@ -157,7 +83,7 @@ function copy_file(){
 	echo "${_dest} already exists, skip generation!" > /dev/stderr
 	return 1
     fi
-    _src=`find_file $1 ${PRJ_TEMPLATES_PATH}`
+    _src=`find_file $1 ${TEMPLATES_PATH}`
     cp $_src $_dest
     return 0
 }
@@ -174,8 +100,8 @@ function generate_file2(){
 	    #echo var=$var value=$value
 	    sed -i.bak -e "s/<${var}>/$value/" ${_dest}
 	done
+	rm -f ${_dest}.bak
     fi
-
 }
 
 function generate_file(){
@@ -206,19 +132,90 @@ function generate_license(){
 		_replace=""
 	    fi
 	done
+	rm -f ${_dest}.bak
     fi
 }
 
-#generate files
-generate_file CMakeLists.txt  PRJ_NAME PRJ_AUTHORS PRJ_LICENSE PRJ_MAINTAINER\
-    PRJ_VENDOR PRJ_SUMMARY PRJ_SOURCE_VERSION_CONTROL
+function append_gitignore(){
+    if ! grep -l "$1" .gitignore > /dev/null ;then
+	echo "$1" >> .gitignore
+    fi
+}
 
+#Default Values
+PRJ_AUTHORS="<PRJ_AUTHORS>"
+PRJ_GROUP="<PRJ_GROUP>"
+PRJ_LICENSE="GPLv3+"
+PRJ_LICENSE_FILES="COPYING"
+PRJ_MAINTAINER="<PRJ_MAINTAINER>"
+PRJ_SPEC_URL="<PRJ_SPEC_URL>"
+RPM_SPEC_SOURCES="<RPM_SPEC_SOURCES>"
+PRJ_SOURCE_VERSION_CONTROL="GIT"
+PRJ_SUMMARY="<PRJ_SUMMARY>"
+TEMPLATES_PATH="/usr/share/cmake/Templates;Templates;cmake-fedora/Templates"
+PRJ_VENDOR="<PRJ_VENDOR>"
+PRJ_VER_INIT="0.1.0"
+
+if [ -e /etc/cmake-fedora.conf ]; then
+    source /etc/cmake-fedora.conf
+fi
+
+while getopts "hA:B:L:M:V:e:i:m:s:" opt; do
+    case $opt in
+	h)
+	    print_usage;
+	    exit 0;
+	    ;;
+	A)
+	    PRJ_AUTHORS="$OPTARG";
+	    ;;
+	B)
+	    TEMPLATES_PATH="$OPTARG";
+	    ;;
+	L)
+	    PRJ_LICENSE="$OPTARG";
+	    ;;
+	M)
+	    PRJ_MAINTAINER="$OPTARG";
+	    ;;
+	V)
+	    PRJ_VENDOR="$OPTARG";
+	    ;;
+	e)
+	    OPT_EXTRACT_SPEC=$OPTARG;
+	    if [ ! -r ${OPT_EXTRACT_SPEC} ]; then
+		echo "Error: Cannot read ${OPT_EXTRACT_SPEC}" > /dev/stderr
+		exit -1
+	    fi
+	    extract_from_spec
+	    ;;
+	i)
+	    PRJ_VER_INIT="$OPTARG";
+	    ;;
+	m)
+	    PRJ_SUMMARY=$OPTARG;
+	    ;;
+	s)
+	    PRJ_SOURCE_VERSION_CONTROL=`echo $OPTARG | sed -e 'y/[a-z]/[A-Z]/'`;
+	    ;;
+	*)
+	    ;;
+    esac
+done
+shift $((OPTIND-1));
+PRJ_NAME=$1;
+if [ -z $PRJ_NAME ];then
+    print_usage
+    exit 1
+fi
+
+## Generate files
 generate_file RELEASE-NOTES.txt  PRJ_VER_INIT
 
-mkdir -p SPECS
+mkdir -p rpm/SPECS
 
 YEAR=`date +%Y`
-#copy licenses
+## Copy licenses
 case $PRJ_LICENSE in
     LGPLv3* )
         generate_license COPYING.LESSER lgpl-3.0.txt
@@ -228,6 +225,7 @@ case $PRJ_LICENSE in
 	    "<year>" "$YEAR" \
 	    "<name of author>" "$PRJ_AUTHORS" \
 	    "<program>" "<$PRJ_NAME>"
+	PRJ_LICENSE_FILES="COPYING COPYING.LESSER"
 	;;
 
     GPLv3* )
@@ -275,6 +273,7 @@ case $PRJ_LICENSE in
 	    "Yoyodyne, Inc." "$PRJ_VENDOR" \
 	    "which makes passes at compilers" "$PRJ_SUMMARY" \
 	    "James Hacker" "$PRJ_AUTHORS"
+	PRJ_LICENSE_FILES="COPYING COPYING.LESSER"
 	;;
 
     BSD )
@@ -288,29 +287,33 @@ case $PRJ_LICENSE in
 	;;
 esac
 
-if [ -f ChangeLog ]; then
-    mv ChangeLog ChangeLog.prev
-else
-    touch ChangeLog.prev
+generate_file CMakeLists.txt PRJ_NAME PRJ_AUTHORS PRJ_LICENSE PRJ_LICENSE_FILES\
+    PRJ_MAINTAINER PRJ_SOURCE_VERSION_CONTROL PRJ_SUMMARY\
+    PRJ_VENDOR PRJ_GROUP PRJ_SPEC_URL RPM_SPEC_SOURCES
+
+##############################
+# Source Version Control
+#
+
+## GIT
+if [ ! -r .gitignore ];then
+    touch .gitignore
 fi
 
-# Apply old RPM ChangeLog
-# find spec first, then spec.in
-if [ -n "$OPT_EXTRACT_SPEC" ];then
-    oldspec=$OPT_EXTRACT_SPEC
-else
-    oldspec=`find . -name "${PRJ_NAME}.spec" | head -n 1`
-fi
-if [ -z "$oldspec" ];then
-    oldspec=`find . -name "${PRJ_NAME}.spec.in" | head -n 1`
-fi
-if [ -n "$oldspec" ];then
-    csplit -f 'NO_PACK_' $oldspec '%\%changelog%'+1
-    mv NO_PACK_00 SPECS/RPM-ChangeLog.prev
-else
-    touch SPECS/RPM-ChangeLog.prev
-fi
-
-
-rm -f *.bak
+append_gitignore '*NO_PACK*'
+append_gitignore '*~'
+append_gitignore '**/CMakeFiles/'
+append_gitignore '**/_CPack_Packages/'
+append_gitignore '**/Testing/'
+append_gitignore '**/BUILD/'
+append_gitignore '**/BUILDROOT/'
+append_gitignore '**/RPMS/'
+append_gitignore '**/SPECS/'
+append_gitignore '**/SOURCES/'
+append_gitignore '**/SRPMS/'
+append_gitignore '**/FedPkg/'
+append_gitignore 'CMakeCache.txt'
+append_gitignore 'cmake_*install.cmake'
+append_gitignore 'CPack*Config.cmake'
+append_gitignore 'CTestTestfile.cmake'
 
