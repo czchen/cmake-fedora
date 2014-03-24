@@ -10,7 +10,7 @@
 #     [ERROR_MSG errorMessage]
 #     [ERROR_VAR errorVar]
 #     [VERBOSE_LEVEL verboseLevel]
-#     [FIND_FILE_ARGS ...]
+#     [FIND_ARGS ...]
 #   )
 #     - Find a file, with proper error handling.
 #       It is essentially a wrapper of FIND_FILE
@@ -21,14 +21,14 @@
 #           each verbose level.
 #         + ERROR_MSG errorMessage: Error message to be append.
 #         + ERROR_VAR errorVar: Variable to be set as 1 when not found.
-#         + FIND_FILE_ARGS: A list of arguments to be passed 
+#         + FIND_ARGS: A list of arguments to be passed 
 #           to FIND_FILE
 #
 #   FIND_PROGRAM_ERROR_HANDLING(<VAR>
 #     [ERROR_MSG errorMessage]
 #     [ERROR_VAR errorVar]
 #     [VERBOSE_LEVEL verboseLevel]
-#     [FIND_PROGRAM_ARGS ...]
+#     [FIND_ARGS ...]
 #   )
 #     - Find an executable program, with proper error handling.
 #       It is essentially a wrapper of FIND_PROGRAM
@@ -39,7 +39,7 @@
 #           each verbose level.
 #         + ERROR_MSG errorMessage: Error message to be append.
 #         + ERROR_VAR errorVar: Variable to be set as 1 when not found.
-#         + FIND_PROGRAM_ARGS: A list of arguments to be passed 
+#         + FIND_ARGS: A list of arguments to be passed 
 #           to FIND_PROGRAM
 #
 # Defines following macros:
@@ -72,6 +72,7 @@ IF(NOT DEFINED _MANAGE_FILE_CMAKE_)
 	"BIN" "PRJ_DOC" "DATA" "PRJ_DATA" "SYSCONF" "SYSCONF_NO_REPLACE"
        	"LIB" "LIBEXEC"
 	)
+    INCLUDE(ManageMessage)
 
     MACRO(_MANAGE_FILE_SET_FILE_INSTALL_LIST fileType)
 	SET(FILE_INSTALL_${fileType}_LIST "${FILE_INSTALL_${fileType}_LIST}"
