@@ -42,6 +42,16 @@
 #         + FIND_ARGS: A list of arguments to be passed 
 #           to FIND_PROGRAM
 #
+#   MANAGE_FILE_EXPIRY(var file expirySecond)
+#     - Tell whether a file is expired in given.
+#       A file is deemed as expired if (currenTime - mtime) is greater
+#       than specified expiry time in seconds.
+#       * Parameter:
+#         + var: The variable that returns the file expiry status.
+#           Valid status: ERROR, NOT_FOUND, EXPIRED, NOT_EXPIRED.
+#         + file: File to be processed.
+#         + expirySecond: Seconds should the file last.
+#
 # Defines following macros:
 #   MANAGE_FILE_INSTALL(fileType
 #     [files | FILES files] [DEST_SUBDIR subDir] [RENAME newName] [ARGS args]
@@ -238,6 +248,28 @@ IF(NOT DEFINED _MANAGE_FILE_CMAKE_)
     FUNCTION(FIND_PROGRAM_ERROR_HANDLING VAR)
 	FIND_ERROR_HANDLING(PROGRAM ${VAR} ${ARGN})
     ENDFUNCTION(FIND_PROGRAM_ERROR_HANDLING VAR)
+
+    FUNCTION(MANAGE_FILE_EXPIRY var file expirySecond)
+	IF(EXISTS ${file})
+	    EXECUTE_PROCESS(COMMAND stat --format "%Y" "${file}"
+		OUTPUT_VARIABLE _fileTime
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+		)
+	    EXECUTE_PROCESS(COMMAND date "+%s"
+		OUTPUT_VARIABLE _currentTime
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+		)
+	    MATH(EXPR _expireAt "${_fileTime}+${expirySecond}")
+	    IF(_currentTime LESS _expireAt)
+		## Not Expired
+		SET(${var} "NOT_EXPIRED" PARENT_SCOPE)
+	    ELSE(_currentTime LESS _expireAt)
+		SET(${var} "EXPIRED" PARENT_SCOPE)
+	    ENDIF(_currentTime LESS _expireAt)
+	ELSE(EXISTS ${file})
+	    SET(${var} "NOT_EXIST" PARENT_SCOPE)
+	ENDIF(EXISTS ${file})
+    ENDFUNCTION(MANAGE_FILE_EXPIRY var file expirySecond)
 
     MACRO(GIT_GLOB_TO_CMAKE_REGEX var glob)
 	SET(_s "${glob}")
