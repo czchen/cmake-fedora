@@ -68,8 +68,6 @@ MANAGE_DEPENDENCY(BUILD_REQUIRES CMAKE VER "2.6.2" REQUIRED)
 ####################################################################
 # Building
 #
-CONFIGURE_FILE(${CMAKE_SOURCE_DIR}/cmake-fedora.conf.in
-    "${CMAKE_BINARY_DIR}/cmake-fedora.conf" @ONLY)
 
 
 ####################################################################

@@ -30,5 +30,4 @@ debug*s.list
 FedPkg
 bodhi.template
 *.tar.gz
-cmake-fedora.conf
 

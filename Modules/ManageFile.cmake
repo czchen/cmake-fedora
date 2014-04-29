@@ -6,16 +6,16 @@
 # Defines following variables:
 #
 # Defines following functions:
-#   FIND_FILE_ERROR_HANDLING(<VAR>
-#     [ERROR_MSG errorMessage]
-#     [ERROR_VAR errorVar]
-#     [VERBOSE_LEVEL verboseLevel]
+#   FIND_FILE_ERROR_HANDLING(<var>
+#     [ERROR_MSG <errorMessage>]
+#     [ERROR_VAR <errorVar?]
+#     [VERBOSE_LEVEL <verboseLevel>]
 #     [FIND_ARGS ...]
 #   )
 #     - Find a file, with proper error handling.
 #       It is essentially a wrapper of FIND_FILE
 #       * Parameter:
-#         + VAR: The variable that stores the path of the found program.
+#         + var: The variable that stores the path of the found program.
 #         + name: The filename of the command.
 #         + verboseLevel: See ManageMessage for semantic of 
 #           each verbose level.
@@ -24,16 +24,16 @@
 #         + FIND_ARGS: A list of arguments to be passed 
 #           to FIND_FILE
 #
-#   FIND_PROGRAM_ERROR_HANDLING(<VAR>
-#     [ERROR_MSG errorMessage]
-#     [ERROR_VAR errorVar]
-#     [VERBOSE_LEVEL verboseLevel]
+#   FIND_PROGRAM_ERROR_HANDLING(<var>
+#     [ERROR_MSG <errorMessage>]
+#     [ERROR_VAR <errorVar?]
+#     [VERBOSE_LEVEL <verboseLevel>]
 #     [FIND_ARGS ...]
 #   )
 #     - Find an executable program, with proper error handling.
 #       It is essentially a wrapper of FIND_PROGRAM
 #       * Parameter:
-#         + VAR: The variable that stores the path of the found program.
+#         + var: The variable that stores the path of the found program.
 #         + name: The filename of the command.
 #         + verboseLevel: See ManageMessage for semantic of 
 #           each verbose level.
@@ -42,7 +42,24 @@
 #         + FIND_ARGS: A list of arguments to be passed 
 #           to FIND_PROGRAM
 #
-#   MANAGE_FILE_EXPIRY(var file expirySecond)
+#   MANAGE_CMAKE_FEDORA_CONF(<var>
+#     [ERROR_MSG <errorMessage>]
+#     [ERROR_VAR <errorVar?]
+#     [VERBOSE_LEVEL <verboseLevel>]
+#   )
+#     - Locate cmake-fedora.conf
+#       Return the location of cmake-fedora.conf.
+#       It search following places:
+#       ${CMAKE_SOURCE_DIR}, ${CMAKE_SOURCE_DIR}/cmake-fedora,
+#       current dir, ./cmake-fedora and /etc.
+#       * Parameter:
+#         + var: The variable that returns the path of cmake-fedora.conf
+#         + verboseLevel: See ManageMessage for semantic of 
+#           each verbose level.
+#         + ERROR_MSG errorMessage: Error message to be append.
+#         + ERROR_VAR errorVar: Variable to be set as 1 when not found.
+#
+#   MANAGE_FILE_EXPIRY(<var> <file> <expirySecond>)
 #     - Tell whether a file is expired in given.
 #       A file is deemed as expired if (currenTime - mtime) is greater
 #       than specified expiry time in seconds.
@@ -53,8 +70,9 @@
 #         + expirySecond: Seconds should the file last.
 #
 # Defines following macros:
-#   MANAGE_FILE_INSTALL(fileType
-#     [files | FILES files] [DEST_SUBDIR subDir] [RENAME newName] [ARGS args]
+#   MANAGE_FILE_INSTALL(<fileType>
+#     [<files> | FILES <files>] [DEST_SUBDIR <subDir>] 
+#     [RENAME <newName>] [ARGS <args>]
 #   )
 #     - Manage file installation.
 #       * Parameter:
@@ -249,8 +267,16 @@ IF(NOT DEFINED _MANAGE_FILE_CMAKE_)
 	FIND_ERROR_HANDLING(PROGRAM ${VAR} ${ARGN})
     ENDFUNCTION(FIND_PROGRAM_ERROR_HANDLING VAR)
 
+    FUNCTION(MANAGE_CMAKE_FEDORA_CONF var)
+	FIND_FILE_ERROR_HANDLING(${var} ${ARGN}
+	    FIND_ARGS NAMES cmake-fedora.conf 
+	    PATHS ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/cmake-fedora
+	    . cmake-fedora /etc
+	    )
+    ENDFUNCTION(MANAGE_CMAKE_FEDORA_CONF var)
+
     FUNCTION(MANAGE_FILE_EXPIRY var file expirySecond)
-	IF(EXISTS ${file})
+	IF(EXISTS "${file}")
 	    EXECUTE_PROCESS(COMMAND stat --format "%Y" "${file}"
 		OUTPUT_VARIABLE _fileTime
 		OUTPUT_STRIP_TRAILING_WHITESPACE
@@ -266,9 +292,9 @@ IF(NOT DEFINED _MANAGE_FILE_CMAKE_)
 	    ELSE(_currentTime LESS _expireAt)
 		SET(${var} "EXPIRED" PARENT_SCOPE)
 	    ENDIF(_currentTime LESS _expireAt)
-	ELSE(EXISTS ${file})
+	ELSE(EXISTS "${file}")
 	    SET(${var} "NOT_EXIST" PARENT_SCOPE)
-	ENDIF(EXISTS ${file})
+	ENDIF(EXISTS "${file}")
     ENDFUNCTION(MANAGE_FILE_EXPIRY var file expirySecond)
 
     MACRO(GIT_GLOB_TO_CMAKE_REGEX var glob)

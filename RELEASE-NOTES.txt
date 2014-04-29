@@ -1,8 +1,11 @@
-PRJ_VER=1.3.1
+PRJ_VER=1.4.0
 SUMMARY=Support EPEL7; cmake-fedora-newprj is fixed.
 REDHAT_BUGZILLA=1002279
 [Changes]
 - [TODO] Fix EPEL 7 support.
 - Enhancement:
+  + ManageFile: New function: MANAGE_CMAKE_FEDORA_CONF
   + ManageFile: New function: MANAGE_FILE_EXPIRY
+- Removed:
+  + cmake-fedora.conf.in is no longer need.
 
