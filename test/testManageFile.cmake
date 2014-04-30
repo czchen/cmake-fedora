@@ -21,6 +21,28 @@ GIT_GLOB_TO_CMAKE_REGEX_TEST("cmake_*install.cmake" "cmake_[^/]*install\\\\\\\\.
 GIT_GLOB_TO_CMAKE_REGEX_TEST("*NO_PACK*" "[^/]*NO_PACK[^/]*$")
 GIT_GLOB_TO_CMAKE_REGEX_TEST("SPECS/RPM-ChangeLog" "SPECS/RPM-ChangeLog$")
 
+## MANAGE_FILE_CACHE_TEST
+MANAGE_CMAKE_FEDORA_CONF(_cmake_fedora_conf
+    VERBOSE_LEVEL ${M_OFF}
+    ERROR_MSG "Failed to find cmake-fedora.conf"
+    )
+IF(${_cmake_fedora_conf})
+    SET(HOME "$ENV{HOME}")
+    SETTING_FILE_GET_ALL_VARIABLES(${_cmake_fedora_conf})
+ENDIF(${_cmake_fedora_conf})
+
+# Don't use existing file, as it will be clean up
+MACRO(MANAGE_FILE_CACHE_TEST expected file)
+    SET(caseName "${expected}_${file}")
+    MESSAGE("MANAGE_FILE_EXPIRY: ${caseName}")
+    MANAGE_FILE_CACHE(v ${file} CACHE_DIR /tmp ${ARGN})
+    IF(NOT "${v}" STREQUAL "${expected}")
+	MESSAGE(SEND_ERROR "|${v}| <> |${expected}|")
+    ENDIF(NOT "${v}" STREQUAL "${expected}")
+ENDMACRO(MANAGE_FILE_CACHE_TEST expected file)
+MANAGE_FILE_CACHE_TEST("Hi" "simple" COMMAND echo "Hi")
+MANAGE_FILE_CACHE_TEST("Bye" "piped" COMMAND echo "Hi" COMMAND sed -e "s/Hi/Bye/")
+
 # Don't use existing file, as it will be clean up
 MACRO(MANAGE_FILE_EXPIRY_TEST expected file expireSecond)
     SET(caseName "${expected}_${file}")

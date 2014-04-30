@@ -5,6 +5,7 @@ REDHAT_BUGZILLA=1002279
 - [TODO] Fix EPEL 7 support.
 - Enhancement:
   + ManageFile: New function: MANAGE_CMAKE_FEDORA_CONF
+  + ManageFile: New function: MANAGE_FILE_CACHE
   + ManageFile: New function: MANAGE_FILE_EXPIRY
 - Removed:
   + cmake-fedora.conf.in is no longer need.

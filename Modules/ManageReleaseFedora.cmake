@@ -123,6 +123,8 @@ IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
 	SET(FEDORA_KARMA "3" CACHE STRING "Fedora Karma")
 	SET(FEDORA_UNSTABLE_KARMA "-3" CACHE STRING "Fedora unstable Karma")
     ENDIF(NOT _manage_release_fedora_dependencies_missing)
+    
+    FUNCTION(KOJI_BUILD_SCRATCH
 
     FUNCTION(RELEASE_FEDORA_KOJI_BUILD_SCRATCH)
 	IF(NOT _manage_release_fedora_dependencies_missing)
