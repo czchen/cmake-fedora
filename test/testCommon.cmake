@@ -10,12 +10,11 @@ SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} Modules test
     ${CTEST_SOURCE_DIRECTORY}/Modules ${CTEST_SOURCE_DIRECTORY}/test)
 MESSAGE("CMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}")
 
-MACRO(TEST_STR_MATCH var value)
-    SET(_val "${${var}}")
-    IF(NOT "${value}" STREQUAL "${_val}" )
-	MESSAGE(SEND_ERROR "  Error: ${var} = |${_val}| <> |${value}|")
+FUNCTION(TEST_STR_MATCH var expected)
+    IF(NOT "${expected}" STREQUAL "${_val}" )
+	MESSAGE(SEND_ERROR "  Error: ${var} = |${_val}| <> |${expected}|")
     ENDIF()
-ENDMACRO()
+ENDFUNCTION()
 
 #EXECUTE_PROCESS(COMMAND pwd
 #    OUTPUT_VARIABLE PWD
