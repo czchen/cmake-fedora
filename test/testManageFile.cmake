@@ -2,6 +2,15 @@
 INCLUDE(test/testCommon.cmake)
 INCLUDE(ManageFile)
 
+FUNCTION(FIND_PROGRAM_ERROR_HANDLING_TEST expected)
+    MESSAGE("FIND_PROGRAM_ERROR_HANDLING: ${expected}")
+    SET(v "")
+    FIND_PROGRAM_ERROR_HANDLING(v FIND_ARGS ${ARGN})
+    TEST_STR_MATCH(v "${expected}")
+ENDFUNCTION(FIND_PROGRAM_ERROR_HANDLING_TEST expected)
+FIND_PROGRAM_ERROR_HANDLING_TEST("/usr/bin/cmake" cmake)
+FIND_PROGRAM_ERROR_HANDLING_TEST("/usr/bin/rpmbuild" NAMES rpmbuild rpmbuild-md5)
+
 FUNCTION(GIT_GLOB_TO_CMAKE_REGEX_TEST expected input)
     MESSAGE("GIT_GLOB_TO_CMAKE_REGEX: ${input}")
     GIT_GLOB_TO_CMAKE_REGEX(v "${input}")

@@ -77,104 +77,103 @@
 #
 #
 
-IF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
-    SET(_MANAGE_RELEASE_FEDORA_ "DEFINED")
-    INCLUDE(ManageMessage)
-    INCLUDE(ManageFile)
-    INCLUDE(ManageTarget)
-    INCLUDE(ManageRPM)
-    SET(_manage_release_fedora_dependencies_missing 0)
+IF(DEFINED _MANAGE_RELEASE_FEDORA_)
+    RETURN()
+ENDIF(DEFINED _MANAGE_RELEASE_FEDORA_)
+SET(_MANAGE_RELEASE_FEDORA_ "DEFINED")
+INCLUDE(ManageMessage)
+INCLUDE(ManageFile)
+INCLUDE(ManageTarget)
+INCLUDE(ManageRPM)
+SET(_manage_release_fedora_dependencies_missing 0)
 
-    MANAGE_CMAKE_FEDORA_CONF(CMAKE_FEDORA_CONF
-	ERROR_MSG " Fedora release support disabled."
+MANAGE_CMAKE_FEDORA_CONF(CMAKE_FEDORA_CONF
+    ERROR_MSG "cmake-fedora.conf not found. Fedora release support disabled."
+    ERROR_VAR _manage_release_fedora_dependencies_missing
+    VERBOSE_LEVEL ${M_OFF}
+    )
+
+FUNCTION(RELEASE_FEDORA_FIND_DEPENDENCY var)
+    FIND_PROGRAM_ERROR_HANDLING(${var}
+	ERROR_MSG "${ARGV1} not found, Fedora release support disabled."
 	ERROR_VAR _manage_release_fedora_dependencies_missing
 	VERBOSE_LEVEL ${M_OFF}
+	FIND_ARGS ${ARGN}
+	)
+ENDFUNCTION(RELEASE_FEDORA_FIND_DEPENDENCY var)
+
+RELEASE_FEDORA_FIND_DEPENDENCY(FEDPKG_CMD fedpkg)
+RELEASE_FEDORA_FIND_DEPENDENCY(KOJI_CMD koji)
+RELEASE_FEDORA_FIND_DEPENDENCY(GIT_CMD git)
+RELEASE_FEDORA_FIND_DEPENDENCY(BODHI_CMD bodhi)
+RELEASE_FEDORA_FIND_DEPENDENCY(KOJI_BUILD_SCRATCH_CMD koji-build-scratch PATH ${CMAKE_FEDORA_ADDITIONAL_SCRIPT_PATH})
+RELEASE_FEDORA_FIND_DEPENDENCY(CMAKE_FEDORA_KOJI_CMD cmake-fedora-koji PATH ${CMAKE_FEDORA_ADDITIONAL_SCRIPT_PATH})
+RELEASE_FEDORA_FIND_DEPENDENCY(CMAKE_FEDORA_FEDPKG_CMD cmake-fedora-fedpkg PATH ${CMAKE_FEDORA_ADDITIONAL_SCRIPT_PATH})
+
+## Set variables
+IF(NOT _manage_release_fedora_dependencies_missing)
+    # Set release tags according to CMAKE_FEDORA_CONF
+    SETTING_FILE_GET_ALL_VARIABLES(${CMAKE_FEDORA_CONF})
+
+    SET(BODHI_TEMPLATE_FILE "${CMAKE_FEDORA_TMP_DIR}/bodhi.template"
+	CACHE FILEPATH "Bodhi template file"
 	)
 
-    FUNCTION(RELEASE_FEDORA_FIND_DEPENDENCY var)
-	FIND_PROGRAM_ERROR_HANDLING(${var}
-	    ERROR_MSG " Fedora support disabled."
-	    ERROR_VAR _manage_release_fedora_dependencies_missing
-	    VERBOSE_LEVEL ${M_OFF}
-	    ${ARGN}
-	    )
-    ENDFUNCTION(RELEASE_FEDORA_FIND_DEPENDENCY var)
+    GET_ENV(FEDPKG_DIR "${CMAKE_FEDORA_TMP_DIR}/FedPkg" CACHE PATH "FedPkg dir")
 
-    RELEASE_FEDORA_FIND_DEPENDENCY(FEDPKG_CMD fedpkg)
-    RELEASE_FEDORA_FIND_DEPENDENCY(KOJI_CMD koji)
-    RELEASE_FEDORA_FIND_DEPENDENCY(GIT_CMD git)
-    RELEASE_FEDORA_FIND_DEPENDENCY(BODHI_CMD bodhi)
-    RELEASE_FEDORA_FIND_DEPENDENCY(KOJI_BUILD_SCRATCH_CMD koji-build-scratch PATH ${CMAKE_FEDORA_ADDITIONAL_SCRIPT_PATH})
-    RELEASE_FEDORA_FIND_DEPENDENCY(CMAKE_FEDORA_KOJI_CMD cmake-fedora-koji PATH ${CMAKE_FEDORA_ADDITIONAL_SCRIPT_PATH})
-    RELEASE_FEDORA_FIND_DEPENDENCY(CMAKE_FEDORA_FEDPKG_CMD cmake-fedora-fedpkg PATH ${CMAKE_FEDORA_ADDITIONAL_SCRIPT_PATH})
+    ## Fedora package variables
+    SET(FEDORA_KARMA "3" CACHE STRING "Fedora Karma")
+    SET(FEDORA_UNSTABLE_KARMA "-3" CACHE STRING "Fedora unstable Karma")
+ENDIF(NOT _manage_release_fedora_dependencies_missing)
 
-    ## Set variables
+FUNCTION(RELEASE_FEDORA_KOJI_BUILD_SCRATCH)
     IF(NOT _manage_release_fedora_dependencies_missing)
-	# Set release tags according to CMAKE_FEDORA_CONF
-	SETTING_FILE_GET_ALL_VARIABLES(${CMAKE_FEDORA_CONF})
-
-	SET(BODHI_TEMPLATE_FILE "${CMAKE_FEDORA_TMP_DIR}/bodhi.template"
-	    CACHE FILEPATH "Bodhi template file"
-	)
-
-	GET_ENV(FEDPKG_DIR "${CMAKE_FEDORA_TMP_DIR}/FedPkg" CACHE PATH "FedPkg dir")
-
-	## Fedora package variables
-	SET(FEDORA_KARMA "3" CACHE STRING "Fedora Karma")
-	SET(FEDORA_UNSTABLE_KARMA "-3" CACHE STRING "Fedora unstable Karma")
+	ADD_CUSTOM_TARGET(koji_build_scratch
+	    COMMAND ${KOJI_BUILD_SCRATCH_CMD} ${PRJ_SRPM_FILE} ${ARGN}
+	    DEPENDS "${PRJ_SRPM_FILE}"
+	    COMMENT "koji scratch build on ${PRJ_SRPM_FILE}"
+	    VERBATIM
+	    )
     ENDIF(NOT _manage_release_fedora_dependencies_missing)
-    
-    FUNCTION(KOJI_BUILD_SCRATCH
+    ADD_DEPENDENCIES(koji_build_scratch rpmlint)
+    ADD_DEPENDENCIES(tag_pre koji_build_scratch)
+ENDFUNCTION(RELEASE_FEDORA_KOJI_BUILD_SCRATCH)
 
-    FUNCTION(RELEASE_FEDORA_KOJI_BUILD_SCRATCH)
-	IF(NOT _manage_release_fedora_dependencies_missing)
-	    ADD_CUSTOM_TARGET(koji_build_scratch
-		COMMAND ${KOJI_BUILD_SCRATCH_CMD} ${PRJ_SRPM_FILE} ${ARGN}
-		DEPENDS "${PRJ_SRPM_FILE}"
-		COMMENT "koji scratch build on ${PRJ_SRPM_FILE}"
-		VERBATIM
-		)
-	ENDIF(NOT _manage_release_fedora_dependencies_missing)
-	ADD_DEPENDENCIES(koji_build_scratch rpmlint)
-	ADD_DEPENDENCIES(tag_pre koji_build_scratch)
-    ENDFUNCTION(RELEASE_FEDORA_KOJI_BUILD_SCRATCH)
+FUNCTION(RELEASE_FEDORA_FEDPKG)
+    IF(NOT _manage_release_fedora_dependencies_missing)
+	IF(NOT DEFINED MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE)
+	    M_MSG(${M_ERROR} "Undefined MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE, please use MANAGE_SOURCE_VERSION_CONTROL_GIT or other source version control")
+	ENDIF(NOT DEFINED MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE)
+	M_MSG(${M_INFO2} 
+	    "MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE=${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}")
+	SET(_cmdOpts "")
+	IF (NOT CHANGE_SUMMARY STREQUAL "")
+	    LIST(APPEND _cmdOpts "-m" "${CHANGE_SUMMARY}")
+	ENDIF(NOT CHANGE_SUMMARY STREQUAL "")
 
-    FUNCTION(RELEASE_FEDORA_FEDPKG)
-	IF(NOT _manage_release_fedora_dependencies_missing)
-	    IF(NOT DEFINED MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE)
-		M_MSG(${M_ERROR} "Undefined MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE, please use MANAGE_SOURCE_VERSION_CONTROL_GIT or other source version control")
-	    ENDIF(NOT DEFINED MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE)
-	    M_MSG(${M_INFO2} 
-		"MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE=${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}")
-	    SET(_cmdOpts "")
-	    IF (NOT CHANGE_SUMMARY STREQUAL "")
-		LIST(APPEND _cmdOpts "-m" "${CHANGE_SUMMARY}")
-	    ENDIF(NOT CHANGE_SUMMARY STREQUAL "")
+	IF (NOT REDHAT_BUGZILLA STREQUAL "")
+	    LIST(APPEND _cmdOpts "-b" "${REDHAT_BUGZILLA}")
+	ENDIF(NOT REDHAT_BUGZILLA STREQUAL "")
 
-	    IF (NOT REDHAT_BUGZILLA STREQUAL "")
-		LIST(APPEND _cmdOpts "-b" "${REDHAT_BUGZILLA}")
-	    ENDIF(NOT REDHAT_BUGZILLA STREQUAL "")
+	ADD_CUSTOM_TARGET(fedpkg_build
+	    COMMAND ${CMAKE_FEDORA_FEDPKG_CMD} -d "${FEDPKG_DIR}"
+	    "${_cmdOpts}" "${PRJ_SRPM_FILE}" ${ARGN}
+	    DEPENDS "${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}"
+	    VERBATIM
+	    )
 
-	    ADD_CUSTOM_TARGET(fedpkg_build
-		COMMAND ${CMAKE_FEDORA_FEDPKG_CMD} -d "${FEDPKG_DIR}"
-		"${_cmdOpts}" "${PRJ_SRPM_FILE}" ${ARGN}
-		DEPENDS "${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}"
-		VERBATIM
-		)
+    ENDIF(NOT _manage_release_fedora_dependencies_missing)
+ENDFUNCTION(RELEASE_FEDORA_FEDPKG)
 
-	ENDIF(NOT _manage_release_fedora_dependencies_missing)
-    ENDFUNCTION(RELEASE_FEDORA_FEDPKG)
-
-    FUNCTION(RELEASE_FEDORA)
-	IF(NOT _manage_release_fedora_dependencies_missing)
-	    ## Parse tags
-	    SET(_scope_list ${ARGN})
-	    RELEASE_FEDORA_KOJI_BUILD_SCRATCH(${_scope_list})
-	    RELEASE_FEDORA_FEDPKG(${_scope_list})
-	    ADD_CUSTOM_TARGET(release_fedora
-		COMMENT "Release for Fedora")
-	    ADD_DEPENDENCIES(release_fedora fedpkg_build)
-	ENDIF(NOT _manage_release_fedora_dependencies_missing)
-    ENDFUNCTION(RELEASE_FEDORA)
-ENDIF(NOT DEFINED _MANAGE_RELEASE_FEDORA_)
+FUNCTION(RELEASE_FEDORA)
+    IF(NOT _manage_release_fedora_dependencies_missing)
+	## Parse tags
+	SET(_scope_list ${ARGN})
+	RELEASE_FEDORA_KOJI_BUILD_SCRATCH(${_scope_list})
+	RELEASE_FEDORA_FEDPKG(${_scope_list})
+	ADD_CUSTOM_TARGET(release_fedora
+	    COMMENT "Release for Fedora")
+	ADD_DEPENDENCIES(release_fedora fedpkg_build)
+    ENDIF(NOT _manage_release_fedora_dependencies_missing)
+ENDFUNCTION(RELEASE_FEDORA)
 
