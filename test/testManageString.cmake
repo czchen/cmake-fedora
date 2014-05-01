@@ -61,6 +61,7 @@ TEST_STR_MATCH(_str_quote_8 " Left outside \" Right Inside \" ")
 # STRING TRIM
 SET(STR_TRIM_1 " \"hi=hello=how are you=fine\" ")
 STRING_TRIM(str_trim_1 "${STR_TRIM_1}")
+MESSAGE("str_trim_1=${str_trim_1}")
 TEST_STR_MATCH(str_trim_1 "hi=hello=how are you=fine")
 SET(STR_TRIM_2 "  hi=hello=how are you=fine2  3   ")
 STRING_TRIM(str_trim_2 "${STR_TRIM_2}")
