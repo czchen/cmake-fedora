@@ -52,16 +52,21 @@ GIT_GLOB_TO_CMAKE_REGEX_TEST("cmake_[^/]*install\\\\.cmake$"
 GIT_GLOB_TO_CMAKE_REGEX_TEST("[^/]*NO_PACK[^/]*$" "*NO_PACK*")
 GIT_GLOB_TO_CMAKE_REGEX_TEST("SPECS/RPM-ChangeLog$" "SPECS/RPM-ChangeLog" )
 
-## MANAGE_FILE_CACHE_TEST
+MESSAGE("MANAGE_CMAKE_FEDORA_CONF_TEST:")
 MANAGE_CMAKE_FEDORA_CONF(_cmake_fedora_conf
-    VERBOSE_LEVEL ${M_OFF}
+    VERBOSE_LEVEL ${M_ERROR}
     ERROR_MSG "Failed to find cmake-fedora.conf"
     )
+IF(NOT _cmake_fedora_conf MATCHES ".*cmake-fedora\\.conf")
+    NESSAGE(SEND_ERROR "cmake-fedora.conf not found. _cmake_fedora_conf=${_cmake_fedora_conf}")
+ENDIF()
+
 IF(${_cmake_fedora_conf})
     SET(HOME "$ENV{HOME}")
     SETTING_FILE_GET_ALL_VARIABLES(${_cmake_fedora_conf})
 ENDIF(${_cmake_fedora_conf})
 
+## MANAGE_FILE_CACHE_TEST
 # Don't use existing file, as it will be clean up
 FUNCTION(MANAGE_FILE_CACHE_TEST expected file)
     MESSAGE("MANAGE_FILE_CACHE: ${expected}_${file}")
@@ -89,7 +94,7 @@ FUNCTION(MANAGE_FILE_EXPIRY_TEST expected file expireSecond)
     TEST_STR_MATCH(v "${expected}")
 ENDFUNCTION(MANAGE_FILE_EXPIRY_TEST expected file expireSecond)
 
-MANAGE_FILE_EXPIRY_TEST("NOT_EXIST" cmake_fedora_NOT_EXIST 5)
-MANAGE_FILE_EXPIRY_TEST("NOT_EXPIRED" cmake_fedora_NOT_EXPIRED 5)
-MANAGE_FILE_EXPIRY_TEST("EXPIRED" cmake_fedora_EXPIRED 5)
+MANAGE_FILE_EXPIRY_TEST("NOT_EXIST" /tmp/cmake_fedora_NOT_EXIST 5)
+MANAGE_FILE_EXPIRY_TEST("NOT_EXPIRED" /tmp/cmake_fedora_NOT_EXPIRED 5)
+MANAGE_FILE_EXPIRY_TEST("EXPIRED" /tmp/cmake_fedora_EXPIRED 5)
 
