@@ -36,33 +36,25 @@ Parameters:
 END
 }
 
-if [ -r /etc/cmake-fedora.conf ];then
-    source /etc/cmake-fedora.conf
-else
-    for d in $PWD $PWD/cmake-fedora; do
-	if [ -r $d/cmake-fedora.conf.in ];then
-	    source $d/cmake-fedora.conf.in
-	fi
-    done
-    CMAKE_FEDORA_LIBEXEC_DIR=
-fi
-
-for p in $CMAKE_FEDORA_LIBEXEC_DIR `dirname $0` ;do
-    FUNCTION_FILE=$p/cmake-fedora-functions
-    if  [ -r $FUNCTION_FILE ];then
-	source $FUNCTION_FILE
-	break
+# Check for dependency
+for cmd in koji;do
+    if ! which $cmd &>/dev/null;then
+	echo "[Error] $cmd is not found in path" > /dev/stderr
+	exit -2
     fi
 done
-if [[ -z "${FUNCTION_FILE}" ]];then
-    echo "Cannot find cmake-fedora-functions" > /dev/stderr
-    exit -1
+
+SCRIPT_DIR=$(readlink -f `dirname $0`)
+CMAKE_FEDORA_KOJI_CMD=`${SCRIPT_DIR}/cmake-fedora-koji`
+if [ ! -x ${CMAKE_FEDORA_KOJI_CMD} ];then
+    echo "[Error] cmake-fedora-koji is not found" > /dev/stderr
+    exit -2
 fi
 
-KOJI_CMD=`find_program koji`
-
-SCRIPT_DIR=`dirname $0`
-CMAKE_FEDORA_KOJI_CMD=`find_program cmake-fedora-koji $SCRIPT_DIR`
+if [ $# = 0 ]; then
+    print_usage
+    exit 0
+fi
 
 SRPM=$1
 shift

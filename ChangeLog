@@ -10,6 +10,7 @@
   + ManageVariable: New macro: CMAKE_FEDORA_CONF_GET_ALL_VARIABLES
 - Removed:
   + cmake-fedora.conf.in is no longer need.
+  + scripts/cmake-fedora-functions is no longer needed.
 
 * Fri Feb 28 2014 Ding-Yi Chen <dchen at redhat.com> - 1.3.0
 - Fixed Bug 1002279 - Project configuration bugs when using cmake-fedora-newprj

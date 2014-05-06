@@ -14,19 +14,21 @@ SYNOPSIS
 DESCRIPTION
     Following sub-command are recognized:
         ver
-            Return version numbers, such as "21 20"
+            Return version numbers, such as "21 20 7 6"
 
         branch
-            Return branch names, such as "f21 f20"
+            Return branch names by removing '-candidate' from koji 
+	    targets, such as "f21 f20 epel7 el6"
 
         git-branch 
-            Return git branch names, such as "master 21 20"
+            Return fedpkg git branch names, such as "master f20 epel7 el6"
 
         bodhi-branch
-            Return bodhi branch names, such as "fc21 fc20", this does not return rawhide.
+            Return bodhi branch names, 
+	    such as "fc21 fc20 el7 el6", this does not return rawhide.
 
         target
-            Return koji target names, such as "f21-candidate f20-candidate"
+            Return koji target names, such as "f21-candidate el7-candidate"
 	
 	newest-build
 	    Return the newest build in n-v-r.t format.
@@ -71,39 +73,38 @@ DESCRIPTION
 END
 }
 
+function get_variable(){
+    cmake -Dcmd=get_variable -Dvar=$1 -P ${CMAKE_FEDORA_SCRIPT_CMAKE}
+}
+
+function manage_cache(){
+    cache_file=$1
+    run=$2
+    cmake -Dcmd=manage_file_cache -Dcache_file=$cache_file \
+    "-Drun=$run" $@ \
+    -P ${CMAKE_FEDORA_SCRIPT_CMAKE}
+}
+
 function get_koji_list_targets(){
-    cache_output_and_update "${LOCAL_CACHE_FILE}" ${LOCAL_CACHE_EXPIRY:=2592000} $KOJI_CMD list-targets --quiet
-}
-
-function local_koji_history_cache_file_name(){
-    echo "${LOCAL_CACHE_DIR:=$HOME/.cache/cmake-fedora/}$1"
-}
-
-function local_koji_history_command(){
-    $KOJI_CMD list-history --active --event --package $1 | grep "tagged into" | grep -v "trashcan"
+    manage_cache koji-list-targets "koji list-targets --quiet"
 }
 
 function get_koji_history(){
-    _pkg=$1
-    LOCAL_KOJI_HISTORY_CACHE_FILE=`local_koji_history_cache_file_name  ${_pkg}`
-    cache_output_and_update "${LOCAL_KOJI_HISTORY_CACHE_FILE}" ${LOCAL_KOJI_HISTORY_CACHE_EXPIRY:=43200} local_koji_history_command "${_pkg}"
-}
-
-function local_pkg_changelog_cache_file_name(){
-    echo "${LOCAL_CACHE_DIR:=$HOME/.cache/cmake-fedora/}$1.ChangeLog"
-}
-
-function local_pkg_changelog_command(){
-    _prefix="/tmp/cmake-fedora-$1-"
-    $KOJI_CMD buildinfo --changelog $1 | csplit -s -f ${_prefix} - "%^Changelog:%1"
-    cat "${_prefix}00"
+    pkg=$1
+    LOCAL_KOJI_HISTORY_CACHE_EXPIRY=`get_variable LOCAL_KOJI_HISTORY_CACHE_EXPIRY`
+    manage_cache koji-$pkg-history \
+	"koji list-history --active --event --package $pkg | grep 'tagged into' | grep -v 'trashcan'" \
+	"-Dexpiry_seconds=${LOCAL_KOJI_HISTORY_CACHE_EXPIRY}"
 }
 
 function get_pkg_changelog(){
-    _pkg=$1
-    _nvr=$2
-    LOCAL_PKG_CHANGELOG_CACHE_FILE=`local_pkg_changelog_cache_file_name ${_pkg}`
-    cache_output_and_update "${LOCAL_PKG_CHANGELOG_CACHE_FILE}" ${LOCAL_PKG_CHANGELOG_CACHE_EXPIRY:=43200} local_pkg_changelog_command "${_nvr}"
+    pkg=$1
+    nvr=$2
+    LOCAL_PKG_CHANGELOG_CACHE_EXPIRY=`get_variable LOCAL_PKG_CHANGELOG_CACHE_EXPIRY`
+    _prefix=${LOCAL_CACHE_DIR}/koji-$pkg-changelog
+    manage_cache koji-$pkg-changelog \
+	"koji buildinfo --changelog $nvr | csplit -s -f ${_prefix} - '%^Changelog%1' && cat ${_prefix}00" \
+    "-Dexpiry_seconds=${LOCAL_PKG_CHANGELOG_CACHE_EXPIRY}"
 }
 
 function get_RAWHIDE_BRANCH(){
@@ -118,48 +119,42 @@ function get_epel_branches(){
 get_koji_list_targets | awk '{if ($1 ~ "^e(pe)?l[0-9]+-candidate$") print $1}' | sed -e 's/-.*$//' |  sort -r
 }
 
-if [ -r /etc/cmake-fedora.conf ];then
-    source /etc/cmake-fedora.conf
-else
-    for d in $PWD $PWD/cmake-fedora; do
-	if [ -r $d/cmake-fedora.conf.in ];then
-	    source $d/cmake-fedora.conf.in
-	fi
-    done
-    CMAKE_FEDORA_LIBEXEC_DIR=
-fi
-
-for p in $CMAKE_FEDORA_LIBEXEC_DIR `dirname $0` ;do
-    FUNCTION_FILE=$p/cmake-fedora-functions
-    if  [ -r $FUNCTION_FILE ];then
-	source $FUNCTION_FILE
-	break
+# Check for dependency
+for cmd in cmake koji;do
+    if ! which $cmd &>/dev/null;then
+	echo "[Error] $cmd is not found in path" > /dev/stderr
+	exit -2
     fi
 done
-if [[ -z "${FUNCTION_FILE}" ]];then
-    echo "Cannot find cmake-fedora-functions" > /dev/stderr
-    exit -1
-fi
 
-LOCAL_CACHE_FILE="${LOCAL_CACHE_DIR:=$HOME/.cache/cmake-fedora/}koji"
-
-KOJI_CMD=`find_program koji`
-if [ -z "${KOJI_CMD}" ];then
-    echo "koji is not found in path" > /dev/stderr
-    exit -1
+for d in Modules cmake-fedora/Modules /usr/share/cmake/Modules;do
+    if [ -r $d/CmakeFedoraScript.cmake ];then
+	CMAKE_FEDORA_SCRIPT_CMAKE=$d/CmakeFedoraScript.cmake
+    fi
+done
+if [ -z "${CMAKE_FEDORA_SCRIPT_CMAKE}" ];then
+    echo "[Error] CmakeFedoraScript.cmake is not found" > /dev/stderr
+    exit -2
 fi
 
 if [ $# = 0 ]; then
-   print_usage
-   exit 0
+    print_usage
+    exit 0
 fi
+
+LOCAL_CACHE_DIR=`cmake -Dcmd=get_variable -Dvar=LOCAL_CACHE_DIR -P ${CMAKE_FEDORA_SCRIPT_CMAKE}`
+
+if [ -z "${LOCAL_CACHE_DIR}" ];then
+    LOCAL_CACHE_DIR=$HOME/.cache/cmake-fedora/
+fi
+[ -d ${LOCAL_CACHE_DIR} ] || mkdir -p ${LOCAL_CACHE_DIR}
 
 subCmd=$1
 shift
 
 if [ "${subCmd}" = "clean" ];then
     if [ -e "${LOCAL_CACHE_DIR}" ]; then
-	rm -fv ${LOCAL_CACHE_DIR}/*
+	rm -fv ${LOCAL_CACHE_DIR}/koji*
     fi
     exit 0
 elif [ "${subCmd}" = "newest-build" ];then
@@ -223,7 +218,7 @@ if [[ -z "$1" ]];then
 else
     for scopeCmd in $@;do
 	case $scopeCmd in
-	    rawhide )
+	    'rawhide' )
 		rawhide=1
 		;;
 	    'fedora' )
@@ -245,7 +240,7 @@ else
 	    'epel_2' )
 		epel_2=1
 		;;
-	    all )
+	    'all' )
 		rawhide=1
 		fedora_nr=1
 		epel=1
@@ -294,7 +289,7 @@ fi
 RAWHIDE_BRANCH=`get_RAWHIDE_BRANCH`
 
 FEDORA_NR_BRANCHES=`get_fedora_nr_branches`
-FEDORA_TMP_FILE=`mktemp cmake-fedora.fedora.XXXX.tmp`
+FEDORA_TMP_FILE=`mktemp /tmp/cmake-fedora.fedora.XXXX.tmp`
 if [[ $fedora_nr -eq 1 ]];then
     echo -e "$FEDORA_NR_BRANCHES" > $FEDORA_TMP_FILE
 else
@@ -312,7 +307,7 @@ else
 fi
 
 EPEL_BRANCHES=`get_epel_branches`
-EPEL_TMP_FILE=`mktemp cmake-fedora.epel.XXXX.tmp`
+EPEL_TMP_FILE=`mktemp /tmp/cmake-fedora.epel.XXXX.tmp`
 if [[ $epel -eq 1 ]];then
     echo -e "$EPEL_BRANCHES" > $EPEL_TMP_FILE
 else
@@ -340,7 +335,7 @@ case $subCmd in
 	    cat $FEDORA_TMP_FILE | sed -e 's/^f//'
 	fi
 	if [ `stat --format "%s" $EPEL_TMP_FILE` -gt 1 ];then 
-	    cat $EPEL_TMP_FILE | sed -e 's/^el//'
+	    cat $EPEL_TMP_FILE | sed -e 's/^el//' | sed -e 's/^epel//'
 	fi
 	;;
 
