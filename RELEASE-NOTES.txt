@@ -9,6 +9,7 @@ REDHAT_BUGZILLA=1002279
   + ManageFile: New function: MANAGE_FILE_EXPIRY
   + ManageFileScript: File function command line interface
   + ManageMessage: New function: M_OUT
+  + ManageVariable: New macro: CMAKE_FEDORA_CONF_GET_ALL_VARIABLES
 - Removed:
   + cmake-fedora.conf.in is no longer need.
 

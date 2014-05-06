@@ -2,6 +2,7 @@
 #
 # Includes:
 #   ManageString
+#   ManageFile
 #
 # Included by:
 #   ManageVersion
@@ -26,6 +27,9 @@
 #           Default value: "="
 #
 # Defines following macros:
+#   CMAKE_FEDORA_CONF_GET_ALL_VARIABLES()
+#     - Get all variables from cmake-fedora.conf
+#
 #   COMMAND_OUTPUT_TO_VARIABLE(var cmd)
 #     - Store command output to a variable, without new line characters (\n and \r).
 #       This macro is suitable for command that output one line result.
@@ -143,6 +147,7 @@ IF(DEFINED _MANAGE_VARIABLE_CMAKE_)
 ENDIF(DEFINED _MANAGE_VARIABLE_CMAKE_)
 SET(_MANAGE_VARIABLE_CMAKE_ "DEFINED")
 INCLUDE(ManageString)
+INCLUDE(ManageFile)
 
 MACRO(COMMAND_OUTPUT_TO_VARIABLE var cmd)
     EXECUTE_PROCESS(
@@ -209,6 +214,12 @@ FUNCTION(SETTING_STRING_GET_VARIABLE var value str )
     #MESSAGE("_varName=${_varName} _value=${_value}")
 
 ENDFUNCTION(SETTING_STRING_GET_VARIABLE var str)
+
+MACRO(CMAKE_FEDORA_CONF_GET_ALL_VARIABLES)
+    MANAGE_CMAKE_FEDORA_CONF(CMAKE_FEDORA_CONF)
+    SET(HOME "$ENV{HOME}")
+    SETTING_FILE_GET_ALL_VARIABLES(${CMAKE_FEDORA_CONF})
+ENDMACRO(CMAKE_FEDORA_CONF_GET_ALL_VARIABLES)
 
 # Internal macro
 # Similar to STRING_ESCAPE, but read directly from file,
