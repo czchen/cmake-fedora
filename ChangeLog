@@ -1,10 +1,11 @@
 * Tue May 06 2014 Ding-Yi Chen <dchen at redhat.com> - 1.4.0
 - [TODO] Fix EPEL 7 support.
 - Enhancement:
+  + New modules:
+  - CmakeFedoraScript: Scripts to be invoked in command line.
   + ManageFile: New function: MANAGE_CMAKE_FEDORA_CONF
   + ManageFile: New function: MANAGE_FILE_CACHE
   + ManageFile: New function: MANAGE_FILE_EXPIRY
-  + ManageFileScript: File function command line interface
   + ManageMessage: New function: M_OUT
   + ManageVariable: New macro: CMAKE_FEDORA_CONF_GET_ALL_VARIABLES
 - Removed:

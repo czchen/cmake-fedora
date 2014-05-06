@@ -1,15 +1,15 @@
-# - File Manage Script
-# Script is meant to be run as cmake script (cmake -P <script name>)
+# - Cmake Fedora Script
+# Scripts to be invoked in command line
 #
 
-MACRO(MANAGE_FILE_SCRIPT_PRINT_USAGE)
+MACRO(CMAKE_FEDORA_SCRIPT_PRINT_USAGE)
     MESSAGE(
 "   cmake -Dcmd=find_file|find_program -Dnames=\"<name1;name2>\"
            [-Dpaths=\"path1;path2\"]
            [-Derror_msg=msg]
            [-Dverbose_level=verboseLevel]
 	   [-Dno_default_path=1]
-	   -P <CmakeModulePath>/ManageFileScript.cmake
+	   -P <CmakeModulePath>/CmakeFedoraScript.cmake
      Find a file or program with name1 or name2, 
      with proper error handling.
      Options:
@@ -32,12 +32,17 @@ MACRO(MANAGE_FILE_SCRIPT_PRINT_USAGE)
          -Dcache_file=<cacheFileWithoutDirectory>
          [-Dexpiry_seconds=seconds]
 	 [-Dcache_dir=dir]
+	 -P <CmakeModulePath>/CmakeFedoraScript.cmake
      Output from either cache file or run command.
      Command is run when 1) cache expired or 2) no cache.
      Cache will be update after run command.
 
+   cmake -Dcmd=get_variable -Dvar=\"<varName>\"
+         -P <CmakeModulePath>/CmakeFedoraScript.cmake
+     Get variable value from cmake-fedora.conf.
+
 ")
-ENDMACRO(MANAGE_FILE_SCRIPT_PRINT_USAGE)
+ENDMACRO(CMAKE_FEDORA_SCRIPT_PRINT_USAGE)
 
 MACRO(FIND_FILE_OR_PROGRAM)
     SET(_args "")
@@ -78,11 +83,11 @@ ENDMACRO(FIND_FILE_OR_PROGRAM)
 
 FUNCTION(MANAGE_FILE_CACHE_SCRIPT)
     IF(NOT run)
-	MANAGE_FILE_SCRIPT_PRINT_USAGE()
+	CMAKE_FEDORA_SCRIPT_PRINT_USAGE()
 	M_MSG(${M_FATAL} "Requires -Drun=<executable>")
     ENDIF(NOT run)
     IF(NOT cache_file)
-	MANAGE_FILE_SCRIPT_PRINT_USAGE()
+	CMAKE_FEDORA_SCRIPT_PRINT_USAGE()
 	M_MSG(${M_FATAL} "Requires -Dcache_file=<filenameWithoutDir>")
     ENDIF(NOT cache_file)
 
@@ -99,6 +104,15 @@ FUNCTION(MANAGE_FILE_CACHE_SCRIPT)
     M_OUT("${v}")
 ENDFUNCTION(MANAGE_FILE_CACHE_SCRIPT)
 
+FUNCTION(CMAKE_FEDORA_GET_VARIABLE_SCRIPT)
+    IF(NOT var)
+	CMAKE_FEDORA_SCRIPT_PRINT_USAGE()
+	M_MSG(${M_FATAL} "Requires -Dvar=<variable>")
+    ENDIF(NOT var)
+    CMAKE_FEDORA_CONF_GET_ALL_VARIABLES()
+    M_OUT("${${var}}")
+ENDFUNCTION(CMAKE_FEDORA_GET_VARIABLE_SCRIPT)
+
 LIST(APPEND CMAKE_MODULE_PATH 
     ${CMAKE_CURRENT_SOURCE_DIR}/Modules ${CMAKE_SOURCE_DIR}/Modules
     ${CMAKE_SOURCE_DIR}/cmake-fedora/Modules 
@@ -112,14 +126,16 @@ INCLUDE(ManageMessage)
 
 IF(cmd STREQUAL "find_file" OR cmd STREQUAL "find_program")
     IF(NOT names)
-	MANAGE_FILE_SCRIPT_PRINT_USAGE()
+	CMAKE_FEDORA_SCRIPT_PRINT_USAGE()
 	M_MSG(${M_FATAL} "Requires -Dnames=\"<name1;name2>\"")
     ENDIF(NOT names)
     FIND_FILE_OR_PROGRAM()
 ELSEIF(cmd STREQUAL "manage_file_cache")
     MANAGE_FILE_CACHE_SCRIPT()
+ELSEIF(cmd STREQUAL "get_variable")
+    CMAKE_FEDORA_GET_VARIABLE_SCRIPT()
 ELSE(cmd STREQUAL "find_file" OR cmd STREQUAL "find_program")
-    MANAGE_FILE_SCRIPT_PRINT_USAGE()
+    CMAKE_FEDORA_SCRIPT_PRINT_USAGE()
     M_MSG(${M_FATAL} "Invalid cmd ${cmd}")
 ENDIF(cmd STREQUAL "find_file" OR cmd STREQUAL "find_program")
 

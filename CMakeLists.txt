@@ -152,8 +152,8 @@ ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
 ####################################################################
 # Test Suites.
 #
-ADD_TEST("ManageFile" ctest -S test/testManageFile.cmake)
-ADD_TEST("ManageFileScript" ctest -S test/testManageFileScript.cmake)
 ADD_TEST("ManageString" ctest -S test/testManageString.cmake)
 ADD_TEST("ManageVariable" ctest -S test/testManageVariable.cmake)
+ADD_TEST("ManageFile" ctest -S test/testManageFile.cmake)
+ADD_TEST("CmakeFedoraScript" ctest -S test/testCmakeFedoraScript.cmake)
 
