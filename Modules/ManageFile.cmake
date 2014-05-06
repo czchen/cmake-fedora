@@ -320,14 +320,7 @@ FUNCTION(MANAGE_FILE_CACHE var file)
     IF(NOT DEFINED _o_ERROR_VAR)
 	SET(_o_ERROR_VAR "${var}_ERROR")
     ENDIF(NOT DEFINED _o_ERROR_VAR)
-    MANAGE_CMAKE_FEDORA_CONF(_cmake_fedora_conf
-	VERBOSE_LEVEL ${M_OFF}
-	ERROR_MSG "Failed to find cmake-fedora.conf"
-	)
-    SET(HOME "$ENV{HOME}")
-    IF(${_cmake_fedora_conf})
-	SETTING_FILE_GET_ALL_VARIABLES(${_cmake_fedora_conf})
-    ENDIF(${_cmake_fedora_conf})
+    CMAKE_FEDORA_CONF_GET_ALL_VARIABLES()
     SET(_toRun TRUE)
     IF(NOT DEFINED LOCAL_CACHE)
 	SET(LOCAL_CACHE 1)
@@ -371,7 +364,8 @@ FUNCTION(MANAGE_FILE_CACHE var file)
 	    OUTPUT_STRIP_TRAILING_WHITESPACE
 	    )
     ENDIF(_toRun)
-    FILE(STRINGS ${_cacheFile} _value)
+    FILE(READ ${_cacheFile} _value)
+    STRING(STRIP "${_value}" _value)
     SET(${var} "${_value}" PARENT_SCOPE)
 ENDFUNCTION(MANAGE_FILE_CACHE var file)
 
