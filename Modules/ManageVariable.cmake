@@ -160,8 +160,6 @@ MACRO(COMMAND_OUTPUT_TO_VARIABLE var cmd)
     ELSE(_cmd_output)
 	SET(var "${var}-NOVALUE")
     ENDIF(_cmd_output)
-    #SET(value ${${var}})
-    #MESSAGE("var=${var} _cmd_output=${_cmd_output} value=|${value}|" )
 ENDMACRO(COMMAND_OUTPUT_TO_VARIABLE var cmd)
 
 # This macro is meant to be internal.
