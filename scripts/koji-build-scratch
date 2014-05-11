@@ -45,7 +45,7 @@ for cmd in koji;do
 done
 
 SCRIPT_DIR=$(readlink -f `dirname $0`)
-CMAKE_FEDORA_KOJI_CMD=`${SCRIPT_DIR}/cmake-fedora-koji`
+CMAKE_FEDORA_KOJI_CMD=${SCRIPT_DIR}/cmake-fedora-koji
 if [ ! -x ${CMAKE_FEDORA_KOJI_CMD} ];then
     echo "[Error] cmake-fedora-koji is not found" > /dev/stderr
     exit -2
@@ -72,7 +72,7 @@ echo "TARGETS=$TARGETS"
 FAILED=
 
 for t in $TARGETS;do
-    if ! $KOJI_CMD build --scratch $t $SRPM; then
+    if ! koji build --scratch $t $SRPM; then
 	FAILED="$FAILED $t"
     fi
 done

@@ -111,7 +111,7 @@ if [ -z "${CMAKE_FEDORA_SCRIPT_CMAKE}" ];then
 fi
 
 SCRIPT_DIR=$(readlink -f `dirname $0`)
-CMAKE_FEDORA_KOJI_CMD=`${SCRIPT_DIR}/cmake-fedora-koji`
+CMAKE_FEDORA_KOJI_CMD=${SCRIPT_DIR}/cmake-fedora-koji
 if [ ! -x ${CMAKE_FEDORA_KOJI_CMD} ];then
     echo "[Error] cmake-fedora-koji is not found" > /dev/stderr
     exit -2
@@ -125,13 +125,6 @@ fi
 
 BODHI_USER=${BODHI_USER:=$LOGNAME}
 echo "BODHI_USER=$BODHI_USER"
-
-SCRIPT_DIR=$(readlink -f `dirname $0`)
-CMAKE_FEDORA_KOJI_CMD=`${SCRIPT_DIR}/cmake-fedora-koji`
-if [ ! -x ${CMAKE_FEDORA_KOJI_CMD} ];then
-    echo "[Error] cmake-fedora-koji is not found" > /dev/stderr
-    exit -2
-fi
 
 WORK_DIR=${FEDPKG_DIR:-$PWD}
 MSG=
