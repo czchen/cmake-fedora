@@ -1,0 +1,27 @@
+# Test for CmakeFedoraKoji
+INCLUDE(test/testCommon.cmake)
+INCLUDE(ManageMessage)
+
+SET(CMAKE_FEDORA_KOJI_CMD "scripts/cmake-fedora-koji")
+
+MESSAGE("CMAKE_FEDORA_SCRIPT_HELP: ")
+EXECUTE_PROCESS(COMMAND ${CMAKE_FEDORA_KOJI_CMD}
+    OUTPUT_VARIABLE v
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+IF(NOT v MATCHES "cmake-fedora-koji")
+    MESSAGE(SEND_ERROR "Failed to print help.")
+ENDIF(NOT v MATCHES "cmake-fedora-koji")
+
+FUNCTION(CMAKE_FEDORA_KOJI_BRANCH_TEST expected scopes)
+    MESSAGE("CMAKE_FEDORA_BRANCH_TARGET: ${cmd}_${names}")
+    EXECUTE_PROCESS(COMMAND ${CMAKE_FEDORA_KOJI_CMD}
+	branch ${scopes} ${ARGN}
+	OUTPUT_VARIABLE v
+	OUTPUT_STRIP_TRAILING_WHITESPACE
+	)
+    TEST_STR_MATCH(v "${expected}")
+ENDFUNCTION(CMAKE_FEDORA_KOJI_BRANCH_TEST expected cmd names)
+
+CMAKE_FEDORA_KOJI_BRANCH_TEST("epel7\nel6" "el7" "el6")
+
