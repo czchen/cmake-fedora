@@ -1,8 +1,8 @@
 PRJ_VER=1.4.0
-SUMMARY=Support EPEL7; cmake-fedora-newprj is fixed.
-REDHAT_BUGZILLA=1002279
+SUMMARY=Support EPEL7; cmake-fedora-newprj is fixed; Fixed Bug 193336
+REDHAT_BUGZILLA=1002279,1093336
 [Changes]
-- [TODO] Fix EPEL 7 support.
+- Fixed Bug 1093336 - date(1): -u is much portable than --utc
 - Enhancement:
   + New modules:
   - CmakeFedoraScript: Scripts to be invoked in command line.
@@ -11,6 +11,7 @@ REDHAT_BUGZILLA=1002279
   + ManageFile: New function: MANAGE_FILE_EXPIRY
   + ManageMessage: New function: M_OUT
   + ManageVariable: New macro: CMAKE_FEDORA_CONF_GET_ALL_VARIABLES
+- Fix EPEL 7 support.
 - Removed:
   + cmake-fedora.conf.in is no longer need.
   + scripts/cmake-fedora-functions is no longer needed.

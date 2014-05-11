@@ -65,7 +65,7 @@ if [[ -z "${VERSION}" ]];then
 fi
 
 LC_ALL=C
-_dateStr=`date --utc "+%a %b %d %Y"`
+_dateStr=`date -u "+%a %b %d %Y"`
 CHANGELOG_TMP="/tmp/cmake-fedora-changelog.tmp"
 if [[ -r ${CHANGELOG} ]];then
     cp ${CHANGELOG} ${CHANGELOG_TMP}
