@@ -127,7 +127,8 @@ for cmd in cmake koji;do
     fi
 done
 
-for d in Modules cmake-fedora/Modules /usr/share/cmake/Modules;do
+SCRIPT_DIR=$(readlink -f `dirname $0`)
+for d in Modules cmake-fedora/Modules ${SCRIPT_DIR}/../Modules /usr/share/cmake/Modules;do
     if [ -r $d/CmakeFedoraScript.cmake ];then
 	CMAKE_FEDORA_SCRIPT_CMAKE=$d/CmakeFedoraScript.cmake
     fi
