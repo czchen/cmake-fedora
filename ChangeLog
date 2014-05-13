@@ -1,4 +1,4 @@
-* Sun May 11 2014 Ding-Yi Chen <dchen at redhat.com> - 1.4.0
+* Tue May 13 2014 Ding-Yi Chen <dchen at redhat.com> - 1.4.0
 - Fixed Bug 1093336 - date(1): -u is much portable than --utc
 - Enhancement:
   + New modules:
