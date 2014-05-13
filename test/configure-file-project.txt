@@ -1,0 +1,1 @@
+Name: @PROJECT_NAME@ ${PROJECT_NAME}

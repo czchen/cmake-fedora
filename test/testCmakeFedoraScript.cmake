@@ -2,6 +2,30 @@
 INCLUDE(test/testCommon.cmake)
 INCLUDE(ManageMessage)
 
+FUNCTION(CMAKE_FEDORA_SCRIPT_CONFIGURE_FILE_TEST expected inputFile outputFile)
+    MESSAGE("CMAKE_FEDORA_SCRIPT_CONFIGURE_FILE: ${expected}")
+    EXECUTE_PROCESS(COMMAND cmake 
+	-Dcmd=configure_file "-DinputFile=${inputFile}" 
+	"-DoutputFile=${outputFile}" ${ARGN}
+	-P Modules/CmakeFedoraScript.cmake
+	)
+    FILE(READ ${outputFile} v)
+    STRING(STRIP "${v}" v)
+    TEST_STR_MATCH(v "${expected}")
+ENDFUNCTION(CMAKE_FEDORA_SCRIPT_CONFIGURE_FILE_TEST expected cmd names)
+CMAKE_FEDORA_SCRIPT_CONFIGURE_FILE_TEST("Name: cmake-fedora cmake-fedora" 
+    ${CTEST_SCRIPT_DIRECTORY}/configure-file-project.txt 
+    ${CMAKE_FEDORA_TMP_DIR}/configure-file-project.txt 
+    -DPROJECT_NAME=cmake-fedora
+    )
+CMAKE_FEDORA_SCRIPT_CONFIGURE_FILE_TEST("Name: cmake-fedora \${PROJECT_NAME}" 
+    ${CTEST_SCRIPT_DIRECTORY}/configure-file-project.txt 
+    ${CMAKE_FEDORA_TMP_DIR}/configure-file-project.txt 
+    -Dat_only=1
+    -DPROJECT_NAME=cmake-fedora
+    )
+
+
 FUNCTION(CMAKE_FEDORA_SCRIPT_FIND_TEST expected cmd names)
     MESSAGE("CMAKE_FEDORA_SCRIPT_FIND: ${cmd}_${names}")
     EXECUTE_PROCESS(COMMAND cmake 

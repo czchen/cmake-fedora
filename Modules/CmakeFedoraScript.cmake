@@ -4,45 +4,89 @@
 
 MACRO(CMAKE_FEDORA_SCRIPT_PRINT_USAGE)
     MESSAGE(
-"   cmake -Dcmd=find_file|find_program -Dnames=\"<name1;name2>\"
-           [-Dpaths=\"path1;path2\"]
-           [-Derror_msg=msg]
-           [-Dverbose_level=verboseLevel]
-	   [-Dno_default_path=1]
-	   -P <CmakeModulePath>/CmakeFedoraScript.cmake
-     Find a file or program with name1 or name2, 
-     with proper error handling.
-     Options:
-       -Dpaths: Pathes that files might be located.
-       -Derror_msg: Error message to be shown if not-found.
-       -Dverbose_level: Verbose level for not-found message.
-          1: Critical (The 'not found' message is shown as critical)
-	  2: Error (The 'not found' message is shown as error)
-	  3: Warning (The 'not found' message is shown as error)
-	  4: Off (The 'not found' message is shown as off, 
-	     that is, turn off certain functionality).
-	  5: Info1
-	  6: Info2
-	  7: Info3
-	  Default: Error
-       -Dno_default_path: CMake default paths will not be search.
-          Useful if you only want to search the file list in -Dpaths.
-	   
-   cmake -Dcmd=manage_file_cache -Drun=\"<command arg1 ...>\"
-         -Dcache_file=<cacheFileWithoutDirectory>
-         [-Dexpiry_seconds=seconds]
-	 [-Dcache_dir=dir]
-	 -P <CmakeModulePath>/CmakeFedoraScript.cmake
-     Output from either cache file or run command.
-     Command is run when 1) cache expired or 2) no cache.
-     Cache will be update after run command.
+"  cmake -Dcmd=configure_file 
+        -DinputFile=<inputFile> -DoutputFile=<outputFile>
+	[-DatOnly=1]
+	[-Descape_quotes=1]
+	[-DVAR=VAULE]
+        -P <CmakeModulePath>/CmakeFedoraScript.cmake
+    Copy a file to another location and modify its contents.
+    This is a wrapper of CONFIGURE_FILE command in cmake.
 
-   cmake -Dcmd=get_variable -Dvar=\"<varName>\"
-         -P <CmakeModulePath>/CmakeFedoraScript.cmake
-     Get variable value from cmake-fedora.conf.
+    Note: Please pass the necessary variables via -Dvar=VALUE,
+      e.g. -DPROJECT_NAME=cmake-fedora
+    Options:
+      -DinputFile: input file
+      -DoutPutFile: output file
+      -DatOnly: Replace only the variables surround by '@', like @VAR@.
+        Same as passing '@ONLY' to CONFIGURE_FILE.
+      -Descape_quotes: Substituted quotes will be C-style escape.
+        Same as passing 'ESCAPE_QUOTES' to CONFIGURE_FILE.
+
+    
+  cmake -Dcmd=find_file|find_program \"-Dnames=<name1;name2>\"
+        [-Dpaths=\"path1;path2\"]
+        [-Derror_msg=msg]
+        [-Dverbose_level=verboseLevel]
+        [-Dno_default_path=1]
+        -P <CmakeModulePath>/CmakeFedoraScript.cmake
+    Find a file or program with name1 or name2, 
+    with proper error handling.
+    Options:
+      -Dpaths: Paths that files might be located.
+      -Derror_msg: Error message to be shown if not-found.
+      -Dverbose_level: Verbose level for not-found message.
+        1: Critical (The 'not found' message is shown as critical)
+        2: Error (The 'not found' message is shown as error)
+        3: Warning (The 'not found' message is shown as error)
+	4: Off (The 'not found' message is shown as off, 
+	   that is, turn off certain functionality).
+        5: Info1
+	6: Info2
+	7: Info3
+	Default: Error
+      -Dno_default_path: CMake default paths will not be search.
+        Useful if you only want to search the file list in -Dpaths.
+	   
+  cmake -Dcmd=manage_file_cache \"-Drun=<command arg1 ...>\"
+        -Dcache_file=<cacheFileWithoutDirectory>
+        [-Dexpiry_seconds=seconds]
+        [-Dcache_dir=dir]
+        -P <CmakeModulePath>/CmakeFedoraScript.cmake
+    Output from either cache file or run command.
+    Command is run when 1) cache expired or 2) no cache.
+    Cache will be update after run command.
+
+
+  cmake -Dcmd=get_variable -Dvar=<varName>
+        -P <CmakeModulePath>/CmakeFedoraScript.cmake
+    Get variable value from cmake-fedora.conf.
 
 ")
 ENDMACRO(CMAKE_FEDORA_SCRIPT_PRINT_USAGE)
+
+FUNCTION(CONFIGURE_FILE_SCRIPT)
+    IF(NOT inputFile)
+	CMAKE_FEDORA_SCRIPT_PRINT_USAGE()
+	M_MSG(${M_FATAL} "Requires -DinputFile=<file>")
+    ENDIF(NOT inputFile)
+    IF(NOT EXISTS "${inputFile}")
+	M_MSG(${M_FATAL} "Input file not exists: ${inputFile}")
+    ENDIF(NOT EXISTS "${inputFile}")
+    IF(NOT outputFile)
+	CMAKE_FEDORA_SCRIPT_PRINT_USAGE()
+	M_MSG(${M_FATAL} "Requires -DoutputFile=<file>")
+    ENDIF(NOT outputFile)
+    SET(_opts)
+    IF(escape_quotes)
+	LIST(APPEND _opts "ESCAPE_QUOTES")
+    ENDIF(escape_quotes)
+    IF(at_only)
+	LIST(APPEND _opts "@ONLY")
+    ENDIF(at_only)
+
+    CONFIGURE_FILE("${inputFile}" "${outputFile}" ${_opts})
+ENDFUNCTION(CONFIGURE_FILE_SCRIPT)
 
 MACRO(FIND_FILE_OR_PROGRAM)
     SET(_args "")
@@ -130,6 +174,8 @@ IF(cmd STREQUAL "find_file" OR cmd STREQUAL "find_program")
 	M_MSG(${M_FATAL} "Requires -Dnames=\"<name1;name2>\"")
     ENDIF(NOT names)
     FIND_FILE_OR_PROGRAM()
+ELSEIF(cmd STREQUAL "configure_file")
+    CONFIGURE_FILE_SCRIPT()
 ELSEIF(cmd STREQUAL "manage_file_cache")
     MANAGE_FILE_CACHE_SCRIPT()
 ELSEIF(cmd STREQUAL "get_variable")
