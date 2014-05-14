@@ -162,13 +162,15 @@ LIST(APPEND CMAKE_MODULE_PATH
     ${CMAKE_SOURCE_DIR}/cmake-fedora/Modules 
     ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR} )
 
-INCLUDE(ManageFile RESULT_VARIABLE MANAGE_MODULE_PATH)
+INCLUDE(ManageMessage RESULT_VARIABLE MANAGE_MODULE_PATH)
 IF(NOT MANAGE_MODULE_PATH)
-    M_MSG(${M_FATAL} "ManageFile.cmake fedora cannot be found in ${CMAKE_MODULE_PATH}")
+    MESSAGE(FATAL_ERROR "ManageMessage.cmake cannot be found in ${CMAKE_MODULE_PATH}")
 ENDIF(NOT MANAGE_MODULE_PATH)
-INCLUDE(ManageMessage)
+INCLUDE(ManageFile)
 
-IF(cmd STREQUAL "find_file" OR cmd STREQUAL "find_program")
+IF(cmd STREQUAL "")
+    CMAKE_FEDORA_SCRIPT_PRINT_USAGE()
+ELSEIF(cmd STREQUAL "find_file" OR cmd STREQUAL "find_program")
     IF(NOT names)
 	CMAKE_FEDORA_SCRIPT_PRINT_USAGE()
 	M_MSG(${M_FATAL} "Requires -Dnames=\"<name1;name2>\"")
@@ -180,9 +182,9 @@ ELSEIF(cmd STREQUAL "manage_file_cache")
     MANAGE_FILE_CACHE_SCRIPT()
 ELSEIF(cmd STREQUAL "get_variable")
     CMAKE_FEDORA_GET_VARIABLE_SCRIPT()
-ELSE(cmd STREQUAL "find_file" OR cmd STREQUAL "find_program")
+ELSE(cmd STREQUAL "")
     CMAKE_FEDORA_SCRIPT_PRINT_USAGE()
     M_MSG(${M_FATAL} "Invalid cmd ${cmd}")
-ENDIF(cmd STREQUAL "find_file" OR cmd STREQUAL "find_program")
+ENDIF(cmd STREQUAL "")
 
 
