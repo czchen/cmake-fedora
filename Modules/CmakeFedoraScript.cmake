@@ -57,6 +57,10 @@ MACRO(CMAKE_FEDORA_SCRIPT_PRINT_USAGE)
     Command is run when 1) cache expired or 2) no cache.
     Cache will be update after run command.
 
+  cmake -Dcmd=get_cmake_cache_variable -Dvar=<varName>
+    -Dcmake_cache=<CMakeCache.txt>
+    -P <CmakeModulePath>/CmakeFedoraScript.cmake
+    Get variable value from CMakeCache.txt
 
   cmake -Dcmd=get_variable -Dvar=<varName>
         -P <CmakeModulePath>/CmakeFedoraScript.cmake
@@ -148,6 +152,15 @@ FUNCTION(MANAGE_FILE_CACHE_SCRIPT)
     M_OUT("${v}")
 ENDFUNCTION(MANAGE_FILE_CACHE_SCRIPT)
 
+FUNCTION(CMAKE_FEDORA_GET_CMAKE_CACHE_VARIABLE_SCRIPT)
+    IF(NOT var)
+	CMAKE_FEDORA_SCRIPT_PRINT_USAGE()
+	M_MSG(${M_FATAL} "Requires -Dvar=<variable>")
+    ENDIF(NOT var)
+    CMAKE_FEDORA_CONF_GET_ALL_VARIABLES()
+    M_OUT("${${var}}")
+ENDFUNCTION(CMAKE_FEDORA_GET_CMAKE_CACHE_VARIABLE_SCRIPT)
+
 FUNCTION(CMAKE_FEDORA_GET_VARIABLE_SCRIPT)
     IF(NOT var)
 	CMAKE_FEDORA_SCRIPT_PRINT_USAGE()
@@ -181,6 +194,8 @@ ELSEIF(cmd STREQUAL "configure_file")
     CONFIGURE_FILE_SCRIPT()
 ELSEIF(cmd STREQUAL "manage_file_cache")
     MANAGE_FILE_CACHE_SCRIPT()
+ELSEIF(cmd STREQUAL "get_cmake_cache_variable")
+    CMAKE_FEDORA_GET_CMAKE_CACHE_VARIABLE_SCRIPT()
 ELSEIF(cmd STREQUAL "get_variable")
     CMAKE_FEDORA_GET_VARIABLE_SCRIPT()
 ELSE()

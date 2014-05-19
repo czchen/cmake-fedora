@@ -162,7 +162,7 @@ IF(NOT DEFINED _MANAGE_VERSION_CMAKE_)
 		    ENDIF(var STREQUAL "PRJ_VER")
 		ENDIF(NOT var MATCHES "#")
 	    ENDIF(_changeItemSection)
-	ENDFOREACH(_line ${_release_line})
+	ENDFOREACH(_line ${_release_lines})
 
 
 	SET_COMPILE_ENV(PRJ_DOC_DIR "${DOC_DIR}/${PROJECT_NAME}-${PRJ_VER}"

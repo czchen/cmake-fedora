@@ -17,20 +17,20 @@ SET(MANAGE_MESSAGE_LEVEL 5 CACHE STRING "Message (Verbose) Level")
 # Project specific information
 #
 PROJECT(cmake-fedora NONE)
-SET(PRJ_SUMMARY "CMake helper modules for fedora developers")
+SET(PRJ_SUMMARY "CMake helper modules for fedora developers" CACHE STRING "Summary")
 
 SET(PRJ_DESCRIPTION
 "cmake-fedora consist a set of cmake modules that provides
 helper macros and targets for fedora developers."
     )
-SET(AUTHORS "Ding-Yi Chen")
-SET(MAINTAINER "Ding-Yi Chen <dchen at redhat.com>")
-SET(VENDOR "Red Hat, APAC, Inc.")
-SET(LICENSE BSD)
-SET(PRJ_GROUP "System Environment/Libraries")
+SET(AUTHORS "Ding-Yi Chen" CACHE STRING "Authors")
+SET(MAINTAINER "Ding-Yi Chen <dchen at redhat.com>" CACHE STRING "Maintainer")
+SET(VENDOR "Red Hat, APAC, Inc." CACHE STRING "Vendor")
+SET(LICENSE BSD CACHE STRING "License")
+SET(PRJ_GROUP "System Environment/Libraries" CACHE STRING "Group")
 SET(BUILD_ARCH "noarch")
-SET(RPM_SPEC_URL "https://fedorahosted.org/%{name}/")
-SET(RPM_SPEC_SOURCES "https://fedorahosted.org/releases/c/m/%{name}/%{name}-%{version}-Source.tar.gz")
+SET(RPM_SPEC_URL "https://fedorahosted.org/%{name}/" CACHE STRING "URL")
+SET(RPM_SPEC_SOURCES "https://fedorahosted.org/releases/c/m/%{name}/%{name}-%{version}-Source.tar.gz" CACHE STRING "Sources Download URL")
 
 ####################################################################
 # Includes
@@ -52,14 +52,12 @@ ENABLE_TESTING()
 # Dependencies
 #
 
-# Enable GNOME_SHELL support by set the value to 1
-SET_COMPILE_ENV(GNOME_SHELL 1 DISPLAY BOOL "Enable GNOME Shell support")
-
-SET(IBUS_MIN_VER "1.3")
-SET(CHEWING_MIN_VER "0.3.3")
 ## Requires
 MANAGE_DEPENDENCY(REQUIRES CMAKE VER "2.6.2" REQUIRED)
+MANAGE_DEPENDENCY(REQUIRES GIT REQUIRED)
+MANAGE_DEPENDENCY(REQUIRES BODHI REQUIRED)
 MANAGE_DEPENDENCY(REQUIRES KOJI  REQUIRED)
+MANAGE_DEPENDENCY(REQUIRES RPM-BUILD  REQUIRED)
 MANAGE_DEPENDENCY(REQUIRES FEDPKG REQUIRED)
 
 ## Build requires

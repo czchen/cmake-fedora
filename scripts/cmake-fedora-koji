@@ -189,12 +189,12 @@ elif [ "${subCmd}" = "newest-changelog" ];then
     fi
     if [ -z "$nvr" ];then
 	echo "[Error] nvr for ${pkg} is not found. Perhaps network is down." > /dev/stderr
-	exit 1
+	exit 2
     fi
     content=`get_pkg_changelog ${pkg} ${nvr}`
     if [ "$?" != "0" ];then
 	echo "Failed to retrieve changelog for ${nvr}" > /dev/stderr
-	exit 1
+	exit 3
     fi
     echo "${content}" 
     exit 0

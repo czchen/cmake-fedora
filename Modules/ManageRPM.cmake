@@ -126,30 +126,27 @@ SET (_MANAGE_RPM_CMAKE_ "DEFINED")
 INCLUDE(ManageFile)
 INCLUDE(ManageTarget)
 SET(_manage_rpm_dependency_missing 0)
-SET(_cmake_fedora_dependency_missing 0)
-SET(RPM_SPEC_TAG_PADDING 16 CACHE STRING "RPM SPEC Tag padding")
 SET(CMAKE_FEDORA_ADDITIONAL_SCRIPT_PATH ${CMAKE_SOURCE_DIR}/scripts ${CMAKE_SOURCE_DIR}/cmake-fedora/scripts)
 
 FIND_PROGRAM_ERROR_HANDLING(RPM_CMD
     ERROR_MSG "rpm not found, rpm build support is disabled."
     ERROR_VAR _manage_rpm_dependency_missing
     VERBOSE_LEVEL ${M_OFF}
-    NAMES rpm
+    FIND_ARGS NAMES rpm
     )
 
 FIND_PROGRAM_ERROR_HANDLING(RPMBUILD_CMD
     ERROR_MSG "rpmbuild-md5 or rpmbuild not found, rpm build support is disabled."
     ERROR_VAR _manage_rpm_dependency_missing
     VERBOSE_LEVEL ${M_OFF}
-    NAMES "rpmbuild-md5" "rpmbuild"
+    FIND_ARGS NAMES "rpmbuild-md5" "rpmbuild"
     )
 
 FIND_PROGRAM_ERROR_HANDLING(CMAKE_FEDORA_KOJI_CMD
-    ERROR_MSG "cmake-fedora-koji not found, cmake-fedora support is disabled."
-    ERROR_MSG " cmake-fedora support is disabled."
-    ERROR_VAR _cmake_fedora_dependency_missing
+    ERROR_MSG "cmake-fedora-koji not found, rpm build support is disabled."
+    ERROR_VAR _manage_rpm_dependency_missing
     VERBOSE_LEVEL ${M_OFF}
-    NAMES cmake-fedora-koji
+    FIND_ARGS NAMES cmake-fedora-koji
     PATHS  ${CMAKE_FEDORA_ADDITIONAL_SCRIPT_PATH}
     )
 
@@ -205,239 +202,41 @@ IF(NOT _manage_rpm_dependency_missing)
 
 ENDIF(NOT _manage_rpm_dependency_missing)
 
-MACRO(MANAGE_RPM_CHANGELOG)
-    EXECUTE_PROCESS(COMMAND cat "${CHANGELOG_ITEM_FILE}"
-	OUTPUT_VARIABLE CHANGELOG_ITEMS
-	OUTPUT_STRIP_TRAILING_WHITESPACE
-	)
-    SET(RPM_CHANGELOG_FILE "${RPM_BUILD_SPECS}/RPM-ChangeLog")
-    SET(RPM_CHANGELOG_PREV_FILE "${RPM_CHANGELOG_FILE}.prev")
-    IF(NOT _cmake_fedora_dependency_missing)
-	IF(EXISTS "${RPM_CHANGELOG_PREV_FILE}")
-	    IF("${RELEASE_NOTES_FILE}" IS_NEWER_THAN "${RPM_CHANGELOG_PREV_FILE}")
-		M_MSG(${M_INFO1} "Updating RPM-ChangeLog.prev from koji")
-		EXECUTE_PROCESS(
-		    COMMAND ${CMAKE_FEDORA_KOJI_CMD} newest-changelog "${PROJECT_NAME}"
-		    OUTPUT_FILE ${RPM_CHANGELOG_PREV_FILE}
-		    )
-	    ELSE("${RELEASE_NOTES_FILE}" IS_NEWER_THAN "${RPM_CHANGELOG_PREV_FILE}")
-		M_MSG(${M_INFO1} "RPM-ChangeLog.prev is newer than RELEASE-NOTES, no need to update")
-	    ENDIF("${RELEASE_NOTES_FILE}" IS_NEWER_THAN "${RPM_CHANGELOG_PREV_FILE}")
-	ELSE(EXISTS "${RPM_CHANGELOG_PREV_FILE}")
-	    M_MSG(${M_INFO1} "Create newest RPM-ChangeLog.prev from koji")
-	    EXECUTE_PROCESS(
-		COMMAND ${CMAKE_FEDORA_KOJI_CMD} newest-changelog "${PROJECT_NAME}"
-		OUTPUT_FILE ${RPM_CHANGELOG_PREV_FILE}
-		)
-	ENDIF(EXISTS "${RPM_CHANGELOG_PREV_FILE}")
-    ENDIF(NOT _cmake_fedora_dependency_missing)
-    IF(EXISTS ${RPM_CHANGELOG_PREV_FILE})
-	# Update RPM_ChangeLog
-	# Use this instead of FILE(READ is to avoid error when reading '\'
-	# character.
-	EXECUTE_PROCESS(COMMAND cat "${RPM_CHANGELOG_PREV_FILE}"
-	    OUTPUT_VARIABLE RPM_CHANGELOG_PREV
-	    OUTPUT_STRIP_TRAILING_WHITESPACE
+MACRO(MANAGE_RPM_SPEC)
+    IF(NOT _opt_SPEC_IN)
+	FIND_FILE_ERROR_HANDLING(_opt_SPEC_IN
+	    ERROR_MSG " spec.in is not found"
+	    VERBOSE_LEVEL ${M_ERROR}
+	    NAMES "project.spec.in" "${PROJECT_NAME}.spec.in"
+	    PATHS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR}
+	    ${CMAKE_CURRENT_SOURCE_DIR}/SPECS
+	    ${CMAKE_SOURCE_DIR}/SPECS
+	    ${CMAKE_CURRENT_SOURCE_DIR}/rpm
+	    ${CMAKE_SOURCE_DIR}/rpm
+	    ${RPM_BUILD_SPECS}
+	    ${CMAKE_ROOT_DIR}/Templates/fedora
+	    ${CMAKE_CURRENT_SOURCE_DIR}/cmake-fedora/Templates/fedora
 	    )
-    ELSE(EXISTS ${RPM_CHANGELOG_PREV_FILE})
-	SET(RPM_CHNAGELOG_PREV "")
-    ENDIF(EXISTS ${RPM_CHANGELOG_PREV_FILE})
-ENDMACRO(MANAGE_RPM_CHANGELOG)
+    ENDIF(NOT _opt_SPEC_IN)
 
-FUNCTION(RPM_SPEC_STRING_ADD var str)
-    IF("${ARGN}" STREQUAL "FRONT")
-	STRING_PREPEND(${var} "${str}" "\n")
-	SET(pos "${ARGN}")
-    ELSE("${ARGN}" STREQUAL "FRONT")
-	STRING_APPEND(${var} "${str}" "\n")
-    ENDIF("${ARGN}" STREQUAL "FRONT")
-    SET(${var} "${${var}}" PARENT_SCOPE)
-ENDFUNCTION(RPM_SPEC_STRING_ADD var str)
+    IF(NOT _opt_SPEC)
+    	SET(_opt_SPEC "${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec")
+    ENDIF(NOT _opt_SPEC)
 
-FUNCTION(RPM_SPEC_STRING_ADD_DIRECTIVE var directive attribute content)
-    SET(_str "%${directive}")
-    IF(NOT attribute STREQUAL "")
-	STRING_APPEND(_str " ${attribute}")
-    ENDIF(NOT attribute STREQUAL "")
-
-    IF(NOT content STREQUAL "")
-	STRING_APPEND(_str "\n${content}")
-    ENDIF(NOT content STREQUAL "")
-    STRING_APPEND(_str "\n")
-    RPM_SPEC_STRING_ADD(${var} "${_str}" ${ARGN})
-    SET(${var} "${${var}}" PARENT_SCOPE)
-ENDFUNCTION(RPM_SPEC_STRING_ADD_DIRECTIVE var directive attribute content)
-
-FUNCTION(RPM_SPEC_STRING_ADD_TAG var tag attribute value)
-    IF("${attribute}" STREQUAL "")
-	SET(_str "${tag}:")
-    ELSE("${attribute}" STREQUAL "")
-	SET(_str "${tag}(${attribute}):")
-    ENDIF("${attribute}" STREQUAL "")
-    STRING_PADDING(_str "${_str}" ${RPM_SPEC_TAG_PADDING})
-    STRING_APPEND(_str "${value}")
-    RPM_SPEC_STRING_ADD(${var} "${_str}" ${ARGN})
-    SET(${var} "${${var}}" PARENT_SCOPE)
-ENDFUNCTION(RPM_SPEC_STRING_ADD_TAG var tag attribute value)
-
-MACRO(PRJ_RPM_SPEC_PREPARE_FILES fileType pathPrefix)
-    FOREACH(_f ${FILE_INSTALL_${fileType}_LIST})
-	RPM_SPEC_STRING_ADD(RPM_SPEC_FILES_SECTION_OUTPUT 
-	    "${pathPrefix}${_f}" "\n"
-	    )
-    ENDFOREACH(_f ${FILE_INSTALL_${fileType}_LIST})
-ENDMACRO(PRJ_RPM_SPEC_PREPARE_FILES)
-
-MACRO(PRJ_RPM_SPEC_PREPARE)
-    ## Summary
-    RPM_SPEC_STRING_ADD_TAG(RPM_SPEC_SUMMARY_OUTPUT
-	"Summary" "" "${PRJ_SUMMARY}"
-	)
-    SET(_lang "")
-    FOREACH(_sT ${SUMMARY_TRANSLATIONS})
-	IF(_lang STREQUAL "")
-	    SET(_lang "${_sT}")
-	ELSE(_lang STREQUAL "")
-	    RPM_SPEC_STRING_ADD_TAG(RPM_SPEC_SUMMARY_OUTPUT
-		"Summary" "${lang}" "${PRJ_SUMMARY}"
-		)
-	    SET(_lang "")
-	ENDIF(_lang STREQUAL "")
-    ENDFOREACH(_sT ${SUMMARY_TRANSLATIONS})
-
-    ## Url
-    SET(RPM_SPEC_URL_OUTPUT "${RPM_SPEC_URL}")
-
-    ## Source
-    SET(_buf "")
-    SET(_i 0)
-    FOREACH(_s ${RPM_SPEC_SOURCES})
-	RPM_SPEC_STRING_ADD_TAG(_buf "Source${_i}" "" "${_s}")
-	MATH(EXPR _i ${_i}+1)
-    ENDFOREACH(_s ${RPM_SPEC_SOURCES})
-    RPM_SPEC_STRING_ADD(RPM_SPEC_SOURCE_OUTPUT "${_buf}" FRONT)
-
-    ## Requires (and BuildRequires)
-    SET(_buf "")
-    FOREACH(_s ${BUILD_REQUIRES})
-	RPM_SPEC_STRING_ADD_TAG(_buf "BuildRequires" "" "${_s}")
-    ENDFOREACH(_s ${RPM_SPEC_SOURCES})
-
-    FOREACH(_s ${REQUIRES})
-	RPM_SPEC_STRING_ADD_TAG(_buf "Requires" "" "${_s}")
-    ENDFOREACH(_s ${RPM_SPEC_SOURCES})
-    RPM_SPEC_STRING_ADD(RPM_SPEC_REQUIRES_OUTPUT "${_buf}" FRONT)
-
-    ## Description
-    RPM_SPEC_STRING_ADD_DIRECTIVE(RPM_SPEC_DESCRIPTION_OUTPUT
-	"description" "" "${PRJ_DESCRIPTION}"
-	)
-    SET(_lang "")
-    FOREACH(_sT ${DESCRIPTION_TRANSLATIONS})
-	IF(_lang STREQUAL "")
-	    SET(_lang "${_sT}")
-	ELSE(_lang STREQUAL "")
-	    RPM_SPEC_STRING_ADD_DIRECTIVE(RPM_SPEC_DESCRIPTION_OUTPUT
-		"description" "-l ${_lang}" "${_sT}" "\n"
-		)
-	    SET(_lang "")
-	ENDIF(_lang STREQUAL "")
-    ENDFOREACH(_sT ${DESCRIPTION_TRANSLATIONS})
-
-
-    ## Header
-    ## %{_build_arch}
-    IF("${BUILD_ARCH}" STREQUAL "")
-	EXECUTE_PROCESS(COMMAND ${RPM_CMD} -E "%{_build_arch}"
-	    OUTPUT_VARIABLE _RPM_BUILD_ARCH
-	    OUTPUT_STRIP_TRAILING_WHITESPACE)
-	SET(RPM_BUILD_ARCH "${_RPM_BUILD_ARCH}" 
-	    CACHE STRING "RPM Arch")
-    ELSE("${BUILD_ARCH}" STREQUAL "")
-	SET(RPM_BUILD_ARCH "${BUILD_ARCH}" 
-	    CACHE STRING "RPM Arch")
-	RPM_SPEC_STRING_ADD_TAG(RPM_SPEC_HEADER_OUTPUT
-	    "BuildArch" "" "${BUILD_ARCH}"
-	    )
-    ENDIF("${BUILD_ARCH}" STREQUAL "")
-
-    ## Build
-    IF(NOT RPM_SPEC_BUILD_OUTPUT)
-	SET(RPM_SPEC_BUILD_OUTPUT
-	    "%cmake ${RPM_SPEC_CMAKE_FLAGS} .
-	    make ${RPM_SPEC_MAKE_FLAGS}"
-	    )
-    ENDIF(NOT RPM_SPEC_BUILD_OUTPUT)
-
-    ## Install
-    STRING_JOIN(PRJ_DOC_LIST " " ${FILE_INSTALL_PRJ_DOC_LIST})
-    IF(NOT PRJ_DOC_LIST STREQUAL "")
-	SET(RPM_SPEC_PRJ_DOC_REMOVAL_OUTPUT 
-	    "# We install document using doc 
-	    (cd %{buildroot}${DOC_DIR}/%{name}-%{version}
-	    rm -fr *
-	    )"
-	    )
-	RPM_SPEC_STRING_ADD(RPM_SPEC_FILES_SECTION_OUTPUT
-	    "%doc ${PRJ_DOC_LIST}"
-	    )
-    ENDIF(NOT PRJ_DOC_LIST STREQUAL "")
-
-    IF(HAS_TRANSLATION)
-	RPM_SPEC_STRING_ADD_DIRECTIVE(RPM_SPEC_SCRIPT_OUTPUT
-	    "find_lang" "%{name}" "" FRONT
-	    )
-	RPM_SPEC_STRING_ADD_DIRECTIVE(RPM_SPEC_FILES_SECTION_OUTPUT
-	    "files" "-f %{name}.lang" "" FRONT
-	    )
-    ELSE(HAS_TRANSLATION)
-	RPM_SPEC_STRING_ADD_DIRECTIVE(RPM_SPEC_FILES_SECTION_OUTPUT
-	    "files" "" "" FRONT
-	    )
-    ENDIF(HAS_TRANSLATION)
-
-    PRJ_RPM_SPEC_PREPARE_FILES("BIN" "%{_bindir}/")
-    PRJ_RPM_SPEC_PREPARE_FILES("LIB" "%{_libdir}/")
-    PRJ_RPM_SPEC_PREPARE_FILES("PRJ_LIB" "%{_libdir}/%{name}/")
-    PRJ_RPM_SPEC_PREPARE_FILES("LIBEXEC" "%{_libexecdir}/")
-    PRJ_RPM_SPEC_PREPARE_FILES("PRJ_LIBEXEC" "%{_libexecdir}/%{name}/")
-    PRJ_RPM_SPEC_PREPARE_FILES("SYSCONF" "%config %{_sysconfdir}/")
-    PRJ_RPM_SPEC_PREPARE_FILES("PRJ_SYSCONF" "%config %{_sysconfdir}/%{name}/")
-    PRJ_RPM_SPEC_PREPARE_FILES("SYSCONF_NO_REPLACE" "%config(noreplace) %{_sysconfdir}/")
-    PRJ_RPM_SPEC_PREPARE_FILES("PRJ_SYSCONF_NO_REPLACE" "%config(noreplace) %{_sysconfdir}/%{name}/")
-    PRJ_RPM_SPEC_PREPARE_FILES("DATA" "%{_datadir}/")
-    PRJ_RPM_SPEC_PREPARE_FILES("PRJ_DATA" "%{_datadir}/%{name}/")
-ENDMACRO(PRJ_RPM_SPEC_PREPARE)
+    # Write Project info to prj_info.cmake
+    # So ManageRPMScript can use it
+    SET(PRJ_INFO_CMAKE "${RPM_BUILD_SPECS}/prj_info.cmake")
+    FILE(WRITE ${PRJ_INFO_CMAKE} "SET(PROJECT_NAME \"${PROJECT_NAME}\")\n")
+    FOREACH(_v PRJ_VER RPM_RELEASE_NO PRJ_SUMMARY PRJ_DESCRIPTION LICENSE PRJ_GROUP MAINTAINER AUTHORS VENDOR BUILD_ARCH  RPM_SPEC_URL RPM_SPEC_SOURCES BUILD_REQUIRES REQUIRES)
+	FILE(APPEND ${PRJ_INFO_CMAKE} "SET(${_v} \"${${_v}}\")\n")
+    ENDFOREACH(_v)
+ENDMACRO(MANAGE_RPM_SPEC)
 
 MACRO(PACK_RPM)
     IF(NOT _manage_rpm_dependency_missing )
-	SET(_validOptions "SPEC_IN" "SPEC")
+	SET(_validOptions "SPEC_IN" "SPEC" )
 	VARIABLE_PARSE_ARGN(_opt _validOptions ${ARGN})
-
-	IF(NOT _opt_SPEC_IN)
-	    FIND_FILE_ERROR_HANDLING(_opt_SPEC_IN
-		ERROR_MSG " spec.in is not found"
-		VERBOSE_LEVEL ${M_ERROR}
-		NAMES "project.spec.in" "${PROJECT_NAME}.spec.in"
-		PATHS ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR}
-		${CMAKE_CURRENT_SOURCE_DIR}/SPECS
-		${CMAKE_SOURCE_DIR}/SPECS
-		${CMAKE_CURRENT_SOURCE_DIR}/rpm
-		${CMAKE_SOURCE_DIR}/rpm
-		${RPM_BUILD_SPECS}
-		${CMAKE_ROOT_DIR}/Templates/fedora
-		${CMAKE_CURRENT_SOURCE_DIR}/cmake-fedora/Templates/fedora
-		)
-	    SET(_opt_SPEC "${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec")
-	ENDIF(NOT _opt_SPEC_IN)
-
-	IF(NOT _opt_SPEC)
-	    SET(_opt_SPEC "${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec")
-	ENDIF(NOT _opt_SPEC)
-	## RPM spec.in and RPM-ChangeLog.prev
-
-	PRJ_RPM_SPEC_PREPARE()
-	SET(PRJ_RPM_SPEC_FILE "${_opt_SPEC}" CACHE FILEPATH "spec")
+	MANAGE_RPM_SPEC()
 
 	SET(PRJ_SRPM_FILE "${RPM_BUILD_SRPMS}/${PROJECT_NAME}-${PRJ_VER}-${RPM_RELEASE_NO}.${RPM_DIST_TAG}.src.rpm"
 	    CACHE STRING "RPM files" FORCE)
@@ -445,14 +244,7 @@ MACRO(PACK_RPM)
 	SET(PRJ_RPM_FILES "${RPM_BUILD_RPMS}/${RPM_BUILD_ARCH}/${PROJECT_NAME}-${PRJ_VER}-${RPM_RELEASE_NO}.${RPM_DIST_TAG}.${RPM_BUILD_ARCH}.rpm"
 	    CACHE STRING "RPM files" FORCE)
 
-	INCLUDE(DateTimeFormat)
-	MANAGE_RPM_CHANGELOG()
-
-	# Generate spec
-	IF(NOT "${_opt_SPEC_IN}" STREQUAL "")
-	    CONFIGURE_FILE(${_opt_SPEC_IN} ${_opt_SPEC})
-	ENDIF(NOT "${_opt_SPEC_IN}" STREQUAL "")
-	#-------------------------------------------------------------------
+#-------------------------------------------------------------------
 	# RPM build commands and targets
 
 	ADD_CUSTOM_TARGET_COMMAND(srpm
