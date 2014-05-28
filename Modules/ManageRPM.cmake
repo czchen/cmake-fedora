@@ -349,10 +349,13 @@ ENDMACRO(PACK_RPM)
 
 MACRO(RPM_MOCK_BUILD)
     IF(NOT _manage_rpm_dependency_missing )
-	FIND_PROGRAM(MOCK_CMD mock)
-	IF(MOCK_CMD STREQUAL "MOCK_CMD-NOTFOUND")
-	    M_MSG(${M_OFF} "mock is not found in PATH, mock support disabled.")
-	ELSE(MOCK_CMD STREQUAL "MOCK_CMD-NOTFOUND")
+	FIND_PROGRAM_ERROR_HANDLING(MOCK_CMD
+	    ERROR_MSG "mock not found, mock build support is disabled."
+	    ERROR_VAR _mock_missing
+	    VERBOSE_LEVEL ${M_OFF}
+	    FIND_ARGS NAMES mock
+	    )
+	IF(NOT _mock_missing)
 	    IF(NOT RPM_BUILD_ARCH STREQUAL "noarch")
 		IF(NOT DEFINED MOCK_RPM_DIST_TAG)
 		    STRING(REGEX MATCH "^fc([1-9][0-9]*)"  _fedora_mock_dist "${RPM_DIST_TAG}")
@@ -380,7 +383,7 @@ MACRO(RPM_MOCK_BUILD)
 		    DEPENDS ${PRJ_SRPM_FILE}
 		    )
 	    ENDIF(NOT RPM_BUILD_ARCH STREQUAL "noarch")
-	ENDIF(MOCK_CMD STREQUAL "MOCK_CMD-NOTFOUND")
+	ENDIF(NOT _mock_missing)
     ENDIF(NOT _manage_rpm_dependency_missing )
 
 ENDMACRO(RPM_MOCK_BUILD)
