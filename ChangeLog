@@ -1,8 +1,9 @@
-* Mon May 19 2014 Ding-Yi Chen <dchen at redhat.com> - 2.0.0
+* Wed May 28 2014 Ding-Yi Chen <dchen at redhat.com> - 2.0.0
 - Fixed Bug 1093336 - date(1): -u is much portable than --utc
 - Enhancement:
   + New modules:
-  - CmakeFedoraScript: Scripts to be invoked in command line.
+    - CmakeFedoraScript: Scripts to be invoked in command line.
+    - ManageRpmScript: RPM Scripts to be invoked in command line.
   + ManageFile: New function: MANAGE_CMAKE_FEDORA_CONF
   + ManageFile: New function: MANAGE_FILE_CACHE
   + ManageFile: New function: MANAGE_FILE_EXPIRY
