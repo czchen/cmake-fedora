@@ -165,13 +165,24 @@ IF(NOT _manage_rpm_dependency_missing)
 	)
 
     SET(RPM_SPEC_INSTALL_OUTPUT
-	"%__rm -rf %{buildroot}
+	"rm -rf %{buildroot}
 	make install DESTDIR=%{buildroot}"
 	)
 
     SET(RPM_SPEC_FILES_SECTION_OUTPUT "%defattr(-,root,root,-)")
 
-    # %{dist}
+    ## arch
+    IF(BUILD_ARCH STREQUAL "noarch")
+	SET(RPM_BUILD_ARCH ${BUILD_ARCH})
+    ELSE(BUILD_ARCH STREQUAL "noarch")
+	EXECUTE_PROCESS(COMMAND ${RPM_CMD} -E "%{_arch}"
+	    COMMAND sed -e "s/^\\.//"
+	    OUTPUT_VARIABLE RPM_BUILD_ARCH
+	    OUTPUT_STRIP_TRAILING_WHITESPACE
+	    )
+    ENDIF(BUILD_ARCH STREQUAL "noarch")
+
+    ## %{dist}
     EXECUTE_PROCESS(COMMAND ${RPM_CMD} -E "%{dist}"
 	COMMAND sed -e "s/^\\.//"
 	OUTPUT_VARIABLE _RPM_DIST_TAG
@@ -231,9 +242,28 @@ MACRO(MANAGE_RPM_SPEC)
 	FILE(APPEND ${PRJ_INFO_CMAKE} "SET(${_v} \"${${_v}}\")\n")
     ENDFOREACH(_v)
 
-    ADD_CUSTOM_TARGET_COMMAND(spec OUTPUT _opt_SPEC
-	COMMAND cmake -P 
-	${MANAGE_ENVIRONMENT_PATH}/ManageRPMScript.cmake
+    SET(INSTALL_MANIFESTS_FILE "${CMAKE_SOURCE_DIR}/install_manifest.txt")
+    ADD_CUSTOM_COMMAND(OUTPUT ${INSTALL_MANIFESTS_FILE}
+	COMMAND cmake -Dcmd=make_manifests
+	-Dtmp_dir=${CMAKE_FEDORA_TMP_DIR}
+	-P ${CMAKE_FEDORA_MODULE_DIR}/ManageRPMScript.cmake
+	COMMENT "install_manifest.txt: ${INSTALL_MANIFESTS_FILE}"
+	)
+
+    ADD_CUSTOM_TARGET_COMMAND(spec OUTPUT ${_opt_SPEC}
+	COMMAND cmake -Dcmd=spec
+            -Dspec=${_opt_SPEC}
+            -Dspec_in=${_opt_SPEC_IN}
+	    -Dmanifests=${CMAKE_SOURCE_DIR}/install_manifest.txt
+	    -Drelease=${RELEASE_NOTES_FILE}
+	    -Dpkg_name=${PROJECT_NAME}
+	    -Dprj_info=${PRJ_INFO_CMAKE}
+	    -P ${CMAKE_FEDORA_MODULE_DIR}/ManageRPMScript.cmake
+	    DEPENDS ${_opt_SPEC_IN} ${RELEASE_NOTES_FILE}
+	    ${CMAKE_SOURCE_DIR}/install_manifest.txt
+	    ${SOURCE_ARCHIVE_FILE}
+	    COMMENT "spec: ${_opt_SPEC}"
+	    )
 ENDMACRO(MANAGE_RPM_SPEC)
 
 MACRO(PACK_RPM)
@@ -246,35 +276,31 @@ MACRO(PACK_RPM)
 	    CACHE STRING "RPM files" FORCE)
 
 	SET(PRJ_RPM_FILES "${RPM_BUILD_RPMS}/${RPM_BUILD_ARCH}/${PROJECT_NAME}-${PRJ_VER}-${RPM_RELEASE_NO}.${RPM_DIST_TAG}.${RPM_BUILD_ARCH}.rpm"
-	    CACHE STRING "RPM files" FORCE)
+	    CACHE STRING "Building RPM files" FORCE)
 
 #-------------------------------------------------------------------
 	# RPM build commands and targets
 
 	ADD_CUSTOM_TARGET_COMMAND(srpm
 	    OUTPUT ${PRJ_SRPM_FILE}
-	    COMMAND ${RPMBUILD_CMD} -bs ${PRJ_RPM_SPEC_FILE}
+	    COMMAND ${RPMBUILD_CMD} -bs ${_opt_SPEC}
 	    --define '_sourcedir ${RPM_BUILD_SOURCES}'
 	    --define '_builddir ${RPM_BUILD_BUILD}'
 	    --define '_srcrpmdir ${RPM_BUILD_SRPMS}'
-	    --define '_rpmdir ${RPM_BUILD_RPMS}'
 	    --define '_specdir ${RPM_BUILD_SPECS}'
-	    DEPENDS ${PRJ_RPM_SPEC_FILE} ${SOURCE_ARCHIVE_FILE}
-	    COMMENT "Building srpm"
+	    DEPENDS ${_opt_SPEC} ${SOURCE_ARCHIVE_FILE}
+	    COMMENT "srpm: ${PRJ_SRPM_FILE}"
 	    )
 
-	# RPMs (except SRPM)
-
+	# Binary RPMs
 	ADD_CUSTOM_TARGET_COMMAND(rpm
 	    OUTPUT ${PRJ_RPM_FILES}
-	    COMMAND ${RPMBUILD_CMD} -bb  ${PRJ_RPM_SPEC_FILE}
-	    --define '_sourcedir ${RPM_BUILD_SOURCES}'
-	    --define '_builddir ${RPM_BUILD_BUILD}'
-	    --define '_srcrpmdir ${RPM_BUILD_SRPMS}'
+	    COMMAND ${RPMBUILD_CMD} --rebuild ${PRJ_SRPM_FILE}
 	    --define '_rpmdir ${RPM_BUILD_RPMS}'
-	    --define '_specdir ${RPM_BUILD_SPECS}'
+	    --define '_builddir ${RPM_BUILD_BUILD}'
+	    --define '_buildrootdir ${RPM_BUILD_BUILDROOT}'
 	    DEPENDS ${PRJ_SRPM_FILE}
-	    COMMENT "Building rpm"
+	    COMMENT "rpm: ${PRJ_RPM_FILES}"
 	    )
 
 	ADD_CUSTOM_TARGET(install_rpms
@@ -283,7 +309,7 @@ MACRO(PACK_RPM)
 	    -name '${PROJECT_NAME}-debuginfo-${RPM_RELEASE_NO}.*.${RPM_BUILD_ARCH}.rpm'
 	    -print -exec sudo rpm --upgrade --hash --verbose '{}' '\\;'
 	    DEPENDS ${PRJ_RPM_FILES}
-	    COMMENT "Install all rpms except debuginfo"
+	    COMMENT "install_rpm: Install all rpms except debuginfo"
 	    )
 
 	ADD_CUSTOM_TARGET(rpmlint
@@ -291,6 +317,7 @@ MACRO(PACK_RPM)
 	    -name '${PROJECT_NAME}*-${PRJ_VER}-${RPM_RELEASE_NO}.*.rpm'
 	    -print -exec rpmlint -I '{}' '\\;'
 	    DEPENDS ${PRJ_SRPM_FILE} ${PRJ_RPM_FILES}
+	    COMMENT "rpmlint: ${PRJ_SRPM_FILE} ${PRJ_RPM_FILES}"
 	    )
 
 	ADD_CUSTOM_TARGET(clean_old_rpm

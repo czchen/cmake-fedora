@@ -4,6 +4,10 @@ REDHAT_BUGZILLA=1002279,1093336
 [Changes]
 - Fixed Bug 1093336 - date(1): -u is much portable than --utc
 - Enhancement:
+  + No need to use MAKE_INSTALL_* for rpm files section.
+    INSTALL at any place works.
+  + find_lang and files -f .lang are added automatically when
+    translations exists.
   + New modules:
     - CmakeFedoraScript: Scripts to be invoked in command line.
     - ManageRpmScript: RPM Scripts to be invoked in command line.
