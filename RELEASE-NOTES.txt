@@ -7,6 +7,8 @@ REDHAT_BUGZILLA=1002279,1093336
   + New modules:
     - CmakeFedoraScript: Scripts to be invoked in command line.
     - ManageRpmScript: RPM Scripts to be invoked in command line.
+  + New cache variables:
+    - CMAKE_FEDORA_MODULE_DIR: cmake-fedora modules dir.		
   + ManageFile: New function: MANAGE_CMAKE_FEDORA_CONF
   + ManageFile: New function: MANAGE_FILE_CACHE
   + ManageFile: New function: MANAGE_FILE_EXPIRY
@@ -16,4 +18,6 @@ REDHAT_BUGZILLA=1002279,1093336
 - Removed:
   + cmake-fedora.conf.in is no longer need.
   + scripts/cmake-fedora-functions is no longer needed.
+  + Variables:
+    - PRJ_RPM_SPEC_FILE
 
