@@ -3,7 +3,7 @@
 
 MACRO(MANAGE_RPM_SCRIPT_PRINT_USAGE)
     MESSAGE(
-	"Manage RPM script: This script is not recommend for end user
+	"Manage RPM script: This script is not recommend for end users
   cmake -Dcmd=spec -Dspec=<project.spec> -Dspec_in=<project.spec.in>
       -Dmanifests=<path/install_manifests.txt>
       -Drelease=<path/RELEASE-NOTES.txt>
