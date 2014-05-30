@@ -1,15 +1,18 @@
-* Wed May 28 2014 Ding-Yi Chen <dchen at redhat.com> - 2.0.0
+* Fri May 30 2014 Ding-Yi Chen <dchen at redhat.com> - 2.0.0
+[TODO] Fix ChangeLog handling
+[TODO] Check ibus-chewing compatiblity
 - Fixed Bug 1093336 - date(1): -u is much portable than --utc
 - Enhancement:
   + No need to use MAKE_INSTALL_* for rpm files section.
     INSTALL at any place works.
-  + find_lang and files -f .lang are added automatically when
+  + find_lang and files -f .lang are added
+automatically when
     translations exists.
   + New modules:
     - CmakeFedoraScript: Scripts to be invoked in command line.
     - ManageRpmScript: RPM Scripts to be invoked in command line.
   + New cache variables:
-    - CMAKE_FEDORA_MODULE_DIR: cmake-fedora modules dir.		
+    - CMAKE_FEDORA_MODULE_DIR: cmake-fedora modules dir.
   + ManageFile: New function: MANAGE_CMAKE_FEDORA_CONF
   + ManageFile: New function: MANAGE_FILE_CACHE
   + ManageFile: New function: MANAGE_FILE_EXPIRY
@@ -17,8 +20,7 @@
   + ManageVariable: New macro: CMAKE_FEDORA_CONF_GET_ALL_VARIABLES
 - Fix EPEL 7 support.
 - Removed:
-  + cmake-fedora.conf.in is no longer need.
-  + scripts/cmake-fedora-functions is no longer needed.
+  + cmake-fedora.conf.in is no longer need.  + scripts/cmake-fedora-functions is no longer needed.
   + Variables:
     - PRJ_RPM_SPEC_FILE
 
@@ -337,6 +339,7 @@
 - Fixed: Join the next line if ended with back slash '\'.
 - ChangeLog: Now generate from "cmake ." directly.
 - changelog: target removed. So it won't do unnecessary rebuild.
+
 * Tue Nov 09 2010 Ding-Yi Chen <dchen at redhat.com> - 0.3.2
 - Fixed: Macro invoked with incorrect arguments for macro named STRING_ESCAPE
   Caused by give and empty string from STRING_TRIM
@@ -366,6 +369,7 @@
 - Inserted git pull for each fedpkg targets. Reduce the chance of conflict.
 - Fixed target: bodhi_new. So it will actually run this command instead of
 just showing it.
+
 * Fri Oct 15 2010 Ding-Yi Chen <dchen at redhat.com> - 0.2.2
 - Add new project building script.
 - Build for EL-5, EL-6
