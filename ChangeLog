@@ -1,16 +1,19 @@
-* Fri May 30 2014 Ding-Yi Chen <dchen at redhat.com> - 2.0.0
+* Mon Jun 02 2014 Ding-Yi Chen <dchen at redhat.com> - 2.0.0
 [TODO] Fix ChangeLog handling
 [TODO] Check ibus-chewing compatiblity
 - Fixed Bug 1093336 - date(1): -u is much portable than --utc
 - Enhancement:
   + No need to use MAKE_INSTALL_* for rpm files section.
     INSTALL at any place works.
+  + Better handling of ChangeLog:
+    - ChangeLog will only invoked before make pack_src or make changelog.
   + find_lang and files -f .lang are added
 automatically when
     translations exists.
   + New modules:
     - CmakeFedoraScript: Scripts to be invoked in command line.
-    - ManageRpmScript: RPM Scripts to be invoked in command line.
+    - ManageChangeLogScript: Scripts for handling ChangeLog.
+    - ManageRpmScript: RPM Scripts for handling RPM and SPEC.
   + New cache variables:
     - CMAKE_FEDORA_MODULE_DIR: cmake-fedora modules dir.
   + ManageFile: New function: MANAGE_CMAKE_FEDORA_CONF
@@ -20,7 +23,12 @@ automatically when
   + ManageVariable: New macro: CMAKE_FEDORA_CONF_GET_ALL_VARIABLES
 - Fix EPEL 7 support.
 - Removed:
-  + cmake-fedora.conf.in is no longer need.  + scripts/cmake-fedora-functions is no longer needed.
+  + Targets:
+    - changelog_prev_update: 
+  + Scripts:
+    - cmake-fedora-functions is no longer needed.
+    - cmake-fedora-changelog is no longer needed.
+  + cmake-fedora.conf.in is no longer need.  
   + Variables:
     - PRJ_RPM_SPEC_FILE
 
@@ -349,6 +357,7 @@ automatically when
 - SETTING_FILE_GET_VARIABLES_PATTERN:
   Fixed: unable to use relative path problem.
   Fixed: UNQUOTE and NOESCAPE_SEMICOLON can now used together.
+
 * Wed Nov 03 2010 Ding-Yi Chen <dchen at redhat.com> - 0.3.0
 - New macro: SETTING_FILE_GET_VARIABLES_PATTERN
 - New macro: PACK_SOURCE_FILES

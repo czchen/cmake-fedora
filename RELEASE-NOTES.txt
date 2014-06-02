@@ -9,6 +9,8 @@ REDHAT_BUGZILLA=1002279,1093336
 - Enhancement:
   + No need to use MAKE_INSTALL_* for rpm files section.
     INSTALL at any place works.
+  + Better handling of ChangeLog:
+    - ChangeLog will only invoked before make pack_src or make changelog.
   + find_lang and files -f .lang are added
 automatically when
     translations exists.
@@ -25,7 +27,12 @@ automatically when
   + ManageVariable: New macro: CMAKE_FEDORA_CONF_GET_ALL_VARIABLES
 - Fix EPEL 7 support.
 - Removed:
-  + cmake-fedora.conf.in is no longer need.  + scripts/cmake-fedora-functions is no longer needed.
+  + Targets:
+    - changelog_prev_update: 
+  + Scripts:
+    - cmake-fedora-functions is no longer needed.
+    - cmake-fedora-changelog is no longer needed.
+  + cmake-fedora.conf.in is no longer need.  
   + Variables:
     - PRJ_RPM_SPEC_FILE
 

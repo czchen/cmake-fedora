@@ -11,7 +11,12 @@
 # Included by:
 #   ManageRPM
 #
-# Defines following target:
+# Defines and reads variables:
+#   CHANGELOG_FILE: Location of ChangeLog.
+#     Default: ${CMAKE_SOURCE_DIR}/ChangeLog
+#
+# Defines following targets:
+#     changelog: ChangeLog update.
 #     pack_remove_old: Remove old source package files.
 #
 # Defines following function:
@@ -89,8 +94,21 @@ IF(NOT DEFINED _MANAGE_ARCHIVE_CMAKE_)
 	${SOURCE_ARCHIVE_IGNORE_FILES_COMMON}
 	)
 
+    SET(CHANGELOG_FILE "${CMAKE_SOURCE_DIR}/ChangeLog" CACHE FILEPATH "ChangeLog")
+
     INCLUDE(ManageVersion)
     INCLUDE(ManageFile)
+
+    ## ChangeLog Update
+    ADD_CUSTOM_TARGET(changelog
+	COMMAND ${CMAKE_COMMAND} -Dcmd=update 
+	-Dchangelog=${CHANGELOG_FILE}
+	-Drelease=${RELEASE_NOTES_FILE}
+	-Dprj_info=${PRJ_INFO_CMAKE}
+	-P ${CMAKE_FEDORA_MODULE_DIR}/ManageChangeLogScript.cmake
+	DEPENDS ${RELEASE_NOTES_FILE} ${CHANGELOG_FILE}
+	COMMENT "ChangeLog: ${CHANGELOG_FILE}"
+	)
 
     FUNCTION(SOURCE_ARCHIVE_CONTENTS_ADD filename)
 	GET_FILENAME_COMPONENT(_file "${filename}" ABSOLUTE)
@@ -287,6 +305,7 @@ IF(NOT DEFINED _MANAGE_ARCHIVE_CMAKE_)
 	    ADD_CUSTOM_TARGET_COMMAND(pack_src
 		NO_FORCE
 	    	OUTPUT ${SOURCE_ARCHIVE_FILE}
+		COMMAND make changelog
 	    	COMMAND make package_source
 	    	COMMAND ${CMAKE_COMMAND} -E copy "${_source_archive_file}" "${SOURCE_ARCHIVE_FILE}"
 	    	COMMAND ${CMAKE_COMMAND} -E remove "${_source_archive_file}"
