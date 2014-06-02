@@ -142,7 +142,6 @@ ENDMACRO()
 
 MACRO(CHANGELOG_UPDATE prj_info release changelog)
     LOAD_PRJ_INFO()
-    MESSAGE("1PRJ_VER=${PRJ_VER}")
 
     EXTRACT_CURRENT_FROM_RELEASE(currentStr "${release}")
     EXTRACT_PREV_FROM_CHANGELOG(prevStr "${PRJ_VER}" "${changelog}")
