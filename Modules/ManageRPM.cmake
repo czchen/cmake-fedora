@@ -191,6 +191,7 @@ IF(NOT _manage_rpm_dependency_missing)
     SET(RPM_DIST_TAG "${_RPM_DIST_TAG}" CACHE STRING "RPM Dist Tag")
 
     SET(RPM_RELEASE_NO "1" CACHE STRING "RPM Release Number")
+    FILE(APPEND ${PRJ_INFO_CMAKE} "SET(RPM_RELEASE_NO \"${RPM_RELEASE_NO}\")")
 
     SET(RPM_BUILD_TOPDIR "${CMAKE_BINARY_DIR}" CACHE PATH "RPM topdir")
 
@@ -246,13 +247,13 @@ MACRO(MANAGE_RPM_SPEC)
 	COMMAND cmake -Dcmd=spec
             -Dspec=${_opt_SPEC}
             -Dspec_in=${_opt_SPEC_IN}
-	    -Dmanifests=${CMAKE_SOURCE_DIR}/install_manifest.txt
+	    -Dmanifests=${INSTALL_MANIFESTS_FILE}
 	    -Drelease=${RELEASE_NOTES_FILE}
 	    -Dpkg_name=${PROJECT_NAME}
 	    -Dprj_info=${PRJ_INFO_CMAKE}
 	    -P ${CMAKE_FEDORA_MODULE_DIR}/ManageRPMScript.cmake
 	    DEPENDS ${_opt_SPEC_IN} ${RELEASE_NOTES_FILE}
-	    ${CMAKE_SOURCE_DIR}/install_manifest.txt
+	    ${INSTALL_MANIFESTS_FILE}
 	    ${SOURCE_ARCHIVE_FILE}
 	    COMMENT "spec: ${_opt_SPEC}"
 	    )

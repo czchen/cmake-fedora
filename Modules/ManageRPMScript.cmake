@@ -8,7 +8,6 @@ MACRO(MANAGE_RPM_SCRIPT_PRINT_USAGE)
       -Dmanifests=<path/install_manifests.txt>
       -Drelease=<path/RELEASE-NOTES.txt>
       -Dprj_info=<path/prj_info.cmake>
-      -Dpkg_name=PACKAGE_NAME
       [\"-D<var>=<value>\"]
       -P <CmakeModulePath>/ManageRPMScript.cmake
     Make project spec file according to spec_in and CMakeCache.txt.   
@@ -17,7 +16,7 @@ MACRO(MANAGE_RPM_SCRIPT_PRINT_USAGE)
 
   cmake -Dcmd=spec_manifests
       -Dmanifests=<path/install_manifests.txt>
-      -Dpkg_name=PACKAGE_NAME
+      -Dprj_info=<path/prj_info.cmake>
       [\"-Dconfig_replace=<file1;file2>\"]
       [\"-D<var>=<value>\"]
       -P <CmakeModulePath>/ManageRPMScript.cmake
@@ -32,7 +31,6 @@ MACRO(MANAGE_RPM_SCRIPT_PRINT_USAGE)
       -Dmanifests=<path/install_manifests.txt>
       -Drelease=<path/RELEASE-NOTES.txt>
       -Dprj_info=<path/prj_info.cmake>
-      -Dpkg_name=PACKAGE_NAME
       [\"-D<var>=<value>\"]
       -P <CmakeModulePath>/ManageRPMScript.cmake
     Convert RELEASE-NOTES.txt to ChangeLog a SPEC file.
@@ -60,7 +58,7 @@ MACRO(MANIFEST_TO_STRING strVar manifestsFile)
     SET(_hasTranslation 0)
     FOREACH(_file ${_filesInManifests})
 	SET(_addToFileList 1)
-	STRING(REPLACE "${pkg_name}" "%{name}" _file "${_file}")
+	STRING(REPLACE "${PROJECT_NAME}" "%{name}" _file "${_file}")
 	IF("${_file}" MATCHES "^/usr/bin/")
 	    STRING(REGEX REPLACE "^/usr/bin/" "%{_bindir}/" _file ${_file})
 	ELSEIF("${_file}" MATCHES "^/usr/sbin/")
@@ -135,42 +133,21 @@ FUNCTION(SPEC_MANIFESTS)
 	MANAGE_RPM_SCRIPT_PRINT_USAGE()
 	M_MSG(${M_FATAL} "Requires \"-Dmanifests=<install_manifests.txt>\"")
     ENDIF()
-    IF(NOT pkg_name)
-	MANAGE_RPM_SCRIPT_PRINT_USAGE()
-	M_MSG(${M_FATAL} "Requires -Dpkg_name=<package_name>")
-    ENDIF()
     SET(RPM_FAKE_INSTALL_DIR "/tmp/cmake-fedora-fake-install")
     EXECUTE_PROCESS(COMMAND make DESTDIR=${RPM_FAKE_INSTALL_DIR} install)
     MANIFEST_TO_STRING(mStr ${manifests})
     M_OUT("${mStr}")
 ENDFUNCTION(SPEC_MANIFESTS)
 
-MACRO(LOAD_PRJ_INFO)
-    IF(NOT prj_info)
-	MANAGE_RPM_SCRIPT_PRINT_USAGE()
-	M_MSG(${M_FATAL} "Requires -Dprj_info=<prj_info.cmake>")
-    ENDIF()
-    INCLUDE(${prj_info} RESULT_VARIABLE prj_info_path)
-    IF(prj_info_path STREQUAL "NOTFOUND")
-	MESSAGE(SEND_ERROR "prj_info.cmake cannot be found")
-    ENDIF()
-ENDMACRO(LOAD_PRJ_INFO)
-
 MACRO(CHANGELOG_TO_STRING strVar)
-    FILE(STRINGS "${release}" _releaseLines)
-
-    SET(_changeItemSection 0)
-    SET(_changeLogThis "")
-    ## Parse release file
-    FOREACH(_line ${_releaseLines})
-	IF(_changeItemSection)
-	    ### Append lines in change section
-	    STRING_APPEND(_changeLogThis "${_line}" "\n")
-	ELSEIF("${_line}" MATCHES "^[[]Changes[]]")
-	    ### Start the change section
-	    SET(_changeItemSection 1)
-	ENDIF()
-    ENDFOREACH(_line ${_releaseLines})
+    EXECUTE_PROCESS(
+	COMMAND ${CMAKE_COMMAND}
+	-Dcmd=extract_current
+	-Drelease=${release}
+	-P ${CMAKE_FEDORA_MODULE_DIR}/ManageChangeLogScript.cmake
+	OUTPUT_VARIABLE _changeLogThis
+	OUTPUT_STRIP_TRAILING_WHITESPACE
+	)
 
     FIND_PROGRAM_ERROR_HANDLING(CMAKE_FEDORA_KOJI_CMD
 	FIND_ARGS NAMES cmake-fedora-koji
@@ -178,10 +155,10 @@ MACRO(CHANGELOG_TO_STRING strVar)
 	)
 
     SET(CMAKE_FEDORA_TMP_DIR "/tmp")
-    SET(RPM_CHANGELOG_TMP_FILE "${CMAKE_FEDORA_TMP_DIR}/${pkg_name}.changelog")
+    SET(RPM_CHANGELOG_TMP_FILE "${CMAKE_FEDORA_TMP_DIR}/${PROJECT_NAME}.changelog")
 
     EXECUTE_PROCESS(
-	COMMAND ${CMAKE_FEDORA_KOJI_CMD} newest-changelog "${pkg_name}" | tail -n +2
+	COMMAND ${CMAKE_FEDORA_KOJI_CMD} newest-changelog "${PROJECT_NAME}" | tail -n +2
 	OUTPUT_VARIABLE _changeLogPrev
 	OUTPUT_STRIP_TRAILING_WHITESPACE
 	)
@@ -197,11 +174,7 @@ FUNCTION(SPEC_CHANGELOG)
 	MANAGE_RPM_SCRIPT_PRINT_USAGE()
 	M_MSG(${M_FATAL} "Requires \"-Drelease=<RELEASE-NOTES.txt>\"")
     ENDIF()
-    IF(NOT pkg_name)
-	MANAGE_RPM_SCRIPT_PRINT_USAGE()
-	M_MSG(${M_FATAL} "Requires -Dpkg_name=<package_name>")
-    ENDIF()
-    LOAD_PRJ_INFO()
+    LOAD_PRJ_INFO(${prj_info})
     CHANGELOG_TO_STRING(_changeLogStr)
     M_OUT("${_changeLogStr}")
 ENDFUNCTION(SPEC_CHANGELOG)
@@ -355,15 +328,11 @@ FUNCTION(SPEC_MAKE)
 	MANAGE_RPM_SCRIPT_PRINT_USAGE()
 	M_MSG(${M_FATAL} "Requires \"-Drelease=<RELEASE-NOTES.txt>\"")
     ENDIF()
-    IF(NOT pkg_name)
-	MANAGE_RPM_SCRIPT_PRINT_USAGE()
-	M_MSG(${M_FATAL} "Requires -Dpkg_name=<package_name>")
-    ENDIF()
     IF(NOT prj_info)
 	MANAGE_RPM_SCRIPT_PRINT_USAGE()
 	M_MSG(${M_FATAL} "Requires -Dprj_info=<prj_info.cmake>")
     ENDIF()
-    LOAD_PRJ_INFO()
+    LOAD_PRJ_INFO(${prj_info})
     SPEC_WRITE_HEADER()
     MANIFEST_TO_STRING(RPM_SPEC_FILES_SECTION_OUTPUT ${manifests} ${_replaceList})
     CHANGELOG_TO_STRING(RPM_SPEC_CHANGELOG_SECTION_OUTPUT)
@@ -388,10 +357,13 @@ INCLUDE(ManageMessage RESULT_VARIABLE MANAGE_MODULE_PATH)
 IF(MANAGE_MODULE_PATH STREQUAL "NOTFOUND")
     MESSAGE(FATAL_ERROR "ManageMessage.cmake cannot be found in ${CMAKE_MODULE_PATH}")
 ENDIF()
+GET_FILENAME_COMPONENT(CMAKE_FEDORA_MODULE_DIR 
+    "${MANAGE_MODULE_PATH}" PATH)
 INCLUDE(ManageString)
 INCLUDE(ManageVariable)
 CMAKE_FEDORA_CONF_GET_ALL_VARIABLES()
 INCLUDE(DateTimeFormat)
+INCLUDE(ManageVersion)
 IF(NOT DEFINED cmd)
     MANAGE_RPM_SCRIPT_PRINT_USAGE()
 ELSE()

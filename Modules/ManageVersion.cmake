@@ -1,4 +1,4 @@
-# - Modules for manipulate versions
+# - Modules for manipulate versions and prj_info.cmake
 #
 # Includes:
 #   ManageVariable
@@ -6,6 +6,13 @@
 #
 # Included by:
 #   ManageArchive
+#
+# Defines following macros:
+#   LOAD_PRJ_INFO(<prjInfoFile>)
+#   - Load prj_info.cmake and get the info of projects.
+#     This macro is meant to be run by cmake script.
+#     Arguments:
+#     + prjInfoFile: Location of prj_info.cmake
 #
 # Defines following functions:
 #   RELEASE_NOTES_READ_FILE([releaseFile])
@@ -37,9 +44,18 @@ SET(_MANAGE_VERSION_CMAKE_ "DEFINED")
 INCLUDE(ManageMessage)
 INCLUDE(ManageVariable)
 
+MACRO(LOAD_PRJ_INFO prjInfoFile)
+    IF("${prjInfoFile}" STREQUAL "")
+	M_MSG(${M_EROR} "Requires prj_info.cmake")
+    ENDIF()
+    INCLUDE(${prjInfoFile} RESULT_VARIABLE prjInfoPath)
+    IF("${prjInfoPath}" STREQUAL "NOTFOUND")
+	M_MSG(${M_ERROR} "Failed to read ${prjInfoFile}")
+    ENDIF()
+ENDMACRO(LOAD_PRJ_INFO)
+
 FUNCTION(RELEASE_NOTES_READ_FILE)
     INCLUDE(ManageString)
-    SET_DIRECTORY_PROPERTIES(PROPERTIES CLEAN_NO_CUSTOM "1")
     FOREACH(_arg ${ARGN})
 	IF(EXISTS ${_arg})
 	    SET(RELEASE_NOTES_FILE ${_arg} CACHE FILEPATH "Release File")
@@ -89,5 +105,4 @@ FUNCTION(RELEASE_NOTES_READ_FILE)
     ENDFOREACH(_v)
 
 ENDFUNCTION(RELEASE_NOTES_READ_FILE)
-
 

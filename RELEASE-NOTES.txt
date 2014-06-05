@@ -3,8 +3,8 @@ SUMMARY=Support EPEL7; cmake-fedora-newprj
 is fixed; Fixed Bug 193336
 REDHAT_BUGZILLA=1002279,1093336
 [Changes]
-[TODO] Fix ChangeLog handling
 [TODO] Check ibus-chewing compatiblity
+[TODO] Check ibus-table-chinese compatiblity
 - Fixed Bug 1093336 - date(1): -u is much portable than --utc
 - Fix EPEL 7 support.
 
