@@ -78,11 +78,6 @@ FUNCTION(RELEASE_NOTES_READ_FILE)
 	ENDIF(_changeItemSection)
     ENDFOREACH(_line ${_release_lines})
 
-
-    SET_COMPILE_ENV(PRJ_DOC_DIR "${DOC_DIR}/${PROJECT_NAME}-${PRJ_VER}"
-	CACHE PATH "Project docdir prefix" FORCE
-	)
-
     # Write Project info to prj_info.cmake
     # So scripts like ManageChangeLogScript andManageRPMScript 
     # can retrieve project information

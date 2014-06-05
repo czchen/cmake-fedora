@@ -6,13 +6,14 @@ REDHAT_BUGZILLA=1002279,1093336
 [TODO] Fix ChangeLog handling
 [TODO] Check ibus-chewing compatiblity
 - Fixed Bug 1093336 - date(1): -u is much portable than --utc
+- Fix EPEL 7 support.
+
 - Enhancement:
   + No need to use MAKE_INSTALL_* for rpm files section.
     INSTALL at any place works.
   + Better handling of ChangeLog:
     - ChangeLog will only invoked before make pack_src or make changelog.
-  + find_lang and files -f .lang are added
-automatically when
+  + find_lang and files -f .lang are added automatically when
     translations exists.
   + New modules:
     - CmakeFedoraScript: Scripts to be invoked in command line.
@@ -25,7 +26,7 @@ automatically when
   + ManageFile: New function: MANAGE_FILE_EXPIRY
   + ManageMessage: New function: M_OUT
   + ManageVariable: New macro: CMAKE_FEDORA_CONF_GET_ALL_VARIABLES
-- Fix EPEL 7 support.
+
 - Removed:
   + Targets:
     - changelog_prev_update: 
@@ -36,3 +37,6 @@ automatically when
   + Variables:
     - PRJ_RPM_SPEC_FILE
 
+- Changed:
+  + PRJ_DOC_DIR: Changed from docdir/<PRJ_NAME>-<PRJ_VER> 
+    to docdir/<PRJ_NAME>
