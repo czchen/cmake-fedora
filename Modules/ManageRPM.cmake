@@ -50,6 +50,41 @@
 #     this module.
 #   RPM_FILES_SECTION_CONTENT: A list of string  
 #
+# Defines following Functions:
+#   RPM_SPEC_STRING_ADD(var str [position])
+#   - Add a string to SPEC string.
+#     * Parameters:
+#       + var: Variable that hold results in string format.
+#       + str: String to be added.
+#       + position: (Optional) position to put the tag. 
+#       Valid value: FRONT for inserting in the beginning.
+#       Default: Append in the end of string.
+#       of string.
+#
+#   RPM_SPEC_STRING_ADD_DIRECTIVE var directive attribute content)
+#   - Add a SPEC directive (e.g. %description -l zh_TW) to SPEC string.
+#     Parameters:
+#     + var: Variable that hold results in string format.
+#     + directive: Directive to be added.
+#     + attribute: Attribute of tag. That is, string between '()'
+#     + value: Value fot the tag.
+#     + position: (Optional) position to put the tag. 
+#       Valid value: FRONT for inserting in the beginning.
+#       Default: Append in the end of string.
+#       of string.
+#
+#   RPM_SPEC_STRING_ADD_TAG(var tag attribute value [position])
+#   - Add a SPEC tag (e.g. BuildArch: noarch) to SPEC string.
+#     Parameters:
+#     + var: Variable that hold results in string format.
+#     + tag: Tag to be added.
+#     + attribute: Attribute of tag. That is, string between '()'
+#     + value: Value fot the tag.
+#     + position: (Optional) position to put the tag. 
+#       Valid value: FRONT for inserting in the beginning.
+#       Default: Append in the end of string.
+#       of string.
+#
 # Defines following Macros:
 #   PACK_RPM([SPEC_IN specInFile] [SPEC specFile])
 #   - Generate spec and pack rpm  according to the spec file.
@@ -130,13 +165,6 @@ IF(NOT _manage_rpm_dependency_missing)
 	make ${RPM_SPEC_MAKE_FLAGS}"
 	)
 
-    SET(RPM_SPEC_INSTALL_OUTPUT
-	"rm -rf %{buildroot}
-	make install DESTDIR=%{buildroot}"
-	)
-
-    SET(RPM_SPEC_FILES_SECTION_OUTPUT "%defattr(-,root,root,-)")
-
     ## arch
     IF(BUILD_ARCH STREQUAL "noarch")
 	SET(RPM_BUILD_ARCH ${BUILD_ARCH})
@@ -157,7 +185,6 @@ IF(NOT _manage_rpm_dependency_missing)
     SET(RPM_DIST_TAG "${_RPM_DIST_TAG}" CACHE STRING "RPM Dist Tag")
 
     SET(RPM_RELEASE_NO "1" CACHE STRING "RPM Release Number")
-    FILE(APPEND ${PRJ_INFO_CMAKE} "SET(RPM_RELEASE_NO \"${RPM_RELEASE_NO}\")")
 
     SET(RPM_BUILD_TOPDIR "${CMAKE_BINARY_DIR}" CACHE PATH "RPM topdir")
 
@@ -179,6 +206,44 @@ IF(NOT _manage_rpm_dependency_missing)
     LIST(APPEND SOURCE_ARCHIVE_IGNORE_FILES ${RPM_IGNORE_FILES})
 
 ENDIF(NOT _manage_rpm_dependency_missing)
+
+FUNCTION(RPM_SPEC_STRING_ADD var str)
+    IF("${ARGN}" STREQUAL "FRONT")
+	STRING_PREPEND(${var} "${str}" "\n")
+	SET(pos "${ARGN}")
+    ELSE("${ARGN}" STREQUAL "FRONT")
+	STRING_APPEND(${var} "${str}" "\n")
+    ENDIF("${ARGN}" STREQUAL "FRONT")
+    SET(${var} "${${var}}" PARENT_SCOPE)
+ENDFUNCTION(RPM_SPEC_STRING_ADD var str)
+
+FUNCTION(RPM_SPEC_STRING_ADD_DIRECTIVE var directive attribute content)
+    SET(_str "%${directive}")
+    IF(NOT attribute STREQUAL "")
+	STRING_APPEND(_str " ${attribute}")
+    ENDIF(NOT attribute STREQUAL "")
+
+    IF(NOT content STREQUAL "")
+	STRING_APPEND(_str "\n${content}")
+    ENDIF(NOT content STREQUAL "")
+    STRING_APPEND(_str "\n")
+    RPM_SPEC_STRING_ADD(${var} "${_str}" ${ARGN})
+    SET(${var} "${${var}}" PARENT_SCOPE)
+ENDFUNCTION(RPM_SPEC_STRING_ADD_DIRECTIVE var directive attribute content)
+
+FUNCTION(RPM_SPEC_STRING_ADD_TAG var tag attribute value)
+    IF("${attribute}" STREQUAL "")
+	SET(_str "${tag}:")
+    ELSE("${attribute}" STREQUAL "")
+	SET(_str "${tag}(${attribute}):")
+    ENDIF("${attribute}" STREQUAL "")
+    STRING_PADDING(_str "${_str}" ${RPM_SPEC_TAG_PADDING})
+    STRING_APPEND(_str "${value}")
+    RPM_SPEC_STRING_ADD(${var} "${_str}" ${ARGN})
+    SET(${var} "${${var}}" PARENT_SCOPE)
+ENDFUNCTION(RPM_SPEC_STRING_ADD_TAG var tag attribute value)
+
+
 
 MACRO(MANAGE_RPM_SPEC)
     IF(NOT _opt_SPEC_IN)

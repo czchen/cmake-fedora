@@ -34,11 +34,6 @@ REDHAT_BUGZILLA=1002279,1093336
   + Scripts:
     - cmake-fedora-functions is no longer needed.
     - cmake-fedora-changelog is no longer needed.
-  + Macros:
-    - ManageRPM: Moved to ManageRPMScript
-      + RPM_SPEC_STRING_ADD
-      + RPM_SPEC_STRING_ADD_DIRECTIVE
-      + RPM_SPEC_STRING_ADD_TAG
   + Variables:
     - PRJ_RPM_SPEC_FILE
 

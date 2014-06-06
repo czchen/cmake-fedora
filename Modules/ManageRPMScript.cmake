@@ -174,77 +174,10 @@ FUNCTION(SPEC_CHANGELOG)
 	MANAGE_RPM_SCRIPT_PRINT_USAGE()
 	M_MSG(${M_FATAL} "Requires \"-Drelease=<RELEASE-NOTES.txt>\"")
     ENDIF()
-    LOAD_PRJ_INFO(${prj_info})
+    READ_PRJ_INFO_CMAKE(${prj_info})
     CHANGELOG_TO_STRING(_changeLogStr)
     M_OUT("${_changeLogStr}")
 ENDFUNCTION(SPEC_CHANGELOG)
-
-#   RPM_SPEC_STRING_ADD(var str [position])
-#   - Add a string to SPEC string.
-#     * Parameters:
-#       + var: Variable that hold results in string format.
-#       + str: String to be added.
-#       + position: (Optional) position to put the tag. 
-#       Valid value: FRONT for inserting in the beginning.
-#       Default: Append in the end of string.
-#       of string.
-FUNCTION(RPM_SPEC_STRING_ADD var str)
-    IF("${ARGN}" STREQUAL "FRONT")
-	STRING_PREPEND(${var} "${str}" "\n")
-	SET(pos "${ARGN}")
-    ELSE("${ARGN}" STREQUAL "FRONT")
-	STRING_APPEND(${var} "${str}" "\n")
-    ENDIF("${ARGN}" STREQUAL "FRONT")
-    SET(${var} "${${var}}" PARENT_SCOPE)
-ENDFUNCTION(RPM_SPEC_STRING_ADD var str)
-
-#   RPM_SPEC_STRING_ADD_DIRECTIVE var directive attribute content)
-#   - Add a SPEC directive (e.g. %description -l zh_TW) to SPEC string.
-#     Parameters:
-#     + var: Variable that hold results in string format.
-#     + directive: Directive to be added.
-#     + attribute: Attribute of tag. That is, string between '()'
-#     + value: Value fot the tag.
-#     + position: (Optional) position to put the tag. 
-#       Valid value: FRONT for inserting in the beginning.
-#       Default: Append in the end of string.
-#       of string.
-FUNCTION(RPM_SPEC_STRING_ADD_DIRECTIVE var directive attribute content)
-    SET(_str "%${directive}")
-    IF(NOT attribute STREQUAL "")
-	STRING_APPEND(_str " ${attribute}")
-    ENDIF(NOT attribute STREQUAL "")
-
-    IF(NOT content STREQUAL "")
-	STRING_APPEND(_str "\n${content}")
-    ENDIF(NOT content STREQUAL "")
-    STRING_APPEND(_str "\n")
-    RPM_SPEC_STRING_ADD(${var} "${_str}" ${ARGN})
-    SET(${var} "${${var}}" PARENT_SCOPE)
-ENDFUNCTION(RPM_SPEC_STRING_ADD_DIRECTIVE var directive attribute content)
-
-#   RPM_SPEC_STRING_ADD_TAG(var tag attribute value [position])
-#   - Add a SPEC tag (e.g. BuildArch: noarch) to SPEC string.
-#     Parameters:
-#     + var: Variable that hold results in string format.
-#     + tag: Tag to be added.
-#     + attribute: Attribute of tag. That is, string between '()'
-#     + value: Value fot the tag.
-#     + position: (Optional) position to put the tag. 
-#       Valid value: FRONT for inserting in the beginning.
-#       Default: Append in the end of string.
-#       of string.
-FUNCTION(RPM_SPEC_STRING_ADD_TAG var tag attribute value)
-    IF("${attribute}" STREQUAL "")
-	SET(_str "${tag}:")
-    ELSE("${attribute}" STREQUAL "")
-	SET(_str "${tag}(${attribute}):")
-    ENDIF("${attribute}" STREQUAL "")
-    STRING_PADDING(_str "${_str}" ${RPM_SPEC_TAG_PADDING})
-    STRING_APPEND(_str "${value}")
-    RPM_SPEC_STRING_ADD(${var} "${_str}" ${ARGN})
-    SET(${var} "${${var}}" PARENT_SCOPE)
-ENDFUNCTION(RPM_SPEC_STRING_ADD_TAG var tag attribute value)
 
 # Not exactly a header, but the first half
 MACRO(SPEC_WRITE_HEADER)
@@ -363,7 +296,7 @@ FUNCTION(SPEC_MAKE)
 	MANAGE_RPM_SCRIPT_PRINT_USAGE()
 	M_MSG(${M_FATAL} "Requires -Dprj_info=<prj_info.cmake>")
     ENDIF()
-    LOAD_PRJ_INFO(${prj_info})
+    READ_PRJ_INFO_CMAKE(${prj_info})
     SPEC_WRITE_HEADER()
     MANIFEST_TO_STRING(RPM_SPEC_FILES_SECTION_OUTPUT ${manifests} ${_replaceList})
     CHANGELOG_TO_STRING(RPM_SPEC_CHANGELOG_SECTION_OUTPUT)
@@ -395,6 +328,8 @@ INCLUDE(ManageVariable)
 CMAKE_FEDORA_CONF_GET_ALL_VARIABLES()
 INCLUDE(DateTimeFormat)
 INCLUDE(ManageVersion)
+INCLUDE(ManageRPM)
+
 IF(NOT DEFINED cmd)
     MANAGE_RPM_SCRIPT_PRINT_USAGE()
 ELSE()
