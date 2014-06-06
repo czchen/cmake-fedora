@@ -51,40 +51,6 @@
 #   RPM_FILES_SECTION_CONTENT: A list of string  
 #
 # Defines following Macros:
-#   RPM_SPEC_STRING_ADD(var str [position])
-#   - Add a string to SPEC string.
-#     * Parameters:
-#       + var: Variable that hold results in string format.
-#       + str: String to be added.
-#       + position: (Optional) position to put the tag. 
-#       Valid value: FRONT for inserting in the beginning.
-#       Default: Append in the end of string.
-#       of string.
-#
-#   RPM_SPEC_STRING_ADD_DIRECTIVE var directive attribute content)
-#   - Add a SPEC directive (e.g. %description -l zh_TW) to SPEC string.
-#     Parameters:
-#     + var: Variable that hold results in string format.
-#     + directive: Directive to be added.
-#     + attribute: Attribute of tag. That is, string between '()'
-#     + value: Value fot the tag.
-#     + position: (Optional) position to put the tag. 
-#       Valid value: FRONT for inserting in the beginning.
-#       Default: Append in the end of string.
-#       of string.
-#
-#   RPM_SPEC_STRING_ADD_TAG(var tag attribute value [position])
-#   - Add a SPEC tag (e.g. BuildArch: noarch) to SPEC string.
-#     Parameters:
-#     + var: Variable that hold results in string format.
-#     + tag: Tag to be added.
-#     + attribute: Attribute of tag. That is, string between '()'
-#     + value: Value fot the tag.
-#     + position: (Optional) position to put the tag. 
-#       Valid value: FRONT for inserting in the beginning.
-#       Default: Append in the end of string.
-#       of string.
-#
 #   PACK_RPM([SPEC_IN specInFile] [SPEC specFile])
 #   - Generate spec and pack rpm  according to the spec file.
 #     Parameters:

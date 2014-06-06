@@ -179,6 +179,15 @@ FUNCTION(SPEC_CHANGELOG)
     M_OUT("${_changeLogStr}")
 ENDFUNCTION(SPEC_CHANGELOG)
 
+#   RPM_SPEC_STRING_ADD(var str [position])
+#   - Add a string to SPEC string.
+#     * Parameters:
+#       + var: Variable that hold results in string format.
+#       + str: String to be added.
+#       + position: (Optional) position to put the tag. 
+#       Valid value: FRONT for inserting in the beginning.
+#       Default: Append in the end of string.
+#       of string.
 FUNCTION(RPM_SPEC_STRING_ADD var str)
     IF("${ARGN}" STREQUAL "FRONT")
 	STRING_PREPEND(${var} "${str}" "\n")
@@ -189,6 +198,17 @@ FUNCTION(RPM_SPEC_STRING_ADD var str)
     SET(${var} "${${var}}" PARENT_SCOPE)
 ENDFUNCTION(RPM_SPEC_STRING_ADD var str)
 
+#   RPM_SPEC_STRING_ADD_DIRECTIVE var directive attribute content)
+#   - Add a SPEC directive (e.g. %description -l zh_TW) to SPEC string.
+#     Parameters:
+#     + var: Variable that hold results in string format.
+#     + directive: Directive to be added.
+#     + attribute: Attribute of tag. That is, string between '()'
+#     + value: Value fot the tag.
+#     + position: (Optional) position to put the tag. 
+#       Valid value: FRONT for inserting in the beginning.
+#       Default: Append in the end of string.
+#       of string.
 FUNCTION(RPM_SPEC_STRING_ADD_DIRECTIVE var directive attribute content)
     SET(_str "%${directive}")
     IF(NOT attribute STREQUAL "")
@@ -203,6 +223,17 @@ FUNCTION(RPM_SPEC_STRING_ADD_DIRECTIVE var directive attribute content)
     SET(${var} "${${var}}" PARENT_SCOPE)
 ENDFUNCTION(RPM_SPEC_STRING_ADD_DIRECTIVE var directive attribute content)
 
+#   RPM_SPEC_STRING_ADD_TAG(var tag attribute value [position])
+#   - Add a SPEC tag (e.g. BuildArch: noarch) to SPEC string.
+#     Parameters:
+#     + var: Variable that hold results in string format.
+#     + tag: Tag to be added.
+#     + attribute: Attribute of tag. That is, string between '()'
+#     + value: Value fot the tag.
+#     + position: (Optional) position to put the tag. 
+#       Valid value: FRONT for inserting in the beginning.
+#       Default: Append in the end of string.
+#       of string.
 FUNCTION(RPM_SPEC_STRING_ADD_TAG var tag attribute value)
     IF("${attribute}" STREQUAL "")
 	SET(_str "${tag}:")

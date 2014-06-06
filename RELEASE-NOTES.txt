@@ -27,12 +27,17 @@ REDHAT_BUGZILLA=1002279,1093336
   + ManageVariable: New macro: CMAKE_FEDORA_CONF_GET_ALL_VARIABLES
 
 - Removed:
+  + cmake-fedora.conf.in is no longer need.  
   + Targets:
     - changelog_prev_update: 
   + Scripts:
     - cmake-fedora-functions is no longer needed.
     - cmake-fedora-changelog is no longer needed.
-  + cmake-fedora.conf.in is no longer need.  
+  + Macros:
+    - ManageRPM: Moved to ManageRPMScript
+      + RPM_SPEC_STRING_ADD
+      + RPM_SPEC_STRING_ADD_DIRECTIVE
+      + RPM_SPEC_STRING_ADD_TAG
   + Variables:
     - PRJ_RPM_SPEC_FILE
 
