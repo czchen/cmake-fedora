@@ -17,20 +17,20 @@ SET(MANAGE_MESSAGE_LEVEL 5 CACHE STRING "Message (Verbose) Level")
 # Project specific information
 #
 PROJECT(cmake-fedora NONE)
-SET(PRJ_SUMMARY "CMake helper modules for fedora developers" CACHE STRING "Summary")
+SET(PRJ_SUMMARY "CMake helper modules for fedora developers")
 
 SET(PRJ_DESCRIPTION
 "cmake-fedora consist a set of cmake modules that provides
 helper macros and targets for fedora developers."
     )
-SET(AUTHORS "Ding-Yi Chen" CACHE STRING "Authors")
-SET(MAINTAINER "Ding-Yi Chen <dchen at redhat.com>" CACHE STRING "Maintainer")
-SET(VENDOR "Red Hat, APAC, Inc." CACHE STRING "Vendor")
-SET(LICENSE BSD CACHE STRING "License")
-SET(PRJ_GROUP "System Environment/Libraries" CACHE STRING "Group")
+SET(AUTHORS "Ding-Yi Chen")
+SET(MAINTAINER "Ding-Yi Chen <dchen at redhat.com>")
+SET(VENDOR "Red Hat, APAC, Inc.")
+SET(LICENSE BSD)
+SET(PRJ_GROUP "System Environment/Libraries")
 SET(BUILD_ARCH "noarch")
-SET(RPM_SPEC_URL "https://fedorahosted.org/%{name}/" CACHE STRING "URL")
-SET(RPM_SPEC_SOURCES "https://fedorahosted.org/releases/c/m/%{name}/%{name}-%{version}-Source.tar.gz" CACHE STRING "Sources Download URL")
+SET(RPM_SPEC_URL "https://fedorahosted.org/%{name}/")
+SET(RPM_SPEC_SOURCES "https://fedorahosted.org/releases/c/m/%{name}/%{name}-%{version}-Source.tar.gz")
 
 ####################################################################
 # Includes
@@ -74,7 +74,7 @@ MANAGE_DEPENDENCY(BUILD_REQUIRES CMAKE VER "2.6.2" REQUIRED)
 
 MANAGE_SOURCE_VERSION_CONTROL_GIT()
 
-MANAGE_FILE_INSTALL(PRJ_DOC AUTHORS README ChangeLog COPYING TODO)
+MANAGE_FILE_INSTALL(PRJ_DOC AUTHORS README ChangeLog COPYING)
 MANAGE_FILE_INSTALL(SYSCONF cmake-fedora.conf) 
 
 ADD_SUBDIRECTORY(Modules)
@@ -85,23 +85,17 @@ ADD_SUBDIRECTORY(Templates)
 # Packing
 #
 
-INCLUDE(ManageRPM)
-IF(RPM_BUILD_SOURCES)
-    SET(SOURCE_ARCHIVE_DIR ${RPM_BUILD_SOURCES})
-ELSE(RPM_BUILD_SOURCES)
-    SET(SOURCE_ARCHIVE_DIR ${CMAKE_BINARY_DIR}/SOURCES)
-ENDIF(RPM_BUILD_SOURCES)
-
-INCLUDE(ManageRelease)
-
-IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
-    INCLUDE(ManageRPM)
-    INCLUDE(ManageReleaseFedora)
-ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
-
+## Pack Source 
+SET(SOURCE_ARCHIVE_DIR ${CMAKE_BINARY_DIR}/SOURCES CACHE PATH "Source Archive Dir")
 PACK_SOURCE_ARCHIVE("${SOURCE_ARCHIVE_DIR}"
     GITIGNORE ${CMAKE_SOURCE_DIR}/.gitignore
     )
+
+IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
+    SET(RPM_BUILD_SOURCES ${SOURCE_ARCHIVE_DIR})
+    INCLUDE(ManageRPM)
+    PACK_RPM(SPEC_IN "Templates/fedora/project.spec.in")
+ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
 
 ####################################################################
 # Hosting and Release
@@ -136,12 +130,13 @@ ADD_DEPENDENCIES(upload upload_fedorahosted_modules)
 ####################################################################
 # Release
 #
+
 ADD_DEPENDENCIES(upload tag_push)
+INCLUDE(ManageRelease)
 IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
-    PACK_RPM(SPEC_IN "Templates/fedora/project.spec.in")
+    INCLUDE(ManageReleaseFedora)
     RELEASE_FEDORA(fedora epel)
     # "Off" Warning is displayed if mock is not installed.
-    RPM_MOCK_BUILD()
     MANAGE_RELEASE(upload release_fedora)
 ELSE(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
     MANAGE_RELEASE(upload)

@@ -8,7 +8,7 @@
 #   ManageArchive
 #
 # Defines following macros:
-#   LOAD_PRJ_INFO(<prjInfoFile>)
+#   READ_PRJ_INFO_CMAKE(<prjInfoFile>)
 #   - Load prj_info.cmake and get the info of projects.
 #     This macro is meant to be run by cmake script.
 #     Arguments:
@@ -44,7 +44,13 @@ SET(_MANAGE_VERSION_CMAKE_ "DEFINED")
 INCLUDE(ManageMessage)
 INCLUDE(ManageVariable)
 
-MACRO(LOAD_PRJ_INFO prjInfoFile)
+SET(PRJ_INFO_VARIABLE_LIST 
+    PROJECT_NAME PRJ_VER PRJ_SUMMARY SUMMARY_TRANSLATION
+    PRJ_DESCRIPTION LICENSE PRJ_GROUP MAINTAINER AUTHORS VENDER
+    BUILD_ARCH RPM_SPEC_URL RPM_SPEC_SOURCES BUILD_REQUIRES REQUIRES
+    )
+
+MACRO(READ_PRJ_INFO_CMAKE prjInfoFile)
     IF("${prjInfoFile}" STREQUAL "")
 	M_MSG(${M_EROR} "Requires prj_info.cmake")
     ENDIF()
@@ -52,7 +58,21 @@ MACRO(LOAD_PRJ_INFO prjInfoFile)
     IF("${prjInfoPath}" STREQUAL "NOTFOUND")
 	M_MSG(${M_ERROR} "Failed to read ${prjInfoFile}")
     ENDIF()
-ENDMACRO(LOAD_PRJ_INFO)
+ENDMACRO(READ_PRJ_INFO_CMAKE)
+
+MACRO(APPEND_PRJ_INFO_CMAKE prjInfoFile var)
+    FILE(APPEND ${prjInfoFile} "SET(${_v} \"${${_v}}\")\n")
+ENDMACRO(APPEND_PRJ_INFO_CMAKE)
+
+# Write Project info to prj_info.cmake
+# So scripts like ManageChangeLogScript andManageRPMScript 
+# can retrieve project information
+MACRO(WRITE_PRJ_INFO_CMAKE prjInfoFile)
+    FILE(REMOVE ${prjInfoFile})
+    FOREACH(_v ${PRJ_INFO_VARIABLE_LIST})
+	APPEND_PRJ_INFO_CMAKE("${prjInfoFile}" _v)
+    ENDFOREACH(_v)
+ENDMACRO(WRITE_PRJ_INFO_CMAKE prjInfoFile)
 
 FUNCTION(RELEASE_NOTES_READ_FILE)
     INCLUDE(ManageString)
@@ -94,15 +114,9 @@ FUNCTION(RELEASE_NOTES_READ_FILE)
 	ENDIF(_changeItemSection)
     ENDFOREACH(_line ${_release_lines})
 
-    # Write Project info to prj_info.cmake
-    # So scripts like ManageChangeLogScript andManageRPMScript 
-    # can retrieve project information
     SET(PRJ_INFO_CMAKE "${CMAKE_FEDORA_TMP_DIR}/prj_info.cmake"
 	CACHE FILEPATH "prj_info.cmake")
-    FILE(WRITE ${PRJ_INFO_CMAKE} "SET(PROJECT_NAME \"${PROJECT_NAME}\")\n")
-    FOREACH(_v PRJ_VER RPM_RELEASE_NO PRJ_SUMMARY PRJ_DESCRIPTION LICENSE PRJ_GROUP MAINTAINER AUTHORS VENDOR BUILD_ARCH  RPM_SPEC_URL RPM_SPEC_SOURCES BUILD_REQUIRES REQUIRES)
-	FILE(APPEND ${PRJ_INFO_CMAKE} "SET(${_v} \"${${_v}}\")\n")
-    ENDFOREACH(_v)
 
+    WRITE_PRJ_INFO_CMAKE(${PRJ_INFO_CMAKE})
 ENDFUNCTION(RELEASE_NOTES_READ_FILE)
 
