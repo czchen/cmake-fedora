@@ -61,7 +61,9 @@ MACRO(READ_PRJ_INFO_CMAKE prjInfoFile)
 ENDMACRO(READ_PRJ_INFO_CMAKE)
 
 MACRO(APPEND_PRJ_INFO_CMAKE prjInfoFile var)
-    FILE(APPEND ${prjInfoFile} "SET(${_v} \"${${_v}}\")\n")
+    IF(NOT "${${var}}" STREQUAL "")
+	FILE(APPEND ${prjInfoFile} "SET(${_v} \"${${_v}}\")\n")
+    ENDIF(NOT "${${var}}" STREQUAL "")
 ENDMACRO(APPEND_PRJ_INFO_CMAKE)
 
 # Write Project info to prj_info.cmake
