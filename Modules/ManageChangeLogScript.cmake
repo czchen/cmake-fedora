@@ -131,7 +131,7 @@ MACRO(EXTRACT_PREV_FROM_CHANGELOG strVar ver changeLogFile)
 ENDMACRO()
 
 MACRO(CHANGELOG_UPDATE prj_info release changelog)
-    READ_PRJ_INFO_CMAKE("${prj_info}")
+    PRJ_INFO_CMAKE_READ("${prj_info}")
 
     EXTRACT_CURRENT_FROM_RELEASE(currentStr "${release}")
     EXTRACT_PREV_FROM_CHANGELOG(prevStr "${PRJ_VER}" "${changelog}")

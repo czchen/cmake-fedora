@@ -7,13 +7,6 @@
 # Included by:
 #   ManageArchive
 #
-# Defines following macros:
-#   READ_PRJ_INFO_CMAKE(<prjInfoFile>)
-#   - Load prj_info.cmake and get the info of projects.
-#     This macro is meant to be run by cmake script.
-#     Arguments:
-#     + prjInfoFile: Location of prj_info.cmake
-#
 # Defines following functions:
 #   RELEASE_NOTES_READ_FILE([releaseFile])
 #   - Load release file information.
@@ -36,6 +29,18 @@
 #     + PRJ_DOC_DIR: Documentation for the project.
 #       Default: ${DOC_DIR}/${PROJECT_NAME}-${PRJ_VER}
 #
+#   PRJ_INFO_CMAKE_APPEND(<prjInfoFile> <var>)
+#   - Append  var to prj_info.cmake.
+#     Arguments:
+#     + prjInfoFile: Location of prj_info.cmake
+#     + var: Variable to be processed.
+#
+#   PRJ_INFO_CMAKE_READ(<prjInfoFile>)
+#   - Read prj_info.cmake and get the info of projects.
+#     This macro is meant to be run by cmake script.
+#     Arguments:
+#     + prjInfoFile: Location of prj_info.cmake
+#
 
 IF(DEFINED _MANAGE_VERSION_CMAKE_)
     RETURN()
@@ -50,7 +55,13 @@ SET(PRJ_INFO_VARIABLE_LIST
     BUILD_ARCH RPM_SPEC_URL RPM_SPEC_SOURCES BUILD_REQUIRES REQUIRES
     )
 
-MACRO(READ_PRJ_INFO_CMAKE prjInfoFile)
+FUNCTION(PRJ_INFO_CMAKE_APPEND prjInfoFile var)
+    IF(NOT "${${var}}" STREQUAL "")
+	FILE(APPEND ${prjInfoFile} "SET(${var} \"${${var}}\")\n")
+    ENDIF(NOT "${${var}}" STREQUAL "")
+ENDFUNCTION(PRJ_INFO_CMAKE_APPEND)
+
+FUNCTION(PRJ_INFO_CMAKE_READ prjInfoFile)
     IF("${prjInfoFile}" STREQUAL "")
 	M_MSG(${M_EROR} "Requires prj_info.cmake")
     ENDIF()
@@ -58,23 +69,17 @@ MACRO(READ_PRJ_INFO_CMAKE prjInfoFile)
     IF("${prjInfoPath}" STREQUAL "NOTFOUND")
 	M_MSG(${M_ERROR} "Failed to read ${prjInfoFile}")
     ENDIF()
-ENDMACRO(READ_PRJ_INFO_CMAKE)
-
-MACRO(APPEND_PRJ_INFO_CMAKE prjInfoFile var)
-    IF(NOT "${${var}}" STREQUAL "")
-	FILE(APPEND ${prjInfoFile} "SET(${_v} \"${${_v}}\")\n")
-    ENDIF(NOT "${${var}}" STREQUAL "")
-ENDMACRO(APPEND_PRJ_INFO_CMAKE)
+ENDFUNCTION(PRJ_INFO_CMAKE_READ)
 
 # Write Project info to prj_info.cmake
 # So scripts like ManageChangeLogScript andManageRPMScript 
 # can retrieve project information
-MACRO(WRITE_PRJ_INFO_CMAKE prjInfoFile)
+FUNCTION(PRJ_INFO_CMAKE_WRITE prjInfoFile)
     FILE(REMOVE ${prjInfoFile})
     FOREACH(_v ${PRJ_INFO_VARIABLE_LIST})
-	APPEND_PRJ_INFO_CMAKE("${prjInfoFile}" _v)
+	PRJ_INFO_CMAKE_APPEND("${prjInfoFile}" ${_v})
     ENDFOREACH(_v)
-ENDMACRO(WRITE_PRJ_INFO_CMAKE prjInfoFile)
+ENDFUNCTION(PRJ_INFO_CMAKE_WRITE prjInfoFile)
 
 FUNCTION(RELEASE_NOTES_READ_FILE)
     INCLUDE(ManageString)
@@ -119,6 +124,6 @@ FUNCTION(RELEASE_NOTES_READ_FILE)
     SET(PRJ_INFO_CMAKE "${CMAKE_FEDORA_TMP_DIR}/prj_info.cmake"
 	CACHE FILEPATH "prj_info.cmake")
 
-    WRITE_PRJ_INFO_CMAKE(${PRJ_INFO_CMAKE})
+    PRJ_INFO_CMAKE_WRITE(${PRJ_INFO_CMAKE})
 ENDFUNCTION(RELEASE_NOTES_READ_FILE)
 
