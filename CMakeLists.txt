@@ -140,9 +140,9 @@ IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
     INCLUDE(ManageReleaseFedora)
     RELEASE_FEDORA(fedora epel)
     # "Off" Warning is displayed if mock is not installed.
-    MANAGE_RELEASE(upload release_fedora)
+    MANAGE_RELEASE(upload tag_push release_fedora)
 ELSE(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
-    MANAGE_RELEASE(upload)
+    MANAGE_RELEASE(upload tag_push)
 ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
 
 ####################################################################

@@ -30,9 +30,11 @@ SET(LICENSE "<PRJ_LICENSE>")
 
 # Groups as in /usr/share/doc/GROUPS
 SET(PRJ_GROUP "<PRJ_GROUP>")
+
+# Uncommend for noarch project
+#SET(BUILD_ARCH "noarch")
 SET(RPM_SPEC_URL "<RPM_SPEC_URL>")
 SET(RPM_SPEC_SOURCES "<RPM_SPEC_SOURCE_URL>/%{name}-%{version}-Source.tar.gz")
-#SET(HAS_TRANSLATION 1)
 
 ####################################################################
 # Includes
@@ -66,28 +68,32 @@ IF(MANAGE_ENVIRONMENT_PATH STREQUAL "NOTFOUND")
     tar zxvf SOURCES/cmake-fedora-modules-only-latest.tar.gz")
 ENDIF(MANAGE_ENVIRONMENT_PATH STREQUAL "NOTFOUND")
 
-INCLUDE(ManageMessage)
 INCLUDE(ManageVersion)
 RELEASE_NOTES_READ_FILE()
+INCLUDE(ManageArchive)
 INCLUDE(ManageFile)
 INCLUDE(ManageSourceVersionControl)
+INCLUDE(ManageTarget)
+INCLUDE(ManageTranslation)
 INCLUDE(ManageUninstall)
-INCLUDE(ManageVariable)
-INCLUDE(ManageDependency)
+ENABLE_TESTING()
 
 ####################################################################
 # Dependencies
 #
 
+INCLUDE(ManageDependency)
 ## Requires
 # MANAGE_DEPENDENCY(REQUIRES PACKAGE1 REQUIRED)
 # MANAGE_DEPENDENCY(REQUIRES PACKAGE2 VER PACKAGE2_MIN_VER REQUIRED 
 #   FEDORA_NAME "PACKAGE2_NAME_IN_FEDORA")
 
 ## Build requires
-# MANAGE_DEPENDENCY(REQUIRES PACKAGE3 REQUIRED)
-# MANAGE_DEPENDENCY(REQUIRES PACKAGE4 VER PACKAGE2_MIN_VER REQUIRED 
+# MANAGE_DEPENDENCY(BUILD_REQUIRES PACKAGE3 REQUIRED)
+# MANAGE_DEPENDENCY(BUILD_REQUIRES PACKAGE4 VER PACKAGE4_MIN_VER REQUIRED 
 #   FEDORA_NAME "PACKAGE4_NAME_IN_FEDORA")
+# MANAGE_DEPENDENCY(BUILD_REQUIRES PACKAGE5 VER PACKAGE5_MIN_VER REQUIRED 
+#   DEVEL)
 
 ####################################################################
 # Building
@@ -100,7 +106,7 @@ INCLUDE(ManageDependency)
 #
 
 MANAGE_SOURCE_VERSION_CONTROL_<PRJ_SOURCE_VERSION_CONTROL>()
-MANAGE_FILE_INSTALL(PRJ_DOC <PRJ_LICENSE_FILES> ChangeLog )
+INSTALL(FILES AUTHORS README ChangeLog COPYING DESTINATION ${PRJ_DOC_DIR})
 
 ## Schemas
 #SET(GCONF_SCHEMAS_FILE ${IBUS_CHEWING_SCHEMAS})
@@ -108,43 +114,42 @@ MANAGE_FILE_INSTALL(PRJ_DOC <PRJ_LICENSE_FILES> ChangeLog )
 ####################################################################
 # Packing
 #
-INCLUDE(ManageArchive)
-PACK_SOURCE_ARCHIVE(${RPM_BUILD_SOURCES}
+
+## Pack Source 
+SET(SOURCE_ARCHIVE_DIR ${CMAKE_BINARY_DIR}/SOURCES CACHE PATH "Source Archive Dir")
+PACK_SOURCE_ARCHIVE("${SOURCE_ARCHIVE_DIR}"
     GITIGNORE ${CMAKE_SOURCE_DIR}/.gitignore
     )
 
-INCLUDE(ManageRelease)
-SET(SOURCE_ARCHIVE_DIR ".")
-SET(_release_targets "tag_push")
+## Pack RPM
 IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
-    SET(RPM_BUILD_TOPDIR ${CMAKE_BINARY_DIR}/rpm CACHE FILEPATH "RPM top dir")
-    SET(RPM_BUILD_SOURCES ${CMAKE_BINARY_DIR} CACHE FILEPATH "RPM Source dir")
+    SET(RPM_BUILD_SOURCES ${SOURCE_ARCHIVE_DIR})
     INCLUDE(ManageRPM)
-    INCLUDE(ManageReleaseFedora)
-    PACK_RPM()
-    RELEASE_FEDORA(fedora)
-    # "Off" Warning is displayed if mock is not installed.
+    PACK_RPM(SPEC_IN "SPECS/project.spec.in")
     RPM_MOCK_BUILD()
-    LIST(APPEND _releaset_targets "release_fedora")
 ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
-MANAGE_RELEASE(${_release_targets})
 
 ####################################################################
 # Hosting and Release
 #
 
-INCLUDE(ManageUpload)
-# Uncomment the following if you have setup the upload target
+#INCLUDE(ManageUpload)
 #ADD_CUSTOM_TARGET(upload
 #    COMMENT "Uploading all files"
 #    )
 
-# Uncomment the following if the project is hosted on fedorahost
-#MANAGE_UPLOAD_FEDORAHOSTED(upload_fedorahosted_src 
-#    UPLOAD_FILES ${SOURCE_ARCHIVE_FILE}
-#    )
-#
-#ADD_DEPENDENCIES(upload upload_fedorahosted_src)
+#MANAGE_UPLOAD_CMD(scp src UPLOAD_FILES ${SOURCE_ARCHIVE_FILE})
+#ADD_DEPENDENCIES(upload upload_src)
+
+INCLUDE(ManageRelease)
+IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
+    INCLUDE(ManageReleaseFedora)
+    RELEASE_FEDORA(fedora el6)
+    # "Off" Warning is displayed if mock is not installed.
+    MANAGE_RELEASE(tag_push release_fedora)
+ELSE(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
+    MANAGE_RELEASE(tag_push)
+ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
 
 ####################################################################
 # Custom
@@ -153,6 +158,6 @@ INCLUDE(ManageUpload)
 ####################################################################
 # Test Suites.
 #
-#ENABLE_TESTING()
+
 #ADD_TEST("Test" test_cmd1)
 
