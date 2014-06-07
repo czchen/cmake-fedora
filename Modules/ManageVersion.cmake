@@ -35,6 +35,7 @@
 #     + prjInfoFile: Location of prj_info.cmake
 #     + var: Variable to be processed.
 #
+# Defines following macros:
 #   PRJ_INFO_CMAKE_READ(<prjInfoFile>)
 #   - Read prj_info.cmake and get the info of projects.
 #     This macro is meant to be run by cmake script.
@@ -61,7 +62,7 @@ FUNCTION(PRJ_INFO_CMAKE_APPEND prjInfoFile var)
     ENDIF(NOT "${${var}}" STREQUAL "")
 ENDFUNCTION(PRJ_INFO_CMAKE_APPEND)
 
-FUNCTION(PRJ_INFO_CMAKE_READ prjInfoFile)
+MACRO(PRJ_INFO_CMAKE_READ prjInfoFile)
     IF("${prjInfoFile}" STREQUAL "")
 	M_MSG(${M_EROR} "Requires prj_info.cmake")
     ENDIF()
@@ -69,7 +70,7 @@ FUNCTION(PRJ_INFO_CMAKE_READ prjInfoFile)
     IF("${prjInfoPath}" STREQUAL "NOTFOUND")
 	M_MSG(${M_ERROR} "Failed to read ${prjInfoFile}")
     ENDIF()
-ENDFUNCTION(PRJ_INFO_CMAKE_READ)
+ENDMACRO(PRJ_INFO_CMAKE_READ)
 
 # Write Project info to prj_info.cmake
 # So scripts like ManageChangeLogScript andManageRPMScript 
