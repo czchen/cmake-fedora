@@ -191,7 +191,7 @@ MACRO(SPEC_WRITE_HEADER)
 	    SET(_lang "${_sT}")
 	ELSE(_lang STREQUAL "")
 	    RPM_SPEC_STRING_ADD_TAG(RPM_SPEC_SUMMARY_OUTPUT
-		"Summary" "${lang}" "${PRJ_SUMMARY}"
+		"Summary" "${_lang}" "${_sT}"
 		)
 	    SET(_lang "")
 	ENDIF(_lang STREQUAL "")
