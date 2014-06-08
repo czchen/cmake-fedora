@@ -309,8 +309,10 @@ FUNCTION(MANAGE_CMAKE_FEDORA_CONF var)
 	FIND_ARGS NAMES cmake-fedora.conf 
 	PATHS ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/cmake-fedora
 	. cmake-fedora /etc 
-	${CMAKE_SOURCE_DIR}/../../../
+	${CMAKE_SOURCE_DIR}/../../..
 	${CMAKE_SOURCE_DIR}/../../../cmake-fedora
+	${CMAKE_SOURCE_DIR}/../..
+	${CMAKE_SOURCE_DIR}/../../cmake-fedora
 	)
     SET(${var} "${${var}}" PARENT_SCOPE)
 ENDFUNCTION(MANAGE_CMAKE_FEDORA_CONF var)
