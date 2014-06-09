@@ -128,7 +128,7 @@ echo "BODHI_USER=$BODHI_USER"
 
 WORK_DIR=${FEDPKG_DIR:-$PWD}
 MSG=
-BUGS=
+BODHI_OPTS=
 UPDATE_TYPE=
 
 while getopts "hb:d:m:t:" opt;do
@@ -167,7 +167,7 @@ else
 fi
 
 if [[ -n "$BUGS" ]];then
-    BUGS="--bugs $BUGS"
+    BODHI_OPTS+=" --bugs $BUGS"
 fi
 
 if [[ ! -w $WORK_DIR ]];then
@@ -272,13 +272,7 @@ for b in `$CMAKE_FEDORA_KOJI_CMD git-branch $@ | xargs `;do
 done
 
 if [[ -n "$bodhiPushList" ]];then
-    if [ -n "$BUGS" ];then
-	echo "Running bodhi -n -b $BUGS -t $UPDATE_TYPE -u $BODHI_USER -N \"$CHANGELOGTEXT\" -R testing $bodhiPushList" > /dev/stderr
-	bodhi -n -b $BUGS -t $UPDATE_TYPE -u $BODHI_USER -N "$CHANGELOGTEXT" -R testing $bodhiPushList
-    else
-	echo "Running bodhi -n -t $UPDATE_TYPE -u $BODHI_USER -N \"$CHANGELOGTEXT\" -R testing $bodhiPushList" > /dev/stderr
-	bodhi -n -t $UPDATE_TYPE -u $BODHI_USER -N "$CHANGELOGTEXT" -R testing $bodhiPushList
-    fi
+    bodhi -n $BODHI_OPTS -t $UPDATE_TYPE -u $BODHI_USER -N "$CHANGELOGTEXT" -R testing $bodhiPushList
 else
     echo "Nothing to push to bodhi." > /dev/stderr
 fi
