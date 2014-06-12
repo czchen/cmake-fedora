@@ -7,6 +7,7 @@ MACRO(CMAKE_FEDORA_SCRIPT_PRINT_USAGE)
 "  cmake -Dcmd=configure_file 
         -DinputFile=<inputFile> -DoutputFile=<outputFile>
 	[-DatOnly=1]
+        [-Dcmake_fedora_modules_dir=<dir>]
 	[-Descape_quotes=1]
 	[-DVAR=VAULE]
         -P <CmakeModulePath>/CmakeFedoraScript.cmake
@@ -20,11 +21,15 @@ MACRO(CMAKE_FEDORA_SCRIPT_PRINT_USAGE)
       -DoutPutFile: output file
       -DatOnly: Replace only the variables surround by '@', like @VAR@.
         Same as passing '@ONLY' to CONFIGURE_FILE.
+      -Dcmake_fedora_modules_dir:
+        Specify this if cmake and cmake-fedora failed to find 
+        the location of CMake Fedora modules. 
       -Descape_quotes: Substituted quotes will be C-style escape.
         Same as passing 'ESCAPE_QUOTES' to CONFIGURE_FILE.
 
     
   cmake -Dcmd=find_file|find_program \"-Dnames=<name1;name2>\"
+        [-Dcmake_fedora_modules_dir=<dir>]
         [-Dpaths=\"path1;path2\"]
         [-Derror_msg=msg]
         [-Dverbose_level=verboseLevel]
@@ -33,6 +38,9 @@ MACRO(CMAKE_FEDORA_SCRIPT_PRINT_USAGE)
     Find a file or program with name1 or name2, 
     with proper error handling.
     Options:
+      -Dcmake_fedora_modules_dir:
+        Specify this if cmake and cmake-fedora failed to find 
+        the location of CMake Fedora modules. 
       -Dpaths: Paths that files might be located.
       -Derror_msg: Error message to be shown if not-found.
       -Dverbose_level: Verbose level for not-found message.
@@ -50,6 +58,7 @@ MACRO(CMAKE_FEDORA_SCRIPT_PRINT_USAGE)
 	   
   cmake -Dcmd=manage_file_cache \"-Drun=<command arg1 ...>\"
         -Dcache_file=<cacheFileWithoutDirectory>
+        [-Dcmake_fedora_modules_dir=<dir>]
         [-Dexpiry_seconds=seconds]
         [-Dcache_dir=dir]
         -P <CmakeModulePath>/CmakeFedoraScript.cmake
@@ -58,11 +67,13 @@ MACRO(CMAKE_FEDORA_SCRIPT_PRINT_USAGE)
     Cache will be update after run command.
 
   cmake -Dcmd=get_cmake_cache_variable -Dvar=<varName>
-    -Dcmake_cache=<CMakeCache.txt>
-    -P <CmakeModulePath>/CmakeFedoraScript.cmake
+        -Dcmake_cache=<CMakeCache.txt>
+        [-Dcmake_fedora_modules_dir=<dir>]
+        -P <CmakeModulePath>/CmakeFedoraScript.cmake
     Get variable value from CMakeCache.txt
 
   cmake -Dcmd=get_variable -Dvar=<varName>
+        [-Dcmake_fedora_modules_dir=<dir>]
         -P <CmakeModulePath>/CmakeFedoraScript.cmake
     Get variable value from cmake-fedora.conf.
 
@@ -171,6 +182,16 @@ FUNCTION(CMAKE_FEDORA_GET_VARIABLE_SCRIPT)
 ENDFUNCTION(CMAKE_FEDORA_GET_VARIABLE_SCRIPT)
 
 SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS ON)
+
+IF(cmake_fedora_modules_dir)
+    LIST(APPEND CMAKE_MODULE_PATH "${cmake_fedora_modules_dir}")
+ENDIF()
+
+IF(CMAKE_SCRIPT_MODE_FILE)
+    GET_FILENAME_COMPONENT(CMAKE_FEDORA_SCRIPT_DIR ${CMAKE_SCRIPT_MODE_FILE}
+        DIRECTORY)
+    LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_FEDORA_SCRIPT_DIR}")
+ENDIF()
 
 ## It is possible that current dir is in NO_PACK/FedPkg/<prj>
 LIST(APPEND CMAKE_MODULE_PATH 
