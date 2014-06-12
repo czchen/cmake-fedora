@@ -3,7 +3,8 @@
 function print_usage(){
     cat <<END
 Usage: $0 [-b bugs] [-d work_dir] [-m message] [-t updateType] <srpm> [scope1 [scope2 ....]]
-	This command builds a package to fedora and epel releases with given srpm.
+
+  This command automates the release process from SRPM to bodhi pushing.
 
 Parameters:
     -b bugs: The list of bug this update fixed. Split with ','.
@@ -11,38 +12,38 @@ Parameters:
     -d work_dir: The work directory. Default is current directory.
 
     -m message: Message used as commit message.
-        If not specified, then use the latest changelog item.
+       If not specified, then use the latest changelog text.
+       (i.e. rpm -qp --queryformat "%{CHANGELOGTEXT}" <srpm>)
 
-	-t updateType: Update type. Valid values:
-            [bugfix|security|enhancement|newpackage].
-	    Default: 
-	        newpackage: if this package does not exist in bodhi
-		enhancement: if the latest change log item has 
-		   "Enhancement:"
-		bugfix: for everything else.   
-       
+    -t updateType: Update type. Valid values:
+       [bugfix|security|enhancement|newpackage].
+       Default: 
+         newpackage: if this package does not exist in bodhi
+         enhancement: if the latest change log item has "Enhancement:"
+         bugfix: for everything else.   
 
     srpm: SRPM file to be scratch-built with koji.
 
-    scopes: releases of what to build. Multiple values are allowed.
+    scopes: Fedora and/or EPEL branche to release. 
+      Multiple values are allowed.
       Valid values:
-          rawhide: Build rawhide.
+          rawhide: Release rawhide.
 
-          fedora: Build actives fedora releases, including Rawhide.
+          fedora: Release active fedora releases, including Rawhide.
 
-          fedora_1: Build the latest supported fedora releases.
+          fedora_1: Build the latest released fedora release.
               This is one release eariler than rawhide.
 
-          fedora_2: Build the second latest supported fedora releases.
+          fedora_2: Build the second latest released fedora releases.
               This is two releases eariler than rawhide.
 
           f22 f21 ...: Build the specified fedora releases.
 
-          epel: Build the currently supported EPEL releases.
+          epel: Build the active EPEL releases.
 
-          epel_1: Build the latest supported EPEL releases.
+          epel_1: Build the latest released EPEL releases.
 
-          epel_2: Build the second latest supported EPEL releases.
+          epel_2: Build the second latest released EPEL releases.
 
           epel7 el6 ... : The EPEL releases to be built.
 
@@ -161,9 +162,14 @@ shift
 
 if [[ -z $SRPM ]];then
     print_usage
-    exit -1
+    exit 1
 else
     SRPM=`readlink -f $SRPM`
+fi
+
+if [[ ! -r "$SRPM" ]];then
+    echo "[Fatal] Failed to read $SRPM" > /dev/stderr
+    exit 2
 fi
 
 if [[ -n "$BUGS" ]];then
