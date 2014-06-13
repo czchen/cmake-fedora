@@ -1,4 +1,4 @@
-* Sat Jun 07 2014 Ding-Yi Chen <dchen at redhat.com> - 2.0.0
+* Fri Jun 13 2014 Ding-Yi Chen <dchen at redhat.com> - 2.0.0
 [TODO] Check ibus-chewing compatiblity
 - Fixed Bug 1093336 - date(1): -u is much portable than --utc
 - Fix EPEL 7 support.
@@ -20,6 +20,7 @@
   + ManageFile: New function: MANAGE_FILE_EXPIRY
   + ManageMessage: New function: M_OUT
   + ManageVariable: New macro: CMAKE_FEDORA_CONF_GET_ALL_VARIABLES
+  + Target rpmlint: rpmlint statistics are now combined.
 - Removed:
   + cmake-fedora.conf.in is no longer need.
   + TODO should be put in wiki.  

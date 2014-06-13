@@ -339,7 +339,7 @@ MACRO(PACK_RPM)
 	ADD_CUSTOM_TARGET(rpmlint
 	    COMMAND find .
 	    -name '${PROJECT_NAME}*-${PRJ_VER}-${RPM_RELEASE_NO}.*.rpm'
-	    -print -exec rpmlint -I '{}' '\\;'
+	    | xargs rpmlint -i -v
 	    DEPENDS ${PRJ_SRPM_FILE} ${PRJ_RPM_FILES}
 	    COMMENT "rpmlint: ${PRJ_SRPM_FILE} ${PRJ_RPM_FILES}"
 	    )
