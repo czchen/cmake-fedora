@@ -47,8 +47,8 @@ Parameters:
 
           epel7 el6 ... : The EPEL releases to be built.
 
-         If scopes is not specified, then it works 
-         as if "fedora epel" are specified.
+         If scopes is not specified, then it builds all active Fedora  
+	 (including rawhide) and EPEL releases in fedpkg branches.
 
 Environment Variables:
     FEDPKG_DIR
@@ -92,6 +92,12 @@ function is_target_in_bodhi(){
 
 function is_update_enhancement(){
     echo $CHANGELOGTEXT | grep -qcs -e "Enhancement:"
+}
+
+function contains_element () {
+    local e
+    for e in "${@:2}"; do [[ "$e" == "$1" ]] && return 0; done
+    return 1
 }
 
 for cmd in fedpkg bodhi koji git rpm ;do
@@ -185,12 +191,14 @@ fi
 echo "WORK_DIR=$WORK_DIR" > /dev/stderr
 
 CHANGELOGTEXT=`rpm -qp --queryformat "%{CHANGELOGTEXT}" $SRPM`
+echo "CHANGELOGTEXT=$CHANGELOGTEXT" > /dev/stderr
 
 if [[ -z "$MSG" ]];then
     MSG=$CHANGELOGTEXT
 fi
 
 NAME=`rpm -qp --queryformat "%{NAME}" $SRPM`
+echo "NAME=$NAME" > /dev/stderr
 
 ## NVR here does not include release tag,
 ##  (e.g. cmake-fedora-2.0.0-1)
@@ -214,15 +222,28 @@ fi
 
 if [[ ! -x $NAME ]];then
     echo "Failed to change to $WORK_DIR/$NAME" > /dev/stderr
+    exit 3
 fi
 
 cd $NAME
+echo "Pulling $NAME..." > /dev/stderr
 fedpkg pull
 
+## Interset between existing and active fedpkg branches
+FEDPKG_BRANCHES_ACTIVE=(`$CMAKE_FEDORA_KOJI_CMD git-branch $@ | xargs ` )
+FEDPKG_BRANCHES_EXISTING=(` fedpkg switch-branch | grep origin | sed -e  's|^\s*origin/||' | xargs` )
+declare -a FEDPKG_BRANCHES
+for activeBranch in "${FEDPKG_BRANCHES_ACTIVE[@]}"; do
+    if contains_element "${activeBranch}" "${FEDPKG_BRANCHES_EXISTING[@]}";then
+	FEDPKG_BRANCHES+=(${activeBranch})
+    fi
+done
+echo -n "Branches to process:"
+(IFS=' ' echo "${FEDPKG_BRANCHES[@]}")
 first=
 bodhiPushList=
 
-for b in `$CMAKE_FEDORA_KOJI_CMD git-branch $@ | xargs `;do
+for b in "${FEDPKG_BRANCHES[@]}";do
     bodhi_branch=
 
     if [[ -z "$first" ]];then
@@ -244,7 +265,7 @@ for b in `$CMAKE_FEDORA_KOJI_CMD git-branch $@ | xargs `;do
 	    ;;
 	* )
 	    echo "Invalid branch name: $b" > /dev/stderr
-	    exit 1
+	    exit 4
 	    ;;
     esac
 
