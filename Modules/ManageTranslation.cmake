@@ -117,6 +117,7 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 		VERBOSE_LEVEL ${M_OFF}
 		"${_name}"
 		)
+	    M_MSG(${M_INFO1} "${_cmd}_CMD=${${_cmd}_CMD}")
 	ENDFOREACH(_name "xgettext" "msgmerge" "msgfmt")
     ENDMACRO(MANAGE_GETTEXT_INIT)
 

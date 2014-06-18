@@ -234,7 +234,7 @@ MACRO(MANAGE_FILE_INSTALL fileType)
     ENDIF("${fileType}" STREQUAL "SYSCONF_NO_REPLACE")
 ENDMACRO(MANAGE_FILE_INSTALL fileType)
 
-MACRO(FIND_ERROR_HANDLING type vari)
+FUNCTION(FIND_ERROR_HANDLING type vari)
     SET(_verboseLevel ${M_ERROR})
     SET(_errorMsg "")
     SET(_errorVar "")
@@ -267,15 +267,18 @@ MACRO(FIND_ERROR_HANDLING type vari)
 	    ENDIF(_arg STREQUAL "ERROR_MSG")
 	ENDIF(_state STREQUAL "ERROR_MSG")
     ENDFOREACH(_arg ${ARGN})
+
+    ## FIND_PROGRAM and FIND_FILE caches the result
+    ## And won't find again until the cache is cleaned
     IF("${type}" STREQUAL "PROGRAM")
 	SET(_type "Program")
-	FIND_PROGRAM(_v ${_findFileArgList})
+	FIND_PROGRAM(${vari} ${_findFileArgList})
     ELSE("${type}" STREQUAL "PROGRAM")
 	SET(_type "File")
-	FIND_FILE(_v ${_findFileArgList})
+	FIND_FILE(${vari} ${_findFileArgList})
     ENDIF("${type}" STREQUAL "PROGRAM")
 
-    IF("${_v}" STREQUAL "_v-NOTFOUND")
+    IF("${vari}" STREQUAL "${vari}-NOTFOUND")
 	IF(NOT _errorMsg)
 	    SET(_str "")
 	    FOREACH(_s ${_findFileArgList})
@@ -289,12 +292,8 @@ MACRO(FIND_ERROR_HANDLING type vari)
 	IF (NOT _errorVar STREQUAL "")
 	    SET(${_errorVar} 1 PARENT_SCOPE)
 	ENDIF(NOT _errorVar STREQUAL "")
-	SET(${vari} "${vari}-NOTFOUND" PARENT_SCOPE)
-    ELSE("${_v}" STREQUAL "_v-NOTFOUND")
-	SET(${vari} "${_v}" PARENT_SCOPE)
-    ENDIF("${_v}" STREQUAL "_v-NOTFOUND")
-    UNSET(_v CACHE)
-ENDMACRO(FIND_ERROR_HANDLING type vari)
+    ENDIF("${vari}" STREQUAL "${vari}-NOTFOUND")
+ENDFUNCTION(FIND_ERROR_HANDLING type vari)
 
 FUNCTION(FIND_FILE_ERROR_HANDLING var)
     FIND_ERROR_HANDLING(FILE ${var} ${ARGN})
@@ -306,7 +305,7 @@ ENDFUNCTION(FIND_PROGRAM_ERROR_HANDLING var)
 
 FUNCTION(MANAGE_CMAKE_FEDORA_CONF var)
     FIND_FILE_ERROR_HANDLING(${var} ${ARGN}
-	FIND_ARGS NAMES cmake-fedora.conf 
+	FIND_ARGS cmake-fedora.conf 
 	PATHS ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/cmake-fedora
 	. cmake-fedora /etc 
 	${CMAKE_SOURCE_DIR}/../../..
