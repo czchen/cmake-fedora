@@ -127,24 +127,25 @@ SET (_MANAGE_RPM_CMAKE_ "DEFINED")
 INCLUDE(ManageFile)
 INCLUDE(ManageTarget)
 SET(_manage_rpm_dependency_missing 0)
-SET(CMAKE_FEDORA_ADDITIONAL_SCRIPT_PATH ${CMAKE_SOURCE_DIR}/scripts ${CMAKE_SOURCE_DIR}/cmake-fedora/scripts)
+LIST(APPEND CMAKE_FEDORA_ADDITIONAL_SCRIPT_PATH ${CMAKE_SOURCE_DIR}/scripts ${CMAKE_SOURCE_DIR}/cmake-fedora/scripts)
 
+MESSAGE("## CMAKE_FEDORA_ADDITIONAL_SCRIPT_PATH=${CMAKE_FEDORA_ADDITIONAL_SCRIPT_PATH}")
 FIND_PROGRAM_ERROR_HANDLING(RPM_CMD
-    ERROR_MSG "rpm not found, rpm build support is disabled."
+    ERROR_MSG "ManageRPM: rpm not found, rpm build support is disabled."
     ERROR_VAR _manage_rpm_dependency_missing
     VERBOSE_LEVEL ${M_OFF}
     FIND_ARGS NAMES rpm
     )
 
 FIND_PROGRAM_ERROR_HANDLING(RPMBUILD_CMD
-    ERROR_MSG "rpmbuild-md5 or rpmbuild not found, rpm build support is disabled."
+    ERROR_MSG "ManageRPM: rpmbuild-md5 or rpmbuild not found, rpm build support is disabled."
     ERROR_VAR _manage_rpm_dependency_missing
     VERBOSE_LEVEL ${M_OFF}
     FIND_ARGS NAMES "rpmbuild-md5" "rpmbuild"
     )
 
 FIND_PROGRAM_ERROR_HANDLING(CMAKE_FEDORA_KOJI_CMD
-    ERROR_MSG "cmake-fedora-koji not found, rpm build support is disabled."
+    ERROR_MSG "ManageRPM: cmake-fedora-koji not found, rpm build support is disabled."
     ERROR_VAR _manage_rpm_dependency_missing
     VERBOSE_LEVEL ${M_OFF}
     FIND_ARGS NAMES cmake-fedora-koji
@@ -270,6 +271,7 @@ MACRO(MANAGE_RPM_SPEC)
     SET(INSTALL_MANIFESTS_FILE "${CMAKE_SOURCE_DIR}/install_manifest.txt")
     ADD_CUSTOM_COMMAND(OUTPUT ${INSTALL_MANIFESTS_FILE}
 	COMMAND cmake -Dcmd=make_manifests
+	-Dmanifests=${INSTALL_MANIFESTS_FILE}
 	-Dtmp_dir=${CMAKE_FEDORA_TMP_DIR}
 	-P ${CMAKE_FEDORA_MODULE_DIR}/ManageRPMScript.cmake
 	COMMENT "install_manifest.txt: ${INSTALL_MANIFESTS_FILE}"

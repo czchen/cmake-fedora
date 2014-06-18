@@ -11,7 +11,10 @@ MACRO(MANAGE_RPM_SCRIPT_PRINT_USAGE)
       [\"-D<var>=<value>\"]
       -P <CmakeModulePath>/ManageRPMScript.cmake
     Make project spec file according to spec_in and CMakeCache.txt.   
-      Note: Please pass the necessary variables via -Dvar=VALUE,
+      Options:
+        -Dmainfests: Path to install_manifests.txt
+	-Drelease: Path to RELEASE-NOTES.txt
+	Note: Please pass the necessary variables via -Dvar=VALUE,
         e.g. -DPROJECT_NAME=cmake-fedora
 
   cmake -Dcmd=spec_manifests
@@ -24,6 +27,7 @@ MACRO(MANAGE_RPM_SCRIPT_PRINT_USAGE)
       Options:
         -Dconfig_replace: List of configure files that should use
 	  %config instead of %config(noreplace)
+        -Dmainfests: Path to install_manifests.txt
       Note: Please pass the necessary variables via -Dvar=VALUE,
         e.g. -DPROJECT_NAME=cmake-fedora
     
@@ -34,15 +38,19 @@ MACRO(MANAGE_RPM_SCRIPT_PRINT_USAGE)
       [\"-D<var>=<value>\"]
       -P <CmakeModulePath>/ManageRPMScript.cmake
     Convert RELEASE-NOTES.txt to ChangeLog a SPEC file.
+      Options:
+        -Dmainfests: Path to install_manifests.txt
       Note: Please pass the necessary variables via -Dvar=VALUE,
-        e.g. -DPROJECT_NAME=cmake-fedora
+         e.g. -DPROJECT_NAME=cmake-fedora
 
    cmake -Dcmd=make_manifests
-     [\"-Dtmp_dir=<dir>\"]
+       [\"-Dmanifests=<path/install_manifests.txt>\"]
+       [\"-Dtmp_dir=<dir>\"]
      Make install_manifests.txt.
        Options:
-       -Dtmp_dir: Directory for tempory files. 
-         Default is /tmp/cmake-fedora
+         -Dmainfests: Path to install_manifests.txt
+         -Dtmp_dir: Directory for tempory files. 
+           Default is /tmp/cmake-fedora
 
 "
 )
@@ -307,27 +315,55 @@ FUNCTION(MAKE_MANIFESTS)
     IF(NOT tmp_dir)
 	SET(tmp_dir "/tmp/cmake-fedora")
     ENDIF(NOT tmp_dir)
-    EXECUTE_PROCESS(COMMAND make install DESTDIR=${tmp_dir})
+    SET(_opts "")
+    IF(manifests)
+	GET_FILENAME_COMPONENT(manifestsDir "${manifests}" PATH)
+	SET(_opts "WORKING_DIRECTORY" "${manifestsDir}")
+    ENDIF()
+    
+    EXECUTE_PROCESS(COMMAND make install DESTDIR=${tmp_dir}
+	${_opts})
 ENDFUNCTION(MAKE_MANIFESTS)
 
 SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS ON)
-SET(CMAKE_FEDORA_ADDITIONAL_SCRIPT_PATH ${CMAKE_SOURCE_DIR}/scripts ${CMAKE_SOURCE_DIR}/cmake-fedora/scripts)
-LIST(APPEND CMAKE_MODULE_PATH 
-    ${CMAKE_CURRENT_SOURCE_DIR}/Modules ${CMAKE_SOURCE_DIR}/Modules
-    ${CMAKE_SOURCE_DIR}/cmake-fedora/Modules 
-    ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR} )
+#######################################
+# Determine CMAKE_FEDORA_MODULE_DIR
+#
+
+## It is possible that current dir is in NO_PACK/FedPkg/<prj>
+LIST(INSERT CMAKE_MODULE_PATH 0
+    ${CMAKE_SOURCE_DIR}/Modules ${CMAKE_SOURCE_DIR}/cmake-fedora/Modules 
+    ${CMAKE_SOURCE_DIR}/../../../Modules
+    ${CMAKE_SOURCE_DIR}/../../../cmake-fedora/Modules
+    ${CMAKE_SOURCE_DIR}
+    )
+
+IF(CMAKE_SCRIPT_MODE_FILE)
+    GET_FILENAME_COMPONENT(CMAKE_FEDORA_SCRIPT_DIR ${CMAKE_SCRIPT_MODE_FILE}
+	DIRECTORY)
+    LIST(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_FEDORA_SCRIPT_DIR}")
+ENDIF()
+
+IF(cmake_fedora_module_dir)
+    LIST(INSERT CMAKE_MODULE_PATH 0 "${cmake_fedora_module_dir}")
+ENDIF()
 
 INCLUDE(ManageMessage RESULT_VARIABLE MANAGE_MODULE_PATH)
-IF(MANAGE_MODULE_PATH STREQUAL "NOTFOUND")
+IF(NOT MANAGE_MODULE_PATH)
     MESSAGE(FATAL_ERROR "ManageMessage.cmake cannot be found in ${CMAKE_MODULE_PATH}")
 ENDIF()
 GET_FILENAME_COMPONENT(CMAKE_FEDORA_MODULE_DIR 
     "${MANAGE_MODULE_PATH}" PATH)
+
 INCLUDE(ManageString)
 INCLUDE(ManageVariable)
 CMAKE_FEDORA_CONF_GET_ALL_VARIABLES()
 INCLUDE(DateTimeFormat)
 INCLUDE(ManageVersion)
+LIST(APPEND CMAKE_FEDORA_ADDITIONAL_SCRIPT_PATH 
+    ${CMAKE_FEDORA_MODULE_DIR}/../scripts
+    ${CMAKE_FEDORA_MODULE_DIR}/../cmake-fedora/scripts
+    )
 INCLUDE(ManageRPM)
 
 IF(NOT DEFINED cmd)
