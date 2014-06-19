@@ -4,26 +4,32 @@
 #   ManageVarible
 #
 # Defines the following functions:
-#   STRING_APPEND(var str [separator])
+#   STRING_APPEND(<var> <str> [separator])
 #     - Append a string to a variable
 #       * Parameters:
 #         + var: A variable that stores the result.
 #         + str: A string to be appended to end of line.
 #         + separator: Separator to separate between strings.
 #
-#   STRING_ESCAPE_QUOTE(var str)
-#     - Escape the double quote "
+#   STRING_ESCAPE_DOLLAR(<var> <str> )
+#     - Escape the dollar sign ($)
 #       * Parameters:
 #         + var: A variable that stores the result.
 #         + str: A string.
 #
-#   STRING_ESCAPE_SEMICOLON(var str)
+#   STRING_ESCAPE_QUOTE(<var> <str> )
+#     - Escape the double quote (")
+#       * Parameters:
+#         + var: A variable that stores the result.
+#         + str: A string.
+#
+#   STRING_ESCAPE_SEMICOLON(<var> <str> )
 #     - Escape the semicolon
 #       * Parameters:
 #         + var: A variable that stores the result.
 #         + str: A string.
 #
-#   STRING_PADDING(var str length [padStr])
+#   STRING_PADDING(<var> <str> <length> [<padStr>])
 #     - Padding the string to specified length
 #       * Parameters:
 #         + var: A variable that stores the result.
@@ -31,14 +37,15 @@
 #         + length: Required length.
 #         + padStr: String that used in padding. Default: " "
 #
-#   STRING_PREPEND(var str [separator])
+#   STRING_PREPEND(<var> <str> [<separator>])
 #     - Prepend a string to a variable
 #       * Parameters:
 #         + var: A variable that stores the result.
 #         + str: A string to be appended to end of line.
 #         + separator: Separator to separate between strings.
 #
-#   STRING_SPLIT(var delimiter str [NOESCAPE_SEMICOLON] [ESCAPE_VARIABLE] [ALLOW_EMPTY])
+#   STRING_SPLIT(<var> <delimiter> <str> 
+#       [NOESCAPE_SEMICOLON] [ESCAPE_VARIABLE] [ALLOW_EMPTY])
 #     - Split a string into a list using a delimiter, 
 #       which can be in 1 or more characters long.
 #       * Parameters:
@@ -49,7 +56,7 @@
 #         + ESCAPE_VARIABLE: (Optional) Escape variables.
 #         + ALLOW_EMPTY: (Optional) Allow empty element exist in the array.
 #
-#   STRING_TRIM(var str [NOUNQUOTE])
+#   STRING_TRIM(<var> <str> [NOUNQUOTE])
 #     - Trim a string by removing the leading and trailing spaces,
 #       just like STRING(STRIP ...) in CMake 2.6 and later.
 #       This macro is needed as CMake 2.4 does not support STRING(STRIP ..)
@@ -62,19 +69,18 @@
 #           around the string.
 #
 # Defines the following macros:
-#
-#   STRING_UNQUOTE(var str)
+#   STRING_UNQUOTE(<var> <str>)
 #     - Remove double quote marks and quote marks around a string.
 #       If the string is not quoted, then content of str is copied to var
 #       * Parameters:
 #         + var: A variable that stores the result.
 #         + str: A string.
 #
-#   STRING_JOIN(var delimiter str_list [str...])
+#   STRING_JOIN(<var> <delimiter> <strList> [<str> ...])
 #     - Concatenate strings, with delimiter inserted between strings.
 #       * Parameters:
 #         + var: A variable that stores the result.
-#         + str_list: A list of string.
+#         + strList: A list of strings.
 #         + str: (Optional) more string to be join.
 #
 #
@@ -96,6 +102,15 @@ FUNCTION(STRING_APPEND var str)
 	SET(${var} "${${var}}${_sep}${str}" PARENT_SCOPE)
     ENDIF("${${var}}" STREQUAL "")
 ENDFUNCTION(STRING_APPEND var str)
+
+FUNCTION(STRING_ESCAPE_DOLLAR var str)
+    IF(str STREQUAL "")
+	SET(${var} "" PARENT_SCOPE)
+    ELSE(str STREQUAL "")
+	STRING(REPLACE "\$" "\\\$" output "${str}")
+	SET(${var} "${output}" PARENT_SCOPE)
+    ENDIF(str STREQUAL "")
+ENDFUNCTION(STRING_ESCAPE_DOLLAR)
 
 FUNCTION(STRING_ESCAPE_QUOTE var str)
     IF(str STREQUAL "")

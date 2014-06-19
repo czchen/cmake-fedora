@@ -24,6 +24,21 @@ STRING_APPEND_TEST("1" "%find_lang %{name}" _str " %{name}")
 SET(_str "%find_lang")
 STRING_APPEND_TEST("1" "%find_lang %{name}" _str "%{name}" " ")
 
+## STRING_ESCAPE_DOLLAR
+FUNCTION(STRING_ESCAPE_DOLLAR_TEST testName expected str)
+    MESSAGE("STRING_ESCAPE_DOLLAR_TEST: ${testName}")
+    STRING_ESCAPE_DOLLAR(var "${str}")
+    IF("${var}" STREQUAL "${expected}")
+	MESSAGE(STATUS "Test STRING_ESCAPE_DOLLAR_${testName} passed")
+    ELSE()
+	MESSAGE(SEND_ERROR "Test STRING_ESCAPE_DOLLAR_${testName} failed: actual=|${var}| expected=|${expected}|")
+    ENDIF()
+ENDFUNCTION(STRING_ESCAPE_DOLLAR_TEST)
+STRING_ESCAPE_DOLLAR_TEST("empty" "" "")
+STRING_ESCAPE_DOLLAR_TEST("no_dollar" "Hi I am good." "Hi I am good.")
+STRING_ESCAPE_DOLLAR_TEST("1 dollar" "Hi I have \\\$." "Hi I have \$.")
+STRING_ESCAPE_DOLLAR_TEST("2 dollars" "\\\$No, it's not \\\$, said he." "\$No, it's not \$, said he.")
+
 ## STRING_ESCAPE_QUOTE
 FUNCTION(STRING_ESCAPE_QUOTE_TEST testName expected str)
     MESSAGE("STRING_ESCAPE_QUOTE_TEST: ${testName}")
