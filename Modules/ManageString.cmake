@@ -11,6 +11,12 @@
 #         + str: A string to be appended to end of line.
 #         + separator: Separator to separate between strings.
 #
+#   STRING_ESCAPE_BACKSLASH(<var> <str> )
+#     - Escape the dollar sign ($)
+#       * Parameters:
+#         + var: A variable that stores the result.
+#         + str: A string.
+#
 #   STRING_ESCAPE_DOLLAR(<var> <str> )
 #     - Escape the dollar sign ($)
 #       * Parameters:
@@ -102,6 +108,15 @@ FUNCTION(STRING_APPEND var str)
 	SET(${var} "${${var}}${_sep}${str}" PARENT_SCOPE)
     ENDIF("${${var}}" STREQUAL "")
 ENDFUNCTION(STRING_APPEND var str)
+
+FUNCTION(STRING_ESCAPE_BACKSLASH var str)
+    IF(str STREQUAL "")
+	SET(${var} "" PARENT_SCOPE)
+    ELSE(str STREQUAL "")
+	STRING(REPLACE "\\" "\\\\" output "${str}")
+	SET(${var} "${output}" PARENT_SCOPE)
+    ENDIF(str STREQUAL "")
+ENDFUNCTION(STRING_ESCAPE_BACKSLASH)
 
 FUNCTION(STRING_ESCAPE_DOLLAR var str)
     IF(str STREQUAL "")

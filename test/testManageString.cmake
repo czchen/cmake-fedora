@@ -24,6 +24,22 @@ STRING_APPEND_TEST("1" "%find_lang %{name}" _str " %{name}")
 SET(_str "%find_lang")
 STRING_APPEND_TEST("1" "%find_lang %{name}" _str "%{name}" " ")
 
+## STRING_ESCAPE_BACKSLASH
+FUNCTION(STRING_ESCAPE_BACKSLASH_TEST testName expected str)
+    MESSAGE("STRING_ESCAPE_BACKSLASH_TEST: ${testName}")
+    STRING_ESCAPE_BACKSLASH(var "${str}")
+    IF("${var}" STREQUAL "${expected}")
+	MESSAGE(STATUS "Test STRING_ESCAPE_BACKSLASH_${testName} passed")
+    ELSE()
+	MESSAGE(SEND_ERROR "Test STRING_ESCAPE_BACKSLASH_${testName} failed: actual=|${var}| expected=|${expected}|")
+    ENDIF()
+ENDFUNCTION(STRING_ESCAPE_BACKSLASH_TEST)
+STRING_ESCAPE_BACKSLASH_TEST("empty" "" "")
+STRING_ESCAPE_BACKSLASH_TEST("no_backslash" "Hi I am good." "Hi I am good.")
+STRING_ESCAPE_BACKSLASH_TEST("1 backslash head" "\\\\Hi" "\\Hi")
+STRING_ESCAPE_BACKSLASH_TEST("1 backslash middle" "Hi I\\\\ have" "Hi I\\ have")
+STRING_ESCAPE_BACKSLASH_TEST("1 backslash tail" "Hi I have \\\\" "Hi I have \\")
+
 ## STRING_ESCAPE_DOLLAR
 FUNCTION(STRING_ESCAPE_DOLLAR_TEST testName expected str)
     MESSAGE("STRING_ESCAPE_DOLLAR_TEST: ${testName}")
