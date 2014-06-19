@@ -11,6 +11,18 @@
 #         + str: A string to be appended to end of line.
 #         + separator: Separator to separate between strings.
 #
+#   STRING_ESCAPE_QUOTE(var str)
+#     - Escape the double quote "
+#       * Parameters:
+#         + var: A variable that stores the result.
+#         + str: A string.
+#
+#   STRING_ESCAPE_SEMICOLON(var str)
+#     - Escape the semicolon
+#       * Parameters:
+#         + var: A variable that stores the result.
+#         + str: A string.
+#
 #   STRING_PADDING(var str length [padStr])
 #     - Padding the string to specified length
 #       * Parameters:
@@ -50,11 +62,6 @@
 #           around the string.
 #
 # Defines the following macros:
-#   STRING_ESCAPE_SEMICOLON(var str)
-#     - Escape the semicolon
-#       * Parameters:
-#         + var: A variable that stores the result.
-#         + str: A string.
 #
 #   STRING_UNQUOTE(var str)
 #     - Remove double quote marks and quote marks around a string.
@@ -73,6 +80,7 @@
 #
 
 IF(DEFINED _MANAGE_STRING_CMAKE_)
+    RETURN()
 ENDIF(DEFINED _MANAGE_STRING_CMAKE_)
 SET(_MANAGE_STRING_CMAKE_ "DEFINED")
 
@@ -88,6 +96,24 @@ FUNCTION(STRING_APPEND var str)
 	SET(${var} "${${var}}${_sep}${str}" PARENT_SCOPE)
     ENDIF("${${var}}" STREQUAL "")
 ENDFUNCTION(STRING_APPEND var str)
+
+FUNCTION(STRING_ESCAPE_QUOTE var str)
+    IF(str STREQUAL "")
+	SET(${var} "" PARENT_SCOPE)
+    ELSE(str STREQUAL "")
+	STRING(REPLACE "\"" "\\\"" output "${str}")
+	SET(${var} "${output}" PARENT_SCOPE)
+    ENDIF(str STREQUAL "")
+ENDFUNCTION(STRING_ESCAPE_QUOTE)
+
+FUNCTION(STRING_ESCAPE_SEMICOLON var str)
+    IF(str STREQUAL "")
+	SET(${var} "" PARENT_SCOPE)
+    ELSE(str STREQUAL "")
+	STRING(REPLACE ";" "\\;" output "${str}")
+	SET(${var} "${output}" PARENT_SCOPE)
+    ENDIF(str STREQUAL "")
+ENDFUNCTION(STRING_ESCAPE_SEMICOLON var str)
 
 FUNCTION(STRING_PADDING var str length)
     SET(_ret "${str}")
@@ -189,10 +215,6 @@ FUNCTION(STRING_TRIM var str)
     # Unencoding
     #_STRING_UNESCAPE(${var} "${_ret}" ${ARGN})
 ENDFUNCTION(STRING_TRIM var str)
-
-MACRO(STRING_ESCAPE_SEMICOLON var str)
-    STRING(REGEX REPLACE ";" "\\\\;" ${var} "${str}")
-ENDMACRO(STRING_ESCAPE_SEMICOLON var str)
 
 # Internal function
 # Nested Variable cannot be escaped here, as variable is already substituted

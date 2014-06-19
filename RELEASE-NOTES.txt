@@ -25,6 +25,7 @@ REDHAT_BUGZILLA=1002279,1093336
   + ManageFile: New function: MANAGE_FILE_EXPIRY
   + ManageMessage: New function: M_OUT
   + ManageVariable: New macro: CMAKE_FEDORA_CONF_GET_ALL_VARIABLES
+  + ManageString: New function: STRING_ESCAPE_QUOTE
   + Target rpmlint: rpmlint statistics are now combined.
   + cmake-fedora-fedpkg: Default is now build all active 
     Fedora (including rawhide) and EPEL releases in fedpkg branches.
