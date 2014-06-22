@@ -119,6 +119,8 @@ FUNCTION(MANAGE_DEPENDENCY listVar var)
 		    OUTPUT_VARIABLE ${var}_${_u}
 		    OUTPUT_STRIP_TRAILING_WHITESPACE
 		    )
+		SET(${var}_${_u} "${${var}_${_u}}" 
+		    CACHE INTERNAL "pkgconfig ${var}_${u}")
 		MARK_AS_ADVANCED(${var}_${_u})
 		M_MSG(${M_INFO1} "${var}_${_u}=${${var}_${_u}}")
 	    ENDFOREACH(_v ${var}_VARIABLES)
