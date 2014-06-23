@@ -8,14 +8,17 @@ MACRO(MANAGE_RPM_SCRIPT_PRINT_USAGE)
       -Dmanifests=<path/install_manifests.txt>
       -Drelease=<path/RELEASE-NOTES.txt>
       -Dprj_info=<path/prj_info.cmake>
+      [\"-Dconfig_replace=<file1;file2>\"]
       [\"-D<var>=<value>\"]
       -P <CmakeModulePath>/ManageRPMScript.cmake
     Make project spec file according to spec_in and CMakeCache.txt.   
       Options:
+        -Dconfig_replace: List of configure files that should use
+          %config instead of %config(noreplace)
         -Dmainfests: Path to install_manifests.txt
 	-Drelease: Path to RELEASE-NOTES.txt
-	Note: Please pass the necessary variables via -Dvar=VALUE,
-        e.g. -DPROJECT_NAME=cmake-fedora
+       Note: Please pass the necessary variables via -Dvar=VALUE,
+         e.g. -DPROJECT_NAME=cmake-fedora
 
   cmake -Dcmd=spec_manifests
       -Dmanifests=<path/install_manifests.txt>
@@ -56,18 +59,25 @@ MACRO(MANAGE_RPM_SCRIPT_PRINT_USAGE)
 )
 ENDMACRO(MANAGE_RPM_SCRIPT_PRINT_USAGE)
 
-MACRO(MANIFEST_TO_STRING strVar manifestsFile)
-    SET(_validOptions "CONFIG_REPLACE")
-    VARIABLE_PARSE_ARGN(_opt _validOptions ${ARGN})
+MACRO(MANIFEST_TO_STRING strVar hasTransVar manifestsFile)
+    SET(${hasTransVer} 0)
 
     FILE(STRINGS ${manifestsFile} _filesInManifests)
     SET(_docList "")
     SET(_fileList "")
-    SET(_hasTranslation 0)
     FOREACH(_file ${_filesInManifests})
 	SET(_addToFileList 1)
+	SET(_config_replace_detected 0)
+	IF(config_replace)
+	    FOREACH(_mF ${config_replace})
+		IF("${_file}" STREQUAL "${_mF}")
+		    SET(_config_replace_detected 1)
+		    BREAK()
+		ENDIF()
+	    ENDFOREACH()		
+	ENDIF()
 	STRING(REPLACE "${PROJECT_NAME}" "%{name}" _file "${_file}")
-	IF("${_file}" MATCHES "^/usr/bin/")
+        IF("${_file}" MATCHES "^/usr/bin/")
 	    STRING(REGEX REPLACE "^/usr/bin/" "%{_bindir}/" _file ${_file})
 	ELSEIF("${_file}" MATCHES "^/usr/sbin/")
 	    STRING(REGEX REPLACE "^/usr/sbin/" "%{_sbindir}/" _file ${_file})
@@ -80,20 +90,7 @@ MACRO(MANIFEST_TO_STRING strVar manifestsFile)
 	ELSEIF("${_file}" MATCHES "^/etc/rc.d/init.d/")
 	    STRING(REGEX REPLACE "^/etc/rc.d/init.d/" "%{_initrddir}/" _f "${_file}")
 	ELSEIF("${_file}" MATCHES "^/etc/")
-	    STRING(REGEX REPLACE "^/etc/" "" _f "${_file}")
-	    SET(_found 0)
-	    FOREACH(_o _opt_CONFIG_REPLACE)
-		IF(_o STREQUAL _f)
-		    SET(_found 1)
-		    BREAK()
-		ENDIF()
-	    ENDFOREACH(_o)
-	    IF(_found)
-		SET(_file "%config %{_sysconfdir}/${_f}")
-		STRING(REGEX REPLACE "^/etc/" "%config %{_sysconfdir}/" _file ${_file})
-	    ELSE()
-		SET(_file "%config(noreplace) %{_sysconfdir}/${_f}")
-	    ENDIF()
+	    STRING(REGEX REPLACE "^/etc/" "%config(noreplace) %{_sysconfdir}/" _file "${_file}")
 	ELSEIF("${_file}" MATCHES "^/usr/share/info/")
 	    STRING(REGEX REPLACE "^/usr/share/info/" "%{_infodir}/" _file ${_file})
 	ELSEIF("${_file}" MATCHES "^/usr/share/doc/")
@@ -104,7 +101,8 @@ MACRO(MANIFEST_TO_STRING strVar manifestsFile)
 	    STRING(REGEX REPLACE "^/usr/share/man/" "%{_mandir}/" _file ${_file})
 	ELSEIF("${_file}" MATCHES "^/usr/share/")
 	    IF(_file MATCHES "^/usr/share/locale/")
-		SET(_hasTranslation 1)
+		SET(_addToFileList 0)
+		SET(${hasTransVar} 1)
 	    ENDIF()
 	    STRING(REGEX REPLACE "^/usr/share/" "%{_datadir}/" _file ${_file})
 	ELSEIF("${_file}" MATCHES "^/var/lib/")
@@ -114,13 +112,20 @@ MACRO(MANIFEST_TO_STRING strVar manifestsFile)
 	ELSE()
 	    M_MSG(${M_ERROR} "ManageRPMScript: Unhandled file: ${_file}")
 	ENDIF()
+	IF(_config_replace_detected)
+	    IF("${_file}" MATCHES "%config\\(noreplace\\)")
+		STRING(REPLACE "%config(noreplace)" "%config" 
+		    _file ${_file})
+	    ELSE()
+		STRING(REGEX REPLACE "^%" "%config %" _file ${_file})
+	    ENDIF()
+	ENDIF()
 
 	IF(_addToFileList)
 	    LIST(APPEND _fileList "${_file}")
 	ENDIF(_addToFileList)
     ENDFOREACH(_file ${_filesInManifests})
-    IF(_hasTranslation)
-	STRING_APPEND(${strVar} "%find_lang %{name}\n" "\n")
+    IF(${hasTransVar} EQUAL 1)
 	STRING_APPEND(${strVar} "%files -f %{name}.lang" "\n")
     ELSE()
 	STRING_APPEND(${strVar} "%files" "\n")
@@ -134,7 +139,7 @@ MACRO(MANIFEST_TO_STRING strVar manifestsFile)
     FOREACH(_f ${_fileList})
 	STRING_APPEND(${strVar} "${_f}" "\n")
     ENDFOREACH(_f ${_fileList})
-ENDMACRO(MANIFEST_TO_STRING strVar manifests)
+ENDMACRO(MANIFEST_TO_STRING)
 
 FUNCTION(SPEC_MANIFESTS)
     IF(NOT manifests)
@@ -143,7 +148,7 @@ FUNCTION(SPEC_MANIFESTS)
     ENDIF()
     SET(RPM_FAKE_INSTALL_DIR "/tmp/cmake-fedora-fake-install")
     EXECUTE_PROCESS(COMMAND make DESTDIR=${RPM_FAKE_INSTALL_DIR} install)
-    MANIFEST_TO_STRING(mStr ${manifests})
+    MANIFEST_TO_STRING(mStr hasTrans ${manifests})
     M_OUT("${mStr}")
 ENDFUNCTION(SPEC_MANIFESTS)
 
@@ -217,15 +222,27 @@ MACRO(SPEC_WRITE_HEADER)
     ENDFOREACH(_s ${RPM_SPEC_SOURCES})
     RPM_SPEC_STRING_ADD(RPM_SPEC_SOURCE_OUTPUT "${_buf}" FRONT)
 
-    ## Requires (and BuildRequires)
+    ## Requires and BuildRequires
     SET(_buf "")
     FOREACH(_s ${BUILD_REQUIRES})
 	RPM_SPEC_STRING_ADD_TAG(_buf "BuildRequires" "" "${_s}")
-    ENDFOREACH(_s ${RPM_SPEC_SOURCES})
+    ENDFOREACH(_s)
 
     FOREACH(_s ${REQUIRES})
 	RPM_SPEC_STRING_ADD_TAG(_buf "Requires" "" "${_s}")
-    ENDFOREACH(_s ${RPM_SPEC_SOURCES})
+    ENDFOREACH(_s)
+    FOREACH(_s ${REQUIRES_PRE})
+	RPM_SPEC_STRING_ADD_TAG(_buf "Requires" "pre" "${_s}")
+    ENDFOREACH(_s)
+    FOREACH(_s ${REQUIRES_PREUN})
+	RPM_SPEC_STRING_ADD_TAG(_buf "Requires" "preun" "${_s}")
+    ENDFOREACH(_s)
+    FOREACH(_s ${REQUIRES_POST})
+	RPM_SPEC_STRING_ADD_TAG(_buf "Requires" "post" "${_s}")
+    ENDFOREACH(_s)
+    FOREACH(_s ${REQUIRES_POSTUN})
+	RPM_SPEC_STRING_ADD_TAG(_buf "Requires" "postun" "${_s}")
+    ENDFOREACH(_s)
     RPM_SPEC_STRING_ADD(RPM_SPEC_REQUIRES_OUTPUT "${_buf}" FRONT)
 
     ## Description
@@ -260,14 +277,6 @@ MACRO(SPEC_WRITE_HEADER)
 	    )
     ENDIF("${BUILD_ARCH}" STREQUAL "")
 
-    ## Build
-    IF(NOT RPM_SPEC_BUILD_OUTPUT)
-	SET(RPM_SPEC_BUILD_OUTPUT
-	    "%cmake ${RPM_SPEC_CMAKE_FLAGS} .
-make ${RPM_SPEC_MAKE_FLAGS}"
-	    )
-    ENDIF(NOT RPM_SPEC_BUILD_OUTPUT)
-
     ## Install
     RPM_SPEC_STRING_ADD_DIRECTIVE(RPM_SPEC_INSTALL_SECTION_OUTPUT
 	"install" "" "rm -rf %{buildroot}
@@ -278,17 +287,6 @@ make install DESTDIR=%{buildroot}"
     "# We install document using doc 
 rm -fr %{buildroot}%{_docdir}/*")
 
-    SET(_replaceList "")
-    FOREACH(_f ${FILE_INSTALL_SYSCONF_LIST})
-	LIST(APPEND _replaceList "/etc/${_f}")
-    ENDFOREACH(_f ${FILE_INSTALL_SYSCONF_LIST})
-    FOREACH(_f ${FILE_INSTALL_PRJ_SYSCONF_LIST})
-	LIST(APPEND _replaceList "/etc/${PROJECT_NAME}/${_f}")
-    ENDFOREACH(_f ${FILE_INSTALL_PRJ_SYSCONF_LIST})
-
-    IF(_replaceList)
-	LIST(INSERT _replaceList 0 "CONFIG_REPLACE")
-    ENDIF(_replaceList)
 ENDMACRO(SPEC_WRITE_HEADER)
 
 FUNCTION(SPEC_MAKE)
@@ -306,7 +304,11 @@ FUNCTION(SPEC_MAKE)
     ENDIF()
     PRJ_INFO_CMAKE_READ(${prj_info})
     SPEC_WRITE_HEADER()
-    MANIFEST_TO_STRING(RPM_SPEC_FILES_SECTION_OUTPUT ${manifests} ${_replaceList})
+    MANIFEST_TO_STRING(RPM_SPEC_FILES_SECTION_OUTPUT hasTrans ${manifests})
+    IF(hasTrans)
+	RPM_SPEC_STRING_ADD(RPM_SPEC_INSTALL_SECTION_OUTPUT 
+	    "\n%find_lang %{name}\n")
+    ENDIF()
     CHANGELOG_TO_STRING(RPM_SPEC_CHANGELOG_SECTION_OUTPUT)
     CONFIGURE_FILE(${spec_in} ${spec} @ONLY)
 ENDFUNCTION(SPEC_MAKE)
@@ -369,6 +371,13 @@ INCLUDE(ManageRPM)
 IF(NOT DEFINED cmd)
     MANAGE_RPM_SCRIPT_PRINT_USAGE()
 ELSE()
+    ## Append FILE_INSTALL_SYSCONF_LIST as config_replace
+    FOREACH(_f ${FILE_INSTALL_SYSCONF_LIST})
+	LIST(APPEND _config_replace "/etc/${_f}")
+    ENDFOREACH(_f ${FILE_INSTALL_SYSCONF_LIST})
+    FOREACH(_f ${FILE_INSTALL_PRJ_SYSCONF_LIST})
+	LIST(APPEND _config_replace "/etc/${PROJECT_NAME}/${_f}")
+    ENDFOREACH(_f ${FILE_INSTALL_PRJ_SYSCONF_LIST})
     IF("${cmd}" STREQUAL "spec")
 	IF(NOT spec)
 	    MANAGE_RPM_SCRIPT_PRINT_USAGE()

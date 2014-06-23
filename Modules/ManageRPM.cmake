@@ -9,6 +9,10 @@
 #   ManageFile
 #   ManageTarget
 #
+# Reads and defines following variables:
+#   RPM_SPEC_CMAKE_FLAGS: cmake flags in RPM spec.
+#   RPM_SPEC_MAKE_FLAGS: "make flags in RPM spec.
+#
 # Reads and defines following variables if dependencies are satisfied:
 #   PRJ_RPM_SPEC_FILE: spec file for rpmbuild.
 #   RPM_SPEC_BUILD_ARCH: (optional) Set "BuildArch:"
@@ -51,7 +55,7 @@
 #   RPM_FILES_SECTION_CONTENT: A list of string  
 #
 # Defines following Functions:
-#   RPM_SPEC_STRING_ADD(var str [position])
+#   RPM_SPEC_STRING_ADD(<var> <str> [<position>])
 #   - Add a string to SPEC string.
 #     * Parameters:
 #       + var: Variable that hold results in string format.
@@ -61,7 +65,7 @@
 #       Default: Append in the end of string.
 #       of string.
 #
-#   RPM_SPEC_STRING_ADD_DIRECTIVE var directive attribute content)
+#   RPM_SPEC_STRING_ADD_DIRECTIVE <var> <directive> <attribute> <content>)
 #   - Add a SPEC directive (e.g. %description -l zh_TW) to SPEC string.
 #     Parameters:
 #     + var: Variable that hold results in string format.
@@ -73,7 +77,7 @@
 #       Default: Append in the end of string.
 #       of string.
 #
-#   RPM_SPEC_STRING_ADD_TAG(var tag attribute value [position])
+#   RPM_SPEC_STRING_ADD_TAG(<var> <tag> <attribute> <value> [<position>])
 #   - Add a SPEC tag (e.g. BuildArch: noarch) to SPEC string.
 #     Parameters:
 #     + var: Variable that hold results in string format.
@@ -86,37 +90,43 @@
 #       of string.
 #
 # Defines following Macros:
-#   PACK_RPM([SPEC_IN specInFile] [SPEC specFile])
-#   - Generate spec and pack rpm  according to the spec file.
-#     Parameters:
-#     + SPEC_IN specInFile: RPM SPEC template file as .spec.in
-#     + SPEC specFile: Output RPM SPEC file 
-#       Default: ${RPM_BUILD_SPEC}/${PROJECT_NAME}.spec
-#     Targets:
-#     + srpm: Build srpm (rpmbuild -bs).
-#     + rpm: Build rpm and srpm (rpmbuild -bb)
-#     + rpmlint: Run rpmlint to generated rpms.
-#     + clean_rpm": Clean all rpm and build files.
-#     + clean_pkg": Clean all source packages, rpm and build files.
-#     + clean_old_rpm: Remove old rpm and build files.
-#     + clean_old_pkg: Remove old source packages and rpms.
-#     This macro defines following variables:
-#     + PRJ_RELEASE: Project release with distribution tags. (e.g. 1.fc13)
-#     + RPM_RELEASE_NO: Project release number, without distribution tags. (e.g. 1)
-#     + PRJ_SRPM_FILE: Path to generated SRPM file, including relative path.
-#     + PRJ_RPM_FILES: Binary RPM files to be build.
-#     This macro reads following variables
-#     + RPM_SPEC_CMAKE_FLAGS: cmake flags in RPM spec.
-#     + RPM_SPEC_MAKE_FLAGS: "make flags in RPM spec.
+#   PACK_RPM([SPEC_IN <specInFile>] [SPEC <specFile>]
+#       [CONFIG_REPLACE <file1> ...])
+#     - Generate spec and pack rpm  according to the spec file.
+#       * Parameters:
+#         + SPEC_IN specInFile: RPM SPEC template file as .spec.in
+#         + SPEC specFile: Output RPM SPEC file 
+#           Default: ${RPM_BUILD_SPEC}/${PROJECT_NAME}.spec
+#         + CONFIG_REPLACE <file1> ...: Configure file that should be
+#           replaced after update. 
+#           Example: 
+#              CONFIG_REPLACE ${SYSCONF_DIR}/${PROJECT_NAME}.conf
+#       * Targets:
+#         + srpm: Build srpm (rpmbuild -bs).
+#         + rpm: Build rpm and srpm (rpmbuild -bb)
+#         + rpmlint: Run rpmlint to generated rpms.
+#         + clean_rpm": Clean all rpm and build files.
+#         +   clean_pkg": Clean all source packages, rpm and build files.
+#         + clean_old_rpm: Remove old rpm and build files.
+#         + clean_old_pkg: Remove old source packages and rpms.
+#       * Variables defined:
+#         + PRJ_RELEASE: Project release with distribution tags. 
+#           (e.g. 1.fc13)
+#         + RPM_RELEASE_NO: Project release number, without 
+#           distribution tags. (e.g. 1)
+#         + PRJ_SRPM_FILE: Path to generated SRPM file, including
+#           relative path.
+#         + PRJ_RPM_FILES: Binary RPM files to be build.
 #
 #   RPM_MOCK_BUILD()
-#   - Add mock related targets.
-#     Targets:
-#     + rpm_mock_i386: Make i386 rpm
-#     + rpm_mock_x86_64: Make x86_64 rpm
-#     This macor reads following variables?:
-#     + MOCK_RPM_DIST_TAG: Prefix of mock configure file, such as "fedora-11", "fedora-rawhide", "epel-5".
-#         Default: Convert from RPM_DIST_TAG
+#     - Add mock related targets.
+#       * Targets:
+#         + rpm_mock_i386: Make i386 rpm
+#         + rpm_mock_x86_64: Make x86_64 rpm
+#       * Variables to be read:
+#         + MOCK_RPM_DIST_TAG: Prefix of mock configure file.
+#           such as "fedora-11", "fedora-rawhide", "epel-5".
+#           Default: Convert from RPM_DIST_TAG
 #
 
 IF(DEFINED _MANAGE_RPM_CMAKE_)
@@ -129,7 +139,33 @@ INCLUDE(ManageTarget)
 SET(_manage_rpm_dependency_missing 0)
 LIST(APPEND CMAKE_FEDORA_ADDITIONAL_SCRIPT_PATH ${CMAKE_SOURCE_DIR}/scripts ${CMAKE_SOURCE_DIR}/cmake-fedora/scripts)
 
-MESSAGE("## CMAKE_FEDORA_ADDITIONAL_SCRIPT_PATH=${CMAKE_FEDORA_ADDITIONAL_SCRIPT_PATH}")
+# Variables to be passed for SPEC building
+SET(RPM_SPEC_IN_VARIABLE_LIST
+    "REQUIRES"
+    "REQUIRES_PRE"
+    "REQUIRES_PREUN"
+    "REQUIRES_POST"
+    "REQUIRES_POSTUN"
+    "BUILD_REQUIRES"
+    "RPM_SPEC_BUILD_OUTPUT"
+    "RPM_SPEC_SUB_PACKAGE_OUTPUT"
+    "RPM_SPEC_INSTALL_SECTION_OUTPUT"
+    "RPM_SPEC_SCRIPT_OUTPUT"
+    )
+
+SET(RPM_SPEC_CMAKE_FLAGS "-DCMAKE_FEDORA_ENABLE_FEDORA_BUILD=1"
+    CACHE STRING "CMake flags in RPM SPEC"
+    )
+SET(RPM_SPEC_MAKE_FLAGS "VERBOSE=1 %{?_smp_mflags}"
+    CACHE STRING "Make flags in RPM SPEC"
+    )
+
+SET(RPM_SPEC_BUILD_OUTPUT 
+    "%cmake ${RPM_SPEC_CMAKE_FLAGS} .
+make ${RPM_SPEC_MAKE_FLAGS}"
+    )
+
+M_MSG(${M_INFO2} "CMAKE_FEDORA_ADDITIONAL_SCRIPT_PATH=${CMAKE_FEDORA_ADDITIONAL_SCRIPT_PATH}")
 FIND_PROGRAM_ERROR_HANDLING(RPM_CMD
     ERROR_MSG "ManageRPM: rpm not found, rpm build support is disabled."
     ERROR_VAR _manage_rpm_dependency_missing
@@ -152,20 +188,11 @@ FIND_PROGRAM_ERROR_HANDLING(CMAKE_FEDORA_KOJI_CMD
     PATHS  ${CMAKE_FEDORA_ADDITIONAL_SCRIPT_PATH}
     )
 
+
 IF(NOT _manage_rpm_dependency_missing)
     INCLUDE(ManageVariable)
     CMAKE_FEDORA_CONF_GET_ALL_VARIABLES()
 
-    SET(RPM_SPEC_CMAKE_FLAGS "-DCMAKE_FEDORA_ENABLE_FEDORA_BUILD=1"
-	CACHE STRING "CMake flags in RPM SPEC"
-	)
-    SET(RPM_SPEC_MAKE_FLAGS "VERBOSE=1 %{?_smp_mflags}"
-	CACHE STRING "Make flags in RPM SPEC"
-	)
-    SET(RPM_SPEC_BUILD_OUTPUT 
-	"%cmake ${RPM_SPEC_CMAKE_FLAGS} .
-	make ${RPM_SPEC_MAKE_FLAGS}"
-	)
 
     ## arch
     IF(BUILD_ARCH STREQUAL "noarch")
@@ -245,8 +272,6 @@ FUNCTION(RPM_SPEC_STRING_ADD_TAG var tag attribute value)
     SET(${var} "${${var}}" PARENT_SCOPE)
 ENDFUNCTION(RPM_SPEC_STRING_ADD_TAG var tag attribute value)
 
-
-
 MACRO(MANAGE_RPM_SPEC)
     IF(NOT _opt_SPEC_IN)
 	FIND_FILE_ERROR_HANDLING(_opt_SPEC_IN
@@ -277,14 +302,23 @@ MACRO(MANAGE_RPM_SPEC)
 	COMMENT "install_manifest.txt: ${INSTALL_MANIFESTS_FILE}"
 	)
 
+    FOREACH(v ${RPM_SPEC_IN_VARIABLE_LIST})
+	PRJ_INFO_CMAKE_APPEND(${PRJ_INFO_CMAKE} ${v})
+    ENDFOREACH(v ${RPM_SPEC_IN_VARIABLE_LIST})
+
+    SET(_specInOptList "")
+    IF(_opt_CONFIG_REPLACE)
+	LIST(APPEND _specInOptList "\"-Dconfig_replace=${_opt_CONFIG_REPLACE}\"")
+    ENDIF(_opt_CONFIG_REPLACE)
+
     ADD_CUSTOM_TARGET_COMMAND(spec OUTPUT ${_opt_SPEC}
 	COMMAND cmake -Dcmd=spec
             -Dspec=${_opt_SPEC}
             -Dspec_in=${_opt_SPEC_IN}
 	    -Dmanifests=${INSTALL_MANIFESTS_FILE}
 	    -Drelease=${RELEASE_NOTES_FILE}
-	    -Dpkg_name=${PROJECT_NAME}
 	    -Dprj_info=${PRJ_INFO_CMAKE}
+	    ${_specInOptList}
 	    -P ${CMAKE_FEDORA_MODULE_DIR}/ManageRPMScript.cmake
 	    DEPENDS ${_opt_SPEC_IN} ${RELEASE_NOTES_FILE}
 	    ${INSTALL_MANIFESTS_FILE}
@@ -295,7 +329,7 @@ ENDMACRO(MANAGE_RPM_SPEC)
 
 MACRO(PACK_RPM)
     IF(NOT _manage_rpm_dependency_missing )
-	SET(_validOptions "SPEC_IN" "SPEC" )
+	SET(_validOptions "SPEC_IN" "SPEC" "CONFIG_REPLACE")
 	VARIABLE_PARSE_ARGN(_opt _validOptions ${ARGN})
 	MANAGE_RPM_SPEC()
 
