@@ -2,16 +2,20 @@
 # This module handle dependencies by using pkg-config and/or
 # search the executable.
 # 
-# Includes:
-#   ManageFile
-#   ManageVersion
+# Included Modules:
+# - ManageFile
+# - ManageVariable
 #
 # Defines following functions:
-#   MANAGE_DEPENDENCY(listVar var [VER ver [EXACT]] [REQUIRED] 
-#     [PROGRAM_NAMES name1 ...] [PKG_CONFIG pkgConfigName]
-#     [FEDORA_NAME fedoraPkgName] [DEVEL]
+#   MANAGE_DEPENDENCY(<listVar> <var> [VER <ver> [EXACT]] [REQUIRED] 
+#     [PROGRAM_NAMES <name1> ...] [PKG_CONFIG <pkgConfigName>]
+#     [FEDORA_NAME <fedoraPkgName>] [DEVEL]
 #     )
-#     - Add a new dependency.
+#     - Add a new dependency to a list. 
+#       The dependency will also be searched.
+#       If found, ${var}_FOUND is set as 1.
+#       If not found:
+#         + If REQUIRED is specified: a M_ERROR message will be printed. #	    + If REQUIRED is not specified: a M_OFF message will be printed.
 #       * Parameters:
 #         + listVar: List variable store a kind of dependencies.
 #           Recognized lists:
@@ -21,12 +25,18 @@
 #           - REQUIRES_PREUN: Dependencies before the package uninstall
 #           - REQUIRES_POST:  Dependencies after the package install
 #           - REQUIRES_POSTUN:Dependencies after the package uninstall
-#         + var: Main variable. It recommend to use uppercase name,
-#           such as GETTEXT
+#         + var: Main variable. Uppercase variable name is recommended,
+#           (e.g. GETTEXT)
 #         + VER ver [EXACT]: Minimum version.
 #           Specify the exact version by providing "EXACT".
-#         + REQUIRED: Specify that this dependency is required.
+#         + REQUIRED: The dependency is required at build time.
+#           If specified, this dependency will be searched:
+#             - if found, ${var}_FOUND is set as 1.
+#	      - if not found, an error message will be printed and
+#	        build stop at build stage.
+#	    If not specified, this 
 #         + PROGRAM_NAMES name1 ...: Executable to be found.
+#           name2 and others are aliases to name1.
 #           If found, ${var}_EXECUTABLE is defined as the full path 
 #           to the executable; if not found; the whole dependency is
 #           deemed as not found.
@@ -55,45 +65,77 @@ FIND_PACKAGE(PkgConfig)
 FUNCTION(MANAGE_DEPENDENCY listVar var)
     SET(_validOptions "VER" "EXACT" "REQUIRED" 
 	"PROGRAM_NAMES" "PKG_CONFIG" "FEDORA_NAME" "DEVEL")
-    VARIABLE_PARSE_ARGN(${var} _validOptions ${ARGN})
-    UNSET(_ver)
-    UNSET(_rel)
-    IF(DEFINED ${var}_REQUIRED)
+    VARIABLE_PARSE_ARGN(_opt _validOptions ${ARGN})
+    SET(_dirty 0)
+
+    IF(DEFINED _opt_REQUIRED)
 	SET(_verbose "${M_ERROR}")
 	SET(_required "REQUIRED")
-    ELSE(DEFINED ${var}_REQUIRED)
+        SET(_progNotFoundMsg 
+	    "Program names ${_opt_PROGRAM_NAMES} not found, install ${var}")
+    ELSE(DEFINED _opt_REQUIRED)
 	SET(_verbose "${M_OFF}")
 	SET(_required "")
-    ENDIF(DEFINED ${var}_REQUIRED)
-    IF(${var}_VER)
-	SET(_ver "${${var}_VER}")
-	IF(DEFINED ${var}_EXACT)
+	SET(_progNotFoundMsg 
+	    "Program names ${_opt_PROGRAM_NAMES} not found, ${var} support disabled")
+    ENDIF(DEFINED _opt_REQUIRED)
+    IF(_opt_VER)
+	IF(DEFINED _opt_EXACT)
 	    SET(_rel "=")
 	    SET(_exact "EXACT")
-	ELSE(DEFINED ${var}_EXACT)
+	ELSE(DEFINED _opt_EXACT)
 	    SET(_rel ">=")
 	    SET(_exact "")
-	ENDIF(DEFINED ${var}_EXACT)
-    ENDIF(${var}_VER)
+	ENDIF(DEFINED _opt_EXACT)
+    ENDIF(_opt_VER)
 
-    IF(${var}_PROGRAM_NAMES)
-	MESSAGE(STATUS "checking for program '${${var}_PROGRAM_NAMES}'")
-	FIND_PROGRAM(${var}_EXECUTABLE NAMES "${${var}_PROGRAM_NAMES}"
-	    DOC "${var} executable"
-	    )
-	IF(${var}_EXECUTABLE-NOTFOUND)
-	    M_MSG("${_verbose}" "Cannot found ${${var}_PROGRAM_NAMES} in path.")
-	ELSE(${var}_EXECUTABLE-NOTFOUND)
-	    MESSAGE(STATUS "   found ${${var}_EXECUTABLE}")
-	ENDIF(${var}_EXECUTABLE-NOTFOUND)
+    IF(_opt_PROGRAM_NAMES)
+	M_MSG(${M_INFO2} "ManageDependency: finding program names ${_opt_PROGRAM_NAMES}")
 	FIND_PROGRAM_ERROR_HANDLING(${var}_EXECUTABLE
+	    ERROR_VAR _dirty
+	    ERROR_MSG "${_progNotFoundMsg}"
 	    VERBOSE_LEVEL "${_verbose}"
-	    "${${var}_PROGRAM_NAMES}"
+	    FIND_ARGS NAMES "${_opt_PROGRAM_NAMES}"
 	    )
 	MARK_AS_ADVANCED(${var}_EXECUTABLE)
-    ENDIF(${var}_PROGRAM_NAMES)
+    ENDIF(_opt_PROGRAM_NAMES)
 
-    IF(${var}_PKG_CONFIG)
+    IF(_opt_FEDORA_NAME)
+	SET(_name "${_opt_FEDORA_NAME}")
+    ELSE(_opt_FEDORA_NAME)
+	STRING(TOLOWER "${var}" _name)
+    ENDIF(_opt_FEDORA_NAME)
+
+    IF(DEFINED _opt_DEVEL)
+	SET(_name "${_name}-devel")
+    ENDIF(DEFINED _opt_DEVEL)
+    IF("${_opt_VER}" STREQUAL "")
+	SET(_newDep  "${_name}")
+    ELSE("${_opt_VER}" STREQUAL "")
+	SET(_newDep  "${_name} ${_rel} ${_opt_VER}")
+    ENDIF("${_opt_VER}" STREQUAL "")
+    IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
+	SET(_rpm_missing 0)
+	FIND_PROGRAM_ERROR_HANDLING(RPM_CMD
+	    ERROR_VAR _rpm_missing
+	    ERROR_MSG "Program rpm not found, dependency check disabled."
+	    VERBOSE_LEVEL ${M_OFF}
+	    FIND_ARGS "rpm"
+	    )
+	IF(NOT _rpm_missing)
+	    EXECUTE_PROCESS(COMMAND ${RPM_CMD} -q ${_name}
+		RESULT_VARIABLE _rpm_ret
+		OUTPUT_QUIET
+		ERROR_QUIET
+		)
+	    IF(_rpm_ret)
+		## Dependency not found
+		M_MSG(${_verbose} "RPM ${_name} is not installed")
+	    ENDIF(_rpm_ret)
+	ENDIF(NOT _rpm_missing)
+    ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
+
+    IF(_opt_PKG_CONFIG)
 	IF(PKG_CONFIG_EXECUTABLE)
 	    LIST(FIND ${listVar} "pkgconfig" _index)
 	    IF(_index EQUAL -1)
@@ -103,9 +145,9 @@ FUNCTION(MANAGE_DEPENDENCY listVar var)
 	    M_MSG(${M_ERROR} "pkgconfig is required with ${var}")
 	ENDIF(PKG_CONFIG_EXECUTABLE)
 	PKG_CHECK_MODULES(${var} ${_required}
-	    "${${var}_PKG_CONFIG}${_rel}${_ver}")
+	    "${_opt_PKG_CONFIG}${_rel}${_opt_VER}")
 	EXECUTE_PROCESS(COMMAND ${PKG_CONFIG_EXECUTABLE}
-	    --print-variables "${${var}_PKG_CONFIG}"
+	    --print-variables "${_opt_PKG_CONFIG}"
 	    OUTPUT_VARIABLE _variables
 	    OUTPUT_STRIP_TRAILING_WHITESPACE
 	    RESULT_VARIABLE _ret
@@ -115,7 +157,7 @@ FUNCTION(MANAGE_DEPENDENCY listVar var)
 	    FOREACH(_v ${${var}_VARIABLES})
 		STRING(TOUPPER "${_v}" _u)
 		EXECUTE_PROCESS(COMMAND ${PKG_CONFIG_EXECUTABLE}
-		    --variable "${_v}" "${${var}_PKG_CONFIG}"
+		    --variable "${_v}" "${_opt_PKG_CONFIG}"
 		    OUTPUT_VARIABLE ${var}_${_u}
 		    OUTPUT_STRIP_TRAILING_WHITESPACE
 		    )
@@ -123,30 +165,15 @@ FUNCTION(MANAGE_DEPENDENCY listVar var)
 		    CACHE INTERNAL "pkgconfig ${var}_${u}")
 		MARK_AS_ADVANCED(${var}_${_u})
 		M_MSG(${M_INFO1} "${var}_${_u}=${${var}_${_u}}")
-	    ENDFOREACH(_v ${var}_VARIABLES)
+	    ENDFOREACH(_v)
 	ENDIF(NOT _ret)
-    ENDIF(${var}_PKG_CONFIG)
-
-    IF(${var}_FEDORA_NAME)
-	SET(_name "${${var}_FEDORA_NAME}")
-    ELSE(${var}_FEDORA_NAME)
-	STRING(TOLOWER "${var}" _name)
-    ENDIF(${var}_FEDORA_NAME)
-
-    IF(DEFINED ${var}_DEVEL)
-	SET(_name "${_name}-devel")
-    ENDIF(DEFINED ${var}_DEVEL)
-    IF("${_ver}" STREQUAL "")
-	SET(_newDep  "${_name}")
-    ELSE("${_ver}" STREQUAL "")
-	SET(_newDep  "${_name} ${_rel} ${_ver}")
-    ENDIF("${_ver}" STREQUAL "")
+    ENDIF(_opt_PKG_CONFIG)
 
     ## Insert when it's not duplicated
     LIST(FIND ${listVar} "${_newDep}" _index)
     IF(_index EQUAL -1)
 	LIST(APPEND ${listVar} "${_newDep}")
+	SET(${listVar} "${${listVar}}" PARENT_SCOPE)
     ENDIF(_index EQUAL -1)
-    SET(${listVar} "${${listVar}}" PARENT_SCOPE)
 ENDFUNCTION(MANAGE_DEPENDENCY)
 
