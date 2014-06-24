@@ -1,71 +1,73 @@
-# - Manage build environment such as environment variables and compile flags.
-# This module predefine various environment variables, cmake policies, and
-# compile flags.
+# - Manage build environment like environment variables and compile flags.
+# This module pre-defines and manages various environment variables,
+# cmake policies, and compile flags.
 #
 # The setting can be viewed and modified by ccmake.
 #
-# List of frequently used variable and compile flags:
-#    + CMAKE_INSTALL_PREFIX: Compile flag whose value is ${CMAKE_INSTALL_PREFIX}.
-#    + BIN_DIR: Directory for executable.
-#      Default:  ${CMAKE_INSTALL_PREFIX}/bin
-#    + DATA_DIR: Directory for architecture independent data files.
-#      Default: ${CMAKE_INSTALL_PREFIX}/share
-#    + DOC_DIR: Directory for documentation
-#      Default: ${DATA_DIR}/doc
-#    + SYSCONF_DIR: System wide configuration files.
-#      Default: /etc
-#    + LIB_DIR: System wide library path.
-#      Default: ${CMAKE_INSTALL_PREFIX}/lib for 32 bit,
-#               ${CMAKE_INSTALL_PREFIX}/lib64 for 64 bit.
-#    + LIBEXEC_DIR: Executables that are not meant to be executed by user directly.
-#      Default: ${CMAKE_INSTALL_PREFIX}/libexec
-#    + PROJECT_NAME: Project name
+# Included Modules:
+#   - ManageMessage
+#
+# Reads following variables:
+#   - CMAKE_INSTALL_PREFIX: Install directory used by install.
+#   - PROJECT_NAME: Project name.
+#
+# Defines following variables:
+#   - IS_64: Defined as "64" if built for 64-bit application. 
+#
+# Defines or reads following variables:
+#   - BIN_DIR: Directory for executable.
+#     Default:  ${CMAKE_INSTALL_PREFIX}/bin
+#   - DATA_DIR: Directory for architecture independent data files.
+#     Default: ${CMAKE_INSTALL_PREFIX}/share
+#   - DOC_DIR: Directory for documentation
+#     Default: ${DATA_DIR}/doc
+#   - SYSCONF_DIR: System wide configuration files.
+#     Default: /etc
+#   - LIB_DIR: System wide library path.
+#     Default: ${CMAKE_INSTALL_PREFIX}/lib for 32 bit,
+#              ${CMAKE_INSTALL_PREFIX}/lib64 for 64 bit.
+#   - LIBEXEC_DIR: Executables that are not meant to be executed
+#       by user directly.
+#     Default: ${CMAKE_INSTALL_PREFIX}/libexec
+#   - PRJ_DATA_DIR: Data directory for the project.
+#     Default: ${DATA_DIR}/${PROJECT_NAME}
+#   - PRJ_DOC_DIR: DocuFILEPATH = File chooser dialog.
+#     Default: ${DOC_DIR}/${PROJECT_NAME}
+#   - CMAKE_FEDORA_TMP_DIR: Director that stores cmake-fedora
+#       temporary items.
+#     Default: ${CMAKE_BINARY_DIR}/NO_PACK
+#
+# Defines following compile flags: (which use same values with variables)
+#   - CMAKE_INSTALL_PREFIX
+#   - PROJECT_NAME
+#   - BIN_DIR
+#   - DATA_DIR
+#   - DOC_DIR
+#   - SYSCONF_DIR
+#   - LIB_DIR
+#   - LIBEXEC_DIR
+# Note: compile flag PRJ_VER is defined in ManageVersion.
 #
 # Defines following macros:
-#   SET_COMPILE_ENV(var default_value [ENV_NAME env_name]
-#     [CACHE type docstring [FORCE]])
-#   - Ensure a variable is set to nonempty value, then add the variable and value to
-#     compiling definition.
-#     The value is determined by following order:
-#     1. Value of var if var is defined.
-#     2. Environment variable with the same name (or specified via ENV_NAME)
-#     3. Parameter default_value
-#     Parameters:
-#     + var: Variable to be set
-#     + default_value: Default value of the var
-#     + env_name: (Optional)The name of environment variable.
-#       Only need if different from var.
-#     + CACHE type docstring [FORCE]:
-#       Same with "SET" command.
+#   SET_COMPILE_ENV(<var> [<defaultValue>] [ENV_NAME <envName>]
+#       [CACHE <type> <docstring> [FORCE]]
+#     )
+#     - Ensure a variable is set to nonempty value, then set the value
+#       to the compile flags with same name.
 #
-#  SET_USUAL_COMPILE_ENVS()
-#  - Set the most often used variable and compile flags.
-#    It defines compile flags according to the values of corresponding variables,
-#    usually under the same or similar name.
-#    If a corresponding variable is not defined yet, then a default value is assigned
-#    to that variable, then define the flag.
+#       The value is determined by first non-empty value:
+#       1. Value of <var>.
+#       2. Value of environment variable <var>, 
+#          or if ENV_NAME is specified, value of <envName>.
+#       3. <defaultValue>
+#       * Parameters:
+#         + var: Variable to be set
+#         + defaultValue: Default value of the var
+#         + envName: (Optional)The name of environment variable.
+#           Only need if different from var.
+#         + CACHE type docstring [FORCE]:
+#           Same with "SET" command.
 #
-#    Defines following flags according to the variable with same name.
-#    + CMAKE_INSTALL_PREFIX: Compile flag whose value is ${CMAKE_INSTALL_PREFIX}.
-#    + BIN_DIR: Directory for executable.
-#      Default:  ${CMAKE_INSTALL_PREFIX}/bin
-#    + DATA_DIR: Directory for architecture independent data files.
-#      Default: ${CMAKE_INSTALL_PREFIX}/share
-#    + DOC_DIR: Directory for documentation
-#      Default: ${DATA_DIR}/doc
-#    + SYSCONF_DIR: System wide configuration files.
-#      Default: /etc
-#    + LIB_DIR: System wide library path.
-#      Default: ${CMAKE_INSTALL_PREFIX}/lib for 32 bit,
-#               ${CMAKE_INSTALL_PREFIX}/lib64 for 64 bit.
-#    + LIBEXEC_DIR: Executables that are not meant to be executed by user directly.
-#      Default: ${CMAKE_INSTALL_PREFIX}/libexec
-#    + PROJECT_NAME: Project name
-#    + PRJ_VER: Project version
-#    + PRJ_DATA_DIR: Data directory for the project.
-#      Default: ${DATA_DIR}/${PROJECT_NAME}
-#    + PRJ_DOC_DIR: DocuFILEPATH = File chooser dialog.
-#      Default: ${DOC_DIR}/${PROJECT_NAME}-${PRJ_VER}
 
 IF(DEFINED _MANAGE_ENVIRONMENT_CMAKE_)
     RETURN()
@@ -73,49 +75,46 @@ ENDIF(DEFINED _MANAGE_ENVIRONMENT_CMAKE_)
 SET(_MANAGE_ENVIRONMENT_CMAKE_ "DEFINED")
 SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS ON)
 
-MACRO(SET_COMPILE_ENV var default_value)
+FUNCTION(SET_COMPILE_ENV var)
     SET(_stage "")
     SET(_env "${var}")
     SET(_setOpts "")
     SET(_force 0)
+    SET(_defaultValue "")
     FOREACH(_arg ${ARGN})
-	IF(_arg STREQUAL "ENV_NAME")
+	IF("${_arg}" STREQUAL "ENV_NAME")
 	    SET(_stage "ENV_NAME")
-	ELSEIF(_arg STREQUAL "CACHE")
-	    SET(_stage "_CACHE")
-	ELSE(_arg STREQUAL "ENV_NAME")
-	    IF(_stage STREQUAL "ENV_NAME")
+	ELSEIF("${_arg}" STREQUAL "CACHE")
+	    SET(_stage "CACHE")
+	ELSE()
+	    IF("${_stage}" STREQUAL "ENV_NAME")
 		SET(_env "${_arg}")
-	    ELSEIF(_stage STREQUAL "_CACHE")
+	    ELSEIF("${_stage}" STREQUAL "CACHE")
 		LIST(APPEND _setOpts "${_arg}")
-		IF(_arg STREQUAL "FORCE")
+		IF("${_arg}" STREQUAL "FORCE")
 		    SET(_force 1)
-		ENDIF(_arg STREQUAL "FORCE")
+		ENDIF()
+	    ELSE()
+		SET(_defaultValue "${_arg}")
 	    ENDIF(_stage STREQUAL "ENV_NAME")
 	ENDIF(_arg STREQUAL "ENV_NAME")
     ENDFOREACH(_arg ${ARGN})
 
-    IF(NOT "${_setOpts}" STREQUAL "")
+    IF("${_setOpts}" STREQUAL "")
+	SET(_setOpts "PARENT_SCOPE")
+    ELSE()
 	LIST(INSERT _setOpts 0 "CACHE")
-    ENDIF(NOT "${_setOpts}" STREQUAL "")
+    ENDIF()
 
     # Set the variable
-    IF(_force)
-	IF(NOT "$ENV{${_env}}" STREQUAL "")
-	    SET(${var} "$ENV{${_env}}" ${_setOpts})
-	ELSE(NOT "$ENV{${_env}}" STREQUAL "")
-	    SET(${var} "${default_value}" ${_setOpts})
-	ENDIF(NOT "$ENV{${_env}}" STREQUAL "")
-    ELSE(_force)
-	IF(NOT "${${var}}" STREQUAL "")
-	    SET(${var} "${${var}}" ${_setOpts})
-	ELSEIF(NOT "$ENV{${_env}}" STREQUAL "")
-	    SET(${var} "$ENV{${_env}}" ${_setOpts})
-	ELSE(NOT "${${var}}" STREQUAL "")
-	    # Default value
-	    SET(${var} "${default_value}" ${_setOpts})
-	ENDIF(NOT "${${var}}" STREQUAL "")
-    ENDIF(_force)
+    IF(NOT "${${var}}" STREQUAL "")
+	SET(${var} "${${var}}" ${_setOpts})
+    ELSEIF(NOT "$ENV{${_env}}" STREQUAL "")
+	SET(${var} "$ENV{${_env}}" ${_setOpts})
+    ELSEIF()
+	## Use default value
+	SET(${var} "${_defaultValue}" ${_setOpts})
+    ENDIF()
 
     # Enforce CMP0005 to new, yet pop after ADD_DEFINITION
     CMAKE_POLICY(PUSH)
@@ -123,7 +122,7 @@ MACRO(SET_COMPILE_ENV var default_value)
     ADD_DEFINITIONS(-D${_env}=${${var}})
     CMAKE_POLICY(POP)
     M_MSG(${M_INFO2} "SET(${var} ${${var}})")
-ENDMACRO(SET_COMPILE_ENV var default_value)
+ENDFUNCTION(SET_COMPILE_ENV)
 
 MACRO(MANAGE_CMAKE_POLICY policyName defaultValue)
     IF(POLICY ${policyName})
@@ -135,14 +134,27 @@ MACRO(MANAGE_CMAKE_POLICY policyName defaultValue)
     ENDIF(POLICY ${policyName})
 ENDMACRO(MANAGE_CMAKE_POLICY policyName defaultValue)
 
-# Include should be put after the cmake policy
-INCLUDE(ManageMessage)
-M_MSG(${M_INFO1} "CMAKE_HOST_SYSTEM=${CMAKE_HOST_SYSTEM}")
-M_MSG(${M_INFO1} "CMAKE_SYSTEM=${CMAKE_SYSTEM}")
-
 ####################################################################
-# CMake Variables
-#
+# Variables settings
+# 
+
+## CMAKE_FEODRA_MODULE_DIR: Directory contains cmake-fedora modules
+INCLUDE(ManageMessage RESULT_VARIABLE MANAGE_ENVIRONMENT_PATH)
+GET_FILENAME_COMPONENT(CMAKE_FEDORA_MODULE_DIR 
+    "${MANAGE_ENVIRONMENT_PATH}" PATH CACHE)
+
+## CMAKE_FEDORA_TMP_DIR: Directory stores temporary files.
+SET(CMAKE_FEDORA_TMP_DIR "${CMAKE_BINARY_DIR}/NO_PACK" 
+    CACHE PATH "cmake-fedora tmp dir")
+FILE(MAKE_DIRECTORY "${CMAKE_FEDORA_TMP_DIR}")
+
+## Print CMake system information
+M_MSG(${M_INFO1} "CMAKE_HOST_SYSTEM=${CMAKE_HOST_SYSTEM}")
+M_MSG(${M_INFO1} "CMAKE_HOST_SYSTEM_PROCESSOR=${CMAKE_HOST_SYSTEM_PROCESSOR}")
+M_MSG(${M_INFO1} "CMAKE_SYSTEM=${CMAKE_SYSTEM}")
+M_MSG(${M_INFO1} "CMAKE_HOST_PROCESSOR=${CMAKE_SYSTEM_PROCESSOR}")
+
+## Set variables and compile flags
 SET_COMPILE_ENV(BIN_DIR  "${CMAKE_INSTALL_PREFIX}/bin"
     CACHE PATH "Binary dir")
 SET_COMPILE_ENV(DATA_DIR "${CMAKE_INSTALL_PREFIX}/share"
@@ -160,24 +172,8 @@ ENDIF(CMAKE_SYSTEM_PROCESSOR MATCHES "64")
 
 SET_COMPILE_ENV(LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib${IS_64}"
     CACHE PATH "Library dir")
-
-SET_COMPILE_ENV(PROJECT_NAME "${PROJECT_NAME}")
+ 
+SET_COMPILE_ENV(PROJECT_NAME)
 SET_COMPILE_ENV(PRJ_DATA_DIR "${DATA_DIR}/${PROJECT_NAME}")
 SET_COMPILE_ENV(PRJ_DOC_DIR "${DOC_DIR}/${PROJECT_NAME}")
-
-# Directory to store cmake-fedora specific temporary files.
-IF(NOT CMAKE_FEDORA_TMP_DIR)
-    SET(CMAKE_FEDORA_TMP_DIR "${CMAKE_BINARY_DIR}/NO_PACK")
-ENDIF(NOT CMAKE_FEDORA_TMP_DIR)
-
-## Current cmake-fedora module
-## Include itself to get MANAGE_ENVIRONMENT_PATH
-INCLUDE(ManageEnvironment RESULT_VARIABLE MANAGE_ENVIRONMENT_PATH)
-GET_FILENAME_COMPONENT(CMAKE_FEDORA_MODULE_DIR 
-    "${MANAGE_ENVIRONMENT_PATH}" PATH CACHE)
-
-ADD_CUSTOM_COMMAND(OUTPUT ${CMAKE_FEDORA_TMP_DIR}
-    COMMAND cmake -E make_directory ${CMAKE_FEDORA_TMP_DIR}
-    COMMENT "Create CMAKE_FEDORA_TMP_DIR"
-    )
 
