@@ -131,6 +131,7 @@ FUNCTION(MANAGE_DEPENDENCY listVar var)
 	    IF(_rpm_ret)
 		## Dependency not found
 		M_MSG(${_verbose} "RPM ${_name} is not installed")
+		SET(_dirty 1)
 	    ENDIF(_rpm_ret)
 	ENDIF(NOT _rpm_missing)
     ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
@@ -150,9 +151,9 @@ FUNCTION(MANAGE_DEPENDENCY listVar var)
 	    --print-variables "${_opt_PKG_CONFIG}"
 	    OUTPUT_VARIABLE _variables
 	    OUTPUT_STRIP_TRAILING_WHITESPACE
-	    RESULT_VARIABLE _ret
+	    RESULT_VARIABLE _pkgconfig_ret
 	    )
-	IF(NOT _ret)
+	IF(NOT _pkgconfig_ret)
 	    STRING_SPLIT(${var}_VARIABLES "\n" "${_variables}")
 	    FOREACH(_v ${${var}_VARIABLES})
 		STRING(TOUPPER "${_v}" _u)
@@ -166,10 +167,13 @@ FUNCTION(MANAGE_DEPENDENCY listVar var)
 		MARK_AS_ADVANCED(${var}_${_u})
 		M_MSG(${M_INFO1} "${var}_${_u}=${${var}_${_u}}")
 	    ENDFOREACH(_v)
-	ENDIF(NOT _ret)
+	ENDIF(NOT _pkgconfig_ret)
     ENDIF(_opt_PKG_CONFIG)
 
     ## Insert when it's not duplicated
+    IF(NOT _dirty)
+	SET(${var}_FOUND "1" CACHE INTERNAL "Found ${var}")
+    ENDIF(NOT _dirty)
     LIST(FIND ${listVar} "${_newDep}" _index)
     IF(_index EQUAL -1)
 	LIST(APPEND ${listVar} "${_newDep}")
