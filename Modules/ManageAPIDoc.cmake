@@ -9,30 +9,31 @@
 #   MANAGE_APIDOC_DOXYGEN([DOXYGEN <Doxyfile>]
 #     [OUTPUT_DIRECTORY <dir>] ...
 #     )
-#   - Provide Doxygen processing and targets.
-#     DOXYGEN options can also be provided here.
-#     For example:
-#       MANAGE_APIDOC_DOXYGEN(DOXYGEN Doxyfile
-#         OUTPUT_DIRECTORY doc
-#         CREATE_SUBDIR no
-#        )
-#     Will write the configure file to Doxyfile, generate documents will
-#     be put in doc/, and CREATE_SUBDIR is set as "no"
+#     - Provide Doxygen processing and targets.
+#       DOXYGEN options can also be provided here.
+#       For example:
+#         MANAGE_APIDOC_DOXYGEN(DOXYGEN Doxyfile
+#           OUTPUT_DIRECTORY doc
+#           CREATE_SUBDIR no
+#           )
+#       Will write the configure file to Doxyfile, generate documents
+#       will be put in doc/, and CREATE_SUBDIR is set as "no".
 #
-#     * Parameters:
-#       + DOXYGEN Doxyfile: Doxygen file.
-#         Default: ${CMAKE_BINARY_DIR}/Doxygn
-#       + OUTPUT_DIRECTORYCREATE_SUBDIR dir: Directory for generated documents.
-#       + ... : Dox
-#       + docSrcdir: Document source directory to be copied from.
-#     * Targets:
-#       + doxygen: Make doxygen documents.
-#       + doxygen_update_doxyfile: Update Doxyfile.
-#         Doxyfile configuration options such as PROJECT_NUMBER will be
-#         updated according to project information.
-#     * Reads following variable:
-#       + PRJ_DOC_DIR: Directory for installed documents.
-#         Default: /usr/share/doc/${PROJECT_NAME}
+#       * Parameters:
+#         + DOXYGEN Doxyfile: Doxygen file.
+#           Default: ${CMAKE_BINARY_DIR}/Doxygn
+#         + OUTPUT_DIRECTORYCREATE_SUBDIR dir: Directory for generated
+#           documents.
+#         + ... : Other Doxygen options.
+#         + docSrcdir: Document source directory to be copied from.
+#       * Targets:
+#         + doxygen: Make doxygen documents.
+#         + doxygen_update_doxyfile: Update Doxyfile.
+#           Doxyfile configuration options such as PROJECT_NUMBER will be
+#           updated according to project information.
+#       * Reads following variable:
+#         + PRJ_DOC_DIR: Directory for installed documents.
+#           Default: /usr/share/doc/${PROJECT_NAME}
 #
 IF(DEFINED _MANAGE_APIDOC_CMAKE_)
     RETURN()
