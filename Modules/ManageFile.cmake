@@ -71,7 +71,7 @@
 #           when cmake-fedora.conf is not found.
 #
 #   MANAGE_FILE_CACHE(<var> <file> [EXPIRY_SECONDS <expirySecond>]
-#     [CACHE_DIR <dir>] [ERROR_VAR <errorVar>]
+#     [CACHE_DIR <dir>] [ERROR_VAR <errorVar>] [RESULT_VAR resultVar]
 #     COMMAND <cmd ...>
 #     )
 #     - Manage cached program output.
@@ -326,11 +326,16 @@ ENDFUNCTION(MANAGE_CMAKE_FEDORA_CONF var)
 
 FUNCTION(MANAGE_FILE_CACHE var file)
     SET(_validOptions "CACHE_DIR" 
-	"EXPIRY_SECONDS" "ERROR_VAR" "COMMAND")
+	"EXPIRY_SECONDS" "ERROR_VAR" "RESULT_VAR" "COMMAND")
     VARIABLE_PARSE_ARGN(_o _validOptions ${ARGN})
     IF(NOT DEFINED _o_ERROR_VAR)
 	SET(_o_ERROR_VAR "${var}_ERROR")
     ENDIF(NOT DEFINED _o_ERROR_VAR)
+    SET(_commandOptList "")
+    IF(DEFINED _o_RESULT_VAR)
+	SET(_commandOptList RESULT_VARIABLE ${_o_RESULT_VAR})
+    ENDIF(DEFINED _o_RESULT_VAR)
+
     CMAKE_FEDORA_CONF_GET_ALL_VARIABLES()
     SET(_toRun TRUE)
     IF(NOT DEFINED LOCAL_CACHE)
@@ -351,9 +356,18 @@ FUNCTION(MANAGE_FILE_CACHE var file)
 		SET(_o_EXPIRY_SECONDS 259200) # 3 days
 	    ENDIF(LOCAL_CACHE_EXPIRY)
 	ENDIF(NOT  _o_EXPIRY_SECONDS)
+
 	IF(NOT EXISTS ${_o_CACHE_DIR})
-	    FILE(MAKE_DIRECTORY ${_o_CACHE_DIR})
+	    EXECUTE_PROCESS(COMMAND 
+		${CMAKE_COMMAND} -E make_directory "${_o_CACHE_DIR}"
+		RESULT_VARIABLE ${_o_ERROR_VAR}
+		OUTPUT_QUIET
+		ERROR_QUIET
+		)
 	ENDIF(NOT EXISTS ${_o_CACHE_DIR})
+	IF(_o_ERROR_VAR)
+	    RETURN()
+	ENDIF(_o_ERROR_VAR)
 
 	SET(_cacheFile "${_o_CACHE_DIR}/${file}")
 	MANAGE_FILE_EXPIRY(_isExpired ${_cacheFile} ${_o_EXPIRY_SECONDS})
@@ -369,8 +383,10 @@ FUNCTION(MANAGE_FILE_CACHE var file)
     ELSE(LOCAL_CACHE)
 	SET(_cacheFile "/tmp/cmake_fedora_cache_${cache_file}")
     ENDIF(LOCAL_CACHE)
+    
     IF(_toRun)
 	EXECUTE_PROCESS(COMMAND ${_o_COMMAND}
+	    ${_commandOptList}
 	    OUTPUT_FILE ${_cacheFile}
 	    OUTPUT_STRIP_TRAILING_WHITESPACE
 	    )
