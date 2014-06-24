@@ -46,6 +46,8 @@ REDHAT_BUGZILLA=1002279,1093336
 
 - Changed:
   + DateTimeFormat: Macro to function: TODAY
+  + ManageAPIDOC: Macro to function MANAGE_APIDOC_DOXYGEN
+  + ManageAPIDOC: MANAGE_APIDOC_DOXYGEN: Parameter changed.
   + ManageString: Macro to function: STRING_ESCAPE_SEMICOLON
   + ManageDependency: Macro to function: MANAGE_DEPENDENCY
   + PRJ_DOC_DIR: Changed from docdir/<PRJ_NAME>-<PRJ_VER> 
