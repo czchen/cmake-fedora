@@ -1,18 +1,17 @@
-# - Module for File Handling Function
+# - Manage files
 #
-# Includes:
-#   ManageMessage
-#   ManageVariable
+# Included Modules:
+# - ManageMessage
+# - ManageVariable
 #
-# Defines following variables:
 #
 # Defines following functions:
 #   FIND_FILE_ERROR_HANDLING(<var>
 #     [ERROR_MSG <errorMessage>]
-#     [ERROR_VAR <errorVar?]
+#     [ERROR_VAR <errorVar>]
 #     [VERBOSE_LEVEL <verboseLevel>]
 #     [FIND_ARGS ...]
-#   )
+#     )
 #     - Find a file, with proper error handling.
 #       It is essentially a wrapper of FIND_FILE
 #       * Parameter:
@@ -21,73 +20,88 @@
 #         + verboseLevel: See ManageMessage for semantic of 
 #           each verbose level.
 #         + ERROR_MSG errorMessage: Error message to be append.
-#         + ERROR_VAR errorVar: Variable to be set as 1 when not found.
+#         + ERROR_VAR errorVar: Variable that will be  set to 1 
+#           when not found.
 #         + FIND_ARGS: A list of arguments to be passed 
 #           to FIND_FILE
 #
 #   FIND_PROGRAM_ERROR_HANDLING(<var>
 #     [ERROR_MSG <errorMessage>]
-#     [ERROR_VAR <errorVar?]
+#     [ERROR_VAR <errorVar>]
 #     [VERBOSE_LEVEL <verboseLevel>]
 #     [FIND_ARGS ...]
-#   )
+#     )
 #     - Find an executable program, with proper error handling.
 #       It is essentially a wrapper of FIND_PROGRAM
-#       * Parameter:
+#       * Parameters:
 #         + var: The variable that stores the path of the found program.
 #         + name: The filename of the command.
 #         + verboseLevel: See ManageMessage for semantic of 
 #           each verbose level.
 #         + ERROR_MSG errorMessage: Error message to be append.
-#         + ERROR_VAR errorVar: Variable to be set as 1 when not found.
+#         + ERROR_VAR errorVar: Variable that will be  set to 1 
+#           when not found.
 #         + FIND_ARGS: A list of arguments to be passed 
-#           to FIND_PROGRAM
+#             to FIND_PROGRAM
+#
+#   GIT_GLOB_TO_CMAKE_REGEX(<var> <glob>)
+#     - Convert git glob to cmake file regex
+#       This macro covert git glob used in gitignore to
+#       cmake file regex used in CPACK_SOURCE_IGNORE_FILES
+#       * Parameters:
+#         + var: Variable that hold the result.
+#         + glob: Glob to be converted
 #
 #   MANAGE_CMAKE_FEDORA_CONF(<var>
 #     [ERROR_MSG <errorMessage>]
-#     [ERROR_VAR <errorVar?]
+#     [ERROR_VAR <errorVar>]
 #     [VERBOSE_LEVEL <verboseLevel>]
-#   )
+#     )
 #     - Locate cmake-fedora.conf
 #       Return the location of cmake-fedora.conf.
 #       It search following places:
 #       ${CMAKE_SOURCE_DIR}, ${CMAKE_SOURCE_DIR}/cmake-fedora,
 #       current dir, ./cmake-fedora and /etc.
-#       * Parameter:
+#       * Parameters:
 #         + var: The variable that returns the path of cmake-fedora.conf
 #         + verboseLevel: See ManageMessage for semantic of 
 #           each verbose level.
 #         + ERROR_MSG errorMessage: Error message to be append.
-#         + ERROR_VAR errorVar: Variable to be set as 1 when not found.
+#         + ERROR_VAR errorVar: This variable will be set to 1
+#           when cmake-fedora.conf is not found.
 #
 #   MANAGE_FILE_CACHE(<var> <file> [EXPIRY_SECONDS <expirySecond>]
-#     [CACHE_DIR <dir>] [ERROR_VAR errVar]
+#     [CACHE_DIR <dir>] [ERROR_VAR <errorVar>]
 #     COMMAND <cmd ...>
-#   )
-#     - Return the output of a program in cache, 
-#        and update the cache if expired, or create a cache if not exist.
-#       * Parameter:
+#     )
+#     - Manage cached program output.
+#       If cache is not existed, it runs the command and create the cache;
+#       otherwise if cache is not expired, it returns the cached content;
+#       otherwise if cache is expired, it run sthe command and update the 
+#       cache.
+#       Then this program returns cache content.
+#       * Parameters:
 #         + var: The variable the stores the content of the cache file.
 #         + file: File to be processed. 
 #         + EXPIRY_SECONDS expirySecond: (Optional) Seconds 
 #           before the file expired.
-#           If not specified, it will use the value 
-#           LOCAL_CACHE_EXPIRY in cmake-fedora.conf,
-#           or 259200 (3 days).
+#           If not specified, it will use the value LOCAL_CACHE_EXPIRY 
+#           in cmake-fedora.conf, or 259200 (3 days).
 #         + CACHE_DIR dir: (Optional) Directory of <file>.
 #           If not specified, it will use the value 
 #           LOCAL_CACHE_DIR in cmake-fedora.conf,
 #           or $ENV{HOME}/.cache/cmake-fedora .
-#         + ERROR_VAR errorVar: (Optional) Variable to be set as 1 
-#           If not specified, it will use ${var}_ERROR
-#         + COMMAND <cmd ...>: Command for getting output.
-#           
+#         + ERROR_VAR errorVar: This variable will be set to 1
+#           when cache cannot be created.
+#         + RESULT_VAR resultVar: This variable returns the exit code
+#           for <cmd>.
+#         + COMMAND <cmd ...>: Command to produceoutput.
 #
 #   MANAGE_FILE_EXPIRY(<var> <file> <expirySecond>)
-#     - Tell whether a file is expired in given.
+#     - Tell whether a file is expired.
 #       A file is deemed as expired if (currenTime - mtime) is greater
 #       than specified expiry time in seconds.
-#       * Parameter:
+#       * Parameters:
 #         + var: The variable that returns the file expiry status.
 #           Valid status: ERROR, NOT_FOUND, EXPIRED, NOT_EXPIRED.
 #         + file: File to be processed.
@@ -97,9 +111,10 @@
 #   MANAGE_FILE_INSTALL(<fileType>
 #     [<files> | FILES <files>] [DEST_SUBDIR <subDir>] 
 #     [RENAME <newName>] [ARGS <args>]
-#   )
-#     - Manage file installation.
-#       * Parameter:
+#     )
+#     - (Deprecated) Manage file installation .
+#       You can use cmake built-in INSTALL after cmake-fedora-2.0.0
+#       * Parameters:
 #         + fileType: Type of files. Valid values:
 #           BIN, PRJ_DOC, DATA, PRJ_DATA, 
 #           SYSCONF, SYSCONF_NO_REPLACE, 
@@ -107,15 +122,8 @@
 #         + DEST_SUBDIR subDir: Subdir of Destination dir
 #         + files: Files to be installed.
 #         + RENAME newName: Destination filename.
-#         + args: Arguments for INSTALL.
+#         + ARGS args: Arguments for INSTALL.
 #
-#   GIT_GLOB_TO_CMAKE_REGEX(var glob)
-#     - Convert git glob to cmake file regex
-#       This macro covert git glob used in gitignore to
-#       cmake file regex used in CPACK_SOURCE_IGNORE_FILES
-#       * Parameter:
-#         + var: Variable that hold the result.
-#         + glob: Glob to be converted
 #
 
 IF(DEFINED _MANAGE_FILE_CMAKE_)
@@ -394,7 +402,7 @@ FUNCTION(MANAGE_FILE_EXPIRY var file expirySecond)
     ENDIF(EXISTS "${file}")
 ENDFUNCTION(MANAGE_FILE_EXPIRY var file expirySecond)
 
-MACRO(GIT_GLOB_TO_CMAKE_REGEX var glob)
+FUNCTION(GIT_GLOB_TO_CMAKE_REGEX var glob)
     SET(_s "${glob}")
     STRING(REGEX REPLACE "!" "!e" _s "${_s}")
     STRING(REGEX REPLACE "[*]{2}" "!d" _s "${_s}")
@@ -413,6 +421,6 @@ MACRO(GIT_GLOB_TO_CMAKE_REGEX var glob)
     ELSE( _t STREQUAL "/")
 	SET(_s "${_s}\$")
     ENDIF( _t STREQUAL "/")
-    SET(${var} "${_s}")
-ENDMACRO(GIT_GLOB_TO_CMAKE_REGEX var glob)
+    SET(${var} "${_s}" PARENT_SCOPE)
+ENDFUNCTION(GIT_GLOB_TO_CMAKE_REGEX)
 
