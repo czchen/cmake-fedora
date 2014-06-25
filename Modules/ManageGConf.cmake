@@ -3,7 +3,8 @@
 #
 # Defines the following macros:
 #   MANAGE_GCONF_SCHEMAS([FILE <schemasFile>] 
-#       [INSTALL_DIR <dir>] [CONFIG_SOURCE <source>)
+#       [INSTALL_DIR <dir>] [CONFIG_SOURCE <source>]
+#     )
 #     - Process schemas file.
 #       * Parameters:
 #         + FILE <schemasFile>: (Optional) See GCONF_SCHEMAS_FILE.
@@ -12,17 +13,17 @@
 #           "${SYSCONF_DIR}/gconf/schemas
 #         + INSTALL_DIR <dir>: (Optional) See GCONF_INSTALL_DIR.
 #         + CONFIG_SOURCE <source>: (Optional) See GCONF_CONFIG_SOURCE.
-#       * Reads and defined following variables:
+#       * Reads and defines following variables:
 #         + GCONF_SCHEMAS_FILE: Schema file.
 #           Default: ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.schemas
 #         + GCONF_SCHEMAS_INSTALL_DIR: Directory the 
 #           schemas file installed to
 #	    Default: ${SYSCONF_INSTALL_DIR}/gconf/schemas
 #         + GCONF_CONFIG_SOURCE: Configuration source.
-#           Default: "" (Use the system default)   
+#           Default: "" (Use the system default).  
 #       * Defines following targets:
-#         + install_schemas: install schemas
-#         + uninstall_schemas: uninstall schemas
+#         + install_schemas: install schemas.
+#         + uninstall_schemas: uninstall schemas.
 #
 
 IF(DEFINED _MANAGE_GCONF_CMAKE_)
@@ -95,5 +96,4 @@ MACRO(MANAGE_GCONF_SCHEMAS)
     MANAGE_FILE_INSTALL(SYSCONF ${GCONF_SCHEMAS_FILE}
 	DEST_SUBDIR "gconf/schemas")
 ENDMACRO(MANAGE_GCONF_SCHEMAS)
-
 
