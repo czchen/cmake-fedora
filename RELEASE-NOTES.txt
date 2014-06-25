@@ -55,6 +55,7 @@ REDHAT_BUGZILLA=1002279,1093336
   + ManageDependency: MANAGE_DEPENDENCY: Macro to function.
   + ManageRelease: MANAGE_RELEASE: Macro to function.
   + ManageRelease: MANAGE_RELEASE: Parameter changed.
+  + ManageRPM: RPM_MOCK_BUILD: Parameter changed.
   + PRJ_DOC_DIR: Changed from docdir/<PRJ_NAME>-<PRJ_VER> 
     to docdir/<PRJ_NAME>
 

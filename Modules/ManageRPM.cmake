@@ -97,15 +97,17 @@
 #         + SPEC specFile: Output RPM SPEC file 
 #           Default: ${RPM_BUILD_SPEC}/${PROJECT_NAME}.spec
 #         + CONFIG_REPLACE <file1> ...: Configure file that should be
-#           replaced after update. 
+#             replaced after update. 
 #           Example: 
 #              CONFIG_REPLACE ${SYSCONF_DIR}/${PROJECT_NAME}.conf
 #       * Targets:
 #         + srpm: Build srpm (rpmbuild -bs).
-#         + rpm: Build rpm and srpm (rpmbuild -bb)
-#         + rpmlint: Run rpmlint to generated rpms.
-#         + clean_rpm": Clean all rpm and build files.
-#         +   clean_pkg": Clean all source packages, rpm and build files.
+#         + rpm: Build binary rpm (rpmbuild -bb)
+#         + rpmlint: Run rpmlint to generated RPMs.
+#         + install_rpm: Install all RPMs of this version,
+#             excepts debug-info.
+#         + clean_rpm: Clean all rpm and build files.
+#         + clean_pkg": Clean all source packages, rpm and build files.
 #         + clean_old_rpm: Remove old rpm and build files.
 #         + clean_old_pkg: Remove old source packages and rpms.
 #       * Variables defined:
@@ -117,15 +119,14 @@
 #           relative path.
 #         + PRJ_RPM_FILES: Binary RPM files to be build.
 #
-#   RPM_MOCK_BUILD([config1 ...])
+#   RPM_MOCK_BUILD([MOCK_CONFIG <mockConfig> ...])
 #     - Add mock related targets.
+#       * Parameters:
+#         + MOCK_CONFIG mockConfig ... : Mock config name without .cfg.
+#            (e.g. fedora-rawhide-i386, epel-7-x86_64)
+#           Default: default
 #       * Targets:
-#         + rpm_mock_i386: Make i386 rpm
-#         + rpm_mock_x86_64: Make x86_64 rpm
-#       * Variables to be read:
-#         + MOCK_RPM_DIST_TAG: Prefix of mock configure file.
-#           such as "fedora-11", "fedora-rawhide", "epel-5".
-#           Default: Convert from RPM_DIST_TAG
+#         + rpm_mock_<mockConfig>: Build RPM with <mockConfig>.
 #
 
 IF(DEFINED _MANAGE_RPM_CMAKE_)
@@ -303,7 +304,7 @@ MACRO(MANAGE_RPM_SPEC)
 
     FOREACH(v ${RPM_SPEC_IN_VARIABLE_LIST})
 	PRJ_INFO_CMAKE_APPEND(${PRJ_INFO_CMAKE} ${v})
-    ENDFOREACH(v ${RPM_SPEC_IN_VARIABLE_LIST})
+    ENDFOREACH(v)
 
     SET(_specInOptList "")
     IF(_opt_CONFIG_REPLACE)
@@ -429,32 +430,42 @@ MACRO(RPM_MOCK_BUILD)
     IF(_mock_missing)
 	RETURN()
     ENDIF(_mock_missing)
-    IF(NOT RPM_BUILD_ARCH STREQUAL "noarch")
-	IF(NOT DEFINED MOCK_RPM_DIST_TAG)
-	    STRING(REGEX MATCH "^fc([1-9][0-9]*)"  _fedora_mock_dist "${RPM_DIST_TAG}")
-	    STRING(REGEX MATCH "^el([1-9][0-9]*)"  _el_mock_dist "${RPM_DIST_TAG}")
 
-	    IF (_fedora_mock_dist)
-		STRING(REGEX REPLACE "^fc([1-9][0-9]*)" "fedora-\\1" MOCK_RPM_DIST_TAG "${RPM_DIST_TAG}")
-	    ELSEIF (_el_mock_dist)
-		STRING(REGEX REPLACE "^el([1-9][0-9]*)" "epel-\\1" MOCK_RPM_DIST_TAG "${RPM_DIST_TAG}")
-	    ELSE (_fedora_mock_dist)
-		SET(MOCK_RPM_DIST_TAG "fedora-devel")
-	    ENDIF(_fedora_mock_dist)
-	ENDIF(NOT DEFINED MOCK_RPM_DIST_TAG)
+    SET(_validOptions "MOCK_CONFIG")
+    VARIABLE_PARSE_ARGN(_o _validOptions ${ARGN})
 
-	#MESSAGE ("MOCK_RPM_DIST_TAG=${MOCK_RPM_DIST_TAG}")
-	ADD_CUSTOM_TARGET(rpm_mock_i386
-	    COMMAND ${CMAKE_COMMAND} -E make_directory ${RPM_BUILD_RPMS}/i386
-	    COMMAND ${MOCK_CMD} -r  "${MOCK_RPM_DIST_TAG}-i386" --resultdir="${RPM_BUILD_RPMS}/i386" ${PRJ_SRPM_FILE}
-	    DEPENDS ${PRJ_SRPM_FILE}
-	    )
+    IF("${_o_MOCK_CONFIG}" STREQUAL "")
+	SET(_o_MOCK_CONFIG "default")
+    ENDIF("${_o_MOCK_CONFIG}" STREQUAL "")
 
-	ADD_CUSTOM_TARGET(rpm_mock_x86_64
-	    COMMAND ${CMAKE_COMMAND} -E make_directory ${RPM_BUILD_RPMS}/x86_64
-	    COMMAND ${MOCK_CMD} -r  "${MOCK_RPM_DIST_TAG}-x86_64" --resultdir="${RPM_BUILD_RPMS}/x86_64" ${PRJ_SRPM_FILE}
-	    DEPENDS ${PRJ_SRPM_FILE}
-	    )
-    ENDIF(NOT RPM_BUILD_ARCH STREQUAL "noarch")
+    FOREACH(_mName ${_o_MOCK_CONFIG})
+	## Filter out mock config that does not exists
+	## Figure out the actual config file (which has arch)
+	GET_FILENAME_COMPONENT(_mCfg "/etc/mock/${_mName}.cfg" REALPATH)
+	IF(EXISTS "${_mCfg}")
+	    IF("${RPM_BUILD_ARCH}" STREQUAL "noarch")
+		SET(_resultDir ${RPM_BUILD_RPMS}/noarch)
+	    ELSEIF("${_mCfg}" MATCHES "-x86_64.cfg")
+		SET(_resultDir ${RPM_BUILD_RPMS}/x86_64)
+	    ELSEIF("${_mCfg}" MATCHES "-i386.cfg")
+		SET(_resultDir ${RPM_BUILD_RPMS}/i386)
+	    ELSE()
+		M_MSG(${M_OFF} "RPM_MOCK_BUILD: ${_mCfg} is not supported yet.")
+		SET(_resultDir "")
+	    ENDIF("${RPM_BUILD_ARCH}" STREQUAL "noarch")
+	    IF(NOT "${_resultDir}" STREQUAL "")
+		ADD_CUSTOM_TARGET(rpm_mock_${_mName}
+		    COMMAND ${CMAKE_COMMAND} -E make_directory ${_resultDir}
+		    COMMAND ${MOCK_CMD} -r  "${_mName}" --resultdir="${_resultDir}" ${PRJ_SRPM_FILE}
+		    DEPENDS ${PRJ_SRPM_FILE}
+		    COMMENT "rpm_mock_${_mName}: ${PRJ_SRPM_FILE}"
+		    )
+	    ENDIF(NOT "${_resultDir}" STREQUAL "")
+	ELSE(EXISTS "${_mCfg}")
+	    M_MSG(${M_OFF} 
+		"RPM_MOCK_BUILD: mock config ${_mCfg} does not exists"
+		)
+	ENDIF(EXISTS "${_mCfg}")
+    ENDFOREACH(_mName)
 ENDMACRO(RPM_MOCK_BUILD)
 
