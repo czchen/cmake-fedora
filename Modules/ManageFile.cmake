@@ -1,9 +1,8 @@
 # - Manage files
 #
 # Included Modules:
-# - ManageMessage
-# - ManageVariable
-#
+#   - ManageMessage
+#   - ManageVariable
 #
 # Defines following functions:
 #   FIND_FILE_ERROR_HANDLING(<var>
@@ -14,7 +13,7 @@
 #     )
 #     - Find a file, with proper error handling.
 #       It is essentially a wrapper of FIND_FILE
-#       * Parameter:
+#       * Parameters:
 #         + var: The variable that stores the path of the found program.
 #         + name: The filename of the command.
 #         + verboseLevel: See ManageMessage for semantic of 
@@ -112,7 +111,7 @@
 #     [<files> | FILES <files>] [DEST_SUBDIR <subDir>] 
 #     [RENAME <newName>] [ARGS <args>]
 #     )
-#     - (Deprecated) Manage file installation .
+#     - (Deprecated) Manage file installation.
 #       You can use cmake built-in INSTALL after cmake-fedora-2.0.0
 #       * Parameters:
 #         + fileType: Type of files. Valid values:
@@ -123,7 +122,6 @@
 #         + files: Files to be installed.
 #         + RENAME newName: Destination filename.
 #         + ARGS args: Arguments for INSTALL.
-#
 #
 
 IF(DEFINED _MANAGE_FILE_CMAKE_)
