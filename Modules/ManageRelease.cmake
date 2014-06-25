@@ -43,8 +43,8 @@ FUNCTION(MANAGE_RELEASE)
 
     ## Add dependent targets that actually exists
     SET(_releaseTargets "")
-    FOREACH(_target ${ARGN})
-	IF(TARGET ${_o})
+    FOREACH(_target ${_o})
+	IF(TARGET ${_target})
 	    LIST(APPEND _releaseTargets "${_target}")
 	    ## Release targets should be build after target tag
 	    ADD_DEPENDENCIES(${_target} tag)
@@ -52,6 +52,6 @@ FUNCTION(MANAGE_RELEASE)
 	ELSE(TARGET ${_target})
 	    M_MSG(${M_OFF} "Target ${_target} does not exist, skipped.")
 	ENDIF(TARGET ${_target})
-    ENDFOREACH(_target ${ARGN})
+    ENDFOREACH(_target)
 ENDFUNCTION(MANAGE_RELEASE)
 
