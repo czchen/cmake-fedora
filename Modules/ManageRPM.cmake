@@ -2,57 +2,58 @@
 # This module provides macros that provides various rpm building and
 # verification targets.
 #
-# This module needs variable from ManageArchive, so INCLUDE(ManageArchive)
+# This module needs variables from ManageArchive, so
+# INCLUDE(ManageArchive)
 # before this module.
 #
-# Includes:
-#   ManageFile
-#   ManageTarget
+# Included Modules:
+#   - ManageFile
+#   - ManageTarget
+#   - ManageVariable
 #
 # Reads and defines following variables:
-#   RPM_SPEC_CMAKE_FLAGS: cmake flags in RPM spec.
-#   RPM_SPEC_MAKE_FLAGS: "make flags in RPM spec.
+#   - RPM_SPEC_CMAKE_FLAGS: cmake flags in RPM spec.
+#   - RPM_SPEC_MAKE_FLAGS: "make flags in RPM spec.
 #
 # Reads and defines following variables if dependencies are satisfied:
-#   PRJ_RPM_SPEC_FILE: spec file for rpmbuild.
-#   RPM_SPEC_BUILD_ARCH: (optional) Set "BuildArch:"
-#   RPM_BUILD_ARCH: (optional) Arch that will be built."
-#   RPM_DIST_TAG: (optional) Current distribution tag such as el5, fc10.
+#   - PRJ_RPM_SPEC_FILE: spec file for rpmbuild.
+#   - RPM_SPEC_BUILD_ARCH: (optional) Set "BuildArch:"
+#   - RPM_BUILD_ARCH: (optional) Arch that will be built."
+#   - RPM_DIST_TAG: (optional) Current distribution tag such as el5, fc10.
 #     Default: Distribution tag from rpm --showrc
 #
-#   RPM_BUILD_TOPDIR: (optional) Directory of  the rpm topdir.
+#   - RPM_BUILD_TOPDIR: (optional) Directory of  the rpm topdir.
 #     Default: ${CMAKE_BINARY_DIR}
 #
-#   RPM_BUILD_SPECS: (optional) Directory of generated spec files
-#     and RPM-ChangeLog.
-#     Note this variable is not for locating
-#     SPEC template (project.spec.in), RPM-ChangeLog source files.
-#     These are located through the path of spec_in.
+#   - RPM_BUILD_SPECS: (optional) Directory of generated spec files
+#       and RPM-ChangeLog.
+#     Note this variable is not for locating SPEC template file
+#       (i.e. project.spec.in). The SPEC template file should be
+#       specified in PACK_RPM()
 #     Default: ${RPM_BUILD_TOPDIR}/SPECS
 #
-#   RPM_BUILD_SOURCES: (optional) Directory of source (tar.gz or zip) files.
+#   - RPM_BUILD_SOURCES: (optional) Directory of source archive files.
 #     Default: ${RPM_BUILD_TOPDIR}/SOURCES
 #
-#   RPM_BUILD_SRPMS: (optional) Directory of source rpm files.
+#   - RPM_BUILD_SRPMS: (optional) Directory of source rpm files.
 #     Default: ${RPM_BUILD_TOPDIR}/SRPMS
 #
-#   RPM_BUILD_RPMS: (optional) Directory of generated rpm files.
+#   - RPM_BUILD_RPMS: (optional) Directory of generated rpm files.
 #     Default: ${RPM_BUILD_TOPDIR}/RPMS
 #
-#   RPM_BUILD_BUILD: (optional) Directory for RPM build.
+#   - RPM_BUILD_BUILD: (optional) Directory for RPM build.
 #     Default: ${RPM_BUILD_TOPDIR}/BUILD
 #
-#   RPM_BUILD_BUILDROOT: (optional) Directory for RPM build.
+#   - RPM_BUILD_BUILDROOT: (optional) Directory for RPM buildroot.
 #     Default: ${RPM_BUILD_TOPDIR}/BUILDROOT
 #
-#   RPM_RELEASE_NO: (optional) RPM release number
+#   - RPM_RELEASE_NO: (optional) RPM release number.
 #     Default: 1
 #
 # Defines following variables:
-#   RPM_IGNORE_FILES: A list of exclude file patterns for PackSource.
-#     This value is appended to SOURCE_ARCHIVE_IGNORE_FILES after including
-#     this module.
-#   RPM_FILES_SECTION_CONTENT: A list of string  
+#   - RPM_IGNORE_FILES: A list of exclude file patterns for PackSource.
+#     This value is appended to SOURCE_ARCHIVE_IGNORE_FILES after
+#     including this module.
 #
 # Defines following Functions:
 #   RPM_SPEC_STRING_ADD(<var> <str> [<position>])
@@ -67,27 +68,25 @@
 #
 #   RPM_SPEC_STRING_ADD_DIRECTIVE <var> <directive> <attribute> <content>)
 #   - Add a SPEC directive (e.g. %description -l zh_TW) to SPEC string.
-#     Parameters:
-#     + var: Variable that hold results in string format.
-#     + directive: Directive to be added.
-#     + attribute: Attribute of tag. That is, string between '()'
-#     + value: Value fot the tag.
-#     + position: (Optional) position to put the tag. 
-#       Valid value: FRONT for inserting in the beginning.
-#       Default: Append in the end of string.
-#       of string.
+#     * Parameters:
+#       + var: Variable that hold results in string format.
+#       + directive: Directive to be added.
+#       + attribute: Attribute of tag. That is, string between '()'
+#       + value: Value fot the tag.
+#       + position: (Optional) position to put the tag. 
+#         Valid value: FRONT for inserting in the beginning.
+#         Default: Append in the end of string.
 #
 #   RPM_SPEC_STRING_ADD_TAG(<var> <tag> <attribute> <value> [<position>])
 #   - Add a SPEC tag (e.g. BuildArch: noarch) to SPEC string.
-#     Parameters:
-#     + var: Variable that hold results in string format.
-#     + tag: Tag to be added.
-#     + attribute: Attribute of tag. That is, string between '()'
-#     + value: Value fot the tag.
-#     + position: (Optional) position to put the tag. 
-#       Valid value: FRONT for inserting in the beginning.
-#       Default: Append in the end of string.
-#       of string.
+#     * Parameters:
+#       + var: Variable that hold results in string format.
+#       + tag: Tag to be added.
+#       + attribute: Attribute of tag. That is, string between '()'
+#       + value: Value fot the tag.
+#       + position: (Optional) position to put the tag. 
+#         Valid value: FRONT for inserting in the beginning.
+#         Default: Append in the end of string.
 #
 # Defines following Macros:
 #   PACK_RPM([SPEC_IN <specInFile>] [SPEC <specFile>]
@@ -118,7 +117,7 @@
 #           relative path.
 #         + PRJ_RPM_FILES: Binary RPM files to be build.
 #
-#   RPM_MOCK_BUILD()
+#   RPM_MOCK_BUILD([config1 ...])
 #     - Add mock related targets.
 #       * Targets:
 #         + rpm_mock_i386: Make i386 rpm
@@ -189,52 +188,52 @@ FIND_PROGRAM_ERROR_HANDLING(CMAKE_FEDORA_KOJI_CMD
     )
 
 
-IF(NOT _manage_rpm_dependency_missing)
-    INCLUDE(ManageVariable)
-    CMAKE_FEDORA_CONF_GET_ALL_VARIABLES()
+IF(_manage_rpm_dependency_missing)
+    RETURN()
+ENDIF(_manage_rpm_dependency_missing)
+INCLUDE(ManageVariable)
+CMAKE_FEDORA_CONF_GET_ALL_VARIABLES()
 
 
-    ## arch
-    IF(BUILD_ARCH STREQUAL "noarch")
-	SET(RPM_BUILD_ARCH ${BUILD_ARCH})
-    ELSE(BUILD_ARCH STREQUAL "noarch")
-	EXECUTE_PROCESS(COMMAND ${RPM_CMD} -E "%{_arch}"
-	    COMMAND sed -e "s/^\\.//"
-	    OUTPUT_VARIABLE RPM_BUILD_ARCH
-	    OUTPUT_STRIP_TRAILING_WHITESPACE
-	    )
-    ENDIF(BUILD_ARCH STREQUAL "noarch")
-
-    ## %{dist}
-    EXECUTE_PROCESS(COMMAND ${RPM_CMD} -E "%{dist}"
+## arch
+IF(BUILD_ARCH STREQUAL "noarch")
+    SET(RPM_BUILD_ARCH ${BUILD_ARCH})
+ELSE(BUILD_ARCH STREQUAL "noarch")
+    EXECUTE_PROCESS(COMMAND ${RPM_CMD} -E "%{_arch}"
 	COMMAND sed -e "s/^\\.//"
-	OUTPUT_VARIABLE _RPM_DIST_TAG
+	OUTPUT_VARIABLE RPM_BUILD_ARCH
 	OUTPUT_STRIP_TRAILING_WHITESPACE
 	)
-    SET(RPM_DIST_TAG "${_RPM_DIST_TAG}" CACHE STRING "RPM Dist Tag")
+ENDIF(BUILD_ARCH STREQUAL "noarch")
 
-    SET(RPM_RELEASE_NO "1" CACHE STRING "RPM Release Number")
+## %{dist}
+EXECUTE_PROCESS(COMMAND ${RPM_CMD} -E "%{dist}"
+    COMMAND sed -e "s/^\\.//"
+    OUTPUT_VARIABLE _RPM_DIST_TAG
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+SET(RPM_DIST_TAG "${_RPM_DIST_TAG}" CACHE STRING "RPM Dist Tag")
 
-    SET(RPM_BUILD_TOPDIR "${CMAKE_BINARY_DIR}" CACHE PATH "RPM topdir")
+SET(RPM_RELEASE_NO "1" CACHE STRING "RPM Release Number")
 
-    SET(RPM_IGNORE_FILES "debug.*s.list")
-    FOREACH(_dir "SPECS" "SOURCES" "SRPMS" "RPMS" "BUILD" "BUILDROOT")
-	IF(NOT RPM_BUILD_${_dir})
-	    SET(RPM_BUILD_${_dir} "${RPM_BUILD_TOPDIR}/${_dir}" 
-		CACHE PATH "RPM ${_dir} dir"
-		)
-	    MARK_AS_ADVANCED(RPM_BUILD_${_dir})
-	    IF(NOT "${_dir}" STREQUAL "SPECS")
-		LIST(APPEND RPM_IGNORE_FILES "/${_dir}/")
-	    ENDIF(NOT "${_dir}" STREQUAL "SPECS")
-	    FILE(MAKE_DIRECTORY "${RPM_BUILD_${_dir}}")
-	ENDIF(NOT RPM_BUILD_${_dir})
-    ENDFOREACH(_dir "SPECS" "SOURCES" "SRPMS" "RPMS" "BUILD" "BUILDROOT")
+SET(RPM_BUILD_TOPDIR "${CMAKE_BINARY_DIR}" CACHE PATH "RPM topdir")
 
-    # Add RPM build directories in ignore file list.
-    LIST(APPEND SOURCE_ARCHIVE_IGNORE_FILES ${RPM_IGNORE_FILES})
+SET(RPM_IGNORE_FILES "debug.*s.list")
+FOREACH(_dir "SPECS" "SOURCES" "SRPMS" "RPMS" "BUILD" "BUILDROOT")
+    IF(NOT RPM_BUILD_${_dir})
+	SET(RPM_BUILD_${_dir} "${RPM_BUILD_TOPDIR}/${_dir}" 
+	    CACHE PATH "RPM ${_dir} dir"
+	    )
+	MARK_AS_ADVANCED(RPM_BUILD_${_dir})
+	IF(NOT "${_dir}" STREQUAL "SPECS")
+	    LIST(APPEND RPM_IGNORE_FILES "/${_dir}/")
+	ENDIF(NOT "${_dir}" STREQUAL "SPECS")
+	FILE(MAKE_DIRECTORY "${RPM_BUILD_${_dir}}")
+    ENDIF(NOT RPM_BUILD_${_dir})
+ENDFOREACH(_dir "SPECS" "SOURCES" "SRPMS" "RPMS" "BUILD" "BUILDROOT")
 
-ENDIF(NOT _manage_rpm_dependency_missing)
+# Add RPM build directories in ignore file list.
+LIST(APPEND SOURCE_ARCHIVE_IGNORE_FILES ${RPM_IGNORE_FILES})
 
 FUNCTION(RPM_SPEC_STRING_ADD var str)
     IF("${ARGN}" STREQUAL "FRONT")
@@ -328,124 +327,134 @@ MACRO(MANAGE_RPM_SPEC)
 ENDMACRO(MANAGE_RPM_SPEC)
 
 MACRO(PACK_RPM)
-    IF(NOT _manage_rpm_dependency_missing )
-	SET(_validOptions "SPEC_IN" "SPEC" "CONFIG_REPLACE")
-	VARIABLE_PARSE_ARGN(_opt _validOptions ${ARGN})
-	MANAGE_RPM_SPEC()
+    IF(_manage_rpm_dependency_missing)
+	RETURN()
+    ENDIF(_manage_rpm_dependency_missing)
 
-	SET(PRJ_SRPM_FILE "${RPM_BUILD_SRPMS}/${PROJECT_NAME}-${PRJ_VER}-${RPM_RELEASE_NO}.${RPM_DIST_TAG}.src.rpm"
-	    CACHE STRING "RPM files" FORCE)
+    SET(_validOptions "SPEC_IN" "SPEC" "CONFIG_REPLACE")
+    VARIABLE_PARSE_ARGN(_opt _validOptions ${ARGN})
+    MANAGE_RPM_SPEC()
 
-	SET(PRJ_RPM_FILES "${RPM_BUILD_RPMS}/${RPM_BUILD_ARCH}/${PROJECT_NAME}-${PRJ_VER}-${RPM_RELEASE_NO}.${RPM_DIST_TAG}.${RPM_BUILD_ARCH}.rpm"
-	    CACHE STRING "Building RPM files" FORCE)
+    SET(PRJ_SRPM_FILE "${RPM_BUILD_SRPMS}/${PROJECT_NAME}-${PRJ_VER}-${RPM_RELEASE_NO}.${RPM_DIST_TAG}.src.rpm"
+	CACHE STRING "RPM files" FORCE)
 
-#-------------------------------------------------------------------
-	# RPM build commands and targets
+    SET(PRJ_RPM_FILES "${RPM_BUILD_RPMS}/${RPM_BUILD_ARCH}/${PROJECT_NAME}-${PRJ_VER}-${RPM_RELEASE_NO}.${RPM_DIST_TAG}.${RPM_BUILD_ARCH}.rpm"
+	CACHE STRING "Building RPM files" FORCE)
 
-	ADD_CUSTOM_TARGET_COMMAND(srpm
-	    OUTPUT ${PRJ_SRPM_FILE}
-	    COMMAND ${RPMBUILD_CMD} -bs ${_opt_SPEC}
-	    --define '_sourcedir ${RPM_BUILD_SOURCES}'
-	    --define '_builddir ${RPM_BUILD_BUILD}'
-	    --define '_srcrpmdir ${RPM_BUILD_SRPMS}'
-	    --define '_specdir ${RPM_BUILD_SPECS}'
-	    DEPENDS ${_opt_SPEC} ${SOURCE_ARCHIVE_FILE}
-	    COMMENT "srpm: ${PRJ_SRPM_FILE}"
-	    )
+    #-------------------------------------------------------------------
+    # RPM build commands and targets
 
-	# Binary RPMs
-	ADD_CUSTOM_TARGET_COMMAND(rpm
-	    OUTPUT ${PRJ_RPM_FILES}
-	    COMMAND ${RPMBUILD_CMD} --rebuild ${PRJ_SRPM_FILE}
-	    --define '_rpmdir ${RPM_BUILD_RPMS}'
-	    --define '_builddir ${RPM_BUILD_BUILD}'
-	    --define '_buildrootdir ${RPM_BUILD_BUILDROOT}'
-	    DEPENDS ${PRJ_SRPM_FILE}
-	    COMMENT "rpm: ${PRJ_RPM_FILES}"
-	    )
+    ADD_CUSTOM_TARGET_COMMAND(srpm
+	OUTPUT ${PRJ_SRPM_FILE}
+	COMMAND ${RPMBUILD_CMD} -bs ${_opt_SPEC}
+	--define '_sourcedir ${RPM_BUILD_SOURCES}'
+	--define '_builddir ${RPM_BUILD_BUILD}'
+	--define '_srcrpmdir ${RPM_BUILD_SRPMS}'
+	--define '_specdir ${RPM_BUILD_SPECS}'
+	DEPENDS ${_opt_SPEC} ${SOURCE_ARCHIVE_FILE}
+	COMMENT "srpm: ${PRJ_SRPM_FILE}"
+	)
 
-	ADD_CUSTOM_TARGET(install_rpms
-	    COMMAND find ${RPM_BUILD_RPMS}/${RPM_BUILD_ARCH}
-	    -name '${PROJECT_NAME}*-${PRJ_VER}-${RPM_RELEASE_NO}.*.${RPM_BUILD_ARCH}.rpm' !
-	    -name '${PROJECT_NAME}-debuginfo-${RPM_RELEASE_NO}.*.${RPM_BUILD_ARCH}.rpm'
-	    -print -exec sudo rpm --upgrade --hash --verbose '{}' '\\;'
-	    DEPENDS ${PRJ_RPM_FILES}
-	    COMMENT "install_rpm: Install all rpms except debuginfo"
-	    )
+    # Binary RPMs
+    ADD_CUSTOM_TARGET_COMMAND(rpm
+	OUTPUT ${PRJ_RPM_FILES}
+	COMMAND ${RPMBUILD_CMD} --rebuild ${PRJ_SRPM_FILE}
+	--define '_rpmdir ${RPM_BUILD_RPMS}'
+	--define '_builddir ${RPM_BUILD_BUILD}'
+	--define '_buildrootdir ${RPM_BUILD_BUILDROOT}'
+	DEPENDS ${PRJ_SRPM_FILE}
+	COMMENT "rpm: ${PRJ_RPM_FILES}"
+	)
 
-	ADD_CUSTOM_TARGET(rpmlint
-	    COMMAND find .
-	    -name '${PROJECT_NAME}*-${PRJ_VER}-${RPM_RELEASE_NO}.*.rpm'
-	    | xargs rpmlint -i -v
-	    DEPENDS ${PRJ_SRPM_FILE} ${PRJ_RPM_FILES}
-	    COMMENT "rpmlint: ${PRJ_SRPM_FILE} ${PRJ_RPM_FILES}"
-	    )
+    ADD_CUSTOM_TARGET(install_rpms
+	COMMAND find ${RPM_BUILD_RPMS}/${RPM_BUILD_ARCH}
+	-name '${PROJECT_NAME}*-${PRJ_VER}-${RPM_RELEASE_NO}.*.${RPM_BUILD_ARCH}.rpm' !
+	-name '${PROJECT_NAME}-debuginfo-${RPM_RELEASE_NO}.*.${RPM_BUILD_ARCH}.rpm'
+	-print -exec sudo rpm --upgrade --hash --verbose '{}' '\\;'
+	DEPENDS ${PRJ_RPM_FILES}
+	COMMENT "install_rpm: Install all rpms except debuginfo"
+	)
 
-	ADD_CUSTOM_TARGET(clean_old_rpm
-	    COMMAND find .
-	    -name '${PROJECT_NAME}*.rpm' ! -name '${PROJECT_NAME}*-${PRJ_VER}-${RPM_RELEASE_NO}.*.rpm'
-	    -print -delete
-	    COMMAND find ${RPM_BUILD_BUILD}
-	    -path '${PROJECT_NAME}*' ! -path '${RPM_BUILD_BUILD}/${PROJECT_NAME}-${PRJ_VER}-*'
-	    -print -delete
-	    COMMENT "Cleaning old rpms and build."
-	    )
+    ADD_CUSTOM_TARGET(rpmlint
+	COMMAND find .
+	-name '${PROJECT_NAME}*-${PRJ_VER}-${RPM_RELEASE_NO}.*.rpm'
+	| xargs rpmlint -i -v
+	DEPENDS ${PRJ_SRPM_FILE} ${PRJ_RPM_FILES}
+	COMMENT "rpmlint: ${PRJ_SRPM_FILE} ${PRJ_RPM_FILES}"
+	)
 
-	ADD_CUSTOM_TARGET(clean_old_pkg
-	    )
+    ADD_CUSTOM_TARGET(clean_old_rpm
+	COMMAND find .
+	-name '${PROJECT_NAME}*.rpm' ! -name '${PROJECT_NAME}*-${PRJ_VER}-${RPM_RELEASE_NO}.*.rpm'
+	-print -delete
+	COMMAND find ${RPM_BUILD_BUILD}
+	-path '${PROJECT_NAME}*' ! -path '${RPM_BUILD_BUILD}/${PROJECT_NAME}-${PRJ_VER}-*'
+	-print -delete
+	COMMENT "Cleaning old rpms and build."
+	)
 
-	ADD_DEPENDENCIES(clean_old_pkg clean_old_rpm clean_old_pack_src)
+    ADD_CUSTOM_TARGET(clean_old_pkg
+	)
 
-	ADD_CUSTOM_TARGET(clean_rpm
-	    COMMAND find . -name '${PROJECT_NAME}-*.rpm' -print -delete
-	    COMMENT "Cleaning rpms.."
-	    )
-	ADD_CUSTOM_TARGET(clean_pkg
-	    )
+    ADD_DEPENDENCIES(clean_old_pkg clean_old_rpm clean_old_pack_src)
 
-	ADD_DEPENDENCIES(clean_rpm clean_old_rpm)
-	ADD_DEPENDENCIES(clean_pkg clean_rpm clean_pack_src)
-    ENDIF(NOT _manage_rpm_dependency_missing )
+    ADD_CUSTOM_TARGET(clean_rpm
+	COMMAND find . -name '${PROJECT_NAME}-*.rpm' -print -delete
+	COMMENT "Cleaning rpms.."
+	)
+    ADD_CUSTOM_TARGET(clean_pkg
+	)
+
+    ADD_DEPENDENCIES(clean_rpm clean_old_rpm)
+    ADD_DEPENDENCIES(clean_pkg clean_rpm clean_pack_src)
 ENDMACRO(PACK_RPM)
 
 MACRO(RPM_MOCK_BUILD)
-    IF(NOT _manage_rpm_dependency_missing )
-	FIND_PROGRAM_ERROR_HANDLING(MOCK_CMD
-	    ERROR_MSG "mock not found, mock build support is disabled."
-	    ERROR_VAR _mock_missing
-	    VERBOSE_LEVEL ${M_OFF}
-	    FIND_ARGS NAMES mock
+    IF(_manage_rpm_dependency_missing)
+	RETURN()
+    ENDIF(_manage_rpm_dependency_missing)
+
+    SET(_mock_missing 0)
+    FIND_PROGRAM_ERROR_HANDLING(MOCK_CMD
+	ERROR_MSG "mock not found, mock build support is disabled."
+	ERROR_VAR _mock_missing
+	VERBOSE_LEVEL ${M_OFF}
+	FIND_ARGS NAMES mock
+	)
+
+    IF(_manage_rpm_dependency_missing)
+	RETURN()
+    ENDIF(_manage_rpm_dependency_missing)
+
+    IF(_mock_missing)
+	RETURN()
+    ENDIF(_mock_missing)
+    IF(NOT RPM_BUILD_ARCH STREQUAL "noarch")
+	IF(NOT DEFINED MOCK_RPM_DIST_TAG)
+	    STRING(REGEX MATCH "^fc([1-9][0-9]*)"  _fedora_mock_dist "${RPM_DIST_TAG}")
+	    STRING(REGEX MATCH "^el([1-9][0-9]*)"  _el_mock_dist "${RPM_DIST_TAG}")
+
+	    IF (_fedora_mock_dist)
+		STRING(REGEX REPLACE "^fc([1-9][0-9]*)" "fedora-\\1" MOCK_RPM_DIST_TAG "${RPM_DIST_TAG}")
+	    ELSEIF (_el_mock_dist)
+		STRING(REGEX REPLACE "^el([1-9][0-9]*)" "epel-\\1" MOCK_RPM_DIST_TAG "${RPM_DIST_TAG}")
+	    ELSE (_fedora_mock_dist)
+		SET(MOCK_RPM_DIST_TAG "fedora-devel")
+	    ENDIF(_fedora_mock_dist)
+	ENDIF(NOT DEFINED MOCK_RPM_DIST_TAG)
+
+	#MESSAGE ("MOCK_RPM_DIST_TAG=${MOCK_RPM_DIST_TAG}")
+	ADD_CUSTOM_TARGET(rpm_mock_i386
+	    COMMAND ${CMAKE_COMMAND} -E make_directory ${RPM_BUILD_RPMS}/i386
+	    COMMAND ${MOCK_CMD} -r  "${MOCK_RPM_DIST_TAG}-i386" --resultdir="${RPM_BUILD_RPMS}/i386" ${PRJ_SRPM_FILE}
+	    DEPENDS ${PRJ_SRPM_FILE}
 	    )
-	IF(NOT _mock_missing)
-	    IF(NOT RPM_BUILD_ARCH STREQUAL "noarch")
-		IF(NOT DEFINED MOCK_RPM_DIST_TAG)
-		    STRING(REGEX MATCH "^fc([1-9][0-9]*)"  _fedora_mock_dist "${RPM_DIST_TAG}")
-		    STRING(REGEX MATCH "^el([1-9][0-9]*)"  _el_mock_dist "${RPM_DIST_TAG}")
 
-		    IF (_fedora_mock_dist)
-			STRING(REGEX REPLACE "^fc([1-9][0-9]*)" "fedora-\\1" MOCK_RPM_DIST_TAG "${RPM_DIST_TAG}")
-		    ELSEIF (_el_mock_dist)
-			STRING(REGEX REPLACE "^el([1-9][0-9]*)" "epel-\\1" MOCK_RPM_DIST_TAG "${RPM_DIST_TAG}")
-		    ELSE (_fedora_mock_dist)
-			SET(MOCK_RPM_DIST_TAG "fedora-devel")
-		    ENDIF(_fedora_mock_dist)
-		ENDIF(NOT DEFINED MOCK_RPM_DIST_TAG)
-
-		#MESSAGE ("MOCK_RPM_DIST_TAG=${MOCK_RPM_DIST_TAG}")
-		ADD_CUSTOM_TARGET(rpm_mock_i386
-		    COMMAND ${CMAKE_COMMAND} -E make_directory ${RPM_BUILD_RPMS}/i386
-		    COMMAND ${MOCK_CMD} -r  "${MOCK_RPM_DIST_TAG}-i386" --resultdir="${RPM_BUILD_RPMS}/i386" ${PRJ_SRPM_FILE}
-		    DEPENDS ${PRJ_SRPM_FILE}
-		    )
-
-		ADD_CUSTOM_TARGET(rpm_mock_x86_64
-		    COMMAND ${CMAKE_COMMAND} -E make_directory ${RPM_BUILD_RPMS}/x86_64
-		    COMMAND ${MOCK_CMD} -r  "${MOCK_RPM_DIST_TAG}-x86_64" --resultdir="${RPM_BUILD_RPMS}/x86_64" ${PRJ_SRPM_FILE}
-		    DEPENDS ${PRJ_SRPM_FILE}
-		    )
-	    ENDIF(NOT RPM_BUILD_ARCH STREQUAL "noarch")
-	ENDIF(NOT _mock_missing)
-    ENDIF(NOT _manage_rpm_dependency_missing )
-
+	ADD_CUSTOM_TARGET(rpm_mock_x86_64
+	    COMMAND ${CMAKE_COMMAND} -E make_directory ${RPM_BUILD_RPMS}/x86_64
+	    COMMAND ${MOCK_CMD} -r  "${MOCK_RPM_DIST_TAG}-x86_64" --resultdir="${RPM_BUILD_RPMS}/x86_64" ${PRJ_SRPM_FILE}
+	    DEPENDS ${PRJ_SRPM_FILE}
+	    )
+    ENDIF(NOT RPM_BUILD_ARCH STREQUAL "noarch")
 ENDMACRO(RPM_MOCK_BUILD)
 
