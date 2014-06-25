@@ -111,7 +111,7 @@ FUNCTION(SET_COMPILE_ENV var)
 	SET(${var} "${${var}}" ${_setOpts})
     ELSEIF(NOT "$ENV{${_env}}" STREQUAL "")
 	SET(${var} "$ENV{${_env}}" ${_setOpts})
-    ELSEIF()
+    ELSE()
 	## Use default value
 	SET(${var} "${_defaultValue}" ${_setOpts})
     ENDIF()
@@ -121,7 +121,7 @@ FUNCTION(SET_COMPILE_ENV var)
     CMAKE_POLICY(SET CMP0005 NEW)
     ADD_DEFINITIONS(-D${_env}=${${var}})
     CMAKE_POLICY(POP)
-    M_MSG(${M_INFO2} "SET(${var} ${${var}})")
+    M_MSG(${M_INFO2} "SET_COMPILE_ENV: ${var}=${${var}}")
 ENDFUNCTION(SET_COMPILE_ENV)
 
 MACRO(MANAGE_CMAKE_POLICY policyName defaultValue)
@@ -156,24 +156,35 @@ M_MSG(${M_INFO1} "CMAKE_HOST_PROCESSOR=${CMAKE_SYSTEM_PROCESSOR}")
 
 ## Set variables and compile flags
 SET_COMPILE_ENV(BIN_DIR  "${CMAKE_INSTALL_PREFIX}/bin"
-    CACHE PATH "Binary dir")
+    CACHE PATH "Binary dir"
+    )
 SET_COMPILE_ENV(DATA_DIR "${CMAKE_INSTALL_PREFIX}/share"
-    CACHE PATH "Data dir")
+    CACHE PATH "Data dir"
+    )
 SET_COMPILE_ENV(DOC_DIR  "${DATA_DIR}/doc"
-    CACHE PATH "Documentation dir")
+    CACHE PATH "Documentation dir"
+    )
 SET_COMPILE_ENV(SYSCONF_DIR "/etc"
-    CACHE PATH "System configuration dir")
+    CACHE PATH "System configuration dir"
+    )
 SET_COMPILE_ENV(LIBEXEC_DIR "${CMAKE_INSTALL_PREFIX}/libexec"
-    CACHE PATH "LIBEXEC dir")
+    CACHE PATH "LIBEXEC dir"
+    )
 
 IF(CMAKE_SYSTEM_PROCESSOR MATCHES "64")
     SET_COMPILE_ENV(IS_64 "64" CACHE STRING "IS_64")
 ENDIF(CMAKE_SYSTEM_PROCESSOR MATCHES "64")
 
 SET_COMPILE_ENV(LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib${IS_64}"
-    CACHE PATH "Library dir")
- 
+    CACHE PATH "Library dir"
+    )
+SET_COMPILE_ENV(PRJ_DATA_DIR "${DATA_DIR}/${PROJECT_NAME}"
+    CACHE PATH "Project data dir"
+    )
+SET_COMPILE_ENV(PRJ_DOC_DIR "${DOC_DIR}/${PROJECT_NAME}"
+    CACHE PATH "Project doc dir"
+    )
+
 SET_COMPILE_ENV(PROJECT_NAME)
-SET_COMPILE_ENV(PRJ_DATA_DIR "${DATA_DIR}/${PROJECT_NAME}")
-SET_COMPILE_ENV(PRJ_DOC_DIR "${DOC_DIR}/${PROJECT_NAME}")
+
 
