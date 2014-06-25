@@ -11,12 +11,12 @@
 #      do not have to get the irrelevant dependencies.
 #      For the "hard" dependency, use cmake command "ADD_DEPENDENCIES".
 #      * Parameters:
-#        - releaseTarget ...: Targets to be executed before a release.
+#        + releaseTarget ...: Targets to be executed before a release.
 #          Note that sequence of the targets does not guarantee the
 #          sequence of execution.
-#        - DEPENDS dependFile ...: Files that target "release" depends on.
+#        + DEPENDS dependFile ...: Files that target "release" depends on.
 #      * Defines following targets:
-#        - release: Perform everything required for a release.
+#        + release: Perform everything required for a release.
 #
 
 IF(DEFINED _MANAGE_RELEASE_CMAKE_)
