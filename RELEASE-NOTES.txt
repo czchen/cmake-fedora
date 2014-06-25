@@ -34,8 +34,10 @@ REDHAT_BUGZILLA=1002279,1093336
     Fedora (including rawhide) and EPEL releases in fedpkg branches.
 
 - Removed:
-  + cmake-fedora.conf.in is no longer need.
+  + cmake-fedora.conf.in is no longer needed.
   + TODO should be put in wiki.  
+  + Modules:
+    - ManageInstall: This is no longer needed.
   + Targets:
     - changelog_prev_update: 
   + Scripts:
