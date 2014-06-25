@@ -13,17 +13,17 @@
 # We avoid this by using the sane default ignore list.
 #
 # Included Modules:
-# - ManageFile
-# - ManageVersion
-# - CPack
+#   - ManageFile
+#   - ManageVersion
+#   - CPack
 #
 # Defines and reads variables:
 #   - CHANGELOG_FILE: Location of ChangeLog.
-#       Default: ${CMAKE_SOURCE_DIR}/ChangeLog
+#     Default: ${CMAKE_SOURCE_DIR}/ChangeLog
 #
 # Defines following targets:
 #   - changelog: ChangeLog update.
-#       pack_remove_old: Remove old source package files.
+#   - pack_remove_old: Remove old source package files.
 #
 # Defines following functions:
 #   SOURCE_ARCHIVE_CONTENTS_ADD(<filename>)

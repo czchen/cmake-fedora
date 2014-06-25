@@ -2,8 +2,8 @@
 # This module provide functions for API document generation.
 #
 # Included Modules:
-# - ManageDependency
-# - ManageMessage
+#   - ManageDependency
+#   - ManageMessage
 # 
 # Defines following functions:
 #   MANAGE_APIDOC_DOXYGEN([DOXYGEN <Doxyfile>]

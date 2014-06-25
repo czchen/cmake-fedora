@@ -1,9 +1,9 @@
 # - Date/time format module.
 #
 # Define the following variables:
-#    + TODAY_CHANGELOG: Today in the format that is used in RPM Changelog.
+#   - TODAY_CHANGELOG: Today in the format that is used in RPM Changelog.
 #      e.g. Wed 08 Aug 2010
-#    + TODAY_SHORT: Short presentation of today, e.g. 20100818.
+#   - TODAY_SHORT: Short presentation of today, e.g. 20100818.
 #
 # Defines the following macros:
 #    TODAY(<date_var> <format> [<locale>])

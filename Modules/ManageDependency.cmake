@@ -3,8 +3,8 @@
 # search the executable.
 # 
 # Included Modules:
-# - ManageFile
-# - ManageVariable
+#  - ManageFile
+#  - ManageVariable
 #
 # Defines following functions:
 #   MANAGE_DEPENDENCY(<listVar> <var> [VER <ver> [EXACT]] [REQUIRED] 
