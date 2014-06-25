@@ -1,82 +1,112 @@
-# - Module for working with Fedora and EPEL releases.
+# - Manage Fedora and EPEL releases.
 #
-# This module provides convenient targets and macros for Fedora and EPEL
-# releases by using fedpkg, koji, and bodhi
+# This module provides convenient targets and functions for Fedora and 
+# EPEL releases with fedpkg, koji, and bodhi.
+# 
+# In cmake-fedora, this release steps are:
+#  1. Create SRPM and RPMs
+#  2. Whether SRPM and RPMs pass rpmlint
+#  3. Whether SRPM can be build with koji scratch build
+#  4. Tag the release with PRJ_VER
+#  5. Build SRPM with FedPkg
+#  6. Release to Bodhi
+#
+# Consequently, function RELEASE_FEDORA() should be run after 
+# PACK_RPM() and source version control functions like
+# MANAGE_SOURCE_VERSION_CONTROL_GIT().
+#
+# If CMAKE_FEDORA_ENABLE_FEDORA=1, this module will proceed;
+# otherwise, this module is skipped.
 #
 # This module check following files for dependencies:
-#  1. ~/.fedora-upload-ca.cert : Ensure it has certificate file to submit to Fedora.
-#  2. fedpkg : Required to submit to fedora.
-#  3. koji : Required to submit to fedora.
-#  4. bodhi : Required to submit to fedora.
+#   - ~/.fedora-upload-ca.cert : Ensure it has certificate file to
+#     submit to Fedora.
+#   - fedpkg : Required to submit to fedora.
+#   - koji : Required to submit to fedora.
+#   - bodhi : Required to submit to fedora.
+# If any of above files are missing, this module will be skipped.
 #
-#  If on of above file is missing, this module will be skipped.
+# This module read the supported release information from 
+# cmake-fedora.conf, it finds cmake-fedora.conf in following order:
+#  1. Current directory
+#  2. Path as defined CMAKE_SOURCE_DIR
+#  3. /etc/cmake-fedora.conf
 #
-# This module read the supported release information from cmake-fedora.conf
-# It finds cmake-fedora.conf in following order:
-# 1. Current directory
-# 2. Path as defined CMAKE_SOURCE_DIR
-# 3. /etc/cmake-fedora.conf
+# Included Modules:
+#   - ManageFile
+#   - ManageMessage
+#   - ManageTarget
+#   - ManageRPM
+#   - ManageVariable
 #
-# Includes:
-#   ManageFile
-#   ManageMessage
-#   ManageTarget
+# Reads following variables:
+#   - CMAKE_FEDORA_TMP_DIR
+#   - PRJ_SRPM_FILE: Project 
 #
 # Defines following variables:
-#    CMAKE_FEDORA_CONF: Path to cmake_fedora.conf
-#    FEDPKG_CMD: Path to fedpkg
-#    KOJI_CMD: Path to koji
-#    GIT_CMD: Path to git
-#    BODHI_CMD: Path to bodhi
-#    KOJI_BUILD_SCRATCH_CMD: Path to koji-build-scratch
-#    FEDPKG_DIR: Dir for FedPkg. It will use environment variable
-#                FEDPKG_DIR, then use $CMAKE_BINARY_DIR/FedPkg.
-#    FEDORA_KAMA: Fedora Karma. Default:3
-#    FEDORA_UNSTABLE_KARMA: Fedora unstable Karma. Default:3
-#    FEDORA_AUTO_KARMA: Whether to use fedora Karma system. Default:"True"
+#   - CMAKE_FEDORA_CONF: Path to cmake_fedora.conf
+#   - FEDPKG_CMD: Path to fedpkg
+#   - KOJI_CMD: Path to koji
+#   - GIT_CMD: Path to git
+#   - BODHI_CMD: Path to bodhi
+#   - KOJI_BUILD_SCRATCH_CMD: Path to koji-build-scratch
+#   - FEDPKG_DIR: Dir for FedPkg checkout. 
+#       It will use environment variable FEDPKG_DIR, then use
+#       ${CMAKE_FEDORA_TMP_DIR}/FedPkg.
+#   - FEDORA_KAMA: Fedora Karma. Default:3
+#   - FEDORA_UNSTABLE_KARMA: Fedora unstable Karma. Default:3
 #
 # Defines following functions:
-#   RELEASE_FEDORA([scopeList])
-#   - Release this project to specified Fedora and EPEL releases.
-#     Arguments:
-#     + scopeList: List of Fedora and EPEL release to be build.
-#       Valid values:
-#       - rawhide: Build rawhide.
-#       - fedora: Build actives fedora releases, including Rawhide.
-#       - fedora_1: Build the latest supported fedora releases.
-#         This is one release eariler than rawhide.
-#       - fedora_2: Build the second latest supported fedora releases.
-#         This is two releases eariler than rawhide.
-#       - f22 f21 ...: Build the specified fedora releases.
-#       - epel: Build the currently supported EPEL releases.
-#       - epel_1: Build the latest supported EPEL releases.
-#       - epel_2: Build the second latest supported EPEL releases.
-#       - el7 el6 ... : The EPEL releases to be built.
-#       If not specified, "fedora epel" will be used.
+#   RELEASE_FEDORA([<scope> ...] 
+#       [DEPENDS <dependFile> ...]
+#       [TARGETS <target> ...]
+#     )
+#     - Release this project to specified Fedora and EPEL releases.
+#       * Parameters:
+#         + scope ...: List of Fedora and EPEL release to be build.
+#           Valid values:
+#           - rawhide: Build rawhide.
+#           - fedora: Build actives fedora releases, including Rawhide.
+#           - fedora_1: Build the latest supported fedora releases.
+#             This is one release eariler than rawhide.
+#           - fedora_2: Build the second latest supported fedora releases.
+#             This is two releases eariler than rawhide.
+#           - f22 f21 ...: Build the specified fedora releases.
+#           - epel: Build the currently supported EPEL releases.
+#           - epel_1: Build the latest supported EPEL releases.
+#           - epel_2: Build the second latest supported EPEL releases.
+#           - el7 el6 ... : The EPEL releases to be built.
+#           If not specified, "fedora epel" will be used.
+#         + DEPENDS dependFile ...: Files that target "release-fedora"
+#             depends on.
+#         + TARGETS target ...: Targets that target "release-fedora"
+#             depends on. 
+#             Note that if a target does not exist, a M_ERROR message 
+#             will be shown.
 #
-#     Reads following variables:
-#     + PRJ_SRPM_FILE: Project SRPM
-#     + FEDPKG_DIR: Directory for fedpkg checkout.
-#       Default: Environment variable FEDPKG_DIR, 
-#                then $CMAKE_BINARY_DIR/FedPkg.
-#     Reads and define following variables:
-#     + FEDORA_RAWHIDE_VER: Numeric version of rawhide, such as 18
-#     + FEDORA_SUPPORTED_VERS: Numeric versions of currently supported Fedora,
-#       such as 17;16
-#     + EPEL_SUPPORTED_VERS: Numeric versions of currently supported EPEL
-#       since version 5. Such as 6;5
-#     + FEDORA_KARMA: Karma for auto pushing.
-#       Default: 3
-#     + FEDORA_UNSTABLE_KARMA: Karma for auto unpushing.
-#       Default: 3
-#     Defines following targets:
-#     + release_fedora: Make necessary steps for releasing on fedora,
-#       such as making source file tarballs, source rpms, build with fedpkg
-#       and upload to bodhi.
-#     + koji_build_scratch: Scratch build using koji
-#
+#       * Reads following variables:
+#         + PRJ_SRPM_FILE: Project SRPM
+#         + FEDPKG_DIR: Directory for fedpkg checkout.
+#         + MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE: 
+#           Version tag file used in source version control.
+#       * Defines following targets:
+#         + fedpkg_build: Build with fedpkg and push to bodhi.
+#            This depends on the tag file from source control
+#            (i.e. MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE)
+#         + koji_build_scratch: Scratch build using koji.
+#            This depends on target "rpmlint".
+#            Target "tag_pre" should be dependent on this target.
+#            A M_ERROR message will shown if target "tag_pre" does not
+#            exist.
+#         + release_fedora: Releases on fedora and/or EPEL.
+#            This depends on target "fedpkg_build".
+#            After this target is built, release on Fedora should be
+#            completed.
 #
 
+IF(NOT CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
+    RETURN()
+ENDIF(NOT CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
 IF(DEFINED _MANAGE_RELEASE_FEDORA_)
     RETURN()
 ENDIF(DEFINED _MANAGE_RELEASE_FEDORA_)
@@ -85,6 +115,7 @@ INCLUDE(ManageMessage)
 INCLUDE(ManageFile)
 INCLUDE(ManageTarget)
 INCLUDE(ManageRPM)
+INCLUDE(ManageVariable)
 SET(_manage_release_fedora_dependencies_missing 0)
 
 MANAGE_CMAKE_FEDORA_CONF(CMAKE_FEDORA_CONF
@@ -102,6 +133,8 @@ MACRO(RELEASE_FEDORA_FIND_DEPENDENCY var)
 	)
 ENDMACRO(RELEASE_FEDORA_FIND_DEPENDENCY var)
 
+RELEASE_FEDORA_FIND_DEPENDENCY(FEDORA_UPLOAD_CA_CERT 
+    .fedora-upload-ca.cert PATHS $ENV{HOME})
 RELEASE_FEDORA_FIND_DEPENDENCY(FEDPKG_CMD fedpkg)
 RELEASE_FEDORA_FIND_DEPENDENCY(KOJI_CMD koji)
 RELEASE_FEDORA_FIND_DEPENDENCY(GIT_CMD git)
@@ -114,70 +147,103 @@ RELEASE_FEDORA_FIND_DEPENDENCY(KOJI_BUILD_SCRATCH_CMD koji-build-scratch
    PATHS ${CMAKE_FEDORA_ADDITIONAL_SCRIPT_PATH})
 
 ## Set variables
-IF(NOT _manage_release_fedora_dependencies_missing)
-    # Set release tags according to CMAKE_FEDORA_CONF
-    SETTING_FILE_GET_ALL_VARIABLES(${CMAKE_FEDORA_CONF})
+IF(_manage_release_fedora_dependencies_missing)
+    RETURN()
+ENDIF(_manage_release_fedora_dependencies_missing)
+# Set release tags according to CMAKE_FEDORA_CONF
+SETTING_FILE_GET_ALL_VARIABLES(${CMAKE_FEDORA_CONF})
 
-    SET(BODHI_TEMPLATE_FILE "${CMAKE_FEDORA_TMP_DIR}/bodhi.template"
-	CACHE FILEPATH "Bodhi template file"
-	)
+SET(BODHI_TEMPLATE_FILE "${CMAKE_FEDORA_TMP_DIR}/bodhi.template"
+    CACHE FILEPATH "Bodhi template file"
+    )
 
-    GET_ENV(FEDPKG_DIR "${CMAKE_FEDORA_TMP_DIR}/FedPkg" CACHE PATH "FedPkg dir")
+GET_ENV(FEDPKG_DIR "${CMAKE_FEDORA_TMP_DIR}/FedPkg" CACHE PATH "FedPkg dir")
 
-    ## Fedora package variables
-    SET(FEDORA_KARMA "3" CACHE STRING "Fedora Karma")
-    SET(FEDORA_UNSTABLE_KARMA "-3" CACHE STRING "Fedora unstable Karma")
-ENDIF(NOT _manage_release_fedora_dependencies_missing)
+## Fedora package variables
+SET(FEDORA_KARMA "3" CACHE STRING "Fedora Karma")
+SET(FEDORA_UNSTABLE_KARMA "-3" CACHE STRING "Fedora unstable Karma")
 
 FUNCTION(RELEASE_FEDORA_KOJI_BUILD_SCRATCH)
-    IF(NOT _manage_release_fedora_dependencies_missing)
-	ADD_CUSTOM_TARGET(koji_build_scratch
-	    COMMAND ${KOJI_BUILD_SCRATCH_CMD} ${PRJ_SRPM_FILE} ${ARGN}
-	    DEPENDS "${PRJ_SRPM_FILE}"
-	    COMMENT "koji scratch build on ${PRJ_SRPM_FILE}"
-	    VERBATIM
-	    )
-    ENDIF(NOT _manage_release_fedora_dependencies_missing)
+    IF(_manage_release_fedora_dependencies_missing)
+	RETURN()
+    ENDIF(_manage_release_fedora_dependencies_missing)
+    ADD_CUSTOM_TARGET(koji_build_scratch
+	COMMAND ${KOJI_BUILD_SCRATCH_CMD} ${PRJ_SRPM_FILE} ${ARGN}
+	DEPENDS "${PRJ_SRPM_FILE}"
+	COMMENT "koji_build_scratch: SRPM=${PRJ_SRPM_FILE}"
+	VERBATIM
+	)
     ADD_DEPENDENCIES(koji_build_scratch rpmlint)
-    ADD_DEPENDENCIES(tag_pre koji_build_scratch)
+    IF(TARGET tag_pre)
+	ADD_DEPENDENCIES(tag_pre koji_build_scratch)
+    ELSE(TARGET tag_pre)
+	M_MSG(${M_ERROR} 
+	    "RELEASE_FEDORA: Target tag_pre does not exist.")
+    ENDIF(TARGET tag_pre)
 ENDFUNCTION(RELEASE_FEDORA_KOJI_BUILD_SCRATCH)
 
 FUNCTION(RELEASE_FEDORA_FEDPKG)
-    IF(NOT _manage_release_fedora_dependencies_missing)
-	IF(NOT DEFINED MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE)
-	    M_MSG(${M_ERROR} "Undefined MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE, please use MANAGE_SOURCE_VERSION_CONTROL_GIT or other source version control")
-	ENDIF(NOT DEFINED MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE)
-	M_MSG(${M_INFO2} 
-	    "MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE=${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}")
-	SET(_cmdOpts "")
-	IF (NOT "${CHANGE_SUMMARY}" STREQUAL "")
-	    SET(CHANGE_SUMMARY "Release ${PROJECT_NAME}-${PRJ_VER}")
-	ENDIF(NOT "${CHANGE_SUMMARY}" STREQUAL "")
+    IF(_manage_release_fedora_dependencies_missing)
+	RETURN()
+    ENDIF(_manage_release_fedora_dependencies_missing)
+    IF(MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE STREQUAL "")
+	M_MSG(${M_ERROR} "RELEASE_FEDORA_FEDPKG: Undefined 
+MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE, please use MANAGE_SOURCE_VERSION_CONTROL_GIT() or other source version control functions")
+    ENDIF(MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE STREQUAL "")
+    M_MSG(${M_INFO2} 	"MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE=${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}")
+    SET(_cmdOpts "")
+    IF ("${CHANGE_SUMMARY}" STREQUAL "")
+	SET(CHANGE_SUMMARY "Release ${PROJECT_NAME}-${PRJ_VER}")
+    ENDIF("${CHANGE_SUMMARY}" STREQUAL "")
 
-	IF (NOT REDHAT_BUGZILLA STREQUAL "")
-	    LIST(APPEND _cmdOpts "-b" "${REDHAT_BUGZILLA}")
-	ENDIF(NOT REDHAT_BUGZILLA STREQUAL "")
+    IF (NOT REDHAT_BUGZILLA STREQUAL "")
+	LIST(APPEND _cmdOpts "-b" "${REDHAT_BUGZILLA}")
+    ENDIF(NOT REDHAT_BUGZILLA STREQUAL "")
 
-	ADD_CUSTOM_TARGET(fedpkg_build
-	    COMMAND ${CMAKE_FEDORA_FEDPKG_CMD} -d "${FEDPKG_DIR}"
-	    -m "${CHANGE_SUMMARY}"
-	    ${_cmdOpts} "${PRJ_SRPM_FILE}" ${ARGN}
-	    DEPENDS "${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}"
-	    VERBATIM
-	    )
-
-    ENDIF(NOT _manage_release_fedora_dependencies_missing)
+    ADD_CUSTOM_TARGET(fedpkg_build
+	COMMAND ${CMAKE_FEDORA_FEDPKG_CMD} -d "${FEDPKG_DIR}"
+	-m "${CHANGE_SUMMARY}"
+	${_cmdOpts} "${PRJ_SRPM_FILE}" ${ARGN}
+	DEPENDS "${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}"
+	VERBATIM
+	)
 ENDFUNCTION(RELEASE_FEDORA_FEDPKG)
 
 FUNCTION(RELEASE_FEDORA)
-    IF(NOT _manage_release_fedora_dependencies_missing)
-	## Parse tags
-	SET(_scope_list ${ARGN})
-	RELEASE_FEDORA_KOJI_BUILD_SCRATCH(${_scope_list})
-	RELEASE_FEDORA_FEDPKG(${_scope_list})
-	ADD_CUSTOM_TARGET(release_fedora
-	    COMMENT "Release for Fedora")
-	ADD_DEPENDENCIES(release_fedora fedpkg_build)
-    ENDIF(NOT _manage_release_fedora_dependencies_missing)
+    IF(_manage_release_fedora_dependencies_missing)
+	RETURN()
+    ENDIF(_manage_release_fedora_dependencies_missing)
+
+    ## Parse tags
+    SET(_validOptions "DEPENDS" "TARGETS")
+    VARIABLE_PARSE_ARGN(_o _validOptions ${ARGN})
+    SET(_releaseDependOptList "")
+
+    IF(NOT "${_o_DEPENDS}" STREQUAL "")
+	SET(_releaseDependOptList DEPENDS ${_o_DEPENDS})
+    ENDIF(NOT "${_o_DEPENDS}" STREQUAL "")
+
+    SET(_scopeList ${_o})
+    RELEASE_FEDORA_KOJI_BUILD_SCRATCH(${_scopeList})
+    RELEASE_FEDORA_FEDPKG(${_scopeList})
+    ADD_CUSTOM_TARGET(release_fedora
+	${_releaseDependOptList}
+	COMMENT "release_fedora: ${_scopeList}"
+	)
+    ADD_DEPENDENCIES(release_fedora fedpkg_build)
+
+    ## Add dependent targets that actually exists
+    SET(_releaseTargets "")
+    FOREACH(_target ${_o_TARGETS})
+	IF(TARGET ${_target})
+	    LIST(APPEND _releaseTargets "${_target}")
+	    ## Release targets should be build after target tag
+	    ADD_DEPENDENCIES(${_target} tag)
+	    ADD_DEPENDENCIES(release_fedora ${_target})
+	ELSE(TARGET ${_target})
+	    M_MSG(${M_ERROR} 
+		"RELEASE_FEDORA: Target ${_target} does not exist.")
+	ENDIF(TARGET ${_target})
+    ENDFOREACH(_target)
 ENDFUNCTION(RELEASE_FEDORA)
 
