@@ -19,7 +19,7 @@ cmake -Dcmd=spec -Dspec=<project.spec> -Dspec_in=<project.spec.in>
     -Dmainfests: Path to install_manifests.txt
     -Drelease: Path to RELEASE-NOTES.txt
   Note: Please pass the necessary variables via -Dvar=VALUE,
-      e.g. "-DPROJECT_NAME=cmake-fedora"
+      e.g. \"-DPROJECT_NAME=cmake-fedora\"
 
 cmake -Dcmd=spec_manifests
       -Dmanifests=<path/install_manifests.txt>
@@ -33,7 +33,7 @@ cmake -Dcmd=spec_manifests
       %config instead of %config(noreplace)
     -Dmainfests: Path to install_manifests.txt
   Note: Please pass the necessary variables via -Dvar=VALUE,
-    e.g. "-DPROJECT_NAME=cmake-fedora"
+    e.g. \"-DPROJECT_NAME=cmake-fedora\"
     
 cmake -Dcmd=spec_changelog
       -Dmanifests=<path/install_manifests.txt>
@@ -45,10 +45,10 @@ cmake -Dcmd=spec_changelog
     Options:
       -Dmainfests: Path to install_manifests.txt
     Note: Please pass the necessary variables via -Dvar=VALUE,
-       e.g. -DPROJECT_NAME=cmake-fedora
+       e.g. \"-DPROJECT_NAME=cmake-fedora\"
 
 cmake -Dcmd=make_manifests
-       [\"-Dmanifests=<path/install_manifests.txt>\"]
+       [\"-Dmanifests=<path>/install_manifests.txt>\"]
        [\"-Dtmp_dir=<dir>\"]
   Make install_manifests.txt.
   Options:
