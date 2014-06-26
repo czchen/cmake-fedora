@@ -49,13 +49,25 @@ REDHAT_BUGZILLA=1002279,1093336
 - Changed:
   + DateTimeFormat: Macro to function: TODAY
   + ManageAPIDOC: MANAGE_APIDOC_DOXYGEN: Macro to function.
-  + ManageAPIDOC: MANAGE_APIDOC_DOXYGEN: Parameter changed.
+  + ManageAPIDOC: MANAGE_APIDOC_DOXYGEN: Parameters changed.
   + ManageFile: GIT_GLOB_TO_CMAKE_REGEX: Macro to function.
   + ManageString: STRING_ESCAPE_SEMICOLON: Macro to function.
   + ManageDependency: MANAGE_DEPENDENCY: Macro to function.
   + ManageRelease: MANAGE_RELEASE: Macro to function.
-  + ManageRelease: MANAGE_RELEASE: Parameter changed.
-  + ManageRPM: RPM_MOCK_BUILD: Parameter changed.
+  + ManageRelease: MANAGE_RELEASE: Parameters changed.
+  + ManageRPM: RPM_MOCK_BUILD: Parameters changed.
+  + ManageSourceVersionControl: MANAGE_SOURCE_VERSION_CONTROL_GIT:
+    - Macro to function
+    - Parameters Changed
+  + ManageSourceVersionControl: MANAGE_SOURCE_VERSION_CONTROL_HG:
+    - Macro to function
+    - Parameters Changed
+    - Mark as experiment
+  + ManageSourceVersionControl: MANAGE_SOURCE_VERSION_CONTROL_HG:
+    - Macro to function
+    - Parameters Changed
+    - Mark as experiment
   + PRJ_DOC_DIR: Changed from docdir/<PRJ_NAME>-<PRJ_VER> 
     to docdir/<PRJ_NAME>
+  
 
