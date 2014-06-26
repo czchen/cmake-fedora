@@ -109,7 +109,7 @@ MACRO(FIND_FILE_OR_PROGRAM)
 	LIST(APPEND _args "ERROR_MSG" "${error_msg}")
     ENDIF()
 
-    SET(_verboseLevel "${M_WARNING}")
+    SET(_verboseLevel "${M_WARN}")
     IF(DEFINED verbose_level)
 	SET(_verboseLevel "${verbose_level}")
     ENDIF()
