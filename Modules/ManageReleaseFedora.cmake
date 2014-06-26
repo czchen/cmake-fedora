@@ -87,8 +87,6 @@
 #       * Reads following variables:
 #         + PRJ_SRPM_FILE: Project SRPM
 #         + FEDPKG_DIR: Directory for fedpkg checkout.
-#         + MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE: 
-#           Version tag file used in source version control.
 #       * Defines following targets:
 #         + fedpkg_build: Build with fedpkg and push to bodhi.
 #            This depends on the tag file from source control
@@ -186,11 +184,6 @@ FUNCTION(RELEASE_FEDORA_FEDPKG)
     IF(_manage_release_fedora_dependencies_missing)
 	RETURN()
     ENDIF(_manage_release_fedora_dependencies_missing)
-    IF(MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE STREQUAL "")
-	M_MSG(${M_ERROR} "RELEASE_FEDORA_FEDPKG: Undefined 
-MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE, please use MANAGE_SOURCE_VERSION_CONTROL_GIT() or other source version control functions")
-    ENDIF(MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE STREQUAL "")
-    M_MSG(${M_INFO2} 	"MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE=${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}")
     SET(_cmdOpts "")
     IF ("${CHANGE_SUMMARY}" STREQUAL "")
 	SET(CHANGE_SUMMARY "Release ${PROJECT_NAME}-${PRJ_VER}")
@@ -204,9 +197,9 @@ MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE, please use MANAGE_SOURCE_VERSION_CONTROL
 	COMMAND ${CMAKE_FEDORA_FEDPKG_CMD} -d "${FEDPKG_DIR}"
 	-m "${CHANGE_SUMMARY}"
 	${_cmdOpts} "${PRJ_SRPM_FILE}" ${ARGN}
-	DEPENDS "${MANAGE_SOURCE_VERSION_CONTROL_TAG_FILE}"
 	VERBATIM
 	)
+    ADD_DEPENDENCIES(fedpkg_build tag_post)
 ENDFUNCTION(RELEASE_FEDORA_FEDPKG)
 
 FUNCTION(RELEASE_FEDORA)
