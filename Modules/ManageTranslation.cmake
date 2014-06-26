@@ -1,16 +1,21 @@
-# - Software Translation support
+# - Manage Translation
 # This module supports software translation by:
 #   1) Creates gettext related targets.
 #   2) Communicate to Zanata servers.
 #
+# Included Modules:
+#   - ManageArchive
+#   - ManageDependency
+#   - ManageFile
+#   - ManageMessage
+#
 # Defines following targets:
-#   + translations: Make the translation files.
-#     This target itself does nothing but provide a target for others to
-#     depend on.
-#     If macro MANAGE_GETTEXT is used, then it depends on the target gmo_files.
+#   + translations: Virtual target that make the translation files.
+#     Once MANAGE_GETTEXT is used, this target invokes targets that
+#     build translation.
 #
 # Defines following variables:
-#   + XGETTEXT_OPTIONS_C: Usual xgettext options for C programs.
+#   + XGETTEXT_OPTIONS_C: Default xgettext options for C programs.
 # Defines or read from following variables:
 #   + MANAGE_TRANSLATION_MSGFMT_OPTIONS: msgfmt options
 #     Default: --check --check-compatibility --strict
@@ -19,39 +24,71 @@
 #   + MANAGE_TRANSLATION_XGETEXT_OPTIONS: xgettext options
 #     Default: ${XGETTEXT_OPTIONS_C}
 #
-# Defines following macros:
-#   MANAGE_GETTEXT [ALL] SRCS src1 [src2 [...]]
-#	[LOCALES locale1 [locale2 [...]]]
-#	[POTFILE potfile]
-#       [MSGFMT_OPTIONS msgfmtOpt]]
-#       [MSGMERGE_OPTIONS msgmergeOpt]]
-#	[XGETTEXT_OPTIONS xgettextOpt]]
-#	)
-#   - Provide Gettext support like pot file generation and
-#     gmo file generation.
-#     You can specify supported locales with LOCALES ...
-#     or omit the locales to use all the po files.
+# Defines following functions:
+#   ADD_POT_FILE(<potFile> [SRCS <src> ...]
+#	[XGETTEXT_OPTIONS <opt> ...]
+#       [COMMAND <cmd> ...]
+#       [DEPENDS <file> ...]
+#     )
+#     - Add a new pot file and source files that create the pot file.
+#        Useful for multiple pot files.
+#       * Parameters:
+#         + potFile: .pot file with path.
+#         + SRCS src ... : Source files for xgettext to work on.
+#         + XGETTEXT_OPTIONS opt ... : xgettext options.
+#         + COMMAND cmd ... : Non-xgettext command that create pot file.
+#         + DEPENDS file ... : Files that pot file depends on.
+#             SRCS files are already depended on, so no need to list here.
+#       * Variables to cache:
+#         + MANAGE_TRANSLATION_GETTEXT_POT_LIST: List of pot file.
 #
-#     Arguments:
-#     + ALL: (Optional) make target "all" depends on gettext targets.
-#     + SRCS src1 [src2 [...]]: File list of source code that contains msgid.
-#     + LOCALES locale1 [local2 [...]]:(optional) Locale list to be generated.
-#       Currently, only the format: lang_Region (such as fr_FR) is supported.
-#     + POTFILE potFile: (optional) pot file to be referred.
-#       Default: ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pot
-#     + MSGFMT_OPTIONS msgfmtOpt: (optional) msgfmt options.
-#       Default: ${MANAGE_TRANSLATION_MSGFMT_OPTIONS}
-#     + MSGMERGE_OPTIONS msgmergeOpt: (optional) msgmerge options.
-#       Default: ${MANAGE_TRANSLATION_MSGMERGE_OPTIONS}, which is
-##     + XGETTEXT_OPTIONS xgettextOpt: (optional) xgettext_options.
-#       Default: ${XGETTEXT_OPTIONS_C}
-#     Defines following variables:
-#     + MSGMERGE_CMD: the full path to the msgmerge tool.
-#     + MSGFMT_CMD: the full path to the msgfmt tool.
-#     + XGETTEXT_CMD: the full path to the xgettext.
-#     Targets:
-#     + pot_file: Generate the pot_file.
-#     + gmo_files: Converts input po files into the binary output mo files.
+#   MANAGE_GETTEXT([ALL] 
+#       [SRCS <src> ...]
+#       [POT_FILE <potFile>]
+#	[LOCALES <locale> ... | SYSTEM_LOCALES]
+#       [MSGFMT_OPTIONS <msgfmtOpt>]
+#       [MSGMERGE_OPTIONS <msgmergeOpt>]
+#	[XGETTEXT_OPTIONS <xgettextOpt>]
+#       [COMMAND <cmd> ...]
+#       [DEPENDS <file> ...]
+#     )
+#     - Provide Gettext support like generation of .pot or .gmo files.
+#       It generates .pot file using xgettext; update po files;
+#         and generate gmo files.
+#       It also add gettext dependency to dependency list.
+#       You can specify the locales to be processed by
+#         + LOCALE <locale> ... 
+#         + SYSTEM_LOCALES: Locales returned by "locale -a", 
+#           exclude the encoding.
+#         + or nothing to use the existing po files.
+#       * Parameters:
+#         + ALL: (Optional) make target "all" depends on gettext targets.
+#         + SRCS src ... : Source files for xgettext to work on.
+#         + POT_FILE potFile: (optional) pot files with path.
+#           Default: ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pot
+#         + LOCALES locale ... : (optional) Locale list to be generated.
+#         + SYSTEM_LOCALES: (optional) System locales from locale -a.
+#         + MSGFMT_OPTIONS msgfmtOpt: (optional) msgfmt options.
+#           Default: ${MANAGE_TRANSLATION_MSGFMT_OPTIONS}
+#         + MSGMERGE_OPTIONS msgmergeOpt: (optional) msgmerge options.
+#           Default: ${MANAGE_TRANSLATION_MSGMERGE_OPTIONS}, which is
+#         + XGETTEXT_OPTIONS xgettextOpt: (optional) xgettext options.
+#           Default: ${XGETTEXT_OPTIONS_C}
+#         + COMMAND cmd ... : Non-xgettext command that create pot file.
+#         + DEPENDS file ... : Files that pot file depends on.
+#             SRCS files are already depended on, so no need to list here.
+#       * Targets:
+#         + pot_files: Generate pot files.
+#         + gmo_files: Converts po files to mo files.
+#         + update_po: Update po files according to pot files.
+#       * Variables read:
+#         + MANAGE_GETTEXT_POT_LIST: 
+#            (Optional) List of pot file.
+#       * Variables to cache:
+#         + MSGMERGE_CMD: the full path to the msgmerge tool.
+#         + MSGFMT_CMD: the full path to the msgfmt tool.
+#         + XGETTEXT_CMD: the full path to the xgettext.
+#         + MANAGE_GETTEXT_LOCALES: Locales to be processed.
 #
 #   MANAGE_ZANATA(serverUrl [YES])
 #   - Use Zanata (was flies) as translation service.
@@ -74,154 +111,234 @@
 #     + zanata_pull: Pull translations from zanata server.
 #
 
+IF(DEFINED _MANAGE_TRANSLATION_CMAKE_)
+    RETURN()
+ENDIF(DEFINED _MANAGE_TRANSLATION_CMAKE_)
+SET(_MANAGE_TRANSLATION_CMAKE_ "DEFINED")
+INCLUDE(ManageArchive)
+INCLUDE(ManageMessage)
+INCLUDE(ManageFile)
+INCLUDE(ManageDependency)
 
-IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
-    SET(_MANAGE_TRANSLATION_CMAKE_ "DEFINED")
-    SET(XGETTEXT_OPTIONS_C
-	--language=C --keyword=_ --keyword=N_ --keyword=C_:1c,2 --keyword=NC_:1c,2 -s
-	
-	)
+SET(XGETTEXT_OPTIONS_C --language=C --keyword=_ --keyword=N_ 
+    --keyword=C_:1c,2 --keyword=NC_:1c,2 -s
+    )
 
-    SET(MANAGE_TRANSLATION_MSGFMT_OPTIONS 
-	"--check" CACHE STRING "msgfmt options"
-	)
-    SET(MANAGE_TRANSLATION_MSGMERGE_OPTIONS 
-	"--indent" "--update" "--backup=none" CACHE STRING "msgmerge options"
-	)
-    SET(MANAGE_TRANSLATION_XGETTEXT_OPTIONS 
-	${XGETTEXT_OPTIONS_C}
-	CACHE STRING "xgettext options"
-	)
-    SET_DIRECTORY_PROPERTIES(PROPERTIES CLEAN_NO_CUSTOM "1")
+SET(MANAGE_TRANSLATION_MSGFMT_OPTIONS 
+    "--check" CACHE STRING "msgfmt options"
+    )
+SET(MANAGE_TRANSLATION_MSGMERGE_OPTIONS 
+    "--indent" "--update" "--backup=none" CACHE STRING "msgmerge options"
+    )
+SET(MANAGE_TRANSLATION_XGETTEXT_OPTIONS 
+    ${XGETTEXT_OPTIONS_C}
+    CACHE STRING "xgettext options"
+    )
+SET_DIRECTORY_PROPERTIES(PROPERTIES CLEAN_NO_CUSTOM "1")
 
-    INCLUDE(ManageArchive)
-    INCLUDE(ManageMessage)
-    INCLUDE(ManageFile)
-    INCLUDE(ManageDependency)
-    IF(NOT TARGET translations)
-	ADD_CUSTOM_TARGET(translations
-	    COMMENT "Making translations"
+IF(NOT TARGET translations)
+    ADD_CUSTOM_TARGET(translations
+	COMMENT "translations: Making translations"
+	)
+ENDIF(NOT TARGET translations)
+SET(_gettext_dependency_missing 0)
+
+#######################################
+# GETTEXT support
+#
+
+MACRO(MANAGE_GETTEXT_INIT)
+    IF(DEFINED XGETTEXT_CMD)
+	RETURN()
+    ENDIF(DEFINED XGETTEXT_CMD)
+    FOREACH(_name "xgettext" "msgmerge" "msgfmt")
+	STRING(TOUPPER "${_name}" _cmd)
+	FIND_PROGRAM_ERROR_HANDLING(${_cmd}_CMD
+	    ERROR_MSG " gettext support is disabled."
+	    ERROR_VAR _gettext_dependency_missing
+	    VERBOSE_LEVEL ${M_OFF}
+	    "${_name}"
 	    )
-    ENDIF(NOT TARGET translations)
+	M_MSG(${M_INFO1} "${_cmd}_CMD=${${_cmd}_CMD}")
+    ENDFOREACH(_name "xgettext" "msgmerge" "msgfmt")
+ENDMACRO(MANAGE_GETTEXT_INIT)
 
-
-    #========================================
-    # GETTEXT support
-
-    MACRO(MANAGE_GETTEXT_INIT)
-	FOREACH(_name "xgettext" "msgmerge" "msgfmt")
-	    STRING(TOUPPER "${_name}" _cmd)
-	    FIND_PROGRAM_ERROR_HANDLING(${_cmd}_CMD
-		ERROR_MSG " gettext support is disabled."
-		ERROR_VAR _gettext_dependency_missing
-		VERBOSE_LEVEL ${M_OFF}
-		"${_name}"
+FUNCTION(ADD_POT_FILE potFile)
+    MANAGE_GETTEXT_INIT()
+    IF(_gettext_dependency_missing)
+	RETURN()
+    ENDIF(_gettext_dependency_missing)
+    SET(_validOptions 
+	"SRCS" "XGETTEXT_OPTIONS" "COMMAND" "DEPENDS"
+	)
+    VARIABLE_PARSE_ARGN(_o _validOptions ${ARGN})
+    IF("${_o_COMMAND}" STREQUAL "")
+	## xgettext mode
+	IF(NOT _o_XGETTEXT_OPTIONS)
+	    SET(_o_XGETTEXT_OPTIONS 
+		"${MANAGE_TRANSLATION_XGETTEXT_OPTIONS}"
 		)
-	    M_MSG(${M_INFO1} "${_cmd}_CMD=${${_cmd}_CMD}")
-	ENDFOREACH(_name "xgettext" "msgmerge" "msgfmt")
-    ENDMACRO(MANAGE_GETTEXT_INIT)
-
-    FUNCTION(MANAGE_GETTEXT)
-	SET(_gettext_dependency_missing 0)
-	MANAGE_DEPENDENCY(BUILD_REQUIRES GETTEXT REQUIRED DEVEL)
-	MANAGE_GETTEXT_INIT()
-	IF(NOT _gettext_dependency_missing)
-	    SET(_validOptions 
-		"ALL" "SRCS" "LOCALES" "POTFILE"
-		"MSGFMT_OPTIONS"
-		"MSGMERGE_OPTIONS" "XGETTEXT_OPTIONS"
+	ENDIF()
+	IF("${_o_SRCS}" STREQUAL "")
+	    M_MSG(${M_WARN} 
+		"ADD_POT_FILE: xgettext: No SRCS for ${potFile}"
 		)
-	    VARIABLE_PARSE_ARGN(_opt _validOptions ${ARGN})
-	    IF(DEFINED _opt_ALL)
-		SET(_all "ALL")
-	    ENDIF(DEFINED _opt_ALL)
+	    RETURN()
+	ENDIF()
+	ADD_CUSTOM_COMMAND(OUTPUT ${potFile}
+	    COMMAND ${XGETTEXT_CMD} ${_o_XGETTEXT_OPTIONS} 
+	    -o ${potFile}
+	    --package-name=${PROJECT_NAME} 
+	    --package-version=${PRJ_VER} ${_o_SRCS}
+	    DEPENDS ${_o_SRCS} ${_o_DEPENDS}
+	    COMMENT "${potFile}: xgettext: Extract translatable messages"
+	    )
+    ELSE()
+	ADD_CUSTOM_COMMAND(OUTPUT ${potFile}
+	    COMMAND ${_o_COMMAND}
+	    DEPENDS ${_o_DEPENDS}
+	    COMMENT "${potFile}: Extract translatable messages"
+	    )
+    ENDIF("${_o_COMMAND}" STREQUAL "")
+    LIST(APPEND MANAGE_TRANSLATION_GETTEXT_POT_LIST ${potFile})
+    SET(MANAGE_TRANSLATION_GETTEXT_POT_LIST
+	"${MANAGE_TRANSLATION_GETTEXT_POT_LIST}"
+	CACHE INTERNAL "List of pot files"
+	)
+ENDFUNCTION(ADD_POT_FILE potFile)
 
-	    # Default values
-	    IF(_opt_POTFILE)
-		GET_FILENAME_COMPONENT(_opt_POTFILE "${_opt_POTFILE}" ABSOLUTE)
-	    ELSE(_opt_POTFILE)
-		SET(_opt_POTFILE 
-		    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pot")
-	    ENDIF(_opt_POTFILE)
-	    GET_FILENAME_COMPONENT(_opt_POTFILE_NAME "${_opt_POTFILE}" NAME_WE)
-	    SOURCE_ARCHIVE_CONTENTS_ADD("${_opt_POTFILE}")
 
-	    IF(NOT _opt_LOCALES)
-		FILE(GLOB _poFiles "*.po")
-		FOREACH(_poFile ${_poFiles})
-		    GET_FILENAME_COMPONENT(_locale "${_poFile}" NAME_WE)
-		    LIST(APPEND _opt_LOCALES "${_locale}")
-		ENDFOREACH(_poFile ${_poFiles})
-	    ENDIF(NOT _opt_LOCALES)
+FUNCTION(MANAGE_GETTEXT)
+    MANAGE_DEPENDENCY(BUILD_REQUIRES GETTEXT REQUIRED)
+    MANAGE_DEPENDENCY(BUILD_REQUIRES FINDUTILS REQUIRED)
+    MANAGE_DEPENDENCY(REQUIRES GETTEXT REQUIRED)
+    MANAGE_GETTEXT_INIT()
+    IF(_gettext_dependency_missing)
+	RETURN()
+    ENDIF(_gettext_dependency_missing)
 
-	    FOREACH(_optName "MSGFMT" "MSGMERGE" "XGETTEXT")
-		IF(NOT _opt_${_optName}_OPTIONS)
-		    SET(_opt_${_optName}_OPTIONS 
-			"${MANAGE_TRANSLATION_${_optName}_OPTIONS}"
-			)
-		ENDIF(NOT _opt_${_optName}_OPTIONS)
-	    ENDFOREACH(_optName "MSGFMT" "MSGMERGE" "XGETTEXT")
+    SET(_validOptions 
+	"SRCS" "XGETTEXT_OPTIONS" "COMMAND" "DEPENDS"
+	"ALL" "LOCALES" "SYSTEM_LOCALES" "POT_FILE"
+	"MSGFMT_OPTIONS" "MSGMERGE_OPTIONS"
+	)
+    VARIABLE_PARSE_ARGN(_o _validOptions ${ARGN})
+    IF(DEFINED _o_ALL)
+	SET(_all "ALL")
+    ENDIF(DEFINED _o_ALL)
 
-	    SET(_srcList "")
-	    SET(_srcList_abs "")
-	    FOREACH(_sF ${_opt_SRCS})
-		FILE(RELATIVE_PATH _relFile 
-		    "${CMAKE_CURRENT_BINARY_DIR}" "${_sF}")
-		LIST(APPEND _srcList ${_relFile})
-		GET_FILENAME_COMPONENT(_absPoFile ${_sF} ABSOLUTE)
-		LIST(APPEND _srcList_abs ${_absPoFile})
-	    ENDFOREACH(_sF ${_opt_SRCS})
+    ## Pot files
+    IF(_o_POT_FILES)
+	SET(_o_POT_FILES 
+	    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pot"
+	    )
+    ENDIF(_o_POT_FILES)
+    ## In case pot files are not in source control
+    SOURCE_ARCHIVE_CONTENTS_ADD(${_o_POT_FILES})
 
-	    ### Generating pot files
-	    ADD_CUSTOM_TARGET_COMMAND(pot_file
-		NO_FORCE OUTPUT ${_opt_POTFILE} ${_all}
-		COMMAND ${XGETTEXT_CMD} ${_opt_XGETTEXT_OPTIONS} 
-		    -o ${_opt_POTFILE}
-		    --package-name=${PROJECT_NAME} 
-		    --package-version=${PRJ_VER} ${_srcList}
-		DEPENDS ${_srcList_abs}
-		COMMENT "Extract translatable messages to ${_potFile}"
+    ## Directory that contains pot
+    SET(_potDirList "")
+    FOREACH(_pot ${_o_POT_FILES})
+	GET_FILENAME_COMPONENT(_potDir ${_pot} PATH)
+	LIST(APPEND _potDirList "${_potDir}")
+    ENDFOREACH(_pot)
+
+    ## Locales
+    IF("${_o_LOCALES}" STREQUAL "")
+	IF(DEFINED _o_SYSTEM_LOCALES)
+	    EXECUTE_PROCESS(
+		COMMAND locale -a | grep -e '^[a-z]*_[A_Z]*$' | xargs | sed -e 's/ /;/g'
+		OUTPUT_VARIABLE _o_LOCALES
+		OUTPUT_STRIP_TRAILING_WHITESPACE
 		)
-
-	    ### Generating gmo files
-	    SET(_gmoList "")
-	    SET(_poList "")
-	    FOREACH(_locale ${_opt_LOCALES})
-		SET(_gmoFile ${CMAKE_CURRENT_BINARY_DIR}/${_locale}.gmo)
-		SET(_poFile ${CMAKE_CURRENT_SOURCE_DIR}/${_locale}.po)
-		SOURCE_ARCHIVE_CONTENTS_ADD("${_poFile}")
-		ADD_CUSTOM_COMMAND(OUTPUT ${_poFile}
-		    COMMAND ${MSGMERGE_CMD} 
-		    ${_opt_MSGMERGE_OPTIONS} ${_poFile} ${_opt_POTFILE}
-		    DEPENDS ${_opt_POTFILE}
-		    COMMENT "Running ${MSGMERGE_CMD}"
+	ELSE()
+	    ## LOCALES is not specified, detect now
+	    FOREACH(_potDir ${_potDirList})
+		EXECUTE_PROCESS(
+		    COMMAND find ${_potDir} -name "*.po" -printf '%f ' | sed -e 's/.po /;/g'
+		    OUTPUT_VARIABLE _locales
+		    OUTPUT_STRIP_TRAILING_WHITESPACE
 		    )
+		LIST(APPEND _o_LOCALES ${_locales})
+	    ENDFOREACH(_potDir)
+	    LIST(REMOVE_DUPLICATES ${_o_LOCALES})
+	ENDIF(DEFINED _o_SYSTEM_LOCALES)
+    ENDIF("${_o_LOCALES}" STREQUAL "")
 
-		ADD_CUSTOM_COMMAND(OUTPUT ${_gmoFile}
-		    COMMAND ${MSGFMT_CMD} 
-		    ${_opt_MSGFMT_OPTIONS} -o ${_gmoFile} ${_poFile}
-		    DEPENDS ${_poFile}
-		    COMMENT "Running ${MSGFMT_CMD}"
-		    )
-
-		LIST(APPEND _gmoList "${_gmoFile}")
-		## No need to use MANAGE_FILE_INSTALL
-		## As this will handle by rpmbuild
-		INSTALL(FILES ${_gmoFile} DESTINATION 
-		    ${DATA_DIR}/locale/${_locale}/LC_MESSAGES 
-		    RENAME ${_opt_POTFILE_NAME}.mo
-		    )
-	    ENDFOREACH(_locale ${_opt_LOCALES})
-	    SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${_potFile}" )
-
-	    ADD_CUSTOM_TARGET(gmo_files ${_all}
-		DEPENDS ${_gmoList}
-		COMMENT "Generate gmo files for translation"
+    ## Other options
+    FOREACH(_oName "MSGFMT" "MSGMERGE" "XGETTEXT")
+	IF(NOT _o_${_oName}_OPTIONS)
+	    SET(_o_${_oName}_OPTIONS 
+		"${MANAGE_TRANSLATION_${_oName}_OPTIONS}"
 		)
+	ENDIF(NOT _o_${_oName}_OPTIONS)
+    ENDFOREACH(_oName "MSGFMT" "MSGMERGE" "XGETTEXT")
+   
+    ## Source files
+    SET(_srcList "")
+    SET(_srcList_abs "")
+    FOREACH(_sF ${_o_SRCS})
+	FILE(RELATIVE_PATH _relFile 
+	    "${CMAKE_CURRENT_BINARY_DIR}" "${_sF}")
+	LIST(APPEND _srcList ${_relFile})
+	GET_FILENAME_COMPONENT(_absPoFile ${_sF} ABSOLUTE)
+	LIST(APPEND _srcList_abs ${_absPoFile})
+    ENDFOREACH(_sF ${_o_SRCS})
 
-	    ADD_DEPENDENCIES(translations gmo_files)
-	ENDIF(NOT _gettext_dependency_missing)
-    ENDFUNCTION(MANAGE_GETTEXT)
+    ### Generating pot files
+    FOREACH(_pot ${_o_POT_FILES})
+	ADD_CUSTOM_COMMAND(OUTPUT ${_pot}
+	GET_FILENAME_COMPONENT(_potDir ${_pot} PATH)
+	LIST(APPEND _potDirList "${_potDir}")
+    ENDFOREACH(_pot)
+    ADD_CUSTOM_TARGET_COMMAND(pot_file
+	NO_FORCE OUTPUT ${_o_POT_FILES} ${_all}
+	COMMAND ${XGETTEXT_CMD} ${_o_XGETTEXT_OPTIONS} 
+	-o ${_o_POT_FILES}
+	--package-name=${PROJECT_NAME} 
+	--package-version=${PRJ_VER} ${_srcList}
+	DEPENDS ${_srcList_abs}
+	COMMENT "Extract translatable messages to ${_potFile}"
+	)
+
+    ### Generating gmo files
+    SET(_gmoList "")
+    SET(_poList "")
+    FOREACH(_locale ${_o_LOCALES})
+	SET(_gmoFile ${CMAKE_CURRENT_BINARY_DIR}/${_locale}.gmo)
+	SET(_poFile ${CMAKE_CURRENT_SOURCE_DIR}/${_locale}.po)
+	SOURCE_ARCHIVE_CONTENTS_ADD("${_poFile}")
+	ADD_CUSTOM_COMMAND(OUTPUT ${_poFile}
+	    COMMAND ${MSGMERGE_CMD} 
+	    ${_o_MSGMERGE_OPTIONS} ${_poFile} ${_o_POT_FILES}
+	    DEPENDS ${_o_POT_FILES}
+	    COMMENT "Running ${MSGMERGE_CMD}"
+	    )
+
+	ADD_CUSTOM_COMMAND(OUTPUT ${_gmoFile}
+	    COMMAND ${MSGFMT_CMD} 
+	    ${_o_MSGFMT_OPTIONS} -o ${_gmoFile} ${_poFile}
+	    DEPENDS ${_poFile}
+	    COMMENT "Running ${MSGFMT_CMD}"
+	    )
+
+	LIST(APPEND _gmoList "${_gmoFile}")
+	## No need to use MANAGE_FILE_INSTALL
+	## As this will handle by rpmbuild
+	INSTALL(FILES ${_gmoFile} DESTINATION 
+	    ${DATA_DIR}/locale/${_locale}/LC_MESSAGES 
+	    RENAME ${_o_POT_FILES_NAME}.mo
+	    )
+    ENDFOREACH(_locale ${_o_LOCALES})
+    SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${_potFile}" )
+
+    ADD_CUSTOM_TARGET(gmo_files ${_all}
+	DEPENDS ${_gmoList}
+	COMMENT "Generate gmo files for translation"
+	)
+
+    ADD_DEPENDENCIES(translations gmo_files)
+ENDFUNCTION(MANAGE_GETTEXT)
 
 
     #========================================
@@ -309,5 +426,4 @@ IF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 	ENDIF(NOT _manage_zanata_dependencies_missing)
     ENDMACRO(MANAGE_ZANATA serverUrl)
 
-ENDIF(NOT DEFINED _MANAGE_TRANSLATION_CMAKE_)
 

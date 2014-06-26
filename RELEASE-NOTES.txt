@@ -29,6 +29,7 @@ REDHAT_BUGZILLA=1002279,1093336
   + ManageString: New function: STRING_ESCAPE_BACKSLASH
   + ManageString: New function: STRING_ESCAPE_DOLLAR
   + ManageString: New function: STRING_ESCAPE_QUOTE
+  + ManageTranslate: New function: ADD_POT_FILE 
   + Target rpmlint: rpmlint statistics are now combined.
   + cmake-fedora-fedpkg: Default is now build all active 
     Fedora (including rawhide) and EPEL releases in fedpkg branches.
