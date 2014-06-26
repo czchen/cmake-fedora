@@ -1,42 +1,39 @@
-# - Collection of String utility macros.
-#
-# Included by:
-#   ManageVarible
+# - Manage String by utility functions
 #
 # Defines the following functions:
-#   STRING_APPEND(<var> <str> [separator])
-#     - Append a string to a variable
+#   STRING_APPEND(<var> <str> [<separator>])
+#     - Append a string to a variable.
 #       * Parameters:
 #         + var: A variable that stores the result.
 #         + str: A string to be appended to end of line.
 #         + separator: Separator to separate between strings.
 #
-#   STRING_ESCAPE_BACKSLASH(<var> <str> )
-#     - Escape the dollar sign ($)
+#   STRING_ESCAPE_BACKSLASH(<var> <str>)
+#     - Escape the backslash (\).
 #       * Parameters:
 #         + var: A variable that stores the result.
 #         + str: A string.
 #
-#   STRING_ESCAPE_DOLLAR(<var> <str> )
-#     - Escape the dollar sign ($)
+#   STRING_ESCAPE_DOLLAR(<var> <str>)
+#     - Escape the dollar sign ($).
 #       * Parameters:
 #         + var: A variable that stores the result.
 #         + str: A string.
 #
-#   STRING_ESCAPE_QUOTE(<var> <str> )
-#     - Escape the double quote (")
+#   STRING_ESCAPE_QUOTE(<var> <str>)
+#     - Escape the double quote (").
 #       * Parameters:
 #         + var: A variable that stores the result.
 #         + str: A string.
 #
-#   STRING_ESCAPE_SEMICOLON(<var> <str> )
-#     - Escape the semicolon
+#   STRING_ESCAPE_SEMICOLON(<var> <str>)
+#     - Escape the semicolon (;).
 #       * Parameters:
 #         + var: A variable that stores the result.
 #         + str: A string.
 #
 #   STRING_PADDING(<var> <str> <length> [<padStr>])
-#     - Padding the string to specified length
+#     - Padding the string to specified length.
 #       * Parameters:
 #         + var: A variable that stores the result.
 #         + str: A string.
@@ -44,14 +41,15 @@
 #         + padStr: String that used in padding. Default: " "
 #
 #   STRING_PREPEND(<var> <str> [<separator>])
-#     - Prepend a string to a variable
+#     - Prepend a string to a variable.
 #       * Parameters:
 #         + var: A variable that stores the result.
 #         + str: A string to be appended to end of line.
 #         + separator: Separator to separate between strings.
 #
 #   STRING_SPLIT(<var> <delimiter> <str> 
-#       [NOESCAPE_SEMICOLON] [ESCAPE_VARIABLE] [ALLOW_EMPTY])
+#       [NOESCAPE_SEMICOLON] [ESCAPE_VARIABLE] [ALLOW_EMPTY]
+#     )
 #     - Split a string into a list using a delimiter, 
 #       which can be in 1 or more characters long.
 #       * Parameters:
@@ -65,9 +63,10 @@
 #   STRING_TRIM(<var> <str> [NOUNQUOTE])
 #     - Trim a string by removing the leading and trailing spaces,
 #       just like STRING(STRIP ...) in CMake 2.6 and later.
-#       This macro is needed as CMake 2.4 does not support STRING(STRIP ..)
-#       This macro also remove quote and double quote marks around the string,
-#       unless NOUNQUOTE is defined.
+#       This macro was developed as CMake 2.4 does not support 
+#        STRING(STRIP ..)
+#       This macro also remove quote and double quote marks around 
+#       the string, unless NOUNQUOTE is defined.
 #       * Parameters:
 #         + var: A variable that stores the result.
 #         + str: A string.
@@ -88,7 +87,6 @@
 #         + var: A variable that stores the result.
 #         + strList: A list of strings.
 #         + str: (Optional) more string to be join.
-#
 #
 
 IF(DEFINED _MANAGE_STRING_CMAKE_)
