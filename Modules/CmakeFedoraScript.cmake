@@ -3,80 +3,78 @@
 #
 
 MACRO(CMAKE_FEDORA_SCRIPT_PRINT_USAGE)
-    MESSAGE(
-"  cmake -Dcmd=configure_file 
-        -DinputFile=<inputFile> -DoutputFile=<outputFile>
-	[-DatOnly=1]
-        [-Dcmake_fedora_module_dir=<dir>]
-	[-Descape_quotes=1]
-	[-DVAR=VAULE]
-        -P <CmakeModulePath>/CmakeFedoraScript.cmake
-    Copy a file to another location and modify its contents.
-    This is a wrapper of CONFIGURE_FILE command in cmake.
+    MESSAGE("
+cmake -Dcmd=configure_file 
+      -DinputFile=<inputFile> -DoutputFile=<outputFile>
+      [-DatOnly=1]
+      [-Dcmake_fedora_module_dir=<dir>]
+      [-Descape_quotes=1]
+      [\"-D<VAR>=<VAULE>\"]
+    -P <CmakeModulePath>/CmakeFedoraScript.cmake
+  Copy a file to another location and modify its contents.
+  This is a wrapper of CONFIGURE_FILE command in cmake.
 
-    Note: Please pass the necessary variables via -Dvar=VALUE,
-      e.g. -DPROJECT_NAME=cmake-fedora
-    Options:
-      -DinputFile: input file
-      -DoutPutFile: output file
-      -DatOnly: Replace only the variables surround by '@', like @VAR@.
-        Same as passing '@ONLY' to CONFIGURE_FILE.
-      -Dcmake_fedora_module_dir:
-        Specify this if cmake and cmake-fedora failed to find 
-        the location of CMake Fedora modules. 
-      -Descape_quotes: Substituted quotes will be C-style escape.
-        Same as passing 'ESCAPE_QUOTES' to CONFIGURE_FILE.
-
+  Note: Please pass the necessary variables via -Dvar=VALUE,
+    e.g. -DPROJECT_NAME=cmake-fedora
+  Options:
+    -DinputFile: input file
+    -DoutPutFile: output file
+    -DatOnly: Replace only the variables surround by '@', like @VAR@.
+      Same as passing '@ONLY' to CONFIGURE_FILE.
+    -Dcmake_fedora_module_dir:
+      Specify this if cmake and cmake-fedora failed to find 
+      the location of CMake Fedora modules. 
+    -Descape_quotes: Substituted quotes will be C-style escape.
+      Same as passing 'ESCAPE_QUOTES' to CONFIGURE_FILE.
     
-  cmake -Dcmd=find_file|find_program \"-Dnames=<name1;name2>\"
-        [-Dcmake_fedora_module_dir=<dir>]
-        [-Dpaths=\"path1;path2\"]
-        [-Derror_msg=msg]
-        [-Dverbose_level=verboseLevel]
-        [-Dno_default_path=1]
-        -P <CmakeModulePath>/CmakeFedoraScript.cmake
-    Find a file or program with name1 or name2, 
+cmake -Dcmd=find_file|find_program \"-Dnames=<name1;name2>\"
+      [-Dcmake_fedora_module_dir=<dir>]
+      [-Dpaths=\"<path1>;<path2>\"]
+      [-Derror_msg=<msg>]
+      [-Dverbose_level=<verboseLevel>]
+      [-Dno_default_path=1]
+    -P <CmakeModulePath>/CmakeFedoraScript.cmake
+  Find a file or program with name1 or name2, 
     with proper error handling.
-    Options:
-      -Dcmake_fedora_module_dir:
-        Specify this if cmake and cmake-fedora failed to find 
-        the location of CMake Fedora modules. 
-      -Dpaths: Paths that files might be located.
-      -Derror_msg: Error message to be shown if not-found.
-      -Dverbose_level: Verbose level for not-found message.
-        1: Critical (The 'not found' message is shown as critical)
-        2: Error (The 'not found' message is shown as error)
-        3: Warning (The 'not found' message is shown as error)
-	4: Off (The 'not found' message is shown as off, 
-	   that is, turn off certain functionality).
-        5: Info1
-	6: Info2
-	7: Info3
-	Default: Error
-      -Dno_default_path: CMake default paths will not be search.
-        Useful if you only want to search the file list in -Dpaths.
+  Options:
+    -Dcmake_fedora_module_dir:
+      Specify this if cmake and cmake-fedora failed to find 
+      the location of CMake Fedora modules. 
+    -Dpaths: Paths that files might be located.
+    -Derror_msg: Error message to be shown if not-found.
+    -Dverbose_level: Verbose level for not-found message.
+      1: Critical (The 'not found' message is shown as critical)
+      2: Error (The 'not found' message is shown as error)
+      3: Warning (The 'not found' message is shown as warning)
+      4: Off (The 'not found' message is shown as off, 
+         that is, turn off certain functionality).
+      5: Info1
+      6: Info2
+      7: Info3
+      Default: 3 (Warning)
+    -Dno_default_path: CMake default paths will not be search.
+      Useful if you only want to search the file list in -Dpaths.
 	   
-  cmake -Dcmd=manage_file_cache \"-Drun=<command arg1 ...>\"
-        -Dcache_file=<cacheFileWithoutDirectory>
-        [-Dcmake_fedora_module_dir=<dir>]
-        [-Dexpiry_seconds=seconds]
-        [-Dcache_dir=dir]
-        -P <CmakeModulePath>/CmakeFedoraScript.cmake
-    Output from either cache file or run command.
-    Command is run when 1) cache expired or 2) no cache.
-    Cache will be update after run command.
+cmake -Dcmd=manage_file_cache \"-Drun=<command arg1 ...>\"
+      -Dcache_file=<cacheFileWithoutDirectory>
+      [-Dcmake_fedora_module_dir=<dir>]
+      [-Dexpiry_seconds=seconds]
+      [-Dcache_dir=dir]
+    -P <CmakeModulePath>/CmakeFedoraScript.cmake
+  Output from either cache file or run command.
+  Command is run when 1) cache expired or 2) no cache.
+  Cache will be update after run command.
 
-  cmake -Dcmd=get_cmake_cache_variable -Dvar=<varName>
-        -Dcmake_cache=<CMakeCache.txt>
-        [-Dcmake_fedora_module_dir=<dir>]
-        -P <CmakeModulePath>/CmakeFedoraScript.cmake
-    Get variable value from CMakeCache.txt
+cmake -Dcmd=get_cmake_cache_variable -Dvar=<varName>
+      -Dcmake_cache=<CMakeCache.txt>
+      [-Dcmake_fedora_module_dir=<dir>]
+    -P <CmakeModulePath>/CmakeFedoraScript.cmake
+  Get variable value from CMakeCache.txt
 
-  cmake -Dcmd=get_variable -Dvar=<varName>
-        [-Dcmake_fedora_module_dir=<dir>]
-        -P <CmakeModulePath>/CmakeFedoraScript.cmake
-    Get variable value from cmake-fedora.conf.
-
+cmake -Dcmd=get_variable -Dvar=<varName>
+      [-Dcmake_fedora_module_dir=<dir>]
+    -P <CmakeModulePath>/CmakeFedoraScript.cmake
+  Get variable value from cmake-fedora.conf.
 ")
 ENDMACRO(CMAKE_FEDORA_SCRIPT_PRINT_USAGE)
 
@@ -109,11 +107,9 @@ MACRO(FIND_FILE_OR_PROGRAM)
 	LIST(APPEND _args "ERROR_MSG" "${error_msg}")
     ENDIF()
 
-    SET(_verboseLevel "${M_ERROR}")
+    SET(_verboseLevel "${M_WARNING}")
     IF(DEFINED verbose_level)
 	SET(_verboseLevel "${verbose_level}")
-    ELSE()
-	SET(_verboseLevel "${M_ERROR}")
     ENDIF()
     LIST(APPEND _args "VERBOSE_LEVEL" "${_verboseLevel}")
 
