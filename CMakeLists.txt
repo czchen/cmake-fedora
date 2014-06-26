@@ -100,6 +100,7 @@ IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
     SET(RPM_BUILD_SOURCES ${SOURCE_ARCHIVE_DIR})
     INCLUDE(ManageRPM)
     PACK_RPM(SPEC_IN "Templates/fedora/project.spec.in")
+    RPM_MOCK_BUILD()
 ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
 
 ####################################################################
