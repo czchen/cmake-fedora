@@ -5,30 +5,30 @@
 # 2. Before source archive being built.
 #
 MACRO(MANAGE_CHANGELOG_SCRIPT_PRINT_USAGE)
-    MESSAGE(
-	"Manage ChangeLog script: This script is not recommend for end users
-  cmake -Dcmd=update 
+    MESSAGE("Manage ChangeLog script: This script is not recommend for end users.
+
+cmake -Dcmd=update 
       -Dchangelog=<path/ChangeLog> 
       -Drelease=<path/RELEASE-NOTES.txt>
       -Dprj_info=<path/prj_info.cmake>
       [\"-D<var>=<value>\"]
-      -P <CmakeModulePath>/ManageChangeLogScript.cmake
-    Update the ChangeLog.
+    -P <CmakeModulePath>/ManageChangeLogScript.cmake
+  Update the ChangeLog.
 
-  cmake -Dcmd=extract_current
+cmake -Dcmd=extract_current
       -Drelease=<path/RELEASE-NOTES.txt>
       [\"-D<var>=<value>\"]
-      -P <CmakeModulePath>/ManageChangeLogScript.cmake
-    Extract current Changelog items from RELEASE-NOTES.txt
+    -P <CmakeModulePath>/ManageChangeLogScript.cmake
+  Extract current Changelog items from RELEASE-NOTES.txt
 
-  cmake -Dcmd=extract_prev
+cmake -Dcmd=extract_prev
       -Dver=<ver>
       -Dchangelog=<path/ChangeLog> 
       [\"-D<var>=<value>\"]
-      -P <CmakeModulePath>/ManageChangeLogScript.cmake
-    Extract prev Changelog items from ChangeLog.
+    -P <CmakeModulePath>/ManageChangeLogScript.cmake
+  Extract prev Changelog items from ChangeLog.
 
-	"
+"
 	)
 ENDMACRO()
 
