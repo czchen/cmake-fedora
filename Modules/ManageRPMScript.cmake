@@ -4,56 +4,57 @@
 MACRO(MANAGE_RPM_SCRIPT_PRINT_USAGE)
     MESSAGE(
 	"Manage RPM script: This script is not recommend for end users
-  cmake -Dcmd=spec -Dspec=<project.spec> -Dspec_in=<project.spec.in>
+	
+cmake -Dcmd=spec -Dspec=<project.spec> -Dspec_in=<project.spec.in>
       -Dmanifests=<path/install_manifests.txt>
       -Drelease=<path/RELEASE-NOTES.txt>
       -Dprj_info=<path/prj_info.cmake>
       [\"-Dconfig_replace=<file1;file2>\"]
       [\"-D<var>=<value>\"]
-      -P <CmakeModulePath>/ManageRPMScript.cmake
-    Make project spec file according to spec_in and CMakeCache.txt.   
-      Options:
-        -Dconfig_replace: List of configure files that should use
-          %config instead of %config(noreplace)
-        -Dmainfests: Path to install_manifests.txt
-	-Drelease: Path to RELEASE-NOTES.txt
-       Note: Please pass the necessary variables via -Dvar=VALUE,
-         e.g. -DPROJECT_NAME=cmake-fedora
+    -P <CmakeModulePath>/ManageRPMScript.cmake
+  Make project spec file according to spec_in and CMakeCache.txt.   
+  Options:
+    -Dconfig_replace: List of configure files that should use
+      %config instead of %config(noreplace)
+    -Dmainfests: Path to install_manifests.txt
+    -Drelease: Path to RELEASE-NOTES.txt
+  Note: Please pass the necessary variables via -Dvar=VALUE,
+      e.g. "-DPROJECT_NAME=cmake-fedora"
 
-  cmake -Dcmd=spec_manifests
+cmake -Dcmd=spec_manifests
       -Dmanifests=<path/install_manifests.txt>
       -Dprj_info=<path/prj_info.cmake>
       [\"-Dconfig_replace=<file1;file2>\"]
       [\"-D<var>=<value>\"]
-      -P <CmakeModulePath>/ManageRPMScript.cmake
-    Convert install_manifests.txt to part of a SPEC file.
-      Options:
-        -Dconfig_replace: List of configure files that should use
-	  %config instead of %config(noreplace)
-        -Dmainfests: Path to install_manifests.txt
-      Note: Please pass the necessary variables via -Dvar=VALUE,
-        e.g. -DPROJECT_NAME=cmake-fedora
+    -P <CmakeModulePath>/ManageRPMScript.cmake
+  Convert install_manifests.txt to part of a SPEC file.
+  Options:
+    -Dconfig_replace: List of configure files that should use
+      %config instead of %config(noreplace)
+    -Dmainfests: Path to install_manifests.txt
+  Note: Please pass the necessary variables via -Dvar=VALUE,
+    e.g. "-DPROJECT_NAME=cmake-fedora"
     
-  cmake -Dcmd=spec_changelog
+cmake -Dcmd=spec_changelog
       -Dmanifests=<path/install_manifests.txt>
       -Drelease=<path/RELEASE-NOTES.txt>
       -Dprj_info=<path/prj_info.cmake>
       [\"-D<var>=<value>\"]
-      -P <CmakeModulePath>/ManageRPMScript.cmake
-    Convert RELEASE-NOTES.txt to ChangeLog a SPEC file.
-      Options:
-        -Dmainfests: Path to install_manifests.txt
-      Note: Please pass the necessary variables via -Dvar=VALUE,
-         e.g. -DPROJECT_NAME=cmake-fedora
+    -P <CmakeModulePath>/ManageRPMScript.cmake
+  Convert RELEASE-NOTES.txt to ChangeLog a SPEC file.
+    Options:
+      -Dmainfests: Path to install_manifests.txt
+    Note: Please pass the necessary variables via -Dvar=VALUE,
+       e.g. -DPROJECT_NAME=cmake-fedora
 
-   cmake -Dcmd=make_manifests
+cmake -Dcmd=make_manifests
        [\"-Dmanifests=<path/install_manifests.txt>\"]
        [\"-Dtmp_dir=<dir>\"]
-     Make install_manifests.txt.
-       Options:
-         -Dmainfests: Path to install_manifests.txt
-         -Dtmp_dir: Directory for tempory files. 
-           Default is /tmp/cmake-fedora
+  Make install_manifests.txt.
+  Options:
+    -Dmainfests: Path to install_manifests.txt
+    -Dtmp_dir: Directory for tempory files. 
+      Default is /tmp/cmake-fedora
 
 "
 )

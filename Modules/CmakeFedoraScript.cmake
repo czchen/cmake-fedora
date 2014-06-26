@@ -3,7 +3,8 @@
 #
 
 MACRO(CMAKE_FEDORA_SCRIPT_PRINT_USAGE)
-    MESSAGE("
+    MESSAGE("cmake-fedora utility scripts
+
 cmake -Dcmd=configure_file 
       -DinputFile=<inputFile> -DoutputFile=<outputFile>
       [-DatOnly=1]
@@ -75,6 +76,7 @@ cmake -Dcmd=get_variable -Dvar=<varName>
       [-Dcmake_fedora_module_dir=<dir>]
     -P <CmakeModulePath>/CmakeFedoraScript.cmake
   Get variable value from cmake-fedora.conf.
+
 ")
 ENDMACRO(CMAKE_FEDORA_SCRIPT_PRINT_USAGE)
 
