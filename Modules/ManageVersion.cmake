@@ -22,12 +22,15 @@
 #     + PRJ_INFO_CMAKE: ${CMAKE_FEDORA_TMP_DIR}/prj_info.cmake
 #       Project information files to be included by scripts.
 #
-#     This macro sets following variables:
+#     This function defines following variables:
 #     + PRJ_VER: Release version.
 #     + CHANGE_SUMMARY: Summary of changes.
 #     + RELEASE_NOTES_FILE: The loaded release file.
 #     + PRJ_DOC_DIR: Documentation for the project.
 #       Default: ${DOC_DIR}/${PROJECT_NAME}-${PRJ_VER}
+#
+#     This function defines following compile flags:
+#     + PRJ_VER
 #
 #   PRJ_INFO_CMAKE_APPEND(<prjInfoFile> <var>)
 #   - Append  var to prj_info.cmake.
