@@ -8,7 +8,8 @@
 #
 # Defines following functions:
 #   MANAGE_DEPENDENCY(<listVar> <var> [VER <ver> [EXACT]] [REQUIRED] 
-#     [PROGRAM_NAMES <name1> ...] [PKG_CONFIG <pkgConfigName>]
+#     [PROGRAM_NAMES <name1> ...] [PROGRAM_SEARCH_PATHS <path1> ...] 
+#     [PKG_CONFIG <pkgConfigName>]
 #     [FEDORA_NAME <fedoraPkgName>] [DEVEL]
 #     )
 #     - Add a new dependency to a list. 
@@ -40,6 +41,8 @@
 #           If found, ${var}_EXECUTABLE is defined as the full path 
 #           to the executable; if not found; the whole dependency is
 #           deemed as not found.
+#         + PROGRAM_SEARCH_PATHS path1 ...: Additional program search path.
+#           It will act as PATHS arguments for FIND_PROGRAM.
 #         + PKG_CONFIG pkgConfigName: Name of the pkg-config file
 #           exclude the directory and .pc. e.g. "gtk+-2.0"
 #         + FEDORA_NAME fedoraPkgName: Package name in Fedora. 
@@ -64,21 +67,28 @@ FIND_PACKAGE(PkgConfig)
 ## source dir.
 FUNCTION(MANAGE_DEPENDENCY listVar var)
     SET(_validOptions "VER" "EXACT" "REQUIRED" 
-	"PROGRAM_NAMES" "PKG_CONFIG" "FEDORA_NAME" "DEVEL")
+	"PROGRAM_NAMES" "PROGRAM_SEARCH_PATHS" "PKG_CONFIG" "FEDORA_NAME" "DEVEL")
     VARIABLE_PARSE_ARGN(_opt _validOptions ${ARGN})
     SET(_dirty 0)
+
+    IF(_opt_FEDORA_NAME)
+	SET(_pkgName "${_opt_FEDORA_NAME}")
+    ELSE(_opt_FEDORA_NAME)
+	STRING(TOLOWER "${var}" _pkgName)
+    ENDIF(_opt_FEDORA_NAME)
 
     IF(DEFINED _opt_REQUIRED)
 	SET(_verbose "${M_ERROR}")
 	SET(_required "REQUIRED")
         SET(_progNotFoundMsg 
-	    "Program names ${_opt_PROGRAM_NAMES} not found, install ${var}")
+	    "Program names ${_opt_PROGRAM_NAMES} not found, install ${_pkgName}")
     ELSE(DEFINED _opt_REQUIRED)
 	SET(_verbose "${M_OFF}")
 	SET(_required "")
 	SET(_progNotFoundMsg 
 	    "Program names ${_opt_PROGRAM_NAMES} not found, ${var} support disabled")
     ENDIF(DEFINED _opt_REQUIRED)
+
     IF(_opt_VER)
 	IF(DEFINED _opt_EXACT)
 	    SET(_rel "=")
@@ -90,47 +100,45 @@ FUNCTION(MANAGE_DEPENDENCY listVar var)
     ENDIF(_opt_VER)
 
     IF(_opt_PROGRAM_NAMES)
-	M_MSG(${M_INFO2} "ManageDependency: finding program names ${_opt_PROGRAM_NAMES}")
+	M_MSG(${M_INFO2} "ManageDependency: Finding program names ${_opt_PROGRAM_NAMES}")
+	SET(_findArgs FIND_ARGS NAMES "${_opt_PROGRAM_NAMES}")
+	IF(_opt_PROGRAM_SEARCH_PATHS)
+	    LIST(APPEND _findArgs PATHS ${_opt_PROGRAM_SEARCH_PATHS})
+	ENDIF()
 	FIND_PROGRAM_ERROR_HANDLING(${var}_EXECUTABLE
 	    ERROR_VAR _dirty
 	    ERROR_MSG "${_progNotFoundMsg}"
 	    VERBOSE_LEVEL "${_verbose}"
-	    FIND_ARGS NAMES "${_opt_PROGRAM_NAMES}"
+	    ${_findArgs}
 	    )
 	MARK_AS_ADVANCED(${var}_EXECUTABLE)
     ENDIF(_opt_PROGRAM_NAMES)
 
-    IF(_opt_FEDORA_NAME)
-	SET(_name "${_opt_FEDORA_NAME}")
-    ELSE(_opt_FEDORA_NAME)
-	STRING(TOLOWER "${var}" _name)
-    ENDIF(_opt_FEDORA_NAME)
-
     IF(DEFINED _opt_DEVEL)
-	SET(_name "${_name}-devel")
+	SET(_pkgName "${_pkgName}-devel")
     ENDIF(DEFINED _opt_DEVEL)
     IF("${_opt_VER}" STREQUAL "")
-	SET(_newDep  "${_name}")
+	SET(_newDep  "${_pkgName}")
     ELSE("${_opt_VER}" STREQUAL "")
-	SET(_newDep  "${_name} ${_rel} ${_opt_VER}")
+	SET(_newDep  "${_pkgName} ${_rel} ${_opt_VER}")
     ENDIF("${_opt_VER}" STREQUAL "")
     IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
 	SET(_rpm_missing 0)
 	FIND_PROGRAM_ERROR_HANDLING(RPM_CMD
 	    ERROR_VAR _rpm_missing
-	    ERROR_MSG "Program rpm not found, dependency check disabled."
+	    ERROR_MSG "ManageDependency: Program rpm not found, dependency check disabled."
 	    VERBOSE_LEVEL ${M_OFF}
 	    FIND_ARGS "rpm"
 	    )
 	IF(NOT _rpm_missing)
-	    EXECUTE_PROCESS(COMMAND ${RPM_CMD} -q ${_name}
+	    EXECUTE_PROCESS(COMMAND ${RPM_CMD} -q ${_pkgName}
 		RESULT_VARIABLE _rpm_ret
 		OUTPUT_QUIET
 		ERROR_QUIET
 		)
 	    IF(_rpm_ret)
 		## Dependency not found
-		M_MSG(${_verbose} "RPM ${_name} is not installed")
+		M_MSG(${_verbose} "RPM ${_pkgName} is not installed")
 		SET(_dirty 1)
 	    ENDIF(_rpm_ret)
 	ENDIF(NOT _rpm_missing)
