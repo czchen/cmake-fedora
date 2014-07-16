@@ -1,4 +1,4 @@
-* Tue Jul 01 2014 Ding-Yi Chen <dchen at redhat.com> - 2.0.0
+* Wed Jul 16 2014 Ding-Yi Chen <dchen at redhat.com> - 2.0.0
 [TODO] Check ibus-chewing compatiblity
 - Fixed Bug 1093336 - date(1): -u is much portable than --utc
 - Fix EPEL 7 support.
@@ -13,6 +13,7 @@
     - CmakeFedoraScript: Scripts to be invoked in command line.
     - ManageChangeLogScript: Scripts for handling ChangeLog.
     - ManageRpmScript: RPM Scripts for handling RPM and SPEC.
+    - ManageZanata: Zanata translation service. Split from ManageTranslation
   + New cache variables:
     - CMAKE_FEDORA_MODULE_DIR: cmake-fedora modules dir.
   + ManageFile: New function: MANAGE_CMAKE_FEDORA_CONF
@@ -61,6 +62,9 @@
     - Macro to function
     - Parameters Changed
     - Mark as experiment
+  + ManageTranslation: MANAGE_GETTEXT:
+    - Macro to function
+    - Parameters Changed
   + PRJ_DOC_DIR: Changed from docdir/<PRJ_NAME>-<PRJ_VER> 
     to docdir/<PRJ_NAME>
   

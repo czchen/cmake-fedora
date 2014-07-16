@@ -18,6 +18,7 @@ REDHAT_BUGZILLA=1002279,1093336
     - CmakeFedoraScript: Scripts to be invoked in command line.
     - ManageChangeLogScript: Scripts for handling ChangeLog.
     - ManageRpmScript: RPM Scripts for handling RPM and SPEC.
+    - ManageZanata: Zanata translation service. Split from ManageTranslation
   + New cache variables:
     - CMAKE_FEDORA_MODULE_DIR: cmake-fedora modules dir.
   + ManageFile: New function: MANAGE_CMAKE_FEDORA_CONF
