@@ -1,4 +1,4 @@
-# - Upload files to hosting services.
+# - Manage upload source archive to hosting site.
 # You can either use sftp, scp or supply custom command for upload.
 #
 # This module defines following macros:
