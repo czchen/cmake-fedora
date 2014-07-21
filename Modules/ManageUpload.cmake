@@ -1,13 +1,19 @@
-# - Manage upload source archive to hosting site.
-# You can either use sftp, scp or supply custom command for upload.
+# - Manage upload source archive to hosting site
+# cmake-fedora can upload source archive to hosting site by
+# scp, sftp or any other command
 #
-# This module defines following macros:
-#   MANAGE_UPLOAD_TARGET(targetName 
-#     [COMMAND program ...] [ADD_CUSTOM_TARGET_ARGUMENTS])
-#   - Make an upload target using arbitrary command.
-#     This macro check whether the program after COMMAND exist,
-#     if program exists, then add the make target,
-#     if not, produce M_OFF warning.
+# Included Modules:
+#   - ManageMessage
+#   - ManageVariable
+#
+# This module defines following functions:
+#   MANAGE_UPLOAD_TARGET(<targetName> 
+#       [COMMAND <program> ... ] 
+#       [<add custom target options ...>]
+#     )
+#     - Make an upload target using arbitrary command.
+#       If COMMAND program exists the target <targetName> will be created;
+#       if not, a M_OFF message is shown and target will not be created.
 #     Parameters:
 #     + targetName: target name in make.
 #     + program: Program that does upload.
