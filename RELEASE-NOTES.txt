@@ -72,6 +72,9 @@ REDHAT_BUGZILLA=1002279,1093336
   + ManageTranslation: MANAGE_GETTEXT:
     - Macro to function
     - Parameters Changed
+  + ManageUpload: For all marcos:
+    - Macros are changed to function
+    - Parameters has changed.
   + PRJ_DOC_DIR: Changed from docdir/<PRJ_NAME>-<PRJ_VER> 
     to docdir/<PRJ_NAME>
   
