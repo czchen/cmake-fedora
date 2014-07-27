@@ -1,103 +1,92 @@
 # - Get or set variables from various sources.
 #
-# Includes:
-#   ManageString
-#   ManageFile
-#
-# Included by:
-#   ManageVersion
-#   PackRPM
+# Included Modules:
+#   - ManageFile
+#   - ManageString
 #
 # Defines following functions:
-#   SETTING_STRING_GET_VARIABLE(var value str 
-#     [NOUNQUOTE] [NOREPLACE] [setting_sign]
+#   SETTING_STRING_GET_VARIABLE(<key> <value> <str> 
+#       [NOUNQUOTE] [NOREPLACE] [<setting_sign>]
 #     )
-#     - Get a variable and a value from a setting in string format.
-#       i.e.  VAR=Value
-#       pattern. '#' is used for comment.
+#     - Split a setting string (e.g. VAR=value) to key and value.
+#         Note that if the first non-blank character is "#", then the 
+#         string is deemed as a comment thus will be skipped.
 #       * Parameters:
-#         + var: Variable name extracted from str.
+#         + key: Key extracted from str.
 #         + value: Value extracted from str
 #         + str: String to be extracted variable and value from.
 #         + NOUNQUOTE: (Optional) do not remove the double quote mark around the string.
 #         + NOREPLACE (Optional) Without this parameter, this macro replaces
 #           previous defined variables, use NOREPLACE to prevent this.
 #         + NOESCAPE_SEMICOLON: (Optional) do not escape semicolons.
-#         + setting_sign: (Optional) The symbol that separate attribute name and its value.
+#         + setting_sign: (Optional) The symbol that separate key name and its value.
 #           Default value: "="
 #
 # Defines following macros:
 #   CMAKE_FEDORA_CONF_GET_ALL_VARIABLES()
 #     - Get all variables from cmake-fedora.conf
 #
-#   COMMAND_OUTPUT_TO_VARIABLE(var cmd)
-#     - Store command output to a variable, without new line characters (\n and \r).
-#       This macro is suitable for command that output one line result.
-#       Note that the var will be set to ${var_name}-NOVALUE if cmd does not have
-#       any output.
-#       * Parameters:
-#         var: A variable that stores the result.
-#         cmd: A command.
-#
-#   SETTING_FILE_GET_VARIABLES_PATTERN(var attr_pattern setting_file 
-#     [NOUNQUOTE] [NOREPLACE]
-#     [NOESCAPE_SEMICOLON] [setting_sign]
+#   SETTING_FILE_GET_VARIABLES_PATTERN(<var> <key_pattern> <setting_file> 
+#       [NOUNQUOTE] [NOREPLACE]
+#       [NOESCAPE_SEMICOLON] [<setting_sign>]
 #     )
 #     - Get variable values from a setting file if their names matches given
-#       pattern. '#' is used for comment.
+#         pattern. Note that if the first non-blank character is "#", then the 
+#         string is deemed as a comment thus will be skipped.
 #       * Parameters:
-#         + var: Variable to store the attribute value.
-#           Set to "" to set attribute under matched variable name.
-#         + attr_pattern: Regex pattern of variable name.
+#         + var: If specified, the value of setting string will be assign to the var;
+#             otherwise using matched key name as variable name.
+#         + key_pattern: Regex pattern of match the key name.
 #         + setting_file: Setting filename.
 #         + NOUNQUOTE: (Optional) do not remove the double quote mark around the string.
 #         + NOREPLACE (Optional) Without this parameter, this macro replaces
 #           previous defined variables, use NOREPLACE to prevent this.
 #         + NOESCAPE_SEMICOLON: (Optional) do not escape semicolons.
-#         + setting_sign: (Optional) The symbol that separate attribute name and its value.
+#         + setting_sign: (Optional) The symbol that separate key name and its value.
 #           Default value: "="
 #
-#   SETTING_FILE_GET_ALL_VARIABLES(setting_file [NOUNQUOTE] [NOREPLACE]
-#     [NOESCAPE_SEMICOLON] [setting_sign]
+#   SETTING_FILE_GET_ALL_VARIABLES(<setting_file> [NOUNQUOTE] [NOREPLACE]
+#       [NOESCAPE_SEMICOLON] [<setting_sign>]
 #     )
 #     - Get all variable values from a setting file.
-#       It is equivalent to:
-#       SETTING_FILE_GET_VARIABLES_PATTERN("" "[A-Za-z_][A-Za-z0-9_]*"
-#        "${setting_file}" ${ARGN})
-#      '#' is used to comment out setting.
+#         It is equivalent to:
+#         SETTING_FILE_GET_VARIABLES_PATTERN("" "[A-Za-z_][A-Za-z0-9_]*"
+#           "${setting_file}" ${ARGN})
+#         Note that if the first non-blank character is "#", then the 
+#           string is deemed as a comment thus will be skipped.
 #       * Parameters:
 #         + setting_file: Setting filename.
 #         + NOUNQUOTE: (Optional) do not remove the double quote mark around the string.
 #         + NOREPLACE (Optional) Without this parameter, this macro replaces
 #           previous defined variables, use NOREPLACE to prevent this.
 #         + NOESCAPE_SEMICOLON: (Optional) Do not escape semicolons.
-#         + setting_sign: (Optional) The symbol that separate attribute name and its value.
+#         + setting_sign: (Optional) The symbol that separate key and value.
 #           Default value: "="
 #
-#   SETTING_FILE_GET_VARIABLE(var attr_name setting_file 
+#   SETTING_FILE_GET_VARIABLE(<var> <key_name> <setting_file> 
 #     [NOUNQUOTE] [NOREPLACE]
-#     [NOESCAPE_SEMICOLON] [setting_sign]
+#     [NOESCAPE_SEMICOLON] [<setting_sign>]
 #     )
-#     - Get a variable value from a setting file.
+#     - Get the value of a key from a setting file.
 #       It is equivalent to:
-#	SETTING_FILE_GET_VARIABLES_PATTERN(${var} "${attr_name}"
+#	SETTING_FILE_GET_VARIABLES_PATTERN(${var} "${key_name}"
 #	    "${setting_file}" ${ARGN})
 #      '#' is used to comment out setting.
 #       * Parameters:
-#         + var: Variable to store the attribute value.
-#         + attr_name: Name of the variable.
+#         + var: Variable to store the value.
+#         + key_name: Name of the key.
 #         + setting_file: Setting filename.
 #         + NOUNQUOTE: (Optional) do not remove the double quote mark around the string.
 #         + NOREPLACE (Optional) Without this parameter, this macro replaces
 #           previous defined variables, use NOREPLACE to prevent this.
 #         + NOESCAPE_SEMICOLON: (Optional) do not escape semicolons.
-#         + setting_sign: (Optional) The symbol that separate attribute name and its value.
+#         + setting_sign: (Optional) The symbol that separate key and value.
 #           Default value: "="
 #
-#   SETTING_FILE_GET_ALL_VARIABLES(setting_file [NOUNQUOTE] [NOREPLACE]
-#     [NOESCAPE_SEMICOLON] [setting_sign]
+#   SETTING_FILE_GET_ALL_VARIABLES(<setting_file> [NOUNQUOTE] [NOREPLACE]
+#     [NOESCAPE_SEMICOLON] [<setting_sign>]
 #     )
-#     - Get all attribute values from a setting file.
+#     - Get all key values from a setting file.
 #       '#' is used to comment out setting.
 #       * Parameters:
 #         + setting_file: Setting filename.
@@ -108,59 +97,46 @@
 #         + setting_sign: (Optional) The symbol that separate attribute name and its value.
 #           Default value: "="
 #
-#   GET_ENV(var default_value [env] 
-#      [[CACHE type docstring [FORCE]] | PARENT_SCOPE]
+#   GET_ENV(<var> <default_value> [<env>] 
+#      [[CACHE <type> <docstring> [FORCE]] | PARENT_SCOPE]
 #     )
 #     - Get the value of a environment variable, or use default
-#       if the environment variable does not exist or is empty.
+#       if the environment variable does not exist or empty.
 #       * Parameters:
-#         var: Variable to be set
-#         default_value: Default value of the var
-#         env: (Optional) The name of environment variable. Only need if different from var.
-#         CACHE ... : Arguments for SET
-#         PARENT_SCOPE: Arguments for SET
+#         + var: Variable to be set
+#         + default_value: Default value of the var
+#         + env: (Optional) The name of environment variable. Only need if different from var.
+#         + CACHE ... : Arguments for SET
+#         + PARENT_SCOPE: Arguments for SET
 #
-#   SET_VAR(var untrimmed_value)
-#     - Trim an set the value to a variable.
+#   SET_VAR(<var> <untrimmed_value>)
+#     - Trim and set the value to a variable.
 #       * Parameters:
-#         var: Variable to be set
-#         untrimmed_value: Untrimmed values that may have space, \t, \n, \r in the front or back of the string.
+#         + var: Variable to be set
+#         + untrimmed_value: Untrimmed values that may have space, \t, \n, \r in the front or back of the string.
 #
-#   VARIABLE_PARSE_ARGN(var validOptions [arguments ])
+#   VARIABLE_PARSE_ARGN(<var> <valid_option_list> [arguments ...])
 #     - Parse the arguments and put the result in var and var_<optName>
 #       * Parameters:
-#         var: Main variable name.
-#         validOptions: List name of valid options.
-#         arguments: (Optional) variable to be parsed.
+#         + var: Main variable name.
+#         + valid_option_list: List name of valid options.
+#         + arguments ...: (Optional) variable to be parsed.
 #
-#   VARIABLE_TO_ARGN(var prefix validOptions)
+#   VARIABLE_TO_ARGN(<var> <prefix> <valid_option_list>)
 #     - Merge the variable and options to the form of ARGN.
-#       Like the reverse of VARIABLE_PARSE_ARGN
+#         Like the reverse of VARIABLE_PARSE_ARGN
 #       * Parameters:
-#         var: Variable that holds result.
-#         prefix: Main variable name that to be processed.
-#         validOptions: List name of valid options.
+#         + var: Variable that holds result.
+#         + prefix: Main variable name that to be processed.
+#         + valid_option_list: List name of valid options.
 #
 
 IF(DEFINED _MANAGE_VARIABLE_CMAKE_)
     RETURN()
 ENDIF(DEFINED _MANAGE_VARIABLE_CMAKE_)
 SET(_MANAGE_VARIABLE_CMAKE_ "DEFINED")
-INCLUDE(ManageString)
 INCLUDE(ManageFile)
-
-MACRO(COMMAND_OUTPUT_TO_VARIABLE var cmd)
-    EXECUTE_PROCESS(
-	COMMAND ${cmd} ${ARGN}
-	OUTPUT_VARIABLE _cmd_output
-	OUTPUT_STRIP_TRAILING_WHITESPACE
-	)
-    IF(_cmd_output)
-	SET(${var} ${_cmd_output})
-    ELSE(_cmd_output)
-	SET(var "${var}-NOVALUE")
-    ENDIF(_cmd_output)
-ENDMACRO(COMMAND_OUTPUT_TO_VARIABLE var cmd)
+INCLUDE(ManageString)
 
 # This macro is meant to be internal.
 MACRO(_MANAGE_VARIABLE_SET var value)
@@ -240,7 +216,7 @@ MACRO(FILE_READ_ESCAPE var filename)
     SET(${var} "${_ret}")
 ENDMACRO(FILE_READ_ESCAPE var filename)
 
-MACRO(SETTING_FILE_GET_VARIABLES_PATTERN var attr_pattern setting_file)
+MACRO(SETTING_FILE_GET_VARIABLES_PATTERN var key_pattern setting_file)
     IF("${setting_file}" STREQUAL "")
 	M_MSG(${M_FATAL} "SETTING_FILE_GET_VARIABLES_PATTERN: setting_file ${setting_file} is empty")
     ENDIF("${setting_file}" STREQUAL "")
@@ -263,7 +239,7 @@ MACRO(SETTING_FILE_GET_VARIABLES_PATTERN var attr_pattern setting_file)
 	ENDIF(${_arg} STREQUAL "NOUNQUOTE")
     ENDFOREACH(_arg)
 
-    # Escape everything to be safe.
+    ## Escape everything to be safe.
     FILE_READ_ESCAPE(_lines "${setting_file}")
 
     #STRING_SPLIT(_lines "\n" "${_txt_content}")
@@ -273,53 +249,50 @@ MACRO(SETTING_FILE_GET_VARIABLES_PATTERN var attr_pattern setting_file)
     FOREACH(_line ${_lines})
 	#MESSAGE("_line=|${_line}|")
 	IF(NOT _line MATCHES "^[ \\t]*#H")
-	    # Not a comment line.
+	    ## Not a comment line.
 	    IF(_join_next EQUAL 1)
 		SET(_actual_line "${_actual_line}${_line}" )
-	    ELSE(_join_next EQUAL 1)
+	    ELSE()
 		SET(_actual_line "${_line}")
-	    ENDIF(_join_next EQUAL 1)
+	    ENDIF()
 	    #MESSAGE("_actual_line=|${_actual_line}|")
 
 	    IF(_actual_line MATCHES "#B$")
-		#Join the lines that end with \\
+		## Join the lines that end with \\
 		SET(_join_next 1)
 		STRING(REGEX REPLACE "#B$" "" _actual_line "${_actual_line}")
-	    ELSE(_actual_line MATCHES "#B$")
+	    ELSE()
 		SET(_join_next 0)
-		IF(_actual_line MATCHES "[ \\t]*${attr_pattern}[ \\t]*${setting_sign}")
+		IF(_actual_line MATCHES "[ \\t]*${key_pattern}[ \\t]*${setting_sign}")
 		    #MESSAGE("*** matched_line=|${_actual_line}|")
 		    SETTING_STRING_GET_VARIABLE(_attr _value
 			"${_actual_line}" ${setting_sign} ${_noUnQuoted} )
 		    #MESSAGE("*** _attr=${_attr} _value=${_value}")
 		    IF(_noReplace STREQUAL "" OR NOT DEFINED ${_attr})
-			# Unencoding
+			## Unencoding
 			_STRING_UNESCAPE(_value "${_value}" ${_noEscapeSemicolon} ESCAPE_VARIABLE)
 			IF(_escapeVariable STREQUAL "")
-			    # Variable should not be escaped
-			    # i.e. need substitution
+			    ## If "ESCAPE_VARIABLE" is not defined.
+			    ## then substitute the variable
 			    _MANAGE_VARIABLE_SET(_value "${_value}")
-			ENDIF(_escapeVariable STREQUAL "")
+			ENDIF()
 			IF("${var}" STREQUAL "")
 			    SET(${_attr} "${_value}")
-			ELSE("${var}" STREQUAL "")
+			ELSE()
 			    SET(${var} "${_value}")
-			ENDIF("${var}" STREQUAL "")
-		    ENDIF(_noReplace STREQUAL "" OR NOT DEFINED ${_attr})
-		ENDIF(_actual_line MATCHES "[ \\t]*${attr_pattern}[ \\t]*${setting_sign}")
-
+			ENDIF()
+		    ENDIF()
+		ENDIF()
 	    ENDIF(_actual_line MATCHES "#B$")
-
 	ENDIF(NOT _line MATCHES "^[ \\t]*#H")
     ENDFOREACH(_line ${_lines})
     #SET(${var} "${_value}")
+ENDMACRO(SETTING_FILE_GET_VARIABLES_PATTERN var key_pattern setting_file)
 
-ENDMACRO(SETTING_FILE_GET_VARIABLES_PATTERN var attr_pattern setting_file)
-
-MACRO(SETTING_FILE_GET_VARIABLE var attr_name setting_file)
-    SETTING_FILE_GET_VARIABLES_PATTERN(${var} "${attr_name}"
+MACRO(SETTING_FILE_GET_VARIABLE var key_name setting_file)
+    SETTING_FILE_GET_VARIABLES_PATTERN(${var} "${key_name}"
 	"${setting_file}" ${ARGN})
-ENDMACRO(SETTING_FILE_GET_VARIABLE var attr_name setting_file)
+ENDMACRO(SETTING_FILE_GET_VARIABLE var key_name setting_file)
 
 MACRO(SETTING_FILE_GET_ALL_VARIABLES setting_file)
     SETTING_FILE_GET_VARIABLES_PATTERN("" "[A-Za-z_][A-Za-z0-9_.]*"
@@ -373,18 +346,18 @@ MACRO(SET_VAR var untrimmedValue)
     #MESSAGE("***SET_VAR: ${var}=|${value}|")
 ENDMACRO(SET_VAR var untrimmedValue)
 
-MACRO(VARIABLE_PARSE_ARGN var validOptions)
+MACRO(VARIABLE_PARSE_ARGN var valid_option_list)
     SET(_optName "")	## Last _optName
     SET(_listName ${var})
 
     ## Unset all, otherwise ghost from previous running exists.
     UNSET(${var})
-    FOREACH(_o ${${validOptions}})
+    FOREACH(_o ${${valid_option_list}})
 	UNSET(${var}_${_o})
-    ENDFOREACH(_o ${validOptions})
+    ENDFOREACH(_o ${valid_option_list})
 
     FOREACH(_arg ${ARGN})
-	LIST(FIND ${validOptions} "${_arg}" _optIndex)
+	LIST(FIND ${valid_option_list} "${_arg}" _optIndex)
 	IF(_optIndex EQUAL -1)
 	    ## Not an option name. Append to existing options
 	    LIST(APPEND ${_listName} "${_arg}")
@@ -404,14 +377,14 @@ MACRO(VARIABLE_PARSE_ARGN var validOptions)
 	    ENDIF(DEFINED ${var}_${_arg})
 	ENDIF(_optIndex EQUAL -1)
     ENDFOREACH(_arg ${ARGN})
-ENDMACRO(VARIABLE_PARSE_ARGN var validOptions)
+ENDMACRO(VARIABLE_PARSE_ARGN var valid_option_list)
 
-MACRO(VARIABLE_TO_ARGN var prefix validOptions)
+MACRO(VARIABLE_TO_ARGN var prefix valid_option_list)
     SET(${var} "${${prefix}}")
-    FOREACH(_o ${${validOptions}})
+    FOREACH(_o ${${valid_option_list}})
 	IF(DEFINED ${prefix}_${_o})
 	    LIST(APPEND ${var} "${_o}" "${${prefix}_${_o}}")
 	ENDIF(DEFINED ${prefix}_${_o})
-    ENDFOREACH(_o ${${validOptions}})
-ENDMACRO(VARIABLE_TO_ARGN var prefix validOptions)
+    ENDFOREACH(_o ${${valid_option_list}})
+ENDMACRO(VARIABLE_TO_ARGN var prefix valid_option_list)
 
