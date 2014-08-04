@@ -114,6 +114,9 @@ FUNCTION(SOURCE_ARCHIVE_GET_CONTENTS )
     FILE(GLOB_RECURSE _ls FOLLOW_SYMLINKS "*" )
     STRING(REPLACE "\\\\" "\\" _ignore_files
         "${SOURCE_ARCHIVE_IGNORE_FILES}")
+
+    ## Clean the contents: otnerwise the duplication will add up
+    SET(SOURCE_ARCHIVE_CONTENTS "" CACHE INTERNAL "Source archive file list")
     FOREACH(_file ${_ls})
 	SET(_matched 0)
 	FOREACH(filePattern ${_ignore_files})
