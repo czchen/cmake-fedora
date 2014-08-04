@@ -54,7 +54,7 @@
 #         + SOURCE_ARCHIVE_IGNORE_FILES: List of files to be 
 #             ignored to archive.
 #         + SOURCE_ARCHIVE_NAME: Name of source archive (without path).
-#       * Define following targets:
+#       * Targets:
 #         + pack_src: Pack source files like package_source.
 #         + clean_pack_src: Remove all source archives.
 #         + clean_old_pack_src: Remove all old source package.
@@ -300,6 +300,11 @@ MACRO(PACK_SOURCE_ARCHIVE)
 	    VERBATIM
 	    )
     ENDIF(_own)
+
+    ADD_CUSTOM_TARGET(dist
+	DEPENDS ${SOURCE_ARCHIVE_FILE}
+	COMMENT "dist: ${SOURCE_ARCHIVE_FILE}"
+	)
 
     ADD_CUSTOM_TARGET(clean_old_pack_src
 	COMMAND find .

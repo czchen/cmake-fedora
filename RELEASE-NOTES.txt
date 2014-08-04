@@ -14,6 +14,8 @@ REDHAT_BUGZILLA=1002279,1093336
     - ChangeLog will only invoked before make pack_src or make changelog.
   + find_lang and files -f .lang are added automatically when
     translations exists.
+  + New targets:
+    - dist: Produce the source archive file. This is in GNU Standard targets.
   + New modules:
     - CmakeFedoraScript: Scripts to be invoked in command line.
     - ManageChangeLogScript: Scripts for handling ChangeLog.
