@@ -227,7 +227,6 @@ FUNCTION(ADD_POT_FILE potFile)
 	"${MANAGE_TRANSLATION_GETTEXT_POT_FILES}"
 	CACHE INTERNAL "List of pot files"
 	)
-    MESSAGE("###6 MANAGE_TRANSLATION_GETTEXT_POT_FILES=${MANAGE_TRANSLATION_GETTEXT_POT_FILES}")
 
     ## In case potFile is not in source control
     SOURCE_ARCHIVE_CONTENTS_ADD("${potFile}")
@@ -274,9 +273,7 @@ SET(MANAGE_GETTEXT_LOCALES_VALID_OPTIONS "LOCALES" "SYSTEM_LOCALES")
 ## Internal
 FUNCTION(MANAGE_GETTEXT_LOCALES localeListVar)
     VARIABLE_PARSE_ARGN(_o MANAGE_GETTEXT_LOCALES_VALID_OPTIONS ${ARGN})
-    MESSAGE("## MANAGE_TRANSLATION_GETTEXT_POT_FILES=${MANAGE_TRANSLATION_GETTEXT_POT_FILES}")
     IF(NOT "${_o_LOCALES}" STREQUAL "")
-	MESSAGE("## _o_LOCALES=${_o_LOCALES}")
 	## Locale is defined
 	SET(${localeListVar} "${_o_LOCALES}" PARENT_SCOPE)
     ELSEIF(DEFINED _o_SYSTEM_LOCALES)
@@ -294,25 +291,24 @@ FUNCTION(MANAGE_GETTEXT_LOCALES localeListVar)
 	## LOCALES is not specified, detect now
 	FOREACH(_potFile ${MANAGE_TRANSLATION_GETTEXT_POT_FILES})
 	    GET_FILENAME_COMPONENT(_potName "${_potFile}" NAME_WE)
-	    MESSAGE("## _potFile=${_potFile} _potName=${_potName}")
 	    SET(_poDir ${MANAGE_TRANSLATION_GETTEXT_POT_FILE_${_potName}_PO_DIR})
-	    MESSAGE("## _poDir=${_poDir}")
 	    EXECUTE_PROCESS(
-		COMMAND find ${_poDir} -name "*.po" -printf '%f ' | sed -e 's/.po /;/g'
+		COMMAND find ${_poDir} -name "*.po" -printf "%f\n"
+		COMMAND sed -e "s/.po//g"
+		COMMAND sort -u
+		COMMAND xargs
+	        COMMAND sed -e "s/ /;/g"
 		OUTPUT_VARIABLE _locales
 		OUTPUT_STRIP_TRAILING_WHITESPACE
 		)
 	    LIST(APPEND _o_LOCALES ${_locales})
 	ENDFOREACH(_potFile)
-	LIST(REMOVE_DUPLICATES ${_o_LOCALES})
 	IF("${_o_LOCALES}" STREQUAL "")
 	    ## Failed to find any locale
 	    M_MSG(${M_ERROR} "MANAGE_GETTEXT: Failed to detect locales, specify SYSTEM_LOCALES in MANAGE_GETTEXT to use locales available in your system")
 	ENDIF()
+	SET(${localeListVar} "${_o_LOCALES}" PARENT_SCOPE)
     ENDIF()
-    SET(MANAGE_TRANSLATION_LOCALES "${_o_LOCALES}" CACHE INTERNAL
-	"Locales"
-	)
 ENDFUNCTION(MANAGE_GETTEXT_LOCALES)
 
 FUNCTION(MANAGE_GETTEXT)
@@ -348,12 +344,10 @@ FUNCTION(MANAGE_GETTEXT)
 	## POT_FILE is specified
 	SET(_potFile "${_o_POT_FILE}")
     ENDIF()
-    MESSAGE("## _potFile=${_potFile}")
     IF(_potFile)
 	VARIABLE_TO_ARGN(_addPotFileOptList _o ADD_POT_FILE_VALID_OPTIONS)
 	## Add new pot file
 	ADD_POT_FILE("${_potFile}" ${_addPotFileOptList})
-	MESSAGE("##1 MANAGE_TRANSLATION_GETTEXT_POT_FILES=${MANAGE_TRANSLATION_GETTEXT_POT_FILES}")
     ENDIF(_potFile)
 
     ## Locales
@@ -361,7 +355,11 @@ FUNCTION(MANAGE_GETTEXT)
 	"LOCALES" "SYSTEM_LOCALES"
 	)
     VARIABLE_TO_ARGN(_manageGettextLocaleOptList _o MANAGE_GETTEXT_LOCALES_VALID_OPTIONS)
-    MANAGE_GETTEXT_LOCALES(${_manageGettextLocaleOptList})
+    SET(localeList "")
+    MANAGE_GETTEXT_LOCALES(localeList ${_manageGettextLocaleOptList})
+    SET(MANAGE_TRANSLATION_LOCALES "${localeList}" CACHE INTERNAL
+	"Locales"
+	)
 
     ## Other options
     FOREACH(_oName "MSGFMT" "MSGMERGE")
