@@ -86,7 +86,7 @@
   + Target test is built before pack_src.
 
 * Fri Jan 31 2014 Ding-Yi Chen <dchen at redhat.com> - 1.2.6
-- Resolves Bug 1058631 - ManagePRM generate Broken %defattr
+- Resolves Bug 1058631 - ManagePRM generate Broken defattr
 - Enhancement:
   + ManageTarget: ADD_CUSTOM_TARGET_COMMAND: NO_FORCE: new option.
   + Projects that includes cmake-fedora as submodule are no longer requires cmake-fedora.conf

@@ -131,6 +131,7 @@ MACRO(MANIFEST_TO_STRING strVar hasTransVar manifestsFile)
     ELSE()
 	STRING_APPEND(${strVar} "%files" "\n")
     ENDIF()
+    STRING_APPEND(${strVar} "%defattr(-, root, root, -)" "\n")
     # Append %doc
     STRING_JOIN(_docStr " " ${_docList})
     STRING_APPEND(${strVar} "%doc ${_docStr}" "\n")

@@ -23,6 +23,7 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 @RPM_SPEC_BUILD_OUTPUT@
 
 %clean
+rm -rf %{buildroot}
 
 @RPM_SPEC_INSTALL_SECTION_OUTPUT@
 
