@@ -44,7 +44,6 @@ INCLUDE(ManageDependency)
 INCLUDE(ManageFile)
 INCLUDE(ManageSourceVersionControl)
 INCLUDE(ManageTarget)
-INCLUDE(ManageTranslation)
 INCLUDE(ManageUninstall)
 ENABLE_TESTING()
 
@@ -106,7 +105,7 @@ IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
 ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
 
 ####################################################################
-# Hosting and Release
+# Hosting 
 #
 INCLUDE(ManageUpload)
 ADD_CUSTOM_TARGET(upload
