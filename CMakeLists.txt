@@ -158,4 +158,5 @@ ADD_TEST("ManageVariable" ctest -S test/testManageVariable.cmake)
 ADD_TEST("ManageFile" ctest -S test/testManageFile.cmake)
 ADD_TEST("CmakeFedoraKoji" ctest -S test/testCmakeFedoraKoji.cmake)
 ADD_TEST("CmakeFedoraScript" ctest -S test/testCmakeFedoraScript.cmake)
+ADD_TEST("Projects" ctest -S test/testProjects.cmake)
 

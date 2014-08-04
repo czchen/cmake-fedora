@@ -31,3 +31,4 @@ FedPkg
 bodhi.template
 *.tar.gz
 DEADJOE
+test/projects/
