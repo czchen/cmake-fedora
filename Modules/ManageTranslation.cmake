@@ -103,10 +103,10 @@
 #         + MANAGE_GETTEXT_POT_FILES: 
 #            (Optional) List of pot file.
 #       * Variables to cache:
-#         + MSGINIT_CMD: the full path to the msginit tool.
-#         + MSGMERGE_CMD: the full path to the msgmerge tool.
-#         + MSGFMT_CMD: the full path to the msgfmt tool.
-#         + XGETTEXT_CMD: the full path to the xgettext.
+#         + MSGINIT_EXECUTABLE: the full path to the msginit tool.
+#         + MSGMERGE_EXECUTABLE: the full path to the msgmerge tool.
+#         + MSGFMT_EXECUTABLE: the full path to the msgfmt tool.
+#         + XGETTEXT_EXECUTABLE: the full path to the xgettext.
 #         + MANAGE_LOCALES: Locales to be processed.
 #
 
@@ -155,89 +155,85 @@ SET(_gettext_dependency_missing 0)
 # GETTEXT support
 #
 
-MACRO(MANAGE_GETTEXT_INIT)
-    IF(DEFINED XGETTEXT_CMD)
+FUNCTION(MANAGE_GETTEXT_INIT)
+    IF(DEFINED MSGINIT_EXECUTABLE)
 	RETURN()
-    ENDIF(DEFINED XGETTEXT_CMD)
+    ENDIF(DEFINED MSGINIT_EXECUTABLE)
     FOREACH(_name "xgettext" "msgmerge" "msgfmt" "msginit")
 	STRING(TOUPPER "${_name}" _cmd)
-	FIND_PROGRAM_ERROR_HANDLING(${_cmd}_CMD
+	FIND_PROGRAM_ERROR_HANDLING(${_cmd}_EXECUTABLE
 	    ERROR_MSG " gettext support is disabled."
 	    ERROR_VAR _gettext_dependency_missing
 	    VERBOSE_LEVEL ${M_OFF}
 	    "${_name}"
 	    )
-	M_MSG(${M_INFO1} "${_cmd}_CMD=${${_cmd}_CMD}")
+	M_MSG(${M_INFO1} "${_cmd}_EXECUTABLE=${${_cmd}_EXECUTABLE}")
     ENDFOREACH(_name "xgettext" "msgmerge" "msgfmt")
-ENDMACRO(MANAGE_GETTEXT_INIT)
+ENDFUNCTION(MANAGE_GETTEXT_INIT)
+
+SET(ADD_POT_FILE_VALID_OPTIONS "SRCS" "XGETTEXT_OPTIONS" "COMMAND" "DEPENDS")
+
+## Internal
+FUNCTION(ADD_POT_FILE_SET_VARS cmdListVar poDirVar dependsVar potFile)
+    VARIABLE_PARSE_ARGN(_o ADD_POT_FILE_VALID_OPTIONS ${ARGN})
+    IF("${_o_COMMAND}" STREQUAL "")
+	LIST(APPEND ${cmdListVar} ${XGETTEXT_EXECUTABLE})
+	IF(NOT _o_XGETTEXT_OPTIONS)
+	    SET(_o_XGETTEXT_OPTIONS 
+		"${MANAGE_TRANSLATION_XGETTEXT_OPTIONS}"
+		)
+	ENDIF()
+	LIST(APPEND ${cmdListVar} ${_o_XGETTEXT_OPTIONS})
+	IF("${_o_SRCS}" STREQUAL "")
+	    M_MSG(${M_WARN} 
+		"ADD_POT_FILE: xgettext: No SRCS for ${potFile}"
+		)
+	ENDIF()
+	LIST(APPEND ${cmdListVar} -o ${potFile}
+	    "--package-name=${PROJECT_NAME}"
+	    "--package-version=${PRJ_VER}"
+	    "--msgid-bugs-address=${MAINTAINER}"
+	    ${_o_SRCS}
+	    )
+    ELSE()
+	LIST(APPEND ${cmdListVar} ${_o_COMMAND})
+    ENDIF()
+    LIST(APPEND ${dependsVar} ${_o_SRCS} ${_o_DEPENDS})
+
+    GET_FILENAME_COMPONENT(_potDir "${potFile}" PATH)
+    IF("${_o_PO_DIR}" STREQUAL "")
+	SET(_o_PO_DIR "${_potDir}")
+    ENDIF()
+    SET(${poDirVar} "${_o_PO_DIR}" PARENT_SCOPE)
+ENDFUNCTION(ADD_POT_FILE_SET_VARS)
 
 FUNCTION(ADD_POT_FILE potFile)
     MANAGE_GETTEXT_INIT()
     IF(_gettext_dependency_missing)
 	RETURN()
     ENDIF(_gettext_dependency_missing)
-    SET(_validOptions 
-	"SRCS" "XGETTEXT_OPTIONS" "COMMAND" "DEPENDS"
+    SET(cmdList "")
+    SET(poDir "")
+    SET(depends "")
+    ADD_POT_FILE_SET_VARS(cmdList poDir depends "${potFile}" ${ARGN})
+    ADD_CUSTOM_COMMAND(OUTPUT ${potFile}
+	COMMAND ${cmdList}
+	DEPENDS ${depends}
+	COMMENT "${potFile}: ${cmdList}"
 	)
-    VARIABLE_PARSE_ARGN(_o _validOptions ${ARGN})
-    IF("${_o_COMMAND}" STREQUAL "")
-	## xgettext mode
-	IF(NOT _o_XGETTEXT_OPTIONS)
-	    SET(_o_XGETTEXT_OPTIONS 
-		"${MANAGE_TRANSLATION_XGETTEXT_OPTIONS}"
-		)
-	ENDIF()
-	IF("${_o_SRCS}" STREQUAL "")
-	    M_MSG(${M_WARN} 
-		"ADD_POT_FILE: xgettext: No SRCS for ${potFile}"
-		)
-	    RETURN()
-	ENDIF()
-	## Source files
-	SET(_srcList "")
-	SET(_srcList_abs "")
-	FOREACH(_sF ${_o_SRCS})
-	    FILE(RELATIVE_PATH _relFile 
-		"${CMAKE_CURRENT_BINARY_DIR}" "${_sF}")
-	    LIST(APPEND _srcList ${_relFile})
-	    GET_FILENAME_COMPONENT(_absPoFile ${_sF} ABSOLUTE)
-	    LIST(APPEND _srcList_abs ${_absPoFile})
-	ENDFOREACH(_sF ${_o_SRCS})
 
-	ADD_CUSTOM_COMMAND(OUTPUT ${potFile}
-	    COMMAND ${XGETTEXT_CMD} ${_o_XGETTEXT_OPTIONS} 
-	    -o ${potFile}
-	    --package-name=${PROJECT_NAME} 
-	    --package-version=${PRJ_VER} ${_o_SRCS}
-	    --msgid-bugs-address=${MAINTAINER}
-	    DEPENDS ${_o_SRCS} ${_o_DEPENDS}
-	    COMMENT "${potFile}: xgettext: Extract translatable messages"
-	    )
-    ELSE()
-	ADD_CUSTOM_COMMAND(OUTPUT ${potFile}
-	    COMMAND ${_o_COMMAND}
-	    DEPENDS ${_o_DEPENDS}
-	    COMMENT "${potFile}: Extract translatable messages"
-	    )
-    ENDIF("${_o_COMMAND}" STREQUAL "")
     LIST(APPEND MANAGE_TRANSLATION_GETTEXT_POT_FILES ${potFile})
     SET(MANAGE_TRANSLATION_GETTEXT_POT_FILES
 	"${MANAGE_TRANSLATION_GETTEXT_POT_FILES}"
 	CACHE INTERNAL "List of pot files"
 	)
+    MESSAGE("###6 MANAGE_TRANSLATION_GETTEXT_POT_FILES=${MANAGE_TRANSLATION_GETTEXT_POT_FILES}")
 
     ## In case potFile is not in source control
     SOURCE_ARCHIVE_CONTENTS_ADD("${potFile}")
 
     GET_FILENAME_COMPONENT(_potName "${potFile}" NAME_WE)
-    GET_FILENAME_COMPONENT(_potDir "${potFile}" PATH)
-    IF(_o_PO_DIR STREQUAL "")
-	SET(_o_PO_DIR "${potDir}")
-    ENDIF()
-    GET_FILENAME_COMPONENT(_potName "${potFile}" NAME_WE)
-    SET(MANAGE_TRANSLATION_GETTEXT_POT_FILE_${_potName}_PO_DIR
-	"${_o_PO_DIR}" CACHE INTERNAL "PO dir for ${_potName}"
-	)
+    SET(MANAGE_TRANSLATION_GETTEXT_POT_FILE_${_potName}_PO_DIR "${poDir}")
 ENDFUNCTION(ADD_POT_FILE)
 
 ## Internal
@@ -258,7 +254,7 @@ FUNCTION(MANAGE_GETTEXT_GET_PO_FILES var pot)
 	    "${MANAGE_TRANSLATION_GETTEXT_POT_FILE_${_potName}_PO_DIR}/${_l}.po"
 	    )
 	IF(NOT EXISTS ${_po})
-	    EXECUTE_PROCESS(COMMAND ${MSGINIT_CMD} -
+	    EXECUTE_PROCESS(COMMAND ${MSGINIT_EXECUTABLE} -
 		-output ${_po} --input ${pot}
 		RESULT_VARIABLE _ret
 		)
@@ -274,26 +270,40 @@ FUNCTION(MANAGE_GETTEXT_GET_PO_FILES var pot)
     SET(${var} "${_list}" PARENT_SCOPE)
 ENDFUNCTION(MANAGE_GETTEXT_GET_PO_FILES)
 
+SET(MANAGE_GETTEXT_LOCALES_VALID_OPTIONS "LOCALES" "SYSTEM_LOCALES")
 ## Internal
-MACRO(MANAGE_GETTEXT_LOCALES potDirList)
+FUNCTION(MANAGE_GETTEXT_LOCALES localeListVar)
+    VARIABLE_PARSE_ARGN(_o MANAGE_GETTEXT_LOCALES_VALID_OPTIONS ${ARGN})
+    MESSAGE("## MANAGE_TRANSLATION_GETTEXT_POT_FILES=${MANAGE_TRANSLATION_GETTEXT_POT_FILES}")
     IF(NOT "${_o_LOCALES}" STREQUAL "")
+	MESSAGE("## _o_LOCALES=${_o_LOCALES}")
 	## Locale is defined
+	SET(${localeListVar} "${_o_LOCALES}" PARENT_SCOPE)
     ELSEIF(DEFINED _o_SYSTEM_LOCALES)
 	EXECUTE_PROCESS(
-	    COMMAND locale -a | grep -e '^[a-z]*_[A_Z]*$' | xargs | sed -e 's/ /;/g'
+	    COMMAND locale -a 
+	    COMMAND grep -e "^[a-z]*_[A-Z]*$"
+	    COMMAND sort -u 
+	    COMMAND xargs 
+	    COMMAND sed -e "s/ /;/g"
 	    OUTPUT_VARIABLE _o_LOCALES
 	    OUTPUT_STRIP_TRAILING_WHITESPACE
 	    )
-    ELSE(NOT DEFINED _o_SYSTEM_LOCALES)
+	SET(${localeListVar} "${_o_LOCALES}" PARENT_SCOPE)
+    ELSE()
 	## LOCALES is not specified, detect now
-	FOREACH(_potDir ${potDirList})
+	FOREACH(_potFile ${MANAGE_TRANSLATION_GETTEXT_POT_FILES})
+	    GET_FILENAME_COMPONENT(_potName "${_potFile}" NAME_WE)
+	    MESSAGE("## _potFile=${_potFile} _potName=${_potName}")
+	    SET(_poDir ${MANAGE_TRANSLATION_GETTEXT_POT_FILE_${_potName}_PO_DIR})
+	    MESSAGE("## _poDir=${_poDir}")
 	    EXECUTE_PROCESS(
-		COMMAND find ${_potDir} -name "*.po" -printf '%f ' | sed -e 's/.po /;/g'
+		COMMAND find ${_poDir} -name "*.po" -printf '%f ' | sed -e 's/.po /;/g'
 		OUTPUT_VARIABLE _locales
 		OUTPUT_STRIP_TRAILING_WHITESPACE
 		)
 	    LIST(APPEND _o_LOCALES ${_locales})
-	ENDFOREACH(_potDir)
+	ENDFOREACH(_potFile)
 	LIST(REMOVE_DUPLICATES ${_o_LOCALES})
 	IF("${_o_LOCALES}" STREQUAL "")
 	    ## Failed to find any locale
@@ -303,7 +313,7 @@ MACRO(MANAGE_GETTEXT_LOCALES potDirList)
     SET(MANAGE_TRANSLATION_LOCALES "${_o_LOCALES}" CACHE INTERNAL
 	"Locales"
 	)
-ENDMACRO(MANAGE_GETTEXT_LOCALES)
+ENDFUNCTION(MANAGE_GETTEXT_LOCALES)
 
 FUNCTION(MANAGE_GETTEXT)
     MANAGE_DEPENDENCY(BUILD_REQUIRES GETTEXT REQUIRED)
@@ -338,22 +348,20 @@ FUNCTION(MANAGE_GETTEXT)
 	## POT_FILE is specified
 	SET(_potFile "${_o_POT_FILE}")
     ENDIF()
+    MESSAGE("## _potFile=${_potFile}")
     IF(_potFile)
-	SET(_validAddPotFileOptList
-	    "SRCS" "PO_DIR" "XGETTEXT_OPTIONS" "COMMAND" "DEPENDS"
-	    )
-	VARIABLE_TO_ARGN(_addPotFileOptList _o _validAddPotFileOptList)
+	VARIABLE_TO_ARGN(_addPotFileOptList _o ADD_POT_FILE_VALID_OPTIONS)
 	## Add new pot file
 	ADD_POT_FILE("${_potFile}" ${_addPotFileOptList})
+	MESSAGE("##1 MANAGE_TRANSLATION_GETTEXT_POT_FILES=${MANAGE_TRANSLATION_GETTEXT_POT_FILES}")
     ENDIF(_potFile)
 
     ## Locales
-    SET(_potDirList "")
-    FOREACH(_pot ${MANAGE_TRANSLATION_GETTEXT_POT_FILES})
-	GET_FILENAME_COMPONENT(_potDir "${_pot}" PATH)
-	LIST(APPEND _potDirList "${_potDir}")
-    ENDFOREACH(_pot)
-    MANAGE_GETTEXT_LOCALES(_potDirList)
+    SET(_validLocaleOptList
+	"LOCALES" "SYSTEM_LOCALES"
+	)
+    VARIABLE_TO_ARGN(_manageGettextLocaleOptList _o MANAGE_GETTEXT_LOCALES_VALID_OPTIONS)
+    MANAGE_GETTEXT_LOCALES(${_manageGettextLocaleOptList})
 
     ## Other options
     FOREACH(_oName "MSGFMT" "MSGMERGE")
@@ -384,7 +392,7 @@ FUNCTION(MANAGE_GETTEXT)
 
 	    ### Create and update  po files
 	    ADD_CUSTOM_COMMAND(OUTPUT ${_po}
-		COMMAND ${MSGMERGE_CMD} 
+		COMMAND ${MSGMERGE_EXECUTABLE} 
 		${MANAGE_TRANSLATION_MSGMERGE_OPTIONS}
 	       	--lang=${_loc} 	${_po} ${_pot}
 		DEPENDS ${_pot}
@@ -398,7 +406,7 @@ FUNCTION(MANAGE_GETTEXT)
 	    GET_FILENAME_COMPONENT(_poDirR "${_poR}" PATH)
 	    SET(_gmo "${CMAKE_CURRENT_BINARY_DIR}/${_poDirR}/${_loc}.gmo")
 	    ADD_CUSTOM_COMMAND(OUTPUT ${_gmo}
-		COMMAND ${MSGFMT_CMD} 
+		COMMAND ${MSGFMT_EXECUTABLE} 
 		${MANAGE_TRANSLATION_MSGMERGE_OPTIONS}
                 -o ${_gmo} ${_po}
 		DEPENDS ${_po}
