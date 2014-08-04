@@ -11,8 +11,8 @@
 #   - CMAKE_INSTALL_PREFIX: Install directory used by install.
 #   - PROJECT_NAME: Project name.
 #
-# Defines following variables:
-#   - IS_64: Defined as "64" if built for 64-bit application. 
+# Cache following variables:
+#   - IS_64: Defined as "64" if built for 64-bit application.
 #
 # Defines or reads following variables:
 #   - BIN_DIR: Directory for executable.

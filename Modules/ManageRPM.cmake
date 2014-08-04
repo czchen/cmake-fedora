@@ -317,7 +317,7 @@ MACRO(MANAGE_RPM_SPEC)
             -Dspec_in=${_opt_SPEC_IN}
 	    -Dmanifests=${INSTALL_MANIFESTS_FILE}
 	    -Drelease=${RELEASE_NOTES_FILE}
-	    -Dprj_info=${PRJ_INFO_CMAKE}
+	    -Dprj_info=${PRJ_INFO_CMAKE_FILE}
 	    ${_specInOptList}
 	    -P ${CMAKE_FEDORA_MODULE_DIR}/ManageRPMScript.cmake
 	    DEPENDS ${_opt_SPEC_IN} ${RELEASE_NOTES_FILE}

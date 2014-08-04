@@ -17,21 +17,13 @@
 #   - ManageVersion
 #   - CPack
 #
-# Defines and reads variables:
-#   - CHANGELOG_FILE: Location of ChangeLog.
-#     Default: ${CMAKE_SOURCE_DIR}/ChangeLog
-#
-# Defines following targets:
-#   - changelog: ChangeLog update.
-#   - pack_remove_old: Remove old source package files.
-#
 # Defines following functions:
 #   SOURCE_ARCHIVE_CONTENTS_ADD(<filename>)
 #   - Add a file to source archive if the file is not in the archive.
 #     * Parameters:
 #       - filename: Filename to be added.
 #
-#   SOURCE_ARCHIVE_CONTENTS_ADD_NO_CHECK(>filename>)
+#   SOURCE_ARCHIVE_CONTENTS_ADD_NO_CHECK(<filename>)
 #   - Add a file to source archive without check.
 #     * Parameters:
 #       - filename: Filename to be added.
@@ -39,22 +31,29 @@
 # Defines following macros:
 #   PACK_SOURCE_ARCHIVE([<outputDir> | OUTPUT_FILE <file>] 
 #     [GENERATOR <cpackGenerator>] 
-#     [GITIGNORE <gitignoreFile>] [INCLUDE <fileList>])
+#     [GITIGNORE <gitignoreFile>] [INCLUDE <file ...>])
 #     )
-#     - Pack source archive, this provide an convenient wrapper
-#       of PACK_SOURCE_CPACK.
+#     - Pack source archive..
 #       * Parameters:
 #         + outputDir: Directory to write source archive.
 #         + OUTPUT_FILE file: Output file with path.
 #           Default: SOURCES/<projectName>-<PRJ_VER>-Source.<packFormat>
-#         + See PACK_SOURCE_CPACK for other parameters.
-#       * Define following variables:
+#         + GENERATOR cpackGenerator: The CPack generator
+#           Default: TGZ (.tar.gz) 
+#         + GITIGNORE gitignoreFile: Specify path to .gitignore for using .gitignore
+#             to exclude the unwanted files.
+#         + INCLUDE file ...: Add back those files to source archive.
+#             You can add back the files that would otherwise be excluded,
+#             e.g. .pot files.
+#             otherwise those will be excluded.
+#       * Variables to be cached:
 #         + SOURCE_ARCHIVE_CONTENTS: List of files to be packed.
+#         + SOURCE_ARCHIVE_FILE: Path of source archive (with path).
 #         + SOURCE_ARCHIVE_FILE_EXTENSION: File extension of 
 #             the source package
 #         + SOURCE_ARCHIVE_IGNORE_FILES: List of files to be 
 #             ignored to archive.
-#         + SOURCE_ARCHIVE_NAME: Name of source archive (without path)
+#         + SOURCE_ARCHIVE_NAME: Name of source archive (without path).
 #       * Define following targets:
 #         + pack_src: Pack source files like package_source.
 #         + clean_pack_src: Remove all source archives.
@@ -82,21 +81,8 @@ SET(SOURCE_ARCHIVE_IGNORE_FILES
     ${SOURCE_ARCHIVE_IGNORE_FILES_COMMON}
     )
 
-SET(CHANGELOG_FILE "${CMAKE_SOURCE_DIR}/ChangeLog" CACHE FILEPATH "ChangeLog")
-
 INCLUDE(ManageVersion)
 INCLUDE(ManageFile)
-
-## ChangeLog Update
-ADD_CUSTOM_TARGET(changelog
-    COMMAND ${CMAKE_COMMAND} -Dcmd=update 
-    -Dchangelog=${CHANGELOG_FILE}
-    -Drelease=${RELEASE_NOTES_FILE}
-    -Dprj_info=${PRJ_INFO_CMAKE}
-    -P ${CMAKE_FEDORA_MODULE_DIR}/ManageChangeLogScript.cmake
-    DEPENDS ${RELEASE_NOTES_FILE} ${CHANGELOG_FILE}
-    COMMENT "ChangeLog: ${CHANGELOG_FILE}"
-    )
 
 FUNCTION(SOURCE_ARCHIVE_CONTENTS_ADD filename)
     GET_FILENAME_COMPONENT(_file "${filename}" ABSOLUTE)

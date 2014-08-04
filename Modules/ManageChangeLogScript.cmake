@@ -33,24 +33,6 @@ cmake -Dcmd=extract_prev
 ENDMACRO()
 
 MACRO(EXTRACT_CURRENT_FROM_RELEASE strVar release)
-    FILE(STRINGS "${release}" _releaseLines)
-
-    SET(_changeItemSection 0)
-    SET(_changeLogThis "")
-    ## Parse release file
-    FOREACH(_line ${_releaseLines})
-	IF(_changeItemSection)
-	    ### Append lines in change section
-	    STRING_APPEND(_changeLogThis "${_line}" "\n")
-	ELSEIF("${_line}" MATCHES "^[[]Changes[]]")
-	    ### Start the change section
-	    SET(_changeItemSection 1)
-	ENDIF()
-    ENDFOREACH(_line ${_releaseLines})
-    SET(${strVar} "${_changeLogThis}")
-ENDMACRO()
-
-MACRO(EXTRACT_CURRENT_FROM_RELEASE strVar release)
     IF("${release}" STREQUAL "")
 	MANAGE_CHANGELOG_SCRIPT_PRINT_USAGE()
 	M_MSG(${M_FATAL} "Requires \"-Drelease=RELEASE-NOTES.txt\"")
@@ -58,21 +40,7 @@ MACRO(EXTRACT_CURRENT_FROM_RELEASE strVar release)
     IF(NOT EXISTS "${release}")
 	M_MSG(${M_FATAL} "File not found:${release}")
     ENDIF()
-    FILE(STRINGS "${release}" _releaseLines)
-
-    SET(_changeItemSection 0)
-    SET(_changeLogThis "")
-    ## Parse release file
-    FOREACH(_line ${_releaseLines})
-	IF(_changeItemSection)
-	    ### Append lines in change section
-	    STRING_APPEND(_changeLogThis "${_line}" "\n")
-	ELSEIF("${_line}" MATCHES "^[[]Changes[]]")
-	    ### Start the change section
-	    SET(_changeItemSection 1)
-	ENDIF()
-    ENDFOREACH(_line ${_releaseLines})
-    SET(${strVar} "${_changeLogThis}")
+    RELEASE_NOTES_FILE_EXTRACT_CHANGELOG_CURRENT(${strVar} ${release})
 ENDMACRO()
 
 MACRO(EXTRACT_PREV_FROM_CHANGELOG strVar ver changeLogFile)
