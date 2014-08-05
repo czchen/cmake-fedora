@@ -174,7 +174,7 @@ ENDFUNCTION(MANAGE_GETTEXT_INIT)
 SET(ADD_POT_FILE_VALID_OPTIONS "SRCS" "XGETTEXT_OPTIONS" "COMMAND" "DEPENDS")
 
 ## Internal
-FUNCTION(ADD_POT_FILE_SET_VARS cmdListVar poDirVar dependsVar potFile)
+FUNCTION(ADD_POT_FILE_SET_VARS cmdListVar poDirVar srcsVar dependsVar potFile)
     VARIABLE_PARSE_ARGN(_o ADD_POT_FILE_VALID_OPTIONS ${ARGN})
     IF("${_o_COMMAND}" STREQUAL "")
 	LIST(APPEND ${cmdListVar} ${XGETTEXT_EXECUTABLE})
@@ -198,7 +198,8 @@ FUNCTION(ADD_POT_FILE_SET_VARS cmdListVar poDirVar dependsVar potFile)
     ELSE()
 	LIST(APPEND ${cmdListVar} ${_o_COMMAND})
     ENDIF()
-    LIST(APPEND ${dependsVar} ${_o_SRCS} ${_o_DEPENDS})
+    LIST(APPEND ${srcsVar} ${_o_SRCS})
+    LIST(APPEND ${dependsVar} ${_o_DEPENDS})
 
     GET_FILENAME_COMPONENT(_potDir "${potFile}" PATH)
     IF("${_o_PO_DIR}" STREQUAL "")
@@ -208,19 +209,21 @@ FUNCTION(ADD_POT_FILE_SET_VARS cmdListVar poDirVar dependsVar potFile)
 ENDFUNCTION(ADD_POT_FILE_SET_VARS)
 
 FUNCTION(ADD_POT_FILE potFile)
-    MANAGE_GETTEXT_INIT()
     IF(_gettext_dependency_missing)
 	RETURN()
     ENDIF(_gettext_dependency_missing)
     SET(cmdList "")
     SET(poDir "")
     SET(depends "")
-    ADD_POT_FILE_SET_VARS(cmdList poDir depends "${potFile}" ${ARGN})
+    ADD_POT_FILE_SET_VARS(cmdList poDir srcs depends "${potFile}" ${ARGN})
+
     ADD_CUSTOM_COMMAND(OUTPUT ${potFile}
 	COMMAND ${cmdList}
-	DEPENDS ${depends}
+	DEPENDS ${srcs} ${depends}
 	COMMENT "${potFile}: ${cmdList}"
 	)
+
+    ## Not only POT, but also PO and MO as well
 
     LIST(APPEND MANAGE_TRANSLATION_GETTEXT_POT_FILES ${potFile})
     SET(MANAGE_TRANSLATION_GETTEXT_POT_FILES
@@ -242,7 +245,7 @@ ENDFUNCTION(ADD_POT_FILE)
 #       + var: Returns po file list related to pot.
 #       + pot: .pot file.
 FUNCTION(MANAGE_GETTEXT_GET_PO_FILES var pot)
-    IF("${MANAGE_TRANSLATION_LOCALES}" STREQUAl "")
+    IF("${MANAGE_TRANSLATION_LOCALES}" STREQUAL "")
 	M_MSG(${M_ERROR} "MANAGE_GETTEXT_GET_PO_FILES: MANAGE_TRANSLATION_LOCALES is empty. Specify locale by either LOCALES or SYSTEM_LOCALES")
 	RETURN()
     ENDIF("${MANAGE_TRANSLATION_LOCALES}" STREQUAl "")
@@ -253,8 +256,8 @@ FUNCTION(MANAGE_GETTEXT_GET_PO_FILES var pot)
 	    "${MANAGE_TRANSLATION_GETTEXT_POT_FILE_${_potName}_PO_DIR}/${_l}.po"
 	    )
 	IF(NOT EXISTS ${_po})
-	    EXECUTE_PROCESS(COMMAND ${MSGINIT_EXECUTABLE} -
-		-output ${_po} --input ${pot}
+	    EXECUTE_PROCESS(COMMAND ${MSGINIT_EXECUTABLE}
+		--output ${_po} --input ${pot}
 		RESULT_VARIABLE _ret
 		)
 	    IF(NOT _ret EQUAL 0)
@@ -271,7 +274,7 @@ ENDFUNCTION(MANAGE_GETTEXT_GET_PO_FILES)
 
 SET(MANAGE_GETTEXT_LOCALES_VALID_OPTIONS "LOCALES" "SYSTEM_LOCALES")
 ## Internal
-FUNCTION(MANAGE_GETTEXT_LOCALES localeListVar)
+FUNCTION(MANAGE_GETTEXT_LOCALES localeListVar poDir)
     VARIABLE_PARSE_ARGN(_o MANAGE_GETTEXT_LOCALES_VALID_OPTIONS ${ARGN})
     IF(NOT "${_o_LOCALES}" STREQUAL "")
 	## Locale is defined
@@ -289,23 +292,19 @@ FUNCTION(MANAGE_GETTEXT_LOCALES localeListVar)
 	SET(${localeListVar} "${_o_LOCALES}" PARENT_SCOPE)
     ELSE()
 	## LOCALES is not specified, detect now
-	FOREACH(_potFile ${MANAGE_TRANSLATION_GETTEXT_POT_FILES})
-	    GET_FILENAME_COMPONENT(_potName "${_potFile}" NAME_WE)
-	    SET(_poDir ${MANAGE_TRANSLATION_GETTEXT_POT_FILE_${_potName}_PO_DIR})
-	    EXECUTE_PROCESS(
-		COMMAND find ${_poDir} -name "*.po" -printf "%f\n"
-		COMMAND sed -e "s/.po//g"
-		COMMAND sort -u
-		COMMAND xargs
-	        COMMAND sed -e "s/ /;/g"
-		OUTPUT_VARIABLE _locales
-		OUTPUT_STRIP_TRAILING_WHITESPACE
-		)
-	    LIST(APPEND _o_LOCALES ${_locales})
-	ENDFOREACH(_potFile)
+	EXECUTE_PROCESS(
+	    COMMAND find ${poDir} -name "*.po" -printf "%f\n"
+	    COMMAND sed -e "s/.po//g"
+	    COMMAND sort -u
+	    COMMAND xargs
+	    COMMAND sed -e "s/ /;/g"
+	    OUTPUT_VARIABLE _o_LOCALES
+	    OUTPUT_STRIP_TRAILING_WHITESPACE
+	    )
+	LIST(APPEND _o_LOCALES ${_locales})
 	IF("${_o_LOCALES}" STREQUAL "")
 	    ## Failed to find any locale
-	    M_MSG(${M_ERROR} "MANAGE_GETTEXT: Failed to detect locales, specify SYSTEM_LOCALES in MANAGE_GETTEXT to use locales available in your system")
+	    M_MSG(${M_ERROR} "MANAGE_GETTEXT: Failed to detect locales. Please either specify LOCALES or SYSTEM_LOCALES.")
 	ENDIF()
 	SET(${localeListVar} "${_o_LOCALES}" PARENT_SCOPE)
     ENDIF()
