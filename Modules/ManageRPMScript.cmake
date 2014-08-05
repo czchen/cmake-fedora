@@ -12,7 +12,7 @@ cmake -Dcmd=spec -Dspec=<project.spec> -Dspec_in=<project.spec.in>
       [\"-Dconfig_replace=<file1;file2>\"]
       [\"-D<var>=<value>\"]
     -P <CmakeModulePath>/ManageRPMScript.cmake
-  Make project spec file according to spec_in and CMakeCache.txt.   
+  Make project spec file according to spec_in and prj_info.cmake
   Options:
     -Dconfig_replace: List of configure files that should use
       %config instead of %config(noreplace)
