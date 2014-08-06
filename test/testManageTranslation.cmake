@@ -2,26 +2,8 @@ INCLUDE(test/testCommon.cmake)
 INCLUDE(ManageMessage)
 INCLUDE(ManageTranslation)
 
-FUNCTION(ADD_POT_FILE_TEST expPoDir potFile)
-    MESSAGE("ADD_POT_FILE_TEST(${expPoDir} ${potFile})")
-    VARIABLE_PARSE_ARGN(_o ${ADD_POT_FILE_VALID_OPTIONS} ${ARGN})
-    ADD_POT_FILE_SET_VARS(cmdList poDir srcs depends ${potFile} ${ARGN})
-    TEST_STR_MATCH(poDir "${expPoDir}")
-ENDFUNCTION(ADD_POT_FILE_TEST)
-
-SET(CMAKE_CURRENT_BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-ADD_POT_FILE_TEST("${CMAKE_CURRENT_BINARY_DIR}" 
-    "${CMAKE_CURRENT_BINARY_DIR}/ibus-chewing.pot" 
-    SRCS ${CMAKE_CURRENT_SOURCE_DIR}/src1.c
-    )
-ADD_POT_FILE_TEST("po" 
-    "po/ibus-chewing.pot"  
-    SRCS ${CMAKE_CURRENT_SOURCE_DIR}/src1.c 
-    PO_DIR "po"
-    )
-
 FUNCTION(MANAGE_GETTEXT_LOCALES_TEST testName expLanguageList poDir)
-    MESSAGE("ADD_POT_FILE_TEST(${testName})")
+    MESSAGE("MANAGE_POT_FILE_TEST(${testName})")
     SET(localeList "")
     MANAGE_GETTEXT_LOCALES(localeList poDir ${ARGN})
     TEST_STR_MATCH(localeList "${expLanguageList}")
@@ -41,4 +23,25 @@ EXECUTE_PROCESS(
 MANAGE_GETTEXT_LOCALES_TEST("SYSTEM_LOCALES" "${_sysLocales}" "test/data/po" SYSTEM_LOCALES)
 
 MANAGE_GETTEXT_LOCALES_TEST("Detect locales" "de_DE;es_ES;fr_FR;it_IT" "test/data/po")
+
+FUNCTION(MANAGE_POT_FILE_TEST expPoDir potFile)
+    MESSAGE("MANAGE_POT_FILE_TEST(${expPoDir} ${potFile})")
+    VARIABLE_PARSE_ARGN(_o ${MANAGE_POT_FILE_VALID_OPTIONS} ${ARGN})
+    MANAGE_POT_FILE_SET_VARS(cmdList msgmergeOpts msgfmtOpts locales poDir moDir srcs depends cleanVar ${potFile} ${ARGN})
+    TEST_STR_MATCH(poDir "${expPoDir}")
+ENDFUNCTION(MANAGE_POT_FILE_TEST)
+
+SET(CMAKE_CURRENT_BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+MANAGE_POT_FILE_TEST("${CMAKE_CURRENT_BINARY_DIR}" 
+    "${CMAKE_CURRENT_BINARY_DIR}/ibus-chewing.pot" 
+    SYSTEM_LOCALES
+    SRCS ${CMAKE_CURRENT_SOURCE_DIR}/src1.c
+    )
+MANAGE_POT_FILE_TEST("${CMAKE_CURRENT_BINAR
+Y_DIR}/test/data/po" 
+    "${CMAKE_CURRENT_BINARY_DIR}/test/data/po/ibus-chewing.pot"  
+    SRCS ${CMAKE_CURRENT_SOURCE_DIR}/src1.c 
+    PO_DIR "${CMAKE_CURRENT_BINARY_DIR}/test/data/po"
+    )
+
 

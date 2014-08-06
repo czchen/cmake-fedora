@@ -1,4 +1,4 @@
-* Mon Aug 04 2014 Ding-Yi Chen <dchen at redhat.com> - 2.0.0
+* Tue Aug 05 2014 Ding-Yi Chen <dchen at redhat.com> - 2.0.0
 [TODO] Check ibus-chewing compatiblity
 - Fixed Bug 1093336 - date(1): -u is much portable than --utc
 - Fix EPEL 7 support.
