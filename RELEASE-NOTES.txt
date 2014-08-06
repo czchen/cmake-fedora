@@ -54,6 +54,8 @@ REDHAT_BUGZILLA=1002279,1093336
   + DateTimeFormat: Macro to function: TODAY
   + ManageAPIDOC: MANAGE_APIDOC_DOXYGEN: Macro to function.
   + ManageAPIDOC: MANAGE_APIDOC_DOXYGEN: Parameters changed.
+  + ManageArchive: Only the files that are explicitly added to 
+      SOURCE_ARCHIVE_CONTENTS will be depended. 
   + ManageFile: GIT_GLOB_TO_CMAKE_REGEX: Macro to function.
   + ManageString: STRING_ESCAPE_SEMICOLON: Macro to function.
   + ManageDependency: MANAGE_DEPENDENCY: Macro to function.
