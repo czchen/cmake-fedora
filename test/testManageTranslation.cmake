@@ -3,9 +3,9 @@ INCLUDE(ManageMessage)
 INCLUDE(ManageTranslation)
 
 FUNCTION(MANAGE_GETTEXT_LOCALES_TEST testName expLanguageList poDir)
-    MESSAGE("MANAGE_POT_FILE_TEST(${testName})")
+    MESSAGE("MANAGE_GETTEXT_LOCALES_TEST(${testName})")
     SET(localeList "")
-    MANAGE_GETTEXT_LOCALES(localeList poDir ${ARGN})
+    MANAGE_GETTEXT_LOCALES(localeList ${poDir} ${ARGN})
     TEST_STR_MATCH(localeList "${expLanguageList}")
 ENDFUNCTION()
 
@@ -27,7 +27,9 @@ MANAGE_GETTEXT_LOCALES_TEST("Detect locales" "de_DE;es_ES;fr_FR;it_IT" "test/dat
 FUNCTION(MANAGE_POT_FILE_TEST expPoDir potFile)
     MESSAGE("MANAGE_POT_FILE_TEST(${expPoDir} ${potFile})")
     VARIABLE_PARSE_ARGN(_o ${MANAGE_POT_FILE_VALID_OPTIONS} ${ARGN})
-    MANAGE_POT_FILE_SET_VARS(cmdList msgmergeOpts msgfmtOpts locales poDir moDir srcs depends cleanVar ${potFile} ${ARGN})
+    MANAGE_POT_FILE_SET_VARS(cmdList msgmergeOpts msgfmtOpts poDir moDir srcs depends 
+	"${potFile}" ${ARGN}
+	)
     TEST_STR_MATCH(poDir "${expPoDir}")
 ENDFUNCTION(MANAGE_POT_FILE_TEST)
 
@@ -37,8 +39,7 @@ MANAGE_POT_FILE_TEST("${CMAKE_CURRENT_BINARY_DIR}"
     SYSTEM_LOCALES
     SRCS ${CMAKE_CURRENT_SOURCE_DIR}/src1.c
     )
-MANAGE_POT_FILE_TEST("${CMAKE_CURRENT_BINAR
-Y_DIR}/test/data/po" 
+MANAGE_POT_FILE_TEST("${CMAKE_CURRENT_BINARY_DIR}/test/data/po" 
     "${CMAKE_CURRENT_BINARY_DIR}/test/data/po/ibus-chewing.pot"  
     SRCS ${CMAKE_CURRENT_SOURCE_DIR}/src1.c 
     PO_DIR "${CMAKE_CURRENT_BINARY_DIR}/test/data/po"

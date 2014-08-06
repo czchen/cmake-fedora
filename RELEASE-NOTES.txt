@@ -76,6 +76,7 @@ REDHAT_BUGZILLA=1002279,1093336
   + ManageTranslation: MANAGE_GETTEXT:
     - Macro to function
     - Parameters Changed
+    - Target: gmo_files to mo_files
   + ManageUpload: For all marcos:
     - Macros are changed to function
     - Parameters has changed.

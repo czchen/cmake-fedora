@@ -1,4 +1,4 @@
-* Tue Aug 05 2014 Ding-Yi Chen <dchen at redhat.com> - 2.0.0
+* Wed Aug 06 2014 Ding-Yi Chen <dchen at redhat.com> - 2.0.0
 [TODO] Check ibus-chewing compatiblity
 - Fixed Bug 1093336 - date(1): -u is much portable than --utc
 - Fix EPEL 7 support.
@@ -47,6 +47,8 @@
   + DateTimeFormat: Macro to function: TODAY
   + ManageAPIDOC: MANAGE_APIDOC_DOXYGEN: Macro to function.
   + ManageAPIDOC: MANAGE_APIDOC_DOXYGEN: Parameters changed.
+  + ManageArchive: Only the files that are explicitly added to 
+      SOURCE_ARCHIVE_CONTENTS will be depended. 
   + ManageFile: GIT_GLOB_TO_CMAKE_REGEX: Macro to function.
   + ManageString: STRING_ESCAPE_SEMICOLON: Macro to function.
   + ManageDependency: MANAGE_DEPENDENCY: Macro to function.
@@ -67,6 +69,7 @@
   + ManageTranslation: MANAGE_GETTEXT:
     - Macro to function
     - Parameters Changed
+    - Target: gmo_files to mo_files
   + ManageUpload: For all marcos:
     - Macros are changed to function
     - Parameters has changed.
