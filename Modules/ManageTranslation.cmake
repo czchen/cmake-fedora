@@ -161,7 +161,8 @@ SET(MANAGE_TRANSLATION_MSGFMT_OPTIONS
     "--check" CACHE STRING "msgfmt options"
     )
 SET(MANAGE_TRANSLATION_MSGMERGE_OPTIONS 
-    "--indent" "--update" "--backup=none" CACHE STRING "msgmerge options"
+    "--indent" "--update" "--sort-by-file" "--backup=none" 
+    CACHE STRING "msgmerge options"
     )
 SET(MANAGE_TRANSLATION_XGETTEXT_OPTIONS 
     ${XGETTEXT_OPTIONS_C}
@@ -233,7 +234,7 @@ SET(MANAGE_POT_FILE_VALID_OPTIONS "SRCS" "PO_DIR" "MO_DIR" "NO_MO" "LOCALES" "SY
     "XGETTEXT_OPTIONS" "MSGMERGE_OPTIONS" "MSGFMT_OPTIONS" "CLEAN" "COMMAND" "DEPENDS"
     )
 ## Internal
-FUNCTION(MANAGE_POT_FILE_SET_VARS cmdListVar msgmergeOptsVar msgfmtOptsVar poDirVar moDirVar srcsVar dependsVar potFile)
+FUNCTION(MANAGE_POT_FILE_SET_VARS cmdListVar msgmergeOptsVar msgfmtOptsVar poDirVar moDirVar allCleanVar srcsVar dependsVar potFile)
     VARIABLE_PARSE_ARGN(_o MANAGE_POT_FILE_VALID_OPTIONS ${ARGN})
     SET(cmdList "")
     IF("${_o_COMMAND}" STREQUAL "")
@@ -292,6 +293,9 @@ FUNCTION(MANAGE_POT_FILE_SET_VARS cmdListVar msgmergeOptsVar msgfmtOptsVar poDir
 
     IF(NOT DEFINED _o_CLEAN)
 	SET_DIRECTORY_PROPERTIES(PROPERTIES CLEAN_NO_CUSTOM "1")
+	SET(${allCleanVar} 0 PARENT_SCOPE)
+    ELSE()
+	SET(${allCleanVar} 1 PARENT_SCOPE)
     ENDIF()
 ENDFUNCTION(MANAGE_POT_FILE_SET_VARS)
 
@@ -303,7 +307,7 @@ FUNCTION(MANAGE_POT_FILE potFile)
 	RETURN()
     ENDIF()
 
-    MANAGE_POT_FILE_SET_VARS(cmdList msgmergeOpts msgfmtOpts poDir moDir srcs depends 
+    MANAGE_POT_FILE_SET_VARS(cmdList msgmergeOpts msgfmtOpts poDir moDir allClean srcs depends 
 	"${potFile}" ${ARGN}
 	)
     ADD_CUSTOM_COMMAND(OUTPUT ${potFile}
@@ -314,6 +318,7 @@ FUNCTION(MANAGE_POT_FILE potFile)
 	)
     MANAGE_TRANSLATION_GETTEXT_POT_FILES_ADD("${potFile}")
     SOURCE_ARCHIVE_CONTENTS_ADD("${potFile}" ${srcs} ${depends})
+    SET(cleanList "${potFile}")
 
     ## Not only POT, but also PO and MO as well
     FOREACH(_l ${MANAGE_TRANSLATION_LOCALES})
@@ -327,7 +332,7 @@ FUNCTION(MANAGE_POT_FILE potFile)
 	    -D "options=${msgmergeOpts}"
 	    -D "po_dir=${poDir}"
 	    -P ${CMAKE_FEDORA_MODULE_DIR}/ManageGettextScript.cmake
-	    DEPENDS ${pot}
+	    DEPENDS ${potFile}
 	    COMMENT "Create ${_poFile} from ${potFile}"
 	    VERBATIM
 	    )
@@ -338,7 +343,7 @@ FUNCTION(MANAGE_POT_FILE potFile)
 	    ## MO file
 	    SET(_moDir  "${DATA_DIR}/locale/${_l}/LC_MESSAGES")
 	    SET(_gmoFile "${moDir}/${_l}.gmo")
-	    ADD_CUSTOM_COMMAND(OUTPUT ${_moFile}
+	    ADD_CUSTOM_COMMAND(OUTPUT ${_gmoFile}
 		COMMAND ${MSGFMT_EXECUTABLE} 
 		-o "${_gmoFile}"
 		"${_poFile}"
@@ -346,11 +351,15 @@ FUNCTION(MANAGE_POT_FILE potFile)
 		)
 	    MANAGE_TRANSLATION_GETTEXT_MO_FILES_ADD("${_gmoFile}")
 	    GET_FILENAME_COMPONENT(_potName "${potFile}" NAME_WE)
-	    INSTALL(FILE ${_gmoFile} DESTINATION "${_moDir}"
+	    INSTALL(FILES ${_gmoFile} DESTINATION "${_moDir}"
 		RENAME "${_potName}.mo"
 		)
+	    LIST(APPEND cleanList "${_gmoFile}")
 	ENDIF()
     ENDFOREACH(_l)
+    IF(NOT allClean)
+	SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${cleanList}")
+    ENDIF()
 ENDFUNCTION(MANAGE_POT_FILE)
 
 SET(MANAGE_GETTEXT_LOCALES_VALID_OPTIONS "LOCALES" "SYSTEM_LOCALES")

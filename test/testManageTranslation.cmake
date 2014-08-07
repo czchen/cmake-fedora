@@ -27,7 +27,7 @@ MANAGE_GETTEXT_LOCALES_TEST("Detect locales" "de_DE;es_ES;fr_FR;it_IT" "test/dat
 FUNCTION(MANAGE_POT_FILE_TEST expPoDir potFile)
     MESSAGE("MANAGE_POT_FILE_TEST(${expPoDir} ${potFile})")
     VARIABLE_PARSE_ARGN(_o ${MANAGE_POT_FILE_VALID_OPTIONS} ${ARGN})
-    MANAGE_POT_FILE_SET_VARS(cmdList msgmergeOpts msgfmtOpts poDir moDir srcs depends 
+    MANAGE_POT_FILE_SET_VARS(cmdList msgmergeOpts msgfmtOpts poDir moDir allClean srcs depends 
 	"${potFile}" ${ARGN}
 	)
     TEST_STR_MATCH(poDir "${expPoDir}")
