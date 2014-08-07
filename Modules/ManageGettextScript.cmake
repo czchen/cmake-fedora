@@ -106,7 +106,6 @@ MACRO(PO_MAKE)
     IF("${po_dir}" STREQUAL "")
 	GET_FILENAME_COMPONENT(po_dir "${pot}" PATH)
     ENDIF()
-    MESSAGE("_gettext_locale_opts=${_gettext_locale_opts}")
     MANAGE_GETTEXT_LOCALES(localeListVar "${po_dir}" ${_gettext_locale_opts})
     FOREACH(_l ${localeListVar})
 	SET(_poFile "${po_dir}/${_l}.po")
@@ -119,7 +118,6 @@ MACRO(PO_MAKE)
 		"--no-translator"
 		)
 	ENDIF()
-	MESSAGE("exec=${exec}")
 	EXECUTE_PROCESS(COMMAND ${exec}
 	    RESULT_VARIABLE _res
 	    OUTPUT_VARIABLE _out
