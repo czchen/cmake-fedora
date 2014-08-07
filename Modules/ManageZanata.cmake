@@ -199,27 +199,29 @@ FUNCTION(MANAGE_ZANATA)
 
     ## Find client command 
     IF("${_o_CLIENT_COMMAND}" STREQUAL "")
-	FIND_PROGRAM_ERROR_HANDLING(_o_CLIENT_COMMAND
+	FIND_PROGRAM_ERROR_HANDLING(ZANATA_EXECUTABLE
 	    ERROR_MSG " Zanata support is disabled."
 	    ERROR_VAR _zanata_dependency_missing
 	    VERBOSE_LEVEL ${M_OFF}
-	    NAMES zanata-cli mvn
+	    FIND_ARGS NAMES zanata-cli mvn
 	    )
 
 	IF(NOT _zanata_dependency_missing)
-	    LIST(APPEND _o_CLIENT_COMMAND "-e")
+	    SET(_o_CLIENT_COMMAND "${ZANATA_EXECUTABLE}" "-e")
 	ENDIF()
+    ELSE()
+	LIST(GET _o_CLIENT_COMMAND 0 ZANATA_EXECUTABLE)
     ENDIF()
 
     ## Disable unsupported  client.
     IF(_zanata_dependency_missing)
 	RETURN()
     ELSE()
-	GET_FILENAME_COMPONENT(_cmd "${_o_CLIENT_CMD}" NAME)
+	GET_FILENAME_COMPONENT(_cmd "${ZANATA_EXECUTABLE}" NAME)
 	IF(_cmd STREQUAL "mvn")
 	ELSEIF(_cmd STREQUAL "zanata-cli")
 	ELSE()
-	    M_MSG(${M_OFF} "${_cmd} is not a supported Zanata client")
+	    M_MSG(${M_OFF} "${_cmd} is ${_o_CLIENT_CMD} not a supported Zanata client")
 	    RETURN()
 	ENDIF()
     ENDIF()
@@ -255,11 +257,16 @@ FUNCTION(MANAGE_ZANATA)
 	"project-slug" "${PROJECT_NAME}"
 	)
     ZANATA_CLIENT_OPT_LIST_APPEND(_zntPutProjectCmdList "${_cmd}"
-	"project-name" "${PRJ_SUMMARY}"
+	"project-name" "${PROJECT_NAME}"
 	)
-    STRING(SUBSTRING 0 ${PRJ_DESCRIPTION} 
-	${ZANATA_DESCRIPTION_SIZE} _description
-	)
+    STRING(LENGTH "${PRJ_SUMMARY}" _prjSummaryLen)
+    IF(NOT _prjSummaryLen GREATER ${ZANATA_DESCRIPTION_SIZE})
+	SET(_description "${PRJ_SUMMARY}")
+    ELSE()
+	STRING(SUBSTRING "${PRJ_SUMMARY}" 0
+	    ${ZANATA_DESCRIPTION_SIZE} _description
+	    )
+    ENDIF()
     ZANATA_CLIENT_OPT_LIST_APPEND(_zntPutProjectCmdList "${_cmd}"
 	"project-desc" "${_description}"
 	)
