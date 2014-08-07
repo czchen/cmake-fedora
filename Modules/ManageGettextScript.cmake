@@ -4,7 +4,6 @@ MACRO(MANAGE_GETTEXT_SCRIPT_PRINT_USAGE)
 	"Manage gettext script: This script is not recommend for end users
 
 cmake -D cmd=pot_make
-	-D prj_info=<path/prj_info.cmake>
 	-D pot=<path/project.pot>
 	-D \"exec:STRING=<cmd;--opt1;--opt2;value; ...>\"
 	[\"-D<var>=<value>\"]
@@ -13,14 +12,12 @@ cmake -D cmd=pot_make
     Update or create a POT file.
     Options:
 	pot: Path to pot file
-	prj_info: Path to prj_info.cmake
 	exec:STRING: Command and options to create the POT file.
 	    Note that \"STRING\" is needed, as its quite likely to pass the options 
 	    like: \"--keyword=C_:1c,2;--keyword=NC_:1c,2\" which make cmake failed to
 	    set the exec variable.
 
 cmake -D cmd=po_make
-      -D prj_info=<path/prj_info.cmake>
       -D pot=<path/project.pot>
       [-D \"options:STRING=<--opt1;--opt2;value; ...>\"]
       [\"-Dlocales=<locale1;locale2...>\"  | -Dsystem_locales]
@@ -34,7 +31,6 @@ cmake -D cmd=po_make
     If both are not specified, it will find the existing PO files. 
     Options:
 	pot: Path to pot file
-	prj_info: Path to prj_info.cmake
 	options: Options to pass to msgmerge
 	    Note that \"STRING\" is needed, as its quite likely to pass the options 
 	    like: \"--keyword=C_:1c,2;--keyword=NC_:1c,2\" which make cmake failed to
@@ -44,7 +40,6 @@ cmake -D cmd=po_make
 	po_dir: Directory to put po, otherwise it would use the path to pot.
 
 cmake -D cmd=mo_make
-      -D prj_info=<path/prj_info.cmake>
       -D po_dir=<dir>
       [-D mo_dir=<dir>]
       [-D \"options=<--opt1;--opt2=value; ...>\"
@@ -79,15 +74,6 @@ FUNCTION(CMD_TO_LIST listVar cmd)
     SET(${listVar} "${_listNew}" PARENT_SCOPE)
 ENDFUNCTION(CMD_TO_LIST)
 
-MACRO(COMMON_CHECK)
-    IF("${prj_info}" STREQUAL "")
-	M_MSG(${M_FATAL} "Requires \"-Dprj_info=<path/prj_info.cmake>\"")
-    ENDIF()
-    IF(NOT EXISTS ${prj_info})
-	M_MSG(${M_FATAL} "${prj_info} does not exist")
-    ENDIF()
-ENDMACRO()
-
 MACRO(POT_MAKE)
     EXECUTE_PROCESS(COMMAND ${exec}
 	RESULT_VARIABLE _res
@@ -101,7 +87,6 @@ MACRO(POT_MAKE)
 ENDMACRO(POT_MAKE)
 
 MACRO(POT_MAKE_VARIABLE_CHECK)
-    COMMON_CHECK()
     IF("${pot}" STREQUAL "")
 	M_MSG(${M_FATAL} "Requires \"-Dpot=<path/project.pot>\"")
     ENDIF()
@@ -121,16 +106,20 @@ MACRO(PO_MAKE)
     IF("${po_dir}" STREQUAL "")
 	GET_FILENAME_COMPONENT(po_dir "${pot}" PATH)
     ENDIF()
-    MANAGE_GETTEXT_LOCALES(localeListVar ${_gettext_locale_opts})
+    MESSAGE("_gettext_locale_opts=${_gettext_locale_opts}")
+    MANAGE_GETTEXT_LOCALES(localeListVar "${po_dir}" ${_gettext_locale_opts})
     FOREACH(_l ${localeListVar})
-	IF(EXIST ${po_dir}/${_l}.po)
-	    SET(exec "msgmerge" "--lang=${_l}" ${options} ${pot} ${po_dir}/${_l}.po)
+	SET(_poFile "${po_dir}/${_l}.po")
+	IF(EXISTS ${_poFile})
+	    SET(exec "msgmerge" "--lang=${_l}" ${options} ${pot} ${_poFile})
 	ELSE()
 	    ## Po file does not exist, run msginit
-	    SET(exec "msginit" "--loocale=${_l}" 
-		"--input=${pot}" "--output-files=${po_dir}/${_l}.po"
+	    SET(exec "msginit" "--locale=${_l}.utf8" 
+		"--input=${pot}" "--output-file=${_poFile}"
+		"--no-translator"
 		)
 	ENDIF()
+	MESSAGE("exec=${exec}")
 	EXECUTE_PROCESS(COMMAND ${exec}
 	    RESULT_VARIABLE _res
 	    OUTPUT_VARIABLE _out
@@ -144,7 +133,6 @@ MACRO(PO_MAKE)
 ENDMACRO(PO_MAKE)
 
 MACRO(PO_MAKE_VARIABLE_CHECK)
-    COMMON_CHECK()
     IF("${pot}" STREQUAL "")
 	M_MSG(${M_FATAL} "Requires -D \"pot=<path/project.pot>\"")
     ENDIF()
@@ -180,7 +168,6 @@ MACRO(MO_MAKE)
 ENDMACRO(MO_MAKE)
 
 MACRO(MO_MAKE_VARIABLE_CHECK)
-    COMMON_CHECK()
     IF("${po_dir}" STREQUAL "")
 	M_MSG(${M_FATAL} "Requires -D \"po_dir=<dir>\"")
     ENDIF()
@@ -228,7 +215,7 @@ LIST(APPEND CMAKE_FEDORA_ADDITIONAL_SCRIPT_PATH
     ${CMAKE_FEDORA_MODULE_DIR}/../scripts
    ${CMAKE_FEDORA_MODULE_DIR}/../cmake-fedora/scripts
     )
-#INCLUDE(ManageTranslation)
+INCLUDE(ManageTranslation)
 
 IF(NOT DEFINED cmd)
     MANAGE_GETTEXT_SCRIPT_PRINT_USAGE()
