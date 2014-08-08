@@ -7,12 +7,12 @@
 #     )
 #     - Process schemas file.
 #       * Parameters:
-#         + FILE <schemasFile>: (Optional) See GCONF_SCHEMAS_FILE.
-#           If not specified, it will determined by following order:
-#           "GCONF_SCHEMAS_FILE"
-#           "${SYSCONF_DIR}/gconf/schemas
-#         + INSTALL_DIR <dir>: (Optional) See GCONF_INSTALL_DIR.
-#         + CONFIG_SOURCE <source>: (Optional) See GCONF_CONFIG_SOURCE.
+#         + FILE <schemasFile>: (Optional) Path to GConf .schema.
+#           Default: ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.schemas
+#         + INSTALL_DIR <dir>: (Optional) Directory to install GConf .schemas file.
+#	    Default: ${SYSCONF_DIR}/gconf/schemas
+#         + CONFIG_SOURCE <source>: (Optional) Configuration source.
+#           Default: "" (Use the system default) 
 #       * Reads and defines following variables:
 #         + GCONF_SCHEMAS_FILE: Schema file.
 #           Default: ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.schemas
@@ -45,55 +45,40 @@ MANAGE_DEPENDENCY(REQUIRES_POST GCONF2 REQUIRED
     FEDORA_NAME "GConf2"
     )
 
-MACRO(MANAGE_GCONF_SCHEMAS)
+SET(MANAGE_GCONF_SCHEMAS_VALID_OPTIONS "FILE" "INSTALL_DIR" "CONFIG_SOURCE")
+FUNCTION(MANAGE_GCONF_SCHEMAS)
     INCLUDE(ManageVersion)
-    SET(_validOptions "FILE" "INSTALL_DIR" "CONFIG_SOURCE")
-    VARIABLE_PARSE_ARGN(_opt _validOptions ${ARGN})
+    VARIABLE_PARSE_ARGN(_o MANAGE_GCONF_SCHEMAS_VALID_OPTIONS ${ARGN})
 
-    ## Determine GCONF_SCHEMA_FILE
-    IF(NOT "${_opt_FILE}" STREQUAL "")
-	SET(GCONF_SCHEMAS_FILE ${_opt_FILE})
-    ELSEIF("${GCONF_SCHEMAS_FILE}" STREQUAL "")
-	SET(GCONF_SCHEMAS_FILE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.schemas")
-    ENDIF(NOT "${_opt_FILE}" STREQUAL "")
+    IF(NOT _o_FILE)
+	SET(_o_FILE "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.schemas")
+    ENDIF()
 
-    GET_FILENAME_COMPONENT(_gconf_schemas_basename ${GCONF_SCHEMAS_FILE} NAME)
+    GET_FILENAME_COMPONENT(schemasBasename ${_o_FILE} NAME)
 
-    ## Determine GCONF_SCHEMAS_INSTALL_DIR
-    IF(NOT "${_opt_INSTALL_DIR}" STREQUAL "")
-	SET(GCONF_SCHEMAS_INSTALL_DIR ${_opt_INSTALL_DIR})
-    ELSEIF("${GCONF_SCHEMAS_INSTALL_DIR}" STREQUAL "")
-	IF("${SYSCONF_INSTALL_DIR}" STREQUAL "")
-	    SET(GCONF_SCHEMAS_INSTALL_DIR  "${SYSCONF_DIR}/gconf/schemas")
-	ELSE("${SYSCONF_INSTALL_DIR}" STREQUAL "")
-	    SET(GCONF_SCHEMAS_INSTALL_DIR  "${SYSCONF_INSTALL_DIR}/gconf/schemas")
-	ENDIF("${SYSCONF_INSTALL_DIR}" STREQUAL "")
-    ENDIF(NOT "${_opt_INSTALL_DIR}" STREQUAL "")
+    IF(NOT _o_INSTALL_DIR)
+	SET(_o_INSTALL_DIR  "${SYSCONF_DIR}/gconf/schemas")
+    ENDIF()
 
-    ## Determine GCONF_CONFIG_SOURCE
-    IF(NOT "${_opt_CONFIG_SOURCE}" STREQUAL "")
-	SET(GCONF_CONFIG_SOURCE ${_opt_INSTALL_DIR})
-    ELSEIF("${GCONF_CONFIG_SOURCE}" STREQUAL "")
-	SET(GCONF_CONFIG_SOURCE "")
-    ENDIF(NOT "${_opt_CONFIG_SOURCE}" STREQUAL "")
 
     ADD_CUSTOM_TARGET(uninstall_schemas
-	COMMAND GCONF_CONFIG_SOURCE=${GCONF_CONFIG_SOURCE}
+	COMMAND GCONF_CONFIG_SOURCE=${_o_CONFIG_SOURCE}
 	${GCONF2_EXECUTABLE} --makefile-uninstall-rule
-	${GCONF_SCHEMAS_INSTALL_DIR}/${_gconf_schemas_basename}
-	COMMENT "Uninstalling schemas"
+	"${_o_INSTALL_DIR}/${schemasBasename}"
+	COMMENT "uninstall_schemas"
+	VERBATIM
 	)
 
     ADD_CUSTOM_TARGET(install_schemas
-	COMMAND cmake -E copy ${GCONF_SCHEMAS_FILE} ${GCONF_SCHEMAS_INSTALL_DIR}/${_gconf_schemas_basename}
+	COMMAND ${CMAKE_COMMAND} -E copy "${_o_FILE}" "${_o_INSTALL_DIR}/${schemasBasename}"
 	COMMAND GCONF_CONFIG_SOURCE=${GCONF_CONFIG_SOURCE}
 	${GCONF2_EXECUTABLE} --makefile-install-rule
-	${GCONF_SCHEMAS_INSTALL_DIR}/${_gconf_schemas_basename}
-	DEPENDS ${GCONF_SCHEMAS_FILE}
-	COMMENT "Installing schemas"
+	"${_o_INSTALL_DIR}/${schemasBasename}"
+	DEPENDS "${_o_FILE}"
+	COMMENT "install_schemas"
+	VERBATIM
 	)
 
-    MANAGE_FILE_INSTALL(SYSCONF ${GCONF_SCHEMAS_FILE}
-	DEST_SUBDIR "gconf/schemas")
-ENDMACRO(MANAGE_GCONF_SCHEMAS)
+    INSTALL(FILES ${_o_FILE} DESTINATION "${SYSCONF_DIR}/gconf/schemas")
+ENDFUNCTION(MANAGE_GCONF_SCHEMAS)
 
