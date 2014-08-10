@@ -156,6 +156,7 @@ ADD_TEST("ManageString" ctest -S test/testManageString.cmake)
 ADD_TEST("ManageVariable" ctest -S test/testManageVariable.cmake)
 ADD_TEST("ManageFile" ctest -S test/testManageFile.cmake)
 ADD_TEST("ManageTranslation" ctest -S test/testManageTranslation.cmake)
+ADD_TEST("ManageZanata" ctest -S test/testManageZanata.cmake)
 ADD_TEST("CmakeFedoraKoji" ctest -S test/testCmakeFedoraKoji.cmake)
 ADD_TEST("CmakeFedoraScript" ctest -S test/testCmakeFedoraScript.cmake)
 
