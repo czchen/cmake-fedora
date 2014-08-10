@@ -371,7 +371,7 @@ FUNCTION(MANAGE_GETTEXT_LOCALES localeListVar poDir)
     ELSEIF(DEFINED _o_SYSTEM_LOCALES)
 	EXECUTE_PROCESS(
 	    COMMAND locale -a 
-	    COMMAND grep -e "^[a-z]*_[A-Z]*$"
+	    COMMAND grep -e "^[a-z]*_[A-Z]*\\(@.*\\)\\?$"
 	    COMMAND sort -u 
 	    COMMAND xargs 
 	    COMMAND sed -e "s/ /;/g"

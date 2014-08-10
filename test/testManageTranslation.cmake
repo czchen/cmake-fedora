@@ -3,17 +3,17 @@ INCLUDE(ManageMessage)
 INCLUDE(ManageTranslation)
 
 FUNCTION(MANAGE_GETTEXT_LOCALES_TEST testName expLanguageList poDir)
-    MESSAGE("MANAGE_GETTEXT_LOCALES_TEST(${testName})")
+    MESSAGE("MANAGE_GETTEXT_LOCALES_TEST(${testName}): ${expLanguageList}")
     SET(localeList "")
     MANAGE_GETTEXT_LOCALES(localeList ${poDir} ${ARGN})
     TEST_STR_MATCH(localeList "${expLanguageList}")
 ENDFUNCTION()
 
 
-MANAGE_GETTEXT_LOCALES_TEST("LOCALES zh_CN;zh_TW" "zh_CN;zh_TW" "test/data/po" LOCALES zh_CN zh_TW)
+MANAGE_GETTEXT_LOCALES_TEST("LOCALES specified" "zh_CN;zh_TW" "test/data/po" LOCALES zh_CN zh_TW)
 EXECUTE_PROCESS(
     COMMAND locale -a 
-    COMMAND grep -e "^[a-z]*_[A-Z]*$"
+    COMMAND grep -e "^[a-z]*_[A-Z]*\\(@.*\\)\\?$"
     COMMAND sort -u 
     COMMAND xargs 
     COMMAND sed -e "s/ /;/g"
