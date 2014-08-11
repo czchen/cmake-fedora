@@ -333,7 +333,7 @@ case $PRJ_SOURCE_VERSION_CONTROL in
 	append_gitignore 'CTestTestfile.cmake'
 
 	if [ ! -d Modules ];then
-	    if git clone http://git.fedorahosted.org/git/cmake-fedora.git; then
+	    if git clone https://git.fedorahosted.org/git/cmake-fedora.git; then
 		ln -s cmake-fedora/Modules .
 	    fi
 	fi
