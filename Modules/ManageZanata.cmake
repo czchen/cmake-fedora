@@ -10,9 +10,6 @@
 #   - ManageMessage
 #   - ManageString
 #
-# Read following variables:
-#   - MANAGE_TRANSLATION_LOCALES: Locales that would be processed.
-#
 # Define following functions:
 #   MANAGE_ZANATA([<serverUrl>] [YES]
 #       [DEFAULT_PROJECT_TYPE <projectType>]
@@ -76,8 +73,7 @@
 #           Default: mvn -e
 #         + LOCALES locales: Locales to sync with Zanata.
 #             Specify the locales to sync with this Zanata server.
-#             If not specified, it uses MANAGE_TRANSLATION_LOCALES,
-#             which is produced by MANAGE_POT_FILE.
+#             If not specified, it uses client side system locales.
 #         + SRC_DIR dir: (Optional) Directory to put source documents 
 #             (e.g. .pot).
 #           Default: CMAKE_CURRENT_SOURCE_DIR
@@ -260,9 +256,6 @@ FUNCTION(MANAGE_ZANATA)
     ELSE()
 	SET(zanataXml "${CMAKE_CURRENT_SOURCE_DIR}/zanata.xml")
     ENDIF()
-    IF(NOT _o_LOCALES)
-	SET(_o_LOCALES "${MANAGE_TRANSLATION_LOCALES}")
-    ENDIF()
     IF(DEFINED _o_GENERATE_ZANATA_XML)
 	ADD_CUSTOM_TARGET_COMMAND(zanata_xml
 	    OUTPUT "${zanataXml}"
@@ -423,6 +416,7 @@ ENDFUNCTION(MANAGE_ZANATA)
 #
 
 FUNCTION(ZANATA_PARSE_LOCALE language script country modifier suggestCountry suggestModifier str)
+    INCLUDE(ManageZanataSuggest)
     SET(s "")
     SET(c "")
     SET(m "")
@@ -447,74 +441,36 @@ FUNCTION(ZANATA_PARSE_LOCALE language script country modifier suggestCountry sug
 	    SET(c "${x}")
 	ENDIF()
     ENDIF()
-    STRING(LENGTH "${l}" langLen)
 
-    ## Known cases
-    IF(l STREQUAL "zh")
-	IF(s STREQUAL "Hans")
-	    SET(sC "CN")
-	ELSEIF(s STREQUAL "Hant")
-	    SET(sC "TW")
+    IF(NOT "${c}" STREQUAL "")
+	SET(sC "${c}")
+    ELSEIF(NOT "${s}" STREQUAL "")
+	SET(zSC "${ZANATA_SUGGEST_COUNTRY_${l}_${s}}")
+	IF(NOT "${zSC}" STREQUAL "")
+	    SET(sC "${zSC}")
 	ENDIF()
-    ELSEIF(l STREQUAL "sr")
-	IF(NOT c)
-	    SET(sC "RS")
+    ELSE()
+	SET(zSC "${ZANATA_SUGGEST_COUNTRY_${l}}")
+	IF(NOT "${zSC}" STREQUAL "")
+	    SET(sC "${zSC}")
 	ENDIF()
-	IF(s STREQUAL "Latn")
-	    SET(sM "latin")
+    ENDIF()
+
+    IF("${sC}" STREQUAL "")
+	IF("${l}" STREQUAL "eo")
+	ELSE()
+	    M_MSG(${M_WARN} "ZANATA_PARSE_LOCALE() Failed to recognized locale ${str}")
+	    RETURN()
 	ENDIF()
-    ELSEIF(l STREQUAL "aa")
-	IF(NOT c)
-	    SET(sC "ET")
-	ENDIF()
-    ELSEIF(l STREQUAL "ar")
-	IF(NOT c)
-	    SET(sC "SA")
-	ENDIF()
-    ELSEIF(l STREQUAL "ar")
-	IF(NOT c)
-	    SET(sC "SA")
-	ENDIF()
-    ELSEIF(l STREQUAL "ca")
-	IF(NOT c)
-	    SET(sC "AD")
-	ENDIF()
-    ELSEIF(l STREQUAL "el")
-	IF(NOT c)
-	    SET(sC "GR")
-	ENDIF()
-    ELSEIF(l STREQUAL "en")
-	IF(NOT c)
-	    SET(sC "US")
-	ENDIF()
-    ELSEIF(l STREQUAL "en")
-	IF(NOT c)
-	    SET(sC "US")
-	ENDIF()
-    ELSEIF(l STREQUAL "li")
-	IF(NOT c)
-	    SET(sC "NL")
-	ENDIF()
-    ELSEIF(l STREQUAL "om")
-	IF(NOT c)
-	    SET(sC "ET")
-	ENDIF()
-    ELSEIF(l STREQUAL "pa")
-	IF(NOT c)
-	    SET(sC "IN")
-	ENDIF()
-    ELSEIF(l STREQUAL "pa")
-	IF(NOT c)
-	    SET(sC "IN")
-	ENDIF()
-    ELSEIF(l STREQUAL "ti")
-	IF(NOT c)
-	    SET(sC "ET")
-	ENDIF()
-    ELSEIF(langLen EQUAL 2)
-	## Use uppercase language as country
-	IF(NOT c)
-	    STRING(TOUPPER "${l}" sC)
+    ENDIF()
+
+    ## Suggest modifier
+    IF(m)
+	SET(sM "${m}")
+    ELSEIF(s)
+	SET(zSM "${ZANATA_SUGGEST_MODIFIER_${l}_${c}_${s}}")
+	IF(zSM)
+	    SET(sM "${zSM}")
 	ENDIF()
     ENDIF()
 
@@ -589,6 +545,7 @@ ENDFUNCTION(ZANATA_ZANATA_XML_MAP_BETTER_MATCH)
 
 FUNCTION(ZANATA_ZANATA_XML_MAP zanataXml zanataXmlIn clientLocales)
     INCLUDE(ManageTranslation)
+    INCLUDE(ManageZanataSuggest)
     SET(localeListVar "${ARGN}")
     FILE(STRINGS "${zanataXmlIn}" zanataXmlLines)
     FILE(REMOVE ${zanataXml})

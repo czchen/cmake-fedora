@@ -14,14 +14,17 @@ FUNCTION(ZANATA_PARSE_LOCALE_TEST expLanguage expScript expCountry expModifier e
 ENDFUNCTION(ZANATA_PARSE_LOCALE_TEST)
 
 ZANATA_PARSE_LOCALE_TEST("fr" "" "" "" "FR" "" "fr")
-ZANATA_PARSE_LOCALE_TEST("de" "" "DE"  "" "" "" "de_DE")
-ZANATA_PARSE_LOCALE_TEST("bem" "" "ZM" "" "" "" "bem_ZM")
+ZANATA_PARSE_LOCALE_TEST("de" "" "DE"  "" "DE" "" "de_DE")
+ZANATA_PARSE_LOCALE_TEST("bem" "" "ZM" "" "ZM" "" "bem_ZM")
 ZANATA_PARSE_LOCALE_TEST("zh" "Hans" "" "" "CN" "" "zh-Hans")
 ZANATA_PARSE_LOCALE_TEST("zh" "Hant" "" "" "TW" "" "zh-Hant")
 ZANATA_PARSE_LOCALE_TEST("zh" "Hant" "TW" "" "TW" "" "zh-Hant-TW")
 ZANATA_PARSE_LOCALE_TEST("sr" "Latn" "" "" "RS" "latin" "sr-Latn")
 ZANATA_PARSE_LOCALE_TEST("sr" "Cyrl" "" "" "RS" "" "sr-Cyrl")
-ZANATA_PARSE_LOCALE_TEST("sr" "" "RS" "latin" "" "" "sr_RS@latin")
+ZANATA_PARSE_LOCALE_TEST("sr" "" "RS" "latin" "RS" "latin" "sr_RS@latin")
+ZANATA_PARSE_LOCALE_TEST("eo" "" "" "" "" "" "eo")
+ZANATA_PARSE_LOCALE_TEST("nb" "" "NO" "" "NO"  "" "nb_NO")
+
 
 FUNCTION(ZANATA_ZANATA_XML_MAP_BETTER_MATCH_TEST expect currentBestMatch serverLocale clientLocale)
     MESSAGE("ZANATA_ZANATA_XML_MAP_BETTER_MATCH_TEST(${expect})")
