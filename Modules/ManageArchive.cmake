@@ -14,6 +14,7 @@
 #
 # Included Modules:
 #   - ManageFile
+#   - ManageTarget
 #   - ManageVersion
 #   - CPack
 #
@@ -67,8 +68,8 @@
 IF(DEFINED _MANAGE_ARCHIVE_CMAKE_)
     RETURN()
 ENDIF(DEFINED _MANAGE_ARCHIVE_CMAKE_)
-
 SET (_MANAGE_ARCHIVE_CMAKE_ "DEFINED")
+
 SET(SOURCE_ARCHIVE_IGNORE_FILES_COMMON
     "/\\\\.svn/"  "/CVS/" "/\\\\.git/" "/\\\\.hg/" "NO_PACK")
 
@@ -299,10 +300,11 @@ MACRO(PACK_SOURCE_ARCHIVE)
 	    COMMAND ${CMAKE_COMMAND} -E remove "${_source_archive_file}"
 	    )
     ENDIF(_own)
+
+    INCLUDE(ManageTarget)
     ADD_CUSTOM_TARGET_COMMAND(pack_src
 	NO_FORCE
 	OUTPUT ${SOURCE_ARCHIVE_FILE}
-	COMMAND make changelog
 	COMMAND make package_source
 	${moveCommands}
 	DEPENDS  ${_dep_list}

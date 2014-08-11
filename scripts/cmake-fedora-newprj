@@ -142,6 +142,7 @@ function append_gitignore(){
     fi
 }
 
+scriptDir=`dirname $0`
 #Default Values
 PRJ_AUTHORS="<PRJ_AUTHORS>"
 PRJ_GROUP="<PRJ_GROUP>"
@@ -150,9 +151,9 @@ PRJ_LICENSE_FILES="COPYING"
 PRJ_MAINTAINER="<PRJ_MAINTAINER>"
 PRJ_SPEC_URL="<PRJ_SPEC_URL>"
 RPM_SPEC_SOURCES="<RPM_SPEC_SOURCES>"
-PRJ_SOURCE_VERSION_CONTROL="GIT"
+PRJ_SOURCE_VERSION_CONTROL="git"
 PRJ_SUMMARY="<PRJ_SUMMARY>"
-TEMPLATES_PATH="/usr/share/cmake/Templates;Templates;cmake-fedora/Templates"
+TEMPLATES_PATH="/usr/share/cmake/Templates;Templates;cmake-fedora/Templates;$scriptDir/../Templates"
 PRJ_VENDOR="<PRJ_VENDOR>"
 PRJ_VER_INIT="0.1.0"
 
@@ -196,7 +197,7 @@ while getopts "hA:B:L:M:V:e:i:m:s:" opt; do
 	    PRJ_SUMMARY=$OPTARG;
 	    ;;
 	s)
-	    PRJ_SOURCE_VERSION_CONTROL=`echo $OPTARG | sed -e 'y/[a-z]/[A-Z]/'`;
+	    PRJ_SOURCE_VERSION_CONTROL=`echo $OPTARG | sed -e 's/\(.*\)/\L\1/g'`;
 	    ;;
 	*)
 	    ;;
@@ -287,33 +288,57 @@ case $PRJ_LICENSE in
 	;;
 esac
 
+if [ -n "$PRJ_SOURCE_VERSION_CONTROL" ];then
+    SVC=`echo $PRJ_SOURCE_VERSION_CONTROL | sed -e 's/\(.*\)/\U\1/g'`;
+    MANAGE_SOURCE_VERSION_CONTROL="MANAGE_SOURCE_VERSION_CONTROL_${SVC}()"
+fi
+
 generate_file CMakeLists.txt PRJ_NAME PRJ_AUTHORS PRJ_LICENSE PRJ_LICENSE_FILES\
-    PRJ_MAINTAINER PRJ_SOURCE_VERSION_CONTROL PRJ_SUMMARY\
-    PRJ_VENDOR PRJ_GROUP PRJ_SPEC_URL RPM_SPEC_SOURCES
+    PRJ_MAINTAINER PRJ_SOURCE_VERSION_CONTROL\
+    MANAGE_SOURCE_VERSION_CONTROL\
+    PRJ_SUMMARY PRJ_VENDOR PRJ_GROUP PRJ_SPEC_URL RPM_SPEC_SOURCES
+
+## Generate AUTHORS
+if [ ! -e AUTHORS ];then
+    echo "$PRJ_AUTHORS" | xargs -d ';' -n 1 >> AUTHORS
+fi
 
 ##############################
 # Source Version Control
 #
 
-## GIT
-if [ ! -r .gitignore ];then
-    touch .gitignore
-fi
+echo "PRJ_SOURCE_VERSION_CONTROL=$PRJ_SOURCE_VERSION_CONTROL"
+case $PRJ_SOURCE_VERSION_CONTROL in
+    git )
+	## GIT
+	if [ ! -r .gitignore ];then
+	    touch .gitignore
+	fi
 
-append_gitignore '*NO_PACK*'
-append_gitignore '*~'
-append_gitignore '**/CMakeFiles/'
-append_gitignore '**/_CPack_Packages/'
-append_gitignore '**/Testing/'
-append_gitignore '**/BUILD/'
-append_gitignore '**/BUILDROOT/'
-append_gitignore '**/RPMS/'
-append_gitignore '**/SPECS/'
-append_gitignore '**/SOURCES/'
-append_gitignore '**/SRPMS/'
-append_gitignore '**/FedPkg/'
-append_gitignore 'CMakeCache.txt'
-append_gitignore 'cmake_*install.cmake'
-append_gitignore 'CPack*Config.cmake'
-append_gitignore 'CTestTestfile.cmake'
+	append_gitignore '*NO_PACK*'
+	append_gitignore '*~'
+	append_gitignore '**/CMakeFiles/'
+	append_gitignore '**/_CPack_Packages/'
+	append_gitignore '**/Testing/'
+	append_gitignore '**/BUILD/'
+	append_gitignore '**/BUILDROOT/'
+	append_gitignore '**/RPMS/'	
+	append_gitignore '**/SPECS/'
+	append_gitignore '**/SOURCES/'
+	append_gitignore '**/SRPMS/'
+	append_gitignore '**/FedPkg/'
+	append_gitignore 'CMakeCache.txt'
+	append_gitignore 'cmake_*install.cmake'
+	append_gitignore 'CPack*Config.cmake'
+	append_gitignore 'CTestTestfile.cmake'
+
+	if [ ! -d Modules ];then
+	    if git clone http://git.fedorahosted.org/git/cmake-fedora.git; then
+		ln -s cmake-fedora/Modules .
+	    fi
+	fi
+	;;
+    *)
+	;;
+esac
 

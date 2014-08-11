@@ -346,6 +346,7 @@ MACRO(PACK_RPM)
     # RPM build commands and targets
 
     ADD_CUSTOM_TARGET_COMMAND(srpm
+	NO_FORCE
 	OUTPUT ${PRJ_SRPM_FILE}
 	COMMAND ${RPMBUILD_CMD} -bs ${_opt_SPEC}
 	--define '_sourcedir ${RPM_BUILD_SOURCES}'
@@ -355,10 +356,13 @@ MACRO(PACK_RPM)
 	DEPENDS ${_opt_SPEC} ${SOURCE_ARCHIVE_FILE}
 	COMMENT "srpm: ${PRJ_SRPM_FILE}"
 	)
+    ADD_DEPENDENCIES(srpm_no_force dist)
+    ADD_DEPENDENCIES(srpm dist)
 
     # Binary RPMs
     ADD_CUSTOM_TARGET_COMMAND(rpm
 	OUTPUT ${PRJ_RPM_FILES}
+	NO_FORCE
 	COMMAND ${RPMBUILD_CMD} --rebuild ${PRJ_SRPM_FILE}
 	--define '_rpmdir ${RPM_BUILD_RPMS}'
 	--define '_builddir ${RPM_BUILD_BUILD}'
@@ -366,15 +370,17 @@ MACRO(PACK_RPM)
 	DEPENDS ${PRJ_SRPM_FILE}
 	COMMENT "rpm: ${PRJ_RPM_FILES}"
 	)
+    ADD_DEPENDENCIES(rpm_no_force srpm_no_force)
+    ADD_DEPENDENCIES(rpm srpm)
 
     ADD_CUSTOM_TARGET(install_rpms
 	COMMAND find ${RPM_BUILD_RPMS}/${RPM_BUILD_ARCH}
 	-name '${PROJECT_NAME}*-${PRJ_VER}-${RPM_RELEASE_NO}.*.${RPM_BUILD_ARCH}.rpm' !
 	-name '${PROJECT_NAME}-debuginfo-${RPM_RELEASE_NO}.*.${RPM_BUILD_ARCH}.rpm'
 	-print -exec sudo rpm --upgrade --hash --verbose '{}' '\\;'
-	DEPENDS ${PRJ_RPM_FILES}
 	COMMENT "install_rpm: Install all rpms except debuginfo"
 	)
+    ADD_DEPENDENCIES(install_rpms rpm_no_force)
 
     ADD_CUSTOM_TARGET(rpmlint
 	COMMAND find .
