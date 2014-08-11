@@ -488,6 +488,7 @@ ENDFUNCTION(ZANATA_ZANATA_XML_DOWNLOAD)
 FUNCTION(ZANATA_ZANATA_XML_MAP_BETTER_MATCH var currentBestMatch serverLocale clientLocale)
     ZANATA_PARSE_LOCALE(sLang sScript sCountry sModifier sSCountry sSModifier "${serverLocale}")
     ZANATA_PARSE_LOCALE(cLang cScript cCountry cModifier cSCountry cSModifier "${clientLocale}") 
+    M_MSG(${M_INFO3} "ZANATA_ZANATA_XML_MAP_BETTER_MATCH( ${currentBestMatch} ${serverLocale} ${clientLocale})")
     IF("${sLang}" STREQUAL "${cLang}")
 	IF(currentBestMatch)
 	    ZANATA_PARSE_LOCALE(bLang bScript bCountry bModifier bSCountry bSModifier "${currentBestMatch}") 
@@ -500,7 +501,6 @@ FUNCTION(ZANATA_ZANATA_XML_MAP_BETTER_MATCH var currentBestMatch serverLocale cl
 		    SET(nowBest "${currentBestMatch}")
 		ENDIF()
 	    ELSEIF("${sSCountry}" STREQUAL "${cCountry}")
-		MESSAGE("## sModifier=${sModifier} sSModifier=${sSModifier} cModifier=${cModifier}")
 		IF("${sModifier}" STREQUAL "${cModifier}")
 		    SET(nowBest "${clientLocale}")
 		ELSEIF("${sSModifier}" STREQUAL "${cModifier}")
@@ -527,6 +527,12 @@ FUNCTION(ZANATA_ZANATA_XML_MAP zanataXml zanataXmlIn clientLocales)
     FILE(STRINGS "${zanataXmlIn}" zanataXmlLines)
     FILE(REMOVE ${zanataXml})
 
+    IF("${clientLocales}" STREQUAL "")
+	## Use client-side system locales.
+	MANAGE_GETTEXT_LOCALES(clientLocales "" SYSTEM_LOCALES)
+    ENDIF()
+    M_MSG(${M_INFO3} "clientLocales=${clientLocales}")
+
     ## Start parsing zanataXmlIn
     FOREACH(line ${zanataXmlLines})
 	IF("${line}" MATCHES "<locale>(.*)</locale>")
@@ -535,10 +541,6 @@ FUNCTION(ZANATA_ZANATA_XML_MAP zanataXml zanataXmlIn clientLocales)
 
 	    ## Find the best match
 	    SET(bestMatch "")
-	    IF("${clientLocales}" STREQUAL "")
-		## Use client-side system locales.
-		MANAGE_GETTEXT_LOCALES(clientLocales "" SYSTEM_LOCALES)
-	    ENDIF()	
 	    FOREACH(cL ${clientLocales})
 		ZANATA_ZANATA_XML_MAP_BETTER_MATCH(bestMatch "${bestMatch}" "${sL}" "${cL}")
 		M_MSG(${M_INFO3} "bestMatch=${bestMatch} sL=${sL} cL=${cL}")
