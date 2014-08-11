@@ -13,7 +13,7 @@ FUNCTION(ZANATA_PARSE_LOCALE_TEST expLanguage expScript expCountry expModifier e
     TEST_STR_MATCH(suggestModifier "${expSuggestModifier}")
 ENDFUNCTION(ZANATA_PARSE_LOCALE_TEST)
 
-ZANATA_PARSE_LOCALE_TEST("fr" "" "" "" "" "" "fr")
+ZANATA_PARSE_LOCALE_TEST("fr" "" "" "" "FR" "" "fr")
 ZANATA_PARSE_LOCALE_TEST("de" "" "DE"  "" "" "" "de_DE")
 ZANATA_PARSE_LOCALE_TEST("bem" "" "ZM" "" "" "" "bem_ZM")
 ZANATA_PARSE_LOCALE_TEST("zh" "Hans" "" "" "CN" "" "zh-Hans")
@@ -41,4 +41,7 @@ ZANATA_ZANATA_XML_MAP_BETTER_MATCH_TEST("zh_CN" "zh-TW" "zh-Hans" "zh_CN")
 ZANATA_ZANATA_XML_MAP_BETTER_MATCH_TEST("sr_RS@latin" "sr_RS" "sr-Latn" "sr_RS@latin")
 ZANATA_ZANATA_XML_MAP_BETTER_MATCH_TEST("sr_RS" "sr_RS@latin" "sr-Cyrl" "sr_RS")
 ZANATA_ZANATA_XML_MAP_BETTER_MATCH_TEST("sr_RS" "sr_RS" "sr-Cyrl" "sr_RS@latin")
+## fr imply fr_FR
+ZANATA_ZANATA_XML_MAP_BETTER_MATCH_TEST("fr_FR" "fr_BE" "fr" "fr_FR")
+ZANATA_ZANATA_XML_MAP_BETTER_MATCH_TEST("fr_FR" "fr_FR" "fr" "fr_BE")
 
