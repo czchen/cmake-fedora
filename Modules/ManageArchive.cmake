@@ -17,6 +17,10 @@
 #   - ManageVersion
 #   - CPack
 #
+# Targets:
+#   - pack_src_pre: Target that depends on other targets that need to be made
+#       before pack_src.
+#
 # Defines following functions:
 #   SOURCE_ARCHIVE_CONTENTS_ADD(<filename>)
 #   - Add a file to source archive if the file is not in the archive.
@@ -83,6 +87,10 @@ SET(SOURCE_ARCHIVE_IGNORE_FILES
 
 INCLUDE(ManageVersion)
 INCLUDE(ManageFile)
+
+ADD_CUSTOM_TARGET(pack_src_pre
+    COMMENT "pack_src_pre: Before pack_src"
+    )
 
 FUNCTION(SOURCE_ARCHIVE_CONTENTS_SET value)
     SET(SOURCE_ARCHIVE_CONTENTS "${value}" CACHE INTERNAL "Source archive file list")
@@ -280,34 +288,29 @@ MACRO(PACK_SOURCE_ARCHIVE)
 	    )
 	LIST(APPEND _dep_list ${_outputDir_real})
     ENDIF(_own_dir)
-    SET(_make_targets COMMAND make package_source)
-    IF(TARGET test)
-	LIST(INSERT _make_targets 0 COMMAND make test)
-    ENDIF(TARGET test)
 
-    ## If own, need to move to it.
+    ADD_DEPENDENCIES(pack_src_pre changelog)
+    ## If own, need to move to it
+    SET(moveCommands "")
+
     IF(_own)
-	ADD_CUSTOM_TARGET_COMMAND(pack_src
-	    NO_FORCE
-	    OUTPUT ${SOURCE_ARCHIVE_FILE}
-	    COMMAND make changelog
-	    COMMAND make package_source
+	SET(moveCommands 
 	    COMMAND ${CMAKE_COMMAND} -E copy "${_source_archive_file}" "${SOURCE_ARCHIVE_FILE}"
 	    COMMAND ${CMAKE_COMMAND} -E remove "${_source_archive_file}"
-	    DEPENDS  ${_dep_list}
-	    COMMENT "Packing the source as: ${SOURCE_ARCHIVE_FILE}"
-	    VERBATIM
-	    )
-    ELSE(_own)
-	ADD_CUSTOM_TARGET_COMMAND(pack_src
-	    NO_FORCE
-	    OUTPUT ${SOURCE_ARCHIVE_FILE}
-	    COMMAND make package_source
-	    DEPENDS  ${_dep_list}
-	    COMMENT "Packing the source as: ${SOURCE_ARCHIVE_FILE}"
-	    VERBATIM
 	    )
     ENDIF(_own)
+    ADD_CUSTOM_TARGET_COMMAND(pack_src
+	NO_FORCE
+	OUTPUT ${SOURCE_ARCHIVE_FILE}
+	COMMAND make changelog
+	COMMAND make package_source
+	${moveCommands}
+	DEPENDS  ${_dep_list}
+	COMMENT "Packing the source as: ${SOURCE_ARCHIVE_FILE}"
+	VERBATIM
+	)
+
+    ADD_DEPENDENCIES(pack_src pack_src_pre)
 
     ADD_CUSTOM_TARGET(dist
 	DEPENDS ${SOURCE_ARCHIVE_FILE}
