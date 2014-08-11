@@ -10,9 +10,6 @@
 #   - ManageMessage
 #   - ManageString
 #
-# Read following variables:
-#   - MANAGE_TRANSLATION_LOCALES: Locales that would be processed.
-#
 # Define following functions:
 #   MANAGE_ZANATA([<serverUrl>] [YES]
 #       [DEFAULT_PROJECT_TYPE <projectType>]
@@ -76,8 +73,7 @@
 #           Default: mvn -e
 #         + LOCALES locales: Locales to sync with Zanata.
 #             Specify the locales to sync with this Zanata server.
-#             If not specified, it uses MANAGE_TRANSLATION_LOCALES,
-#             which is produced by MANAGE_POT_FILE.
+#             If not specified, it uses client side system locales.
 #         + SRC_DIR dir: (Optional) Directory to put source documents 
 #             (e.g. .pot).
 #           Default: CMAKE_CURRENT_SOURCE_DIR
@@ -259,9 +255,6 @@ FUNCTION(MANAGE_ZANATA)
 	SET(zanataXml "${_o_PROJECT_CONFIG}")
     ELSE()
 	SET(zanataXml "${CMAKE_CURRENT_SOURCE_DIR}/zanata.xml")
-    ENDIF()
-    IF(NOT _o_LOCALES)
-	SET(_o_LOCALES "${MANAGE_TRANSLATION_LOCALES}")
     ENDIF()
     IF(DEFINED _o_GENERATE_ZANATA_XML)
 	ADD_CUSTOM_TARGET_COMMAND(zanata_xml
