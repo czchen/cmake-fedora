@@ -1,3 +1,10 @@
+* Tue Aug 12 2014 Ding-Yi Chen <dchen at redhat.com> - 2.1.1
+- Fixed Bug 1093336 - date(1): -u is much portable than --utc
+- Fixed Bug 1002279 - Project configuration bugs when using cmake-fedora-newprj 
+- cmake-fedora-newprj: Correct git repo URL
+- ManageZanata: Fix zanata.xml suggest countries.
+ 
+
 * Mon Aug 11 2014 Ding-Yi Chen <dchen at redhat.com> - 2.1.0
 - Fixed Bug 1093336 - date(1): -u is much portable than --utc
 - Fix EPEL 7 support.

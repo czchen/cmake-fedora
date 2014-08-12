@@ -1,164 +1,204 @@
+[[PageOutline]]
+
+= Welcome to cmake-fedora =
 cmake-fedora consists a set of scripts and cmake modules that simply the
 release process of a *nix software package,  especially for
 Fedora and EPEL.
 
 = Motivation =
 cmake-fedora is designed to relieve your from chores of releasing software by:
- * Keeping the consistency of release information such as version and update
-   messages in:
-   * Release notes
-   * ChangeLog
-   * Tags
-   * Spec file
-   * Fedpkg commit message
-   * Bodhi notes
- * Source archive depends on the files to be packed.
- * Run rpmlint and koji scratch build before tag as sanity checks.
- * Easy upload to scp, sftp hosting services sites.
- * Translation targets like gettext and Zanata.
- * Provide license information and templates of CMakeLists.txt,
-   spec files for new packages.
+* Keeping the consistency of release information such as version and update
+messages in:
+* Release notes
+* !ChangeLog
+* Tags
+* Spec file
+* Fedpkg commit message
+* Bodhi notes
+* Source archive depends on the files to be packed.
+* Run rpmlint and koji scratch build before tag as sanity checks.
+* Easy upload to scp, sftp hosting services sites.
+* Translation targets like gettext and Zanata.
+* Provide license information and templates of CMakeLists.txt,
+    spec files for new packages.
 
-while avoid some pitfalls like all junk files are packed.
+    while avoid some pitfalls like all junk files are packed.
 
-= Get cmake-fedora =
-From git:
+    = Get cmake-fedora =
+    == Git ==
+
 {{{
     git clone http://git.fedorahosted.org/git/cmake-fedora.git
-}}}
+  }}}
 
+== Source Archive ==
 Source archive download page:
 https://fedorahosted.org/releases/c/m/cmake-fedora/
 
-Note that cmake-fedora-<version>-Source.tar.gz contains the full cmake-fedora,
-which includes cmake modules, helper scripts and others;
-while cmake-fedora-<version>-modules-only.tar.gz contains only the cmake modules.
+You can download the modules-only archive: cmake-fedora-<version>-modules-only.tar.gz
 
+or the full archive that also include helper scripts and documentation: cmake-fedora-<version>.tar.gz 
 
 = Install =
 cmake-fedora can be installed as a Fedora/EPEL package using:
- {{{
-   yum -y install cmake-fedora
- }}}
-
- Alternatively, you can install cmake-fedora for the package as:
-  * Git submodule:
 {{{
-      git submodule init; git submodule update
-     ln -s cmake-fedora/Modules .
-}}}
-  * Extracted Module-only source archives:
+    yum -y install cmake-fedora
+  }}}
+
+Alternatively, you can install cmake-fedora for the package as:
+* Git submodule:
+{{{
+    git submodule init; git submodule update
+	ln -s cmake-fedora/Modules .
+  }}}
+* Extracted Module-only source archives:
 {{{
     wget -P SOURCES https://fedorahosted.org/releases/c/m/cmake-fedora/cmake-fedora-modules-only-latest.tar.gz
 	tar zxvf SOURCES/cmake-fedora-modules-only-latest.tar.gz")
-}}}
+  }}}
+
 
 = Work flow =
-== Setting files ==
 
-There are 3 important files:
+== Starting a new project ==
 
-CMakeLists.txt:
-    cmake build instruction file. Edit it as you normally do with CMake projects.
-    Note that project persistent information like project name, authors, licenses and project summary should also be written here.
+=== 1. Edit CMakeLists.txt ====
+cmake build instruction file. Edit it as you normally do with CMake projects.
+It should contains note that project persistent information like project name, authors, licenses and project summary.
 
-SPECS/project.spec.in:
-    RPM SPEC template. You can tailor your rpm building need with this file.
+`cmake-fedora-newprj` can create CMakeLists.txt if it does not already exists, and helps to configure the basic
+document like AUTHORS and COPYING.
 
-RELEASE_NOTES.txt:
-    Release note. Information for certain release, like version, change summary, and change items.
+=== 2. Edit RELEASE-NOTES.txt ====
+This is file you put the version, change summary, !ChangeLog, Bugzilla Bug ID or anything about the upcoming versions/releases.
 
-CMakeLists.txt and SPECS/project.spec.in are meant to be persistent, so no
-need to change them after the initial setup.
-RELEASE_NOTES.txt, however, do need to be updated on each release.
-
-== Initial Setup of cmake-edora ==
-
- 1. Backup the cmake-fedora related setting files, for existing projects:
+It looks like:
 {{{
-mv CMakeLists.txt CMakeLists.txt.orig
-mv COPYING COPYING.orig
-mv ChangeLog ChangeLog.orig
-}}}
- 2. Run cmake-fedora-newprj.sh <projName> script to create project skeleton. This will generate following files:
-   * CMakeLists.txt
-   * RELEASE-NOTES.txt
-   * SPECS/project.spec.in
-   * COPYING (and COPYING.LESSER for LGPL)
- 3. Merge the Backup the cmake-fedora related setting files.
+    PRJ_VER=0.1.0
+	SUMMARY=Summary of this version
+	REDHAT_BUGZILLA=XXXXXXXX,YYYYYYY
+	[Changes]
+	- Fixed Bug XXXXXXX - bug description
+	- Fixed Bug YYYYYYY - bug description
+	- other improvement
+
+  }}} 
+
+=== 3. Develop as you normally would ===
+=== 4. Translation (Optional) ===
+Following are recommend steps to use gettext to translate your project:
+
+1. Create a sub directory 'po'
+2. Edit 'po/CmakeLists.txt' 
+{{{
+    INCLUDE(ManageTranslation)
+	INCLUDE(ManageZanata)
+
+	SET(SOURCES_I18N ${CMAKE_SOURCE_DIR}/src/IBusChewingEngine.gob
+		${CMAKE_SOURCE_DIR}/src/IBusChewingEngine-input-events.c
+		${CMAKE_SOURCE_DIR}/src/IBusChewingEngine-def.c 
+		${CMAKE_SOURCE_DIR}/src/main.c)
+
+	MANAGE_GETTEXT(ALL SRCS ${SOURCES_I18N})
+
+	MANAGE_ZANATA("https://translate.zanata.org/zanata/" 
+		YES
+		VERSION "master"
+		GENERATE_ZANATA_XML
+		)
+
+	ADD_DEPENDENCIES(pack_src_pre translations)
+  }}}
+3. `make pot_files` to generate .pot files
+4. (Optional) `make zanata_xml` for Zanata setting files.
+5. (Optional) `make zanata_push` to push the documents to Zanata for translation.
+6. Receive .po files from either translators. Or use `make zanata_pull` 
+7. `make translations`
+
+=== 5. Release the initial version ===
+After commit the last change, just run `make release`
+
+make release should:
+1. Create a source archive
+2. Create a source RPM and binary RPMs.
+3. Run rpmlint and koji scratch build to ensure it build in Koji
+4. Tag the source tree in given version
+5. Do the fedpkg import, commit, push and build for the fedora release you want.
+6. Do the bodhi update.
 
 == Release a new version with cmake-fedora ==
+
 When a release is ready, only need to update the RELEASE_NOTES.txt by fill in:
- * The new version
- * Summary of this release
- * Type of this release (default is bugfix)
- * What Bug this release actually fixed.
- * The detail list of changes under section [Changes]
+* The new version
+    * Summary of this release
+* Type of this release (default is bugfix)
+    * What Bug this release actually fixed.
+    * The detail list of changes under section [Changes]
 
-After finish RELEASE_NOTES.txt, usually a make release is sufficient.
-make release should:
- 1. Create a source archive
- 2. Create a source RPM and binary RPMs.
- 3. Run rpmlint and koji scratch build to ensure it build in Koji
- 4. Tag the source tree in given version
- 5. Do the fedpkg import, commit, push and build for the fedora release you want.
- 6. Do the bodhi update.
+    No need to edit CMakeLists.txt again.
 
-You can also use make upload to upload files to hosting services by "make upload"
+    Start from Step 2 in previous section.
 
-After make release is completed, run the make after_release_commit to do the
-post-release chores like copy the current ChangeLog as ChangeLog.prev.
+    == Useful targets ==
+    pot_files::
+    Generate pot files for translation.
 
-== Useful targets ==
- pot_file:
-    Generate pot file for translation.
-
- gmo_files:
+    gmo_files::
     Generate gmo files for translation.
 
- pack_src:
+    pack_src::
     Create a source archive
 
- srpm:
+    srpm::
     Create a source RPM
 
- rpm:
+    rpm::
     Create a source RPM and binary rpms
 
- rpmlint:
+    rpmlint::
     Run rpmlint for all RPM files
 
- install_rpms:
+    install_rpms::
     Install all the binary rpms except the debuginfo
 
- koji_build_scratch:
+    koji_build_scratch::
     Run the koji scratch build for all targeted Fedora/EPEL release.
 
- upload:
+    upload::
     upload files to hosting services
 
- tag:
+    tag::
     Tag the current source tree with the version specified in RELEASE_NOTES.txt
 
- fedpkg_<release>_build:
-    Run the fedpkg build for the Fedora/EPEL release.
+    fedpkg_build::
+    Run the fedpkg build for the specified Fedora/EPEL releases.
 
- release_fedora:
+    release_fedora::
     Release for Fedora and/or EPEL
 
- release:
+    release:
     Run the release process. release_fedora will be invoked if Fedora build support is enabled.
 
- after_release_commit:
-    Run the post-release chores like copy the current ChangeLog as ChangeLog.prev.
-
- clean_pkg:
+    clean_pkg::
     Remove all the source archive and RPM files.
 
-= Submit Bug Reports or Feature Requests =
-Please either submit a new bug in Red Hat Bugzilla
-https://bugzilla.redhat.com/enter_bug.cgi?format=guided&product=Fedora&component=cmake-fedora
+    = Submit Bug Reports or Feature Requests =
+    Please either submit 
+    [https://bugzilla.redhat.com/enter_bug.cgi?format=guided&product=Fedora&component=cmake-fedora a new bug in Red Hat Bugzilla]
 
-or create a new ticket in FedoraHosted
-https://fedorahosted.org/cmake-fedora/newticket
+    or create [https://fedorahosted.org/cmake-fedora/newticket a new ticket in FedoraHosted]
+
+    = TODO =
+    * Project generate script
+    * Import old spec
+    * GUI
+
+    * RPM
+    * PRJ_RPM_FILES actually list all the binary RPM files.
+
+    * Hosting support
+    * `GitHub`
+
+    * Support other distribution
+    * Debian/Ubuntu
 
