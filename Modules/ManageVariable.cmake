@@ -23,8 +23,13 @@
 #           Default value: "="
 #
 # Defines following macros:
-#   CMAKE_FEDORA_CONF_GET_ALL_VARIABLES()
+#   CMAKE_FEDORA_CONF_GET_ALL_VARIABLES([NOUNQUOTE] [NOREPLACE] [NOESCAPE_SEMICOLON])
 #     - Get all variables from cmake-fedora.conf
+#       * Parameters:
+#         + NOUNQUOTE: (Optional) do not remove the double quote mark around the string.
+#         + NOREPLACE (Optional) Without this parameter, this macro replaces
+#           previous defined variables, use NOREPLACE to prevent this.
+#         + NOESCAPE_SEMICOLON: (Optional) Do not escape semicolons.
 #
 #   SETTING_FILE_GET_VARIABLES_PATTERN(<var> <key_pattern> <setting_file> 
 #       [NOUNQUOTE] [NOREPLACE]
@@ -192,7 +197,7 @@ ENDFUNCTION(SETTING_STRING_GET_VARIABLE var str)
 MACRO(CMAKE_FEDORA_CONF_GET_ALL_VARIABLES)
     MANAGE_CMAKE_FEDORA_CONF(CMAKE_FEDORA_CONF)
     SET(HOME "$ENV{HOME}")
-    SETTING_FILE_GET_ALL_VARIABLES(${CMAKE_FEDORA_CONF})
+    SETTING_FILE_GET_ALL_VARIABLES(${CMAKE_FEDORA_CONF} ${ARGN})
 ENDMACRO(CMAKE_FEDORA_CONF_GET_ALL_VARIABLES)
 
 # Internal macro

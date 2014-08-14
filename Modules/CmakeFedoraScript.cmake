@@ -5,12 +5,12 @@
 MACRO(CMAKE_FEDORA_SCRIPT_PRINT_USAGE)
     MESSAGE("cmake-fedora utility scripts
 
-cmake -Dcmd=configure_file 
-      -DinputFile=<inputFile> -DoutputFile=<outputFile>
-      [-DatOnly=1]
-      [-Dcmake_fedora_module_dir=<dir>]
-      [-Descape_quotes=1]
-      [\"-D<VAR>=<VAULE>\"]
+cmake -D cmd=configure_file 
+      -D inputFile=<inputFile> -D outputFile=<outputFile>
+      [-D atOnly=1]
+      [-D cmake_fedora_module_dir=<dir>]
+      [-D escape_quotes=1]
+      [\"-D <VAR>=<VAULE>\"]
     -P <CmakeModulePath>/CmakeFedoraScript.cmake
   Copy a file to another location and modify its contents.
   This is a wrapper of CONFIGURE_FILE command in cmake.
@@ -18,32 +18,32 @@ cmake -Dcmd=configure_file
   Note: Please pass the necessary variables via -Dvar=VALUE,
     e.g. -DPROJECT_NAME=cmake-fedora
   Options:
-    -DinputFile: input file
-    -DoutPutFile: output file
-    -DatOnly: Replace only the variables surround by '@', like @VAR@.
+    inputFile: input file
+    outPutFile: output file
+    atOnly: Replace only the variables surround by '@', like @VAR@.
       Same as passing '@ONLY' to CONFIGURE_FILE.
-    -Dcmake_fedora_module_dir:
+    cmake_fedora_module_dir:
       Specify this if cmake and cmake-fedora failed to find 
       the location of CMake Fedora modules. 
-    -Descape_quotes: Substituted quotes will be C-style escape.
+    escape_quotes: Substituted quotes will be C-style escape.
       Same as passing 'ESCAPE_QUOTES' to CONFIGURE_FILE.
     
-cmake -Dcmd=find_file|find_program \"-Dnames=<name1;name2>\"
-      [-Dcmake_fedora_module_dir=<dir>]
-      [-Dpaths=\"<path1>;<path2>\"]
-      [-Derror_msg=<msg>]
-      [-Dverbose_level=<verboseLevel>]
-      [-Dno_default_path=1]
+cmake -D cmd=find_file|find_program -D \"names=<name1;name2>\"
+      [-D cmake_fedora_module_dir=<dir>]
+      [-D paths=\"<path1>;<path2>\"]
+      [-D error_msg=<msg>]
+      [-D verbose_level=<verboseLevel>]
+      [-D no_default_path=1]
     -P <CmakeModulePath>/CmakeFedoraScript.cmake
   Find a file or program with name1 or name2, 
     with proper error handling.
   Options:
-    -Dcmake_fedora_module_dir:
+    cmake_fedora_module_dir:
       Specify this if cmake and cmake-fedora failed to find 
       the location of CMake Fedora modules. 
-    -Dpaths: Paths that files might be located.
-    -Derror_msg: Error message to be shown if not-found.
-    -Dverbose_level: Verbose level for not-found message.
+    paths: Paths that files might be located.
+    error_msg: Error message to be shown if not-found.
+    verbose_level: Verbose level for not-found message.
       1: Critical (The 'not found' message is shown as critical)
       2: Error (The 'not found' message is shown as error)
       3: Warning (The 'not found' message is shown as warning)
@@ -53,29 +53,35 @@ cmake -Dcmd=find_file|find_program \"-Dnames=<name1;name2>\"
       6: Info2
       7: Info3
       Default: 3 (Warning)
-    -Dno_default_path: CMake default paths will not be search.
+    no_default_path: CMake default paths will not be search.
       Useful if you only want to search the file list in -Dpaths.
 	   
-cmake -Dcmd=manage_file_cache \"-Drun=<command arg1 ...>\"
-      -Dcache_file=<cacheFileWithoutDirectory>
-      [-Dcmake_fedora_module_dir=<dir>]
-      [-Dexpiry_seconds=seconds]
-      [-Dcache_dir=dir]
+cmake -D cmd=manage_file_cache -D \"run=<command arg1 ...>\"
+      -D cache_file=<cacheFileWithoutDirectory>
+      [-D cmake_fedora_module_dir=<dir>]
+      [-D expiry_seconds=seconds]
+      [-D cache_dir=dir]
     -P <CmakeModulePath>/CmakeFedoraScript.cmake
   Output from either cache file or run command.
   Command is run when 1) cache expired or 2) no cache.
   Cache will be update after run command.
+  Options:
+    run=<command arg1 ...>: The command that provide output.
+    cache_file=<file>: The path to cache file.
+    cmake_fedora_module_dir=<dir>:
+      Specify this if cmake and cmake-fedora failed to find 
+      the location of CMake Fedora modules. 
+    expiry_seconds=<seconds>: After <seconds> the cache should expired.
+    cache_dir=<dir>: The directory to put cache.
 
-cmake -Dcmd=get_cmake_cache_variable -Dvar=<varName>
-      -Dcmake_cache=<CMakeCache.txt>
-      [-Dcmake_fedora_module_dir=<dir>]
-    -P <CmakeModulePath>/CmakeFedoraScript.cmake
-  Get variable value from CMakeCache.txt
 
-cmake -Dcmd=get_variable -Dvar=<varName>
-      [-Dcmake_fedora_module_dir=<dir>]
+cmake -D cmd=get_variable -Dvar=<varName>
+      [-D noescape_semicolon=1]
     -P <CmakeModulePath>/CmakeFedoraScript.cmake
   Get variable value from cmake-fedora.conf.
+  Options:
+    noescape_semicolon=1: Do not escape semicolon, 
+    so ';' split strings can be interpreted as list.
 
 ")
 ENDMACRO(CMAKE_FEDORA_SCRIPT_PRINT_USAGE)
@@ -161,21 +167,16 @@ FUNCTION(MANAGE_FILE_CACHE_SCRIPT)
     M_OUT("${v}")
 ENDFUNCTION(MANAGE_FILE_CACHE_SCRIPT)
 
-FUNCTION(CMAKE_FEDORA_GET_CMAKE_CACHE_VARIABLE_SCRIPT)
-    IF(NOT var)
-	CMAKE_FEDORA_SCRIPT_PRINT_USAGE()
-	M_MSG(${M_FATAL} "Requires -Dvar=<variable>")
-    ENDIF(NOT var)
-    CMAKE_FEDORA_CONF_GET_ALL_VARIABLES()
-    M_OUT("${${var}}")
-ENDFUNCTION(CMAKE_FEDORA_GET_CMAKE_CACHE_VARIABLE_SCRIPT)
-
 FUNCTION(CMAKE_FEDORA_GET_VARIABLE_SCRIPT)
     IF(NOT var)
 	CMAKE_FEDORA_SCRIPT_PRINT_USAGE()
 	M_MSG(${M_FATAL} "Requires -Dvar=<variable>")
     ENDIF(NOT var)
-    CMAKE_FEDORA_CONF_GET_ALL_VARIABLES()
+    SET(opts)
+    IF(noescape_semicolon)
+	LIST(APPEND opts "NOESCAPE_SEMICOLON")
+    ENDIF()
+    CMAKE_FEDORA_CONF_GET_ALL_VARIABLES(${opts})
     M_OUT("${${var}}")
 ENDFUNCTION(CMAKE_FEDORA_GET_VARIABLE_SCRIPT)
 
@@ -221,8 +222,6 @@ ELSEIF(cmd STREQUAL "configure_file")
     CONFIGURE_FILE_SCRIPT()
 ELSEIF(cmd STREQUAL "manage_file_cache")
     MANAGE_FILE_CACHE_SCRIPT()
-ELSEIF(cmd STREQUAL "get_cmake_cache_variable")
-    CMAKE_FEDORA_GET_CMAKE_CACHE_VARIABLE_SCRIPT()
 ELSEIF(cmd STREQUAL "get_variable")
     CMAKE_FEDORA_GET_VARIABLE_SCRIPT()
 ELSE()

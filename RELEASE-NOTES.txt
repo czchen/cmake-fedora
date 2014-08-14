@@ -1,9 +1,9 @@
-PRJ_VER=2.1.1
-SUMMARY=zanata_xml generation script is fixed
+PRJ_VER=2.1.2
+SUMMARY=Fixed the bodhi targets as Fedora-21 and EPEL-7 are not yet in bodhi.
 REDHAT_BUGZILLA=1002279,1093336
 [Changes]
 - Fixed Bug 1093336 - date(1): -u is much portable than --utc
 - Fixed Bug 1002279 - Project configuration bugs when using cmake-fedora-newprj 
-- cmake-fedora-newprj: Correct git repo URL
-- ManageZanata: Fix zanata.xml suggest countries.
+- ManageVariable: CMAKE_FEDORA_CONF_GET_ALL_VARIABLES are now accepting the same 
+    parameters as SETTING_FILE_GET_ALL_VARIABLES
  
