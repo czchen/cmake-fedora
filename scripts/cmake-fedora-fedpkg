@@ -135,7 +135,7 @@ echo "BODHI_USER=$BODHI_USER"
 
 WORK_DIR=${FEDPKG_DIR:-$PWD}
 MSG=
-BODHI_OPTS=
+BODHI_OPTS=()
 UPDATE_TYPE=
 
 while getopts "hb:d:m:t:" opt;do
@@ -179,7 +179,7 @@ if [[ ! -r "$SRPM" ]];then
 fi
 
 if [[ -n "$BUGS" ]];then
-    BODHI_OPTS+=" --bugs $BUGS"
+    BODHI_OPTS+=(--bugs $BUGS)
 fi
 
 if [[ ! -w $WORK_DIR ]];then
@@ -229,47 +229,28 @@ cd $NAME
 echo "Pulling $NAME..." > /dev/stderr
 fedpkg pull
 
-## Interset between existing and active fedpkg branches
-FEDPKG_BRANCHES_ACTIVE=(`$CMAKE_FEDORA_KOJI_CMD git-branch $@ | xargs ` )
+## Interset between existing and koji fedpkg branches
+FEDPKG_BRANCHES_KOJI=(`$CMAKE_FEDORA_KOJI_CMD git-branch $@ | xargs ` )
 FEDPKG_BRANCHES_EXISTING=(` fedpkg switch-branch | grep origin | sed -e  's|^\s*origin/||' | xargs` )
-declare -a FEDPKG_BRANCHES
-for activeBranch in "${FEDPKG_BRANCHES_ACTIVE[@]}"; do
+declare -a FEDPKG_BRANCHES=(master)
+for activeBranch in "${FEDPKG_BRANCHES_KOJI[@]}"; do
     if contains_element "${activeBranch}" "${FEDPKG_BRANCHES_EXISTING[@]}";then
 	FEDPKG_BRANCHES+=(${activeBranch})
     fi
 done
 echo -n "Branches to process:"
 (IFS=' ' echo "${FEDPKG_BRANCHES[@]}")
-first=
 bodhiPushList=
+first=
 
 for b in "${FEDPKG_BRANCHES[@]}";do
-    bodhi_branch=
-
     if [[ -z "$first" ]];then
 	first=$b
     fi
+    
+    koji_buildinfo_suffix=`$CMAKE_FEDORA_KOJI_CMD koji-buildinfo-suffix $b`
 
-    case $b in
-	master )
-	    bodhi_branch=`$CMAKE_FEDORA_KOJI_CMD branch rawhide | sed -e 's/^f/fc/'`
-	    ;;
-	f* )
-	    bodhi_branch=`echo $b | sed -e 's/^f/fc/'`
-	    ;;
-	el* )
-	    bodhi_branch=$b
-	    ;;
-	epel* )
-	    bodhi_branch=$b
-	    ;;
-	* )
-	    echo "Invalid branch name: $b" > /dev/stderr
-	    exit 4
-	    ;;
-    esac
-
-    target="$NVR.$bodhi_branch"
+    target="$NVR.$koji_buildinfo_suffix"
     fedpkg switch-branch $b
     echo -n "Has $target already been built in koji? ... " > /dev/stderr
     if is_target_built $target ;then
@@ -287,7 +268,9 @@ for b in "${FEDPKG_BRANCHES[@]}";do
 	fedpkg build
     fi
 
-    if [[ ! "$b" = "master" ]];then
+    bodhi_branch=``$CMAKE_FEDORA_KOJI_CMD bodhi-branch $b`
+
+    if [[ -n "$bodhi_branch" ]];then
 	echo -n "Has $target already in bodhi? ... " > /dev/stderr
 	if is_target_in_bodhi $target ; then
 	    echo "yes, skip this." > /dev/stderr
@@ -299,7 +282,7 @@ for b in "${FEDPKG_BRANCHES[@]}";do
 done
 
 if [[ -n "$bodhiPushList" ]];then
-    bodhi -n $BODHI_OPTS -t $UPDATE_TYPE -u $BODHI_USER -N "$CHANGELOGTEXT" -R testing $bodhiPushList
+    bodhi -n "${BODHI_OPTS[@]}" -t $UPDATE_TYPE -u $BODHI_USER -N "$CHANGELOGTEXT" -R testing $bodhiPushList
 else
     echo "Nothing to push to bodhi." > /dev/stderr
 fi

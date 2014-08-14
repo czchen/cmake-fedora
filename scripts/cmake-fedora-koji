@@ -20,7 +20,10 @@ DESCRIPTION
             Return branch names by removing '-candidate' from koji 
 	    targets, such as "f21 f20 epel7 el6"
 
-        git-branch 
+	koji-buildinfo-suffix
+	    Return the tags for koij buildinfo, such as "fc22 fc21 el7 el6"
+
+	git-branch 
             Return fedpkg git branch names, such as "master f20 epel7 el6"
 
         bodhi-branch
@@ -74,7 +77,7 @@ END
 }
 
 function get_variable(){
-    cmake -Dcmd=get_variable -Dvar=$1 -P ${CMAKE_FEDORA_SCRIPT_CMAKE}
+    cmake -Dcmd=get_variable -Dvar=$1 -Dnoescape_semicolon=1 -P ${CMAKE_FEDORA_SCRIPT_CMAKE}
 }
 
 function manage_cache(){
@@ -116,7 +119,7 @@ function get_fedora_nr_branches(){
 }
 
 function get_epel_branches(){
-get_koji_list_targets | awk '{if ($1 ~ "^e(pe)?l[0-9]+-candidate$") print $1}' | sed -e 's/-.*$//' |  sort -r
+    get_koji_list_targets | awk '{if ($1 ~ "^e(pe)?l[0-9]+-candidate$") print $1}' | sed -e 's/-.*$//' |  sort -r
 }
 
 # Check for dependency
@@ -219,6 +222,9 @@ if [[ -z "$1" ]];then
 else
     for scopeCmd in $@;do
 	case $scopeCmd in
+	    'master' )
+		rawhide=1
+		;;
 	    'rawhide' )
 		rawhide=1
 		;;
@@ -249,35 +255,18 @@ else
 		;;
 	    f[0-9]* )
 		if [[ $fedora -eq 0 ]];then
-		    if [[ -z "$fedoraList" ]];then
-			fedoraList="$scopeCmd"
-		    else
-			fedoraList="$fedoraList $scopeCmd"
-		    fi
+		    fedoraList+=($scopeCmd)
 		fi
 		;;
 	    el[0-9]* )
 		if [[ $epel -eq 0 ]];then
-		    if [ ${scopeCmd#el} -gt 6 ];then
-			scopeCmd="epel${scopeCmd#el}"
-		    fi
-		    if [[ -z "$epelList" ]];then
-			epelList="$scopeCmd"
-		    else
-			epelList="$epelList $scopeCmd"
-		    fi
+		    epelList+=($scopeCmd)
 		fi
 		;;
 	    epel[0-9]* )
 		if [[ $epel -eq 0 ]];then
-		    if [ ${scopeCmd#epel} -le 6 ];then
-			scopeCmd="el${scopeCmd#epel}"
-		    fi
-		    if [[ -z "$epelList" ]];then
-			epelList="$scopeCmd"
-		    else
-			epelList="$epelList $scopeCmd"
-		    fi
+		    scopeCmd="el${scopeCmd#epel}"
+		    epelList+=($scopeCmd)
 		fi
 		;;
 	    * )
@@ -289,55 +278,49 @@ fi
 
 RAWHIDE_BRANCH=`get_RAWHIDE_BRANCH`
 
-FEDORA_NR_BRANCHES=`get_fedora_nr_branches`
-FEDORA_TMP_FILE=`mktemp /tmp/cmake-fedora.fedora.XXXX.tmp`
+FEDORA_NR_BRANCHES_ALL=(`get_fedora_nr_branches `)
+FEDORA_NR_BRANCHES_SCOPE=
 if [[ $fedora_nr -eq 1 ]];then
-    echo -e "$FEDORA_NR_BRANCHES" > $FEDORA_TMP_FILE
+    FEDORA_NR_BRANCHES_SCOPE=(${FEDORA_NR_BRANCHES_ALL[@]})
 else
     if [[ $fedora_1 -eq 1 ]];then
-	(echo -e "$FEDORA_NR_BRANCHES" | head -n 1) >> $FEDORA_TMP_FILE
+	FEDORA_NR_BRANCHES_SCOPE=(${FEDORA_NR_BRANCHES_ALL[0]})
     fi
     if [[ $fedora_2 -eq 1 ]];then
-	(echo -e "$FEDORA_NR_BRANCHES" | head -n 2 | tail -n 1 ) >> $FEDORA_TMP_FILE
+	FEDORA_NR_BRANCHES_SCOPE+=(${FEDORA_NR_BRANCHES_ALL[1]})
     fi
-    for f in $fedoraList;do 
-	echo $f >> $FEDORA_TMP_FILE
+    for f in "${fedoraList[@]}";do 
+	FEDORA_NR_BRANCHES_SCOPE+=($f)
     done
-    buf=`sort -r -u $FEDORA_TMP_FILE`
-    echo -e "$buf" > $FEDORA_TMP_FILE
+    IFS=$'\n' FEDORA_NR_BRANCHES_SCOPE=($(sort -r -u <<<"${FEDORA_NR_BRANCHES_SCOPE[*]}"))
 fi
 
-EPEL_BRANCHES=`get_epel_branches`
-EPEL_TMP_FILE=`mktemp /tmp/cmake-fedora.epel.XXXX.tmp`
+EPEL_BRANCHES_ALL=(`get_epel_branches`)
+EPEL_BRANCHES_SCOPE=
 if [[ $epel -eq 1 ]];then
-    echo -e "$EPEL_BRANCHES" > $EPEL_TMP_FILE
+    EPEL_BRANCHES_SCOPE=(${EPEL_BRANCHES_ALL[@]})
 else
     if [[ $epel_1 -eq 1 ]];then
-	(echo -e "$EPEL_BRANCHES" | head -n 1) >> $EPEL_TMP_FILE
+	EPEL_BRANCHES_SCOPE+=(${EPEL_BRANCHES_ALL[0]})
     fi
     if [[ $epel_2 -eq 1 ]];then
-	(echo -e "$EPEL_BRANCHES" | head -n 2 | tail -n 1) >> $EPEL_TMP_FILE
+	EPEL_BRANCHES_SCOPE+=(${EPEL_BRANCHES_ALL[1]})
     fi
-    for e in $epelList;do 
-	echo $e >> $EPEL_TMP_FILE
+    for f in "${epelList[@]}";do 
+	EPEL_BRANCHES_SCOPE+=($f)
     done
-    buf=`sort -r -u $EPEL_TMP_FILE`
-    echo -e "$buf" > $EPEL_TMP_FILE
+    IFS=$'\n' EPEL_BRANCHES_SCOPE=($(sort -r -u <<<"${EPEL_BRANCHES_SCOPE[*]}"))
 fi
-
 
 case $subCmd in
     ver )
 	if [[ $rawhide -eq 1 ]];then
-	    echo "$RAWHIDE_BRANCH" | sed -e 's/^f//'
+	    sed -e 's/^f//' <<< $RAWHIDE_BRANCH
 	fi
 
-	if [ `stat --format "%s" $FEDORA_TMP_FILE` -gt 1 ];then 
-	    cat $FEDORA_TMP_FILE | sed -e 's/^f//'
-	fi
-	if [ `stat --format "%s" $EPEL_TMP_FILE` -gt 1 ];then 
-	    cat $EPEL_TMP_FILE | sed -e 's/^el//' | sed -e 's/^epel//'
-	fi
+	for b in "${FEDORA_NR_BRANCHES_SCOPE[@]}" "${EPEL_BRANCHES_SCOPE[@]}";do
+	    sed -e 's/^f//' <<<$b | sed -e 's/^el//' | sed -e 's/^epel//'
+	done
 	;;
 
     branch | git-branch )
@@ -349,33 +332,40 @@ case $subCmd in
 	    fi
 	fi
 
-	if [ `stat --format "%s" $FEDORA_TMP_FILE` -gt 1 ];then 
-	    cat $FEDORA_TMP_FILE
+	for b in "${FEDORA_NR_BRANCHES_SCOPE[@]}" "${EPEL_BRANCHES_SCOPE[@]}";do
+	    if [[ ${b#el} -gt 6 ]];then
+		echo "epel${b#el}"
+	    else
+		echo $b
+	    fi
+	done
+	;;
+
+    koji-buildinfo-suffix )
+	if [[ $rawhide -eq 1 ]];then
+	    sed -e 's/f/fc/' <<<$RAWHIDE_BRANCH
 	fi
-	if [ `stat --format "%s" $EPEL_TMP_FILE` -gt 1 ];then 
-	    cat $EPEL_TMP_FILE
-	fi
+	for b in "${FEDORA_NR_BRANCHES_SCOPE[@]}" "${EPEL_BRANCHES_SCOPE[@]}";do
+	    sed -e 's/f/fc/' <<<$b | sed -e 's/epel/el/'
+	done
 	;;
 
     bodhi-branch )
-	if [ `stat --format "%s" $FEDORA_TMP_FILE` -gt 1 ];then 
-	    cat $FEDORA_TMP_FILE | sed -e 's/^f/fc/'
-	fi
-	if [ `stat --format "%s" $EPEL_TMP_FILE` -gt 1 ];then 
-	    cat $EPEL_TMP_FILE
-	fi
+	IFS=$'\;' BODHI_BRANCHES_KNOWN=(`get_variable BODHI_BRANCHES` )
+	for b in "${FEDORA_NR_BRANCHES_SCOPE[@]}" "${EPEL_BRANCHES_SCOPE[@]}";do
+	    b=`sed -e 's/f/fc/' <<<$b`
+	    for m in ${BODHI_BRANCHES_KNOWN[*]};do
+		[ "$b" = "$m" ] && echo "$b" && break
+	    done
+	done
 	;;
     target )
 	if [[ $rawhide -eq 1 ]];then
 	    echo "$RAWHIDE_BRANCH-candidate"
 	fi
-
-	if [ `stat --format "%s" $FEDORA_TMP_FILE` -gt 1 ];then 
-	    cat $FEDORA_TMP_FILE | sed -e 's/$/-candidate/'
-	fi
-	if [ `stat --format "%s" $EPEL_TMP_FILE` -gt 1 ];then 
-	    cat $EPEL_TMP_FILE | sed -e 's/$/-candidate/'
-	fi
+	for b in "${FEDORA_NR_BRANCHES_SCOPE[@]}" "${EPEL_BRANCHES_SCOPE[@]}";do
+	    echo "$b-candidate"
+	done
 	;;
 
     *)
