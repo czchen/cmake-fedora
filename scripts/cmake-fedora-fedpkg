@@ -268,7 +268,7 @@ for b in "${FEDPKG_BRANCHES[@]}";do
 	fedpkg build
     fi
 
-    bodhi_branch=``$CMAKE_FEDORA_KOJI_CMD bodhi-branch $b`
+    bodhi_branch=`$CMAKE_FEDORA_KOJI_CMD bodhi-branch $b`
 
     if [[ -n "$bodhi_branch" ]];then
 	echo -n "Has $target already in bodhi? ... " > /dev/stderr
