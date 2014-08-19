@@ -204,7 +204,7 @@ FUNCTION(MANAGE_DEPENDENCY listVar var)
 
 	## Get all variables
 	EXECUTE_PROCESS(COMMAND ${PKG_CONFIG_EXECUTABLE}
-	    --print-variables "${pkgCong}"
+	    --print-variables "${pkgConf}"
 	    OUTPUT_VARIABLE _variables
 	    OUTPUT_STRIP_TRAILING_WHITESPACE
 	    RESULT_VARIABLE pkgconfigFailed
@@ -214,7 +214,7 @@ FUNCTION(MANAGE_DEPENDENCY listVar var)
 	    FOREACH(_v ${${var}_VARIABLES})
 		STRING(TOUPPER "${_v}" _u)
 		EXECUTE_PROCESS(COMMAND ${PKG_CONFIG_EXECUTABLE}
-		    --variable "${_v}" "${pkgCong}"
+		    --variable "${_v}" "${pkgConf}"
 		    OUTPUT_VARIABLE ${var}_${_u}
 		    OUTPUT_STRIP_TRAILING_WHITESPACE
 		    )
