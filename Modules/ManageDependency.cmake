@@ -200,7 +200,7 @@ FUNCTION(MANAGE_DEPENDENCY listVar var)
 	    M_MSG(${M_ERROR} "pkgconfig is required with ${var}")
 	ENDIF(PKG_CONFIG_EXECUTABLE)
 	PKG_CHECK_MODULES(${var} ${_required}
-	    "${_opt_PKG_CONFIG}${_rel}${_opt_VER}")
+	    "${pkgConf}${_rel}${_opt_VER}")
 
 	## Get all variables
 	EXECUTE_PROCESS(COMMAND ${PKG_CONFIG_EXECUTABLE}
