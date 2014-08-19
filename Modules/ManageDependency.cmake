@@ -158,7 +158,7 @@ FUNCTION(MANAGE_DEPENDENCY listVar var)
     ## Check package exist
     SET(pkgExistsCmdMissing 0)
     LIST(GET MANAGE_DEPENDENCY_PACKAGE_EXISTS_CMD 0 pkgExistsCmd)
-    FIND_PROGRAM_ERROR_HANDLING(PKG_EXISTSRPM_CMD
+    FIND_PROGRAM_ERROR_HANDLING(PKG_EXISTS_CMD
 	ERROR_VAR pkgExistsCmdMissing
 	ERROR_MSG "ManageDependency: Program ${pkgExistsCmd} not found, dependency check disabled."
 	VERBOSE_LEVEL ${M_OFF}
