@@ -5,4 +5,5 @@ REDHAT_BUGZILLA=1002279,1093336
 - ManageDependency: Make changes suitable for more generic *nix build.
     e.g. FEDORA_NAME -> PACKAGE_NAME
 - ManageZanata: MANAGE_ZANATA: New option CLEAN_ZANATA_XML.
+- Workaround for Bug 1115136, otherwise el7 won't work.
 

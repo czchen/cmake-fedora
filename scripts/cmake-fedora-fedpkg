@@ -281,8 +281,16 @@ for b in "${FEDPKG_BRANCHES[@]}";do
     fi
 done
 
+## Workaround for Bug 1115136 otherwise el7 won't work
+if [[ -d /usr/bin/bodhi ]]; then
+    BODHI_CMD=/usr/bin/bodhi/client.py
+elif [[ -e /usr/bin/bodhi ]];then
+    BODHI_CMD=/usr/bin/bodhi
+else
+    echo "Failed to found 'bodhi', install 'bodhi-client'" > /dev/stderr
+fi
 if [[ -n "$bodhiPushList" ]];then
-    bodhi -n "${BODHI_OPTS[@]}" -t $UPDATE_TYPE -u $BODHI_USER -N "$CHANGELOGTEXT" -R testing $bodhiPushList
+    ${BODHI_CMD} -n "${BODHI_OPTS[@]}" -t $UPDATE_TYPE -u $BODHI_USER -N "$CHANGELOGTEXT" -R testing $bodhiPushList
 else
     echo "Nothing to push to bodhi." > /dev/stderr
 fi
