@@ -365,8 +365,10 @@ CMAKE_FEDORA_CONF_GET_ALL_VARIABLES()
 INCLUDE(DateTimeFormat)
 INCLUDE(ManageVersion)
 LIST(APPEND CMAKE_FEDORA_ADDITIONAL_SCRIPT_PATH 
-    ${CMAKE_FEDORA_MODULE_DIR}/../scripts
-    ${CMAKE_FEDORA_MODULE_DIR}/../cmake-fedora/scripts
+    ${CMAKE_SOURCE_DIR}/Modules ${CMAKE_SOURCE_DIR}/cmake-fedora/Modules 
+    ${CMAKE_SOURCE_DIR}/../../../Modules
+    ${CMAKE_SOURCE_DIR}/../../../cmake-fedora/Modules
+    ${CMAKE_SOURCE_DIR}
     )
 INCLUDE(ManageRPM)
 
