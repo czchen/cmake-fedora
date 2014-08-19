@@ -1,4 +1,4 @@
-PRJ_VER=2.4.0
+PRJ_VER=2.2.0
 SUMMARY=Suitable for more generic build
 REDHAT_BUGZILLA=1002279,1093336
 [Changes]
