@@ -25,6 +25,7 @@
 #       [PULL_OPTIONS <option> ... ]
 #       [DISABLE_SSL_CERT]
 #       [GENERATE_ZANATA_XML]
+#       [CLEAN_ZANATA_XML]
 #       [PROJECT_CONFIG <zanata.xml>]
 #       [USER_CONFIG <zanata.ini>]
 #     )
@@ -89,7 +90,9 @@
 #             No need to put options shown in this cmake-fedora function.
 #             (e.g. SRC_DIR, TRANS_DIR, YES)
 #         + DISABLE_SSL_CERT: (Optional) Disable SSL check
-#         + GENERATE_ZANATA_XML: (Optional) Automatic generate a Zanata.xml
+#         + GENERATE_ZANATA_XML: (Optional) Automatic generate a zanata.xml
+#         + CLEAN_ZANATA_XML: (Optional) zanata.xml will be removed with 
+#             "make clean"
 #         + PROJECT_CONFIG zanata.xml: (Optoional) Path to zanata.xml
 #           Default: ${CMAKE_CURRENT_BINARY_DIR}/zanata.xml
 #         + USER_CONFIG zanata.ini: (Optoional) Path to zanata.ini
@@ -186,7 +189,7 @@ SET(MANAGE_ZANATA_VERSION_VALID_OPTIONS "PROJECT_TYPE" "VERSION" )
 SET(MANAGE_ZANATA_PROJECT_VERSION_VALID_OPTIONS "PROJECT_CONFIG" "SRC_DIR" "TRANS_DIR")
 SET(MANAGE_ZANATA_PUSH_VALID_OPTIONS "")
 SET(MANAGE_ZANATA_PULL_VALID_OPTIONS "")
-SET(MANAGE_ZANATA_VALID_OPTIONS "GENERATE_ZANATA_XML"
+SET(MANAGE_ZANATA_VALID_OPTIONS "GENERATE_ZANATA_XML" "CLEAN_ZANATA_XML"
     "PUSH_OPTIONS" "PULL_OPTIONS"
     "CLIENT_COMMAND"
     ${MANAGE_ZANATA_COMMON_VALID_OPTIONS}
@@ -270,6 +273,9 @@ FUNCTION(MANAGE_ZANATA)
 	    COMMENT "zanata_xml: ${zanataXml}"
 	    VERBATIM
 	    )
+	IF(NOT DEFINED _o_CLEAN_ZANATA_XML)
+	    SET_DIRECTORY_PROPERTIES(PROPERTIES CLEAN_NO_CUSTOM "1")
+	ENDIF()
     ENDIF()
 
     ## Convert to client options
