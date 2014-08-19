@@ -107,7 +107,7 @@ FUNCTION(MANAGE_DEPENDENCY listVar var)
 		STRING_APPEND(${listVar}_${var}_PACKAGE_NAME "-devel")
 	    ENDIF()
 	ENDIF(_opt_PACKAGE_NAME)
-	SET(${listVar}_${var}_PACKAGE_NAME "${${listVar}_${var}_PACKAGE_NAME}}" 
+	SET(${listVar}_${var}_PACKAGE_NAME "${${listVar}_${var}_PACKAGE_NAME}" 
 	    CACHE STRING "${listVar}_${var}_PACKAGE_NAME")
     ENDIF()
     SET(pkgName "${${listVar}_${var}_PACKAGE_NAME}")
