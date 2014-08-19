@@ -122,6 +122,15 @@ MANAGE_CMAKE_FEDORA_CONF(CMAKE_FEDORA_CONF
     VERBOSE_LEVEL ${M_OFF}
     )
 
+MACRO(RELEASE_FEDORA_FIND_FILE_DEPENDENCY var)
+    FIND_FILE_ERROR_HANDLING(${var}
+	ERROR_MSG "${ARGN} not found, Fedora release support disabled."
+	ERROR_VAR _manage_release_fedora_dependencies_missing
+	VERBOSE_LEVEL ${M_OFF}
+	FIND_ARGS ${ARGN}
+	)
+ENDMACRO(RELEASE_FEDORA_FIND_FILE_DEPENDENCY)
+
 MACRO(RELEASE_FEDORA_FIND_DEPENDENCY var)
     FIND_PROGRAM_ERROR_HANDLING(${var}
 	ERROR_MSG "${ARGN} not found, Fedora release support disabled."

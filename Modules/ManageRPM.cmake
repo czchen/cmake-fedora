@@ -137,7 +137,6 @@ SET (_MANAGE_RPM_CMAKE_ "DEFINED")
 INCLUDE(ManageFile)
 INCLUDE(ManageTarget)
 SET(_manage_rpm_dependency_missing 0)
-LIST(APPEND CMAKE_FEDORA_ADDITIONAL_SCRIPT_PATH ${CMAKE_SOURCE_DIR}/scripts ${CMAKE_SOURCE_DIR}/cmake-fedora/scripts)
 
 # Variables to be passed for SPEC building
 SET(RPM_SPEC_IN_VARIABLE_LIST
