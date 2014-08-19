@@ -80,6 +80,7 @@ SET(MANAGE_DEPENDENCY_PACKAGE_EXISTS_CMD rpm -q
 
 SET(MANAGE_DEPENDENCY_PACKAGE_INSTALL_CMD yum -y install 
     CACHE STRING "Package exist command"
+    )
 
 ## This need to be here, otherwise the variable won't be available
 ## the 2nd time called.
@@ -94,11 +95,11 @@ FUNCTION(MANAGE_DEPENDENCY listVar var)
     VARIABLE_PARSE_ARGN(_opt _validOptions ${ARGN})
     SET(_dirty 0)
 
-    IF(${listVar}_${var}_PACKAGE_NAME STREQUAL "")
+    IF("${${listVar}_${var}_PACKAGE_NAME}" STREQUAL "")
 	IF(_opt_PACKAGE_NAME)
 	    IF(DEFINED _opt_DEVEL)
 		M_MSG(${M_ERROR} "PACKAGE_NAME cannot use with DEVEL")
-	    ENDIF())
+	    ENDIF()
 	    SET(${listVar}_${var}_PACKAGE_NAME "${_opt_PACKAGE_NAME}")
 	ELSE(_opt_PACKAGE_NAME)
 	    STRING(TOLOWER "${var}" ${listVar}_${var}_PACKAGE_NAME)
@@ -114,7 +115,7 @@ FUNCTION(MANAGE_DEPENDENCY listVar var)
     IF(DEFINED _opt_REQUIRED)
 	SET(_verbose "${M_ERROR}")
 	SET(_required "REQUIRED")
-        SET(_progNotFoundMsg 
+	SET(_progNotFoundMsg 
 	    "Program names ${_opt_PROGRAM_NAMES} not found, install ${pkgName}")
     ELSE(DEFINED _opt_REQUIRED)
 	SET(_verbose "${M_OFF}")
@@ -159,7 +160,7 @@ FUNCTION(MANAGE_DEPENDENCY listVar var)
     LIST(GET MANAGE_DEPENDENCY_PACKAGE_EXISTS_CMD 0 pkgExistsCmd)
     FIND_PROGRAM_ERROR_HANDLING(PKG_EXISTSRPM_CMD
 	ERROR_VAR pkgExistsCmdMissing
-	ERROR_MSG "ManageDependency: Program "${pkgExistsCmd}" not found, dependency check disabled."
+	ERROR_MSG "ManageDependency: Program ${pkgExistsCmd} not found, dependency check disabled."
 	VERBOSE_LEVEL ${M_OFF}
 	FIND_ARGS ${pkgExistsCmd}
 	)
@@ -178,7 +179,7 @@ FUNCTION(MANAGE_DEPENDENCY listVar var)
     ENDIF()
 
     ## PKG_CONFIG
-    IF(${listVar}_${var}_PKG_CONFIG STREQUAL "")
+    IF("${${listVar}_${var}_PKG_CONFIG}" STREQUAL "")
 	IF(_opt_PKG_CONFIG)
 	    SET(${listVar}_${var}_PKG_CONFIG "${_opt_PKG_CONFIG}" 
 		CACHE STRING "${listVar}_${var}_PKG_CONFIG")
@@ -223,7 +224,7 @@ FUNCTION(MANAGE_DEPENDENCY listVar var)
 		M_MSG(${M_INFO1} "${var}_${_u}=${${var}_${_u}}")
 	    ENDFOREACH(_v)
 	ENDIF(NOT pkgconfigFailed)
-    ENDIF(pkgCong)
+    ENDIF(pkgConf)
 
     ## Insert when it's not duplicated
     IF(NOT _dirty)
