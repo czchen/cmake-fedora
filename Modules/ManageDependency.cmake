@@ -4,19 +4,30 @@
 # 
 # Included Modules:
 #  - ManageFile
+#  - ManageString
 #  - ManageVariable
+#
+# Variable to be read:
+#  + MANAGE_DEPENDENCY_PACKAGE_EXISTS_CMD: Command and options that check
+#      the existence of a package
+#    Default: rpm -q
+#
+#  + MANAGE_DEPENDENCY_PACKAGE_INSTALL_CMD: Command and options that install
+#      a package
+#    Default: yum -y install
 #
 # Defines following functions:
 #   MANAGE_DEPENDENCY(<listVar> <var> [VER <ver> [EXACT]] [REQUIRED] 
 #     [PROGRAM_NAMES <name1> ...] [PROGRAM_SEARCH_PATHS <path1> ...] 
 #     [PKG_CONFIG <pkgConfigName>]
-#     [FEDORA_NAME <fedoraPkgName>] [DEVEL]
+#     [PACKAGE_NAME <packageName> | DEVEL]
 #     )
 #     - Add a new dependency to a list. 
 #       The dependency will also be searched.
 #       If found, ${var}_FOUND is set as 1.
 #       If not found:
-#         + If REQUIRED is specified: a M_ERROR message will be printed. #	    + If REQUIRED is not specified: a M_OFF message will be printed.
+#         + If REQUIRED is specified: a M_ERROR message will be printed. #	     + If REQUIRED is not specified: a M_OFF message will be printed.
+#       See "Variables to cache" for the variable overridden and output.
 #       * Parameters:
 #         + listVar: List variable store a kind of dependencies.
 #           Recognized lists:
@@ -30,26 +41,31 @@
 #           (e.g. GETTEXT)
 #         + VER ver [EXACT]: Minimum version.
 #           Specify the exact version by providing "EXACT".
-#         + REQUIRED: The dependency is required at build time.
-#           If specified, this dependency will be searched:
-#             - if found, ${var}_FOUND is set as 1.
-#	      - if not found, an error message will be printed and
-#	        build stop at build stage.
-#	    If not specified, this 
+#         + REQUIRED: The dependency is required at cmake build time.
 #         + PROGRAM_NAMES name1 ...: Executable to be found.
-#           name2 and others are aliases to name1.
-#           If found, ${var}_EXECUTABLE is defined as the full path 
-#           to the executable; if not found; the whole dependency is
-#           deemed as not found.
+#             name2 and others are aliases to name1.
+#             If found, ${var}_EXECUTABLE is defined as the full path 
+#             to the executable; if not found; the whole dependency is
+#             deemed as not found.
 #         + PROGRAM_SEARCH_PATHS path1 ...: Additional program search path.
-#           It will act as PATHS arguments for FIND_PROGRAM.
+#             It will act as PATHS arguments for FIND_PROGRAM.
 #         + PKG_CONFIG pkgConfigName: Name of the pkg-config file
-#           exclude the directory and .pc. e.g. "gtk+-2.0"
-#         + FEDORA_NAME fedoraPkgName: Package name in Fedora. 
-#           If not specified, use the lower case of ${var}.
-#           Note that '-devel' should be omitted here.
-#         + DEVEL: devel package is used. It will append '-devel'
-#           to fedoraPkgName
+#             exclude the directory and .pc. e.g. "gtk+-2.0"
+#         + PACKAGE_NAME packageName: The actual package name in repository. 
+#             If not specified, use the lowercase of ${var}.
+#             For example, use following to specify libchewing as dependency 
+#             under the name CHEWING:
+#           MANAGE_DEPENDENCY(REQUIRES CHEWING PACKAGE_NAME "libchewing")
+#         + DEVEL: search lowercase of ${var}-devel.
+#             A shortcut to PACKAGE_NAME ${var}-devel.
+#       * Variables to cache:
+#         + ${listVar}_${listVar}_${var}_PACKAGE_NAME: The actual package name in repository.
+#             Override this if your system is different from Fedora.
+#         + ${listVar}_${var}_PKG_CONFIG: Name of pkg-config file.
+#             Override this if your system is different from Fedora.
+#         + ${var}_<print_variable>: The pkg-config variables.
+#             For example, datadir=/usr/share/chewing will be
+#           ${var}_DATADIR, whose value is "/usr/share/chewing"
 #
 IF(DEFINED _MANAGE_DEPENDENCY_CMAKE_)
     RETURN()
@@ -57,6 +73,13 @@ ENDIF(DEFINED _MANAGE_DEPENDENCY_CMAKE_)
 SET(_MANAGE_DEPENDENCY_CMAKE_ "DEFINED")
 INCLUDE(ManageFile)
 INCLUDE(ManageVariable)
+INCLUDE(ManageString)
+SET(MANAGE_DEPENDENCY_PACKAGE_EXISTS_CMD rpm -q 
+    CACHE STRING "Package exist command"
+    )
+
+SET(MANAGE_DEPENDENCY_PACKAGE_INSTALL_CMD yum -y install 
+    CACHE STRING "Package exist command"
 
 ## This need to be here, otherwise the variable won't be available
 ## the 2nd time called.
@@ -67,21 +90,32 @@ FIND_PACKAGE(PkgConfig)
 ## source dir.
 FUNCTION(MANAGE_DEPENDENCY listVar var)
     SET(_validOptions "VER" "EXACT" "REQUIRED" 
-	"PROGRAM_NAMES" "PROGRAM_SEARCH_PATHS" "PKG_CONFIG" "FEDORA_NAME" "DEVEL")
+	"PROGRAM_NAMES" "PROGRAM_SEARCH_PATHS" "PKG_CONFIG" "PACKAGE_NAME" "DEVEL")
     VARIABLE_PARSE_ARGN(_opt _validOptions ${ARGN})
     SET(_dirty 0)
 
-    IF(_opt_FEDORA_NAME)
-	SET(_pkgName "${_opt_FEDORA_NAME}")
-    ELSE(_opt_FEDORA_NAME)
-	STRING(TOLOWER "${var}" _pkgName)
-    ENDIF(_opt_FEDORA_NAME)
+    IF(${listVar}_${var}_PACKAGE_NAME STREQUAL "")
+	IF(_opt_PACKAGE_NAME)
+	    IF(DEFINED _opt_DEVEL)
+		M_MSG(${M_ERROR} "PACKAGE_NAME cannot use with DEVEL")
+	    ENDIF())
+	    SET(${listVar}_${var}_PACKAGE_NAME "${_opt_PACKAGE_NAME}")
+	ELSE(_opt_PACKAGE_NAME)
+	    STRING(TOLOWER "${var}" ${listVar}_${var}_PACKAGE_NAME)
+	    IF(DEFINED _opt_DEVEL)
+		STRING_APPEND(${listVar}_${var}_PACKAGE_NAME "-devel")
+	    ENDIF()
+	ENDIF(_opt_PACKAGE_NAME)
+	SET(${listVar}_${var}_PACKAGE_NAME "${${listVar}_${var}_PACKAGE_NAME}}" 
+	    CACHE STRING "${listVar}_${var}_PACKAGE_NAME")
+    ENDIF()
+    SET(pkgName "${${listVar}_${var}_PACKAGE_NAME}")
 
     IF(DEFINED _opt_REQUIRED)
 	SET(_verbose "${M_ERROR}")
 	SET(_required "REQUIRED")
         SET(_progNotFoundMsg 
-	    "Program names ${_opt_PROGRAM_NAMES} not found, install ${_pkgName}")
+	    "Program names ${_opt_PROGRAM_NAMES} not found, install ${pkgName}")
     ELSE(DEFINED _opt_REQUIRED)
 	SET(_verbose "${M_OFF}")
 	SET(_required "")
@@ -114,59 +148,72 @@ FUNCTION(MANAGE_DEPENDENCY listVar var)
 	MARK_AS_ADVANCED(${var}_EXECUTABLE)
     ENDIF(_opt_PROGRAM_NAMES)
 
-    IF(DEFINED _opt_DEVEL)
-	SET(_pkgName "${_pkgName}-devel")
-    ENDIF(DEFINED _opt_DEVEL)
     IF("${_opt_VER}" STREQUAL "")
-	SET(_newDep  "${_pkgName}")
+	SET(_newDep  "${pkgName}")
     ELSE("${_opt_VER}" STREQUAL "")
-	SET(_newDep  "${_pkgName} ${_rel} ${_opt_VER}")
+	SET(_newDep  "${pkgName} ${_rel} ${_opt_VER}")
     ENDIF("${_opt_VER}" STREQUAL "")
-    IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
-	SET(_rpm_missing 0)
-	FIND_PROGRAM_ERROR_HANDLING(RPM_CMD
-	    ERROR_VAR _rpm_missing
-	    ERROR_MSG "ManageDependency: Program rpm not found, dependency check disabled."
-	    VERBOSE_LEVEL ${M_OFF}
-	    FIND_ARGS "rpm"
-	    )
-	IF(NOT _rpm_missing)
-	    EXECUTE_PROCESS(COMMAND ${RPM_CMD} -q ${_pkgName}
-		RESULT_VARIABLE _rpm_ret
-		OUTPUT_QUIET
-		ERROR_QUIET
-		)
-	    IF(_rpm_ret)
-		## Dependency not found
-		M_MSG(${_verbose} "RPM ${_pkgName} is not installed")
-		SET(_dirty 1)
-	    ENDIF(_rpm_ret)
-	ENDIF(NOT _rpm_missing)
-    ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
 
-    IF(_opt_PKG_CONFIG)
+    ## Check package exist
+    SET(pkgExistsCmdMissing 0)
+    LIST(GET MANAGE_DEPENDENCY_PACKAGE_EXISTS_CMD 0 pkgExistsCmd)
+    FIND_PROGRAM_ERROR_HANDLING(PKG_EXISTSRPM_CMD
+	ERROR_VAR pkgExistsCmdMissing
+	ERROR_MSG "ManageDependency: Program "${pkgExistsCmd}" not found, dependency check disabled."
+	VERBOSE_LEVEL ${M_OFF}
+	FIND_ARGS ${pkgExistsCmd}
+	)
+
+    IF(NOT pkgExistsCmdMissing)
+	EXECUTE_PROCESS(COMMAND ${MANAGE_DEPENDENCY_PACKAGE_EXISTS_CMD} ${pkgName}
+	    RESULT_VARIABLE pkgMissing
+	    OUTPUT_QUIET
+	    ERROR_QUIET
+	    )
+	IF(pkgMissing)
+	    ## Dependency not found
+	    M_MSG(${_verbose} "Package ${pkgName} is not installed")
+	    SET(_dirty 1)
+	ENDIF(pkgMissing)
+    ENDIF()
+
+    ## PKG_CONFIG
+    IF(${listVar}_${var}_PKG_CONFIG STREQUAL "")
+	IF(_opt_PKG_CONFIG)
+	    SET(${listVar}_${var}_PKG_CONFIG "${_opt_PKG_CONFIG}" 
+		CACHE STRING "${listVar}_${var}_PKG_CONFIG")
+	ENDIF(_opt_PKG_CONFIG)
+    ENDIF()
+    SET(pkgConf "${${listVar}_${var}_PKG_CONFIG}")
+
+    IF(pkgConf)
 	IF(PKG_CONFIG_EXECUTABLE)
-	    LIST(FIND ${listVar} "pkgconfig" _index)
+	    ## Add pkgconfig itself as dependency
+	    SET(PKG_CONFIG_PACKAGE_NAME "pkgconfig" 
+		CACHE STRING "PKG_CONFIG_PACKAGE_NAME")
+	    LIST(FIND ${listVar} "${PKG_CONFIG_PACKAGE_NAME}" _index)
 	    IF(_index EQUAL -1)
-		LIST(APPEND ${listVar} "pkgconfig")
+		LIST(APPEND ${listVar} "${PKG_CONFIG_PACKAGE_NAME}")
 	    ENDIF(_index EQUAL -1)
 	ELSE(PKG_CONFIG_EXECUTABLE)
 	    M_MSG(${M_ERROR} "pkgconfig is required with ${var}")
 	ENDIF(PKG_CONFIG_EXECUTABLE)
 	PKG_CHECK_MODULES(${var} ${_required}
 	    "${_opt_PKG_CONFIG}${_rel}${_opt_VER}")
+
+	## Get all variables
 	EXECUTE_PROCESS(COMMAND ${PKG_CONFIG_EXECUTABLE}
-	    --print-variables "${_opt_PKG_CONFIG}"
+	    --print-variables "${pkgCong}"
 	    OUTPUT_VARIABLE _variables
 	    OUTPUT_STRIP_TRAILING_WHITESPACE
-	    RESULT_VARIABLE _pkgconfig_ret
+	    RESULT_VARIABLE pkgconfigFailed
 	    )
-	IF(NOT _pkgconfig_ret)
+	IF(NOT pkgconfigFailed)
 	    STRING_SPLIT(${var}_VARIABLES "\n" "${_variables}")
 	    FOREACH(_v ${${var}_VARIABLES})
 		STRING(TOUPPER "${_v}" _u)
 		EXECUTE_PROCESS(COMMAND ${PKG_CONFIG_EXECUTABLE}
-		    --variable "${_v}" "${_opt_PKG_CONFIG}"
+		    --variable "${_v}" "${pkgCong}"
 		    OUTPUT_VARIABLE ${var}_${_u}
 		    OUTPUT_STRIP_TRAILING_WHITESPACE
 		    )
@@ -175,8 +222,8 @@ FUNCTION(MANAGE_DEPENDENCY listVar var)
 		MARK_AS_ADVANCED(${var}_${_u})
 		M_MSG(${M_INFO1} "${var}_${_u}=${${var}_${_u}}")
 	    ENDFOREACH(_v)
-	ENDIF(NOT _pkgconfig_ret)
-    ENDIF(_opt_PKG_CONFIG)
+	ENDIF(NOT pkgconfigFailed)
+    ENDIF(pkgCong)
 
     ## Insert when it's not duplicated
     IF(NOT _dirty)
