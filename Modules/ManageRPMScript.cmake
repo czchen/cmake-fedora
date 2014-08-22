@@ -54,7 +54,7 @@ cmake -Dcmd=make_manifests
   Options:
     -Dmainfests: Path to install_manifests.txt
     -Dtmp_dir: Directory for tempory files. 
-      Default is /tmp/cmake-fedora
+       Default is CMAKE_FEDORA_TMP_DIR
 
 "
 )
@@ -317,7 +317,7 @@ ENDFUNCTION(SPEC_MAKE)
 
 FUNCTION(MAKE_MANIFESTS)
     IF(NOT tmp_dir)
-	SET(tmp_dir "/tmp/cmake-fedora")
+	SET(tmp_dir "${CMAKE_FEDORA_TMP_DIR}")
     ENDIF(NOT tmp_dir)
     SET(_opts "")
     IF(manifests)

@@ -54,8 +54,8 @@ SET(LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib${IS_64}"
 
 SET(CMAKE_FEDORA_SCRIPT_PATH_HINTS 
     ${CMAKE_SOURCE_DIR}/scripts ${CMAKE_SOURCE_DIR}/cmake-fedora/scripts
-    ${CMAKE_SOURCE_DIR}/../../../scripts
-    ${CMAKE_SOURCE_DIR}/../../../cmake-fedora/scripts
+    ${CMAKE_SOURCE_DIR}/../scripts ${CMAKE_SOURCE_DIR}/../cmake-fedora/scripts
+    ${CMAKE_SOURCE_DIR}/../../scripts ${CMAKE_SOURCE_DIR}/../../cmake-fedora/scripts
     CACHE INTERNAL "CMAKE_FEDORA_SCRIPT_PATH_HINTS"
     )
 

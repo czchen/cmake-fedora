@@ -246,7 +246,7 @@ MACRO(PACK_SOURCE_ARCHIVE)
 	GET_FILENAME_COMPONENT(_outputFile ${_opt_OUTPUT_FILE} NAME)
     ENDIF(_opt_OUTPUT_FILE)
 
-    GET_FILENAME_COMPONENT(_currentDir_real "." REALPATH)
+    GET_FILENAME_COMPONENT(_currentDir_real "${CMAKE_CURRENT_BINARY_DIR}" REALPATH)
     IF(_outputDir)
 	GET_FILENAME_COMPONENT(_outputDir_real ${_outputDir} REALPATH)
     ELSE(_outputDir)
@@ -305,14 +305,13 @@ MACRO(PACK_SOURCE_ARCHIVE)
     ADD_CUSTOM_TARGET_COMMAND(pack_src
 	NO_FORCE
 	OUTPUT ${SOURCE_ARCHIVE_FILE}
+	COMMAND make pack_src_pre
 	COMMAND make package_source
 	${moveCommands}
 	DEPENDS  ${_dep_list}
 	COMMENT "Packing the source as: ${SOURCE_ARCHIVE_FILE}"
 	VERBATIM
 	)
-
-    ADD_DEPENDENCIES(pack_src pack_src_pre)
 
     ADD_CUSTOM_TARGET(dist
 	DEPENDS ${SOURCE_ARCHIVE_FILE}
