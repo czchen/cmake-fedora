@@ -35,7 +35,7 @@ IF(MANAGE_ENVIRONMENT_PATH STREQUAL "NOTFOUND")
 ENDIF(MANAGE_ENVIRONMENT_PATH STREQUAL "NOTFOUND")
 
 IF(MANAGE_ENVIRONMENT_PATH STREQUAL "NOTFOUND")
-MESSAGE(FATAL_ERROR "ManageEnvironmentCommont is not found in CMAKE_MODULE_PATH.
+MESSAGE(FATAL_ERROR "ManageEnvironmentCommon.cmake is not found in CMAKE_MODULE_PATH.
 Please either:
     1) Use cmake-fedora as a git submodule:
        git submodule add https://git.fedorahosted.org/git/cmake-fedora.git 
