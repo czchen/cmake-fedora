@@ -68,14 +68,14 @@ END
 # Valid target example: cmake-fedora-1.4.0-1.fc21
 function is_target_built(){
     target=$1
-    koji buildinfo $target | grep -qcs -i "State: COMPLETE"
+    $KOJI_CMD buildinfo $target | grep -qcs -i "State: COMPLETE"
 }
 
 # is package exists in bodhi
 # Valid target example: cmake-fedora
 function is_package_new_in_bodhi(){
     package=$1
-    if bodhi $package | grep -qcs $package;then
+    if $BODHI_CMD $package | grep -qcs $package;then
 	return 1
     else
 	return 0
@@ -87,7 +87,7 @@ function is_package_new_in_bodhi(){
 # Valid target example: cmake-fedora-1.4.0-1.fc21
 function is_target_in_bodhi(){
     target=$1
-    bodhi "${target}" | grep -qcs -i "Update ID" > /dev/null
+    $BODHI_CMD "${target}" | grep -qcs -i "Update ID" > /dev/null
 }
 
 function is_update_enhancement(){
@@ -100,12 +100,6 @@ function contains_element () {
     return 1
 }
 
-for cmd in fedpkg bodhi koji git rpm ;do
-    if ! which $cmd &>/dev/null;then
-	echo "[Error] $cmd is not found in path" > /dev/stderr
-	exit -2
-    fi
-done
 
 SCRIPT_DIR=$(readlink -f `dirname $0`)
 for d in Modules cmake-fedora/Modules ${SCRIPT_DIR}/../Modules /usr/share/cmake/Modules;do
@@ -123,6 +117,27 @@ if [ ! -x ${CMAKE_FEDORA_KOJI_CMD} ];then
     echo "[Error] cmake-fedora-koji is not found" > /dev/stderr
     exit -2
 fi
+
+for cmd in fedpkg bodhi koji git rpm ;do
+    cfsOpts=(-D cmd=find_program verbose_level=1  )
+    ## Workaround for Bug 1115136 otherwise el7 won't work
+    case $cmd in
+	bodhi )
+	    cfsOpts+=( -D "names=bodhi;client.py" -D "paths=/usr/bin/bodhi" )
+	    ;;
+	*)
+	    cfsOpts+=( -D "names=$cmd")
+	    ;;
+    esac
+    cmdPath=`cmake "${cfsOpts[@]}" -P ${CMAKE_FEDORA_SCRIPT_CMAKE}`
+    if [ $? -ne 0 ];then
+	exit $?
+    fi
+
+    VAR_NAME=`tr a-z A-Z <<<$cmd`_CMD
+    eval "$VAR_NAME=$cmdPath"
+done
+
 
 if [ $# = 0 ]; then
     print_usage
@@ -190,19 +205,19 @@ if [[ ! -w $WORK_DIR ]];then
 fi
 echo "WORK_DIR=$WORK_DIR" > /dev/stderr
 
-CHANGELOGTEXT=`rpm -qp --queryformat "%{CHANGELOGTEXT}" $SRPM`
+CHANGELOGTEXT=`$RPM_CMD -qp --queryformat "%{CHANGELOGTEXT}" $SRPM`
 echo "CHANGELOGTEXT=$CHANGELOGTEXT" > /dev/stderr
 
 if [[ -z "$MSG" ]];then
     MSG=$CHANGELOGTEXT
 fi
 
-NAME=`rpm -qp --queryformat "%{NAME}" $SRPM`
+NAME=`$RPM_CMD -qp --queryformat "%{NAME}" $SRPM`
 echo "NAME=$NAME" > /dev/stderr
 
 ## NVR here does not include release tag,
 ##  (e.g. cmake-fedora-2.0.0-1)
-NVR=`rpm -qp --queryformat "%{NAME}-%{VERSION}-%{RELEASE}" $SRPM | sed -e 's/\.fc[0-9]*$//' | sed -e 's/\.el[0-9]*$//'`
+NVR=`$RPM_CMD -qp --queryformat "%{NAME}-%{VERSION}-%{RELEASE}" $SRPM | sed -e 's/\.fc[0-9]*$//' | sed -e 's/\.el[0-9]*$//'`
 
 if [[ -z "$UPDATE_TYPE" ]];then
     if  is_package_new_in_bodhi $NAME; then
@@ -217,7 +232,7 @@ echo "UPDATE_TYPE=$UPDATE_TYPE" > /dev/stderr
 
 cd $WORK_DIR
 if [[ ! -r $NAME ]];then
-    fedpkg clone $NAME
+    $FEDPKG_CMD clone $NAME
 fi
 
 if [[ ! -x $NAME ]];then
@@ -227,11 +242,11 @@ fi
 
 cd $NAME
 echo "Pulling $NAME..." > /dev/stderr
-fedpkg pull
+$FEDPKG_CMD pull
 
 ## Interset between existing and koji fedpkg branches
 FEDPKG_BRANCHES_KOJI=(`$CMAKE_FEDORA_KOJI_CMD git-branch $@ | xargs ` )
-FEDPKG_BRANCHES_EXISTING=(` fedpkg switch-branch | grep origin | sed -e  's|^\s*origin/||' | xargs` )
+FEDPKG_BRANCHES_EXISTING=(` $FEDPKG_CMD switch-branch | grep origin | sed -e  's|^\s*origin/||' | xargs` )
 declare -a FEDPKG_BRANCHES=(master)
 for activeBranch in "${FEDPKG_BRANCHES_KOJI[@]}"; do
     if contains_element "${activeBranch}" "${FEDPKG_BRANCHES_EXISTING[@]}";then
@@ -251,21 +266,21 @@ for b in "${FEDPKG_BRANCHES[@]}";do
     koji_buildinfo_suffix=`$CMAKE_FEDORA_KOJI_CMD koji-buildinfo-suffix $b`
 
     target="$NVR.$koji_buildinfo_suffix"
-    fedpkg switch-branch $b
+    $FEDPKG_CMD switch-branch $b
     echo -n "Has $target already been built in koji? ... " > /dev/stderr
     if is_target_built $target ;then
 	echo "yes, skip this." > /dev/stderr
     else
 	echo "no, start building." > /dev/stderr
 	if [[ $first = $b ]];then
-	    fedpkg import $SRPM
-	    fedpkg commit -m "$MSG"
+	    $FEDPKG_CMD import $SRPM
+	    $FEDPKG_CMD commit -m "$MSG"
 	else
-	    git merge $first
+	    $GIT_CMD merge $first
 	fi
-	fedpkg push
+	$FEDPKG_CMD push
 	echo "Building $NVR.$bodhi_branch" > /dev/stderr
-	fedpkg build
+	$FEDPKG_CMD build
     fi
 
     bodhi_branch=`$CMAKE_FEDORA_KOJI_CMD bodhi-branch $b`
@@ -281,14 +296,6 @@ for b in "${FEDPKG_BRANCHES[@]}";do
     fi
 done
 
-## Workaround for Bug 1115136 otherwise el7 won't work
-if [[ -d /usr/bin/bodhi ]]; then
-    BODHI_CMD=/usr/bin/bodhi/client.py
-elif [[ -e /usr/bin/bodhi ]];then
-    BODHI_CMD=/usr/bin/bodhi
-else
-    echo "Failed to found 'bodhi', install 'bodhi-client'" > /dev/stderr
-fi
 if [[ -n "$bodhiPushList" ]];then
     ${BODHI_CMD} -n "${BODHI_OPTS[@]}" -t $UPDATE_TYPE -u $BODHI_USER -N "$CHANGELOGTEXT" -R testing $bodhiPushList
 else
