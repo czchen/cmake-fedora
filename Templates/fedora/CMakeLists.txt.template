@@ -8,8 +8,8 @@ cmake_minimum_required(VERSION 2.6.2)
 ####################################################################
 # Find cmake-fedora
 #
-LIST(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/Modules)
-INCLUDE(ManageEnvironmentCommon RESULT_VARIABLE MANAGE_ENVIRONMENT_PATH)
+LIST(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_SOURCE_DIR}/Modules")
+INCLUDE(ManageEnvironmentCommon OPTIONAL RESULT_VARIABLE MANAGE_ENVIRONMENT_PATH)
 
 IF(MANAGE_ENVIRONMENT_PATH STREQUAL "NOTFOUND")
     # Is cmake-fedora a git submodule?    
