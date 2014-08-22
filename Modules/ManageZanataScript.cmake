@@ -116,8 +116,8 @@ FUNCTION(ZANATA_XML_MAKE_CHECK)
     ZANATA_XML_MAP_CHECK()
 ENDFUNCTION()
 
-
 SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS ON)
+
 #######################################
 # Determine CMAKE_FEDORA_MODULE_DIR
 #
@@ -147,15 +147,10 @@ ENDIF()
 GET_FILENAME_COMPONENT(CMAKE_FEDORA_MODULE_DIR 
     "${MANAGE_MODULE_PATH}" PATH)
 
+INCLUDE(ManageEnvironment)
 INCLUDE(ManageString)
 INCLUDE(ManageVariable)
 INCLUDE(ManageVersion)
-LIST(APPEND CMAKE_FEDORA_ADDITIONAL_SCRIPT_PATH 
-    ${CMAKE_SOURCE_DIR}/Modules ${CMAKE_SOURCE_DIR}/cmake-fedora/Modules 
-    ${CMAKE_SOURCE_DIR}/../../../Modules
-    ${CMAKE_SOURCE_DIR}/../../../cmake-fedora/Modules
-    ${CMAKE_SOURCE_DIR}
-    )
 INCLUDE(ManageZanata)
 
 IF(NOT DEFINED cmd)

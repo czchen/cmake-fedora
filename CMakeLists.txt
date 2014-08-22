@@ -4,14 +4,14 @@ cmake_minimum_required(VERSION 2.6.2)
 # OLD: CMake policy in included script will affect the invoker.
 # CMAKE_POLICY(SET CMP0011 OLD)
 
-# Default CMAKE_INSTALL_PREFIX should be set before PROJECT()
-SET(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "Install dir prefix")
+LIST(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/Modules)
+INCLUDE(ManageEnvironmentCommon RESULT_VARIABLE MANAGE_ENVIRONMENT_PATH)
+GET_FILENAME_COMPONENT(CMAKE_FEDORA_MODULE_DIR 
+    "${MANAGE_ENVIRONMENT_PATH}" PATH CACHE
+    )
 
 # Whether to build on fedora
 SET(CMAKE_FEDORA_ENABLE_FEDORA_BUILD "1" CACHE STRING "Enable fedora build")
-
-# Message level INFO1 (5)
-SET(MANAGE_MESSAGE_LEVEL 5 CACHE STRING "Message (Verbose) Level")
 
 ####################################################################
 # Project specific information
@@ -35,8 +35,7 @@ SET(RPM_SPEC_SOURCES "https://fedorahosted.org/releases/c/m/%{name}/%{name}-%{ve
 ####################################################################
 # Includes
 #
-LIST(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/Modules)
-INCLUDE(ManageEnvironment RESULT_VARIABLE MANAGE_ENVIRONMENT_PATH)
+INCLUDE(ManageEnvironment)
 INCLUDE(ManageVersion)
 RELEASE_NOTES_READ_FILE()
 INCLUDE(ManageArchive)
@@ -102,6 +101,7 @@ PACK_SOURCE_ARCHIVE("${SOURCE_ARCHIVE_DIR}"
 IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
     SET(RPM_BUILD_SOURCES ${SOURCE_ARCHIVE_DIR})
     INCLUDE(ManageRPM)
+    RPM_SPEC_STRING_ADD_DIRECTIVE(RPM_SPEC_SCRIPT_OUTPUT check "" "make test")
     PACK_RPM(SPEC_IN "Templates/fedora/project.spec.in")
     RPM_MOCK_BUILD()
 ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)

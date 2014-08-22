@@ -206,13 +206,10 @@ GET_FILENAME_COMPONENT(CMAKE_FEDORA_MODULE_DIR
     "${MANAGE_MODULE_PATH}" PATH
     )
 
+INCLUDE(ManageEnvironmentCommon)
 INCLUDE(ManageString)
 INCLUDE(ManageVariable)
 INCLUDE(ManageFile)
-LIST(APPEND CMAKE_FEDORA_ADDITIONAL_SCRIPT_PATH 
-    ${CMAKE_FEDORA_MODULE_DIR}/../scripts
-   ${CMAKE_FEDORA_MODULE_DIR}/../cmake-fedora/scripts
-    )
 INCLUDE(ManageTranslation)
 
 IF(NOT DEFINED cmd)
