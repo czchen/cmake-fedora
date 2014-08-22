@@ -1,11 +1,54 @@
 cmake_minimum_required(VERSION 2.6.2)
 
-# CMP0011 should be set here, otherwise policy set in module won't affect
-# here.
-CMAKE_POLICY(SET CMP0011 OLD)
+# Included scripts do automatic cmake_policy PUSH and POP.
+# OLD: CMake policy in included script will affect the invoker.
+# CMAKE_POLICY(SET CMP0011 OLD)
 
-# Default CMAKE_INSTALL_PREFIX should be set before PROJECT()
-SET(CMAKE_INSTALL_PREFIX "/usr" CACHE PATH "Install dir prefix")
+
+####################################################################
+# Find cmake-fedora
+#
+LIST(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/Modules)
+INCLUDE(ManageEnvironmentCommon RESULT_VARIABLE MANAGE_ENVIRONMENT_PATH)
+
+IF(MANAGE_ENVIRONMENT_PATH STREQUAL "NOTFOUND")
+    # Is cmake-fedora a git submodule?    
+    IF(NOT EXISTS ${CMAKE_SOURCE_DIR}/Modules)
+	## Create a link if Modules/ does not exists
+	IF(NOT EXISTS ${CMAKE_SOURCE_DIR}/cmake-fedora)
+	    IF(EXISTS ${CMAKE_SOURCE_DIR}/.gitmodules)
+                ## cmake-fedora may be a git submodules
+		EXECUTE_PROCESS(COMMAND git submodule init
+		    COMMAND git submodule update
+		    RESULT_VARIABLE gitSubmoduleFailed
+		    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} 
+		    )	
+	    ENDIF(EXISTS ${CMAKE_SOURCE_DIR}/.gitmodules)
+	ENDIF(NOT EXISTS ${CMAKE_SOURCE_DIR}/cmake-fedora)
+
+	IF(EXISTS ${CMAKE_SOURCE_DIR}/cmake-fedora/Modules)
+            ## cmake-fedora is now available as subdirectory, try again
+	    EXECUTE_PROCESS(COMMAND ln -s ${CMAKE_SOURCE_DIR}/cmake-fedora/Modules .)
+	    INCLUDE(ManageEnvironmentCommon RESULT_VARIABLE MANAGE_ENVIRONMENT_PATH)
+	ENDIF(EXISTS ${CMAKE_SOURCE_DIR}/cmake-fedora/Modules)
+    ENDIF(NOT EXISTS ${CMAKE_SOURCE_DIR}/Modules)
+ENDIF(MANAGE_ENVIRONMENT_PATH STREQUAL "NOTFOUND")
+
+IF(MANAGE_ENVIRONMENT_PATH STREQUAL "NOTFOUND")
+MESSAGE(FATAL_ERROR "ManageEnvironmentCommont is not found in CMAKE_MODULE_PATH.
+Please either:
+    1) Use cmake-fedora as a git submodule:
+       git submodule add https://git.fedorahosted.org/git/cmake-fedora.git 
+    2) Install cmake-fedora from repository:
+       yum -y install cmake-fedora
+    3) Download the source:
+       wget https://fedorahosted.org/releases/c/m/cmake-fedora/cmake-fedora-modules-only-latest.tar.gz
+       tar zxvf SOURCES/cmake-fedora-modules-only-latest.tar.gz")
+ENDIF(MANAGE_ENVIRONMENT_PATH STREQUAL "NOTFOUND")
+
+GET_FILENAME_COMPONENT(CMAKE_FEDORA_MODULE_DIR 
+    "${MANAGE_ENVIRONMENT_PATH}" PATH CACHE
+    )
 
 # Whether to build on fedora
 SET(CMAKE_FEDORA_ENABLE_FEDORA_BUILD "1" CACHE STRING "Enable fedora build")
@@ -39,34 +82,14 @@ SET(RPM_SPEC_SOURCES "<RPM_SPEC_SOURCE_URL>/%{name}-%{version}-Source.tar.gz")
 ####################################################################
 # Includes
 #
-LIST(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/Modules)
 
-# Create a link if Modules/ does not exists
-IF(EXISTS ${CMAKE_SOURCE_DIR}/cmake-fedora/Modules)
-    IF(NOT EXISTS ${CMAKE_SOURCE_DIR}/Modules)
-        EXECUTE_PROCESS(COMMAND ln -s ${CMAKE_SOURCE_DIR}/cmake-fedora/Modules .)
-    ENDIF(NOT EXISTS ${CMAKE_SOURCE_DIR}/Modules)
-ENDIF(EXISTS ${CMAKE_SOURCE_DIR}/cmake-fedora/Modules)
 
 # Use standard FHS if Fedora build is not enabled
 IF(NOT CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
-    IF(CMAKE_SYSTEM_PROCESSOR MATCHES "64")
-        SET(LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib64" CACHE PATH "Library dir")
-    ELSE(CMAKE_SYSTEM_PROCESSOR MATCHES "64")
-        SET(LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib" CACHE PATH "Library dir")
-    ENDIF(CMAKE_SYSTEM_PROCESSOR MATCHES "64")
     SET(LIBEXEC_DIR "${LIB_DIR}" CACHE PATH "LIBEXEC dir")
 ENDIF(NOT CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
 
 INCLUDE(ManageEnvironment RESULT_VARIABLE MANAGE_ENVIRONMENT_PATH)
-IF(MANAGE_ENVIRONMENT_PATH STREQUAL "NOTFOUND")
-    MESSAGE(FATAL_ERROR "ManageEnvironment is not found in CMAKE_MODULE_PATH,
-    please:
-    1) git submodule init; git submodule update
-    2) or install cmake-fedora/
-    3) wget -P SOURCES https://fedorahosted.org/releases/c/m/cmake-fedora/cmake-fedora-modules-only-latest.tar.gz
-    tar zxvf SOURCES/cmake-fedora-modules-only-latest.tar.gz")
-ENDIF(MANAGE_ENVIRONMENT_PATH STREQUAL "NOTFOUND")
 
 INCLUDE(ManageVersion)
 RELEASE_NOTES_READ_FILE()

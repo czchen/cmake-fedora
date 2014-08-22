@@ -156,6 +156,7 @@ PRJ_SUMMARY="<PRJ_SUMMARY>"
 TEMPLATES_PATH="/usr/share/cmake/Templates;Templates;cmake-fedora/Templates;$scriptDir/../Templates"
 PRJ_VENDOR="<PRJ_VENDOR>"
 PRJ_VER_INIT="0.1.0"
+CMAKE_FEDORA_GIT=https://git.fedorahosted.org/git/cmake-fedora.git
 
 if [ -e /etc/cmake-fedora.conf ]; then
     source /etc/cmake-fedora.conf
@@ -333,7 +334,12 @@ case $PRJ_SOURCE_VERSION_CONTROL in
 	append_gitignore 'CTestTestfile.cmake'
 
 	if [ ! -d Modules ];then
-	    if git clone https://git.fedorahosted.org/git/cmake-fedora.git; then
+	    if [[ -d .git ]];then
+		git submodule add ${CMAKE_FEDORA_GIT}
+	    else
+		git clone ${CMAKE_FEDORA_GIT}
+	    fi		
+	    if [[ -d cmake-fedora/Modules ]]; then
 		ln -s cmake-fedora/Modules .
 	    fi
 	fi
