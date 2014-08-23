@@ -165,6 +165,7 @@ make ${RPM_SPEC_MAKE_FLAGS}"
     )
 
 M_MSG(${M_INFO2} "CMAKE_FEDORA_SCRIPT_PATH_HINTS=${CMAKE_FEDORA_SCRIPT_PATH_HINTS}")
+
 FIND_PROGRAM_ERROR_HANDLING(RPM_EXECUTABLE
     ERROR_MSG "ManageRPM: rpm not found, rpm build support is disabled."
     ERROR_VAR _manage_rpm_dependency_missing
@@ -172,7 +173,7 @@ FIND_PROGRAM_ERROR_HANDLING(RPM_EXECUTABLE
     FIND_ARGS NAMES rpm
     )
 
-FIND_PROGRAM_ERROR_HANDLING(RPMBUILD_EXECUTABLE
+FIND_PROGRAM_ERROR_HANDLING(RPMBUILD_CMD
     ERROR_MSG "ManageRPM: rpmbuild-md5 or rpmbuild not found, rpm build support is disabled."
     ERROR_VAR _manage_rpm_dependency_missing
     VERBOSE_LEVEL ${M_OFF}
@@ -292,7 +293,7 @@ MACRO(MANAGE_RPM_SPEC)
     	SET(_opt_SPEC "${RPM_BUILD_SPECS}/${PROJECT_NAME}.spec")
     ENDIF(NOT _opt_SPEC)
 
-    SET(INSTALL_MANIFESTS_FILE "${CMAKE_SOURCE_DIR}/install_manifest.txt")
+    SET(INSTALL_MANIFESTS_FILE "${CMAKE_BINARY_DIR}/install_manifest.txt")
     ADD_CUSTOM_COMMAND(OUTPUT ${INSTALL_MANIFESTS_FILE}
 	COMMAND cmake -Dcmd=make_manifests
 	-Dmanifests=${INSTALL_MANIFESTS_FILE}
@@ -347,7 +348,7 @@ MACRO(PACK_RPM)
     ADD_CUSTOM_TARGET_COMMAND(srpm
 	NO_FORCE
 	OUTPUT ${PRJ_SRPM_FILE}
-	COMMAND ${RPMBUILD_EXECUTABLE} -bs ${_opt_SPEC}
+	COMMAND ${RPMBUILD_CMD} -bs ${_opt_SPEC}
 	--define '_sourcedir ${RPM_BUILD_SOURCES}'
 	--define '_builddir ${RPM_BUILD_BUILD}'
 	--define '_srcrpmdir ${RPM_BUILD_SRPMS}'
@@ -362,7 +363,7 @@ MACRO(PACK_RPM)
     ADD_CUSTOM_TARGET_COMMAND(rpm
 	OUTPUT ${PRJ_RPM_FILES}
 	NO_FORCE
-	COMMAND ${RPMBUILD_EXECUTABLE} --rebuild ${PRJ_SRPM_FILE}
+	COMMAND ${RPMBUILD_CMD} --rebuild ${PRJ_SRPM_FILE}
 	--define '_rpmdir ${RPM_BUILD_RPMS}'
 	--define '_builddir ${RPM_BUILD_BUILD}'
 	--define '_buildrootdir ${RPM_BUILD_BUILDROOT}'
