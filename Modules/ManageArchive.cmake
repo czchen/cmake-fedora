@@ -305,6 +305,7 @@ MACRO(PACK_SOURCE_ARCHIVE)
     ADD_CUSTOM_TARGET_COMMAND(pack_src
 	NO_FORCE
 	OUTPUT ${SOURCE_ARCHIVE_FILE}
+	COMMAND make pack_src_pre
 	COMMAND make package_source
 	${moveCommands}
 	DEPENDS  ${_dep_list}
@@ -312,14 +313,10 @@ MACRO(PACK_SOURCE_ARCHIVE)
 	VERBATIM
 	)
 
-    ADD_DEPENDENCIES(pack_src pack_src_pre)
-
     ADD_CUSTOM_TARGET(dist
 	DEPENDS ${SOURCE_ARCHIVE_FILE}
 	COMMENT "dist: ${SOURCE_ARCHIVE_FILE}"
 	)
-
-    ADD_DEPENDENCIES(dist pack_src_pre)
 
     ADD_CUSTOM_TARGET(clean_old_pack_src
 	COMMAND find .

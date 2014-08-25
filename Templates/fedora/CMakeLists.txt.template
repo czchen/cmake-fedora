@@ -83,14 +83,12 @@ SET(RPM_SPEC_SOURCES "<RPM_SPEC_SOURCE_URL>/%{name}-%{version}-Source.tar.gz")
 # Includes
 #
 
-
 # Use standard FHS if Fedora build is not enabled
 IF(NOT CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
     SET(LIBEXEC_DIR "${LIB_DIR}" CACHE PATH "LIBEXEC dir")
 ENDIF(NOT CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
 
-INCLUDE(ManageEnvironment RESULT_VARIABLE MANAGE_ENVIRONMENT_PATH)
-
+INCLUDE(ManageEnvironment)
 INCLUDE(ManageVersion)
 RELEASE_NOTES_READ_FILE()
 INCLUDE(ManageArchive)

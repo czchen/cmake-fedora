@@ -36,9 +36,9 @@ SET(RPM_SPEC_SOURCES "https://fedorahosted.org/releases/c/m/%{name}/%{name}-%{ve
 # Includes
 #
 INCLUDE(ManageEnvironment)
+INCLUDE(ManageArchive)
 INCLUDE(ManageVersion)
 RELEASE_NOTES_READ_FILE()
-INCLUDE(ManageArchive)
 INCLUDE(ManageDependency)
 INCLUDE(ManageFile)
 INCLUDE(ManageSourceVersionControl)
@@ -90,7 +90,11 @@ MANAGE_SOURCE_VERSION_CONTROL_GIT()
 # Packing
 #
 
-ADD_DEPENDENCIES(pack_src_pre test)
+ADD_CUSTEM_TARGET(ctest)
+    COMMAND ctest
+    COMMENT "ctest: Run tests"
+    )
+ADD_DEPENDENCIES(pack_src_pre ctest)
 
 ## Pack Source 
 SET(SOURCE_ARCHIVE_DIR ${CMAKE_BINARY_DIR}/SOURCES CACHE PATH "Source Archive Dir")
@@ -162,4 +166,9 @@ ADD_TEST("ManageZanata" ctest -S test/testManageZanata.cmake)
 ADD_TEST("CmakeFedoraScript" ctest -S test/testCmakeFedoraScript.cmake)
 ADD_TEST("CmakeFedoraKoji" ctest -S test/testCmakeFedoraKoji.cmake)
 ADD_TEST("CmakeFedoraFedpkg" ctest -S test/testCmakeFedoraFedpkg.cmake)
-
+ADD_TEST(NAME "cmake-fedora-newprj"
+    CONFIGURATION "debug"
+    WORKING_DIR "${CMAKE_FEDORA_TMP_DIR}"
+    COMMAND ${CMAKE_SOURCE_DIR}/scripts/cmake-fedora-newproj testProj
+    )
+    
