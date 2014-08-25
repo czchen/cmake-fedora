@@ -51,7 +51,7 @@ ENABLE_TESTING()
 #
 
 ## Requires
-MANAGE_DEPENDENCY(REQUIRES CMAKE VER "2.6.2" REQUIRED)
+MANAGE_DEPENDENCY(REQUIRES CMAKE VER "2.6.2")
 MANAGE_DEPENDENCY(REQUIRES GIT)
 
 ## Workaround for Bug 1115136 otherwise el7 won't work
@@ -63,6 +63,8 @@ MANAGE_DEPENDENCY(REQUIRES FEDPKG)
 
 ## Build requires
 MANAGE_DEPENDENCY(BUILD_REQUIRES CMAKE VER "2.6.2" REQUIRED)
+MANAGE_DEPENDENCY(BUILD_REQUIRES KOJI REQUIRED)
+
 
 ####################################################################
 # Building
@@ -166,8 +168,11 @@ ADD_TEST("ManageZanata" ctest -S test/testManageZanata.cmake)
 ADD_TEST("CmakeFedoraScript" ctest -S test/testCmakeFedoraScript.cmake)
 ADD_TEST("CmakeFedoraKoji" ctest -S test/testCmakeFedoraKoji.cmake)
 ADD_TEST("CmakeFedoraFedpkg" ctest -S test/testCmakeFedoraFedpkg.cmake)
-ADD_TEST(NAME "cmake-fedora-newprj"
-    CONFIGURATIONS "debug"
-    COMMAND ctest -S test/testCmakeFedoraNewprj.cmake
-    )
+
+IF(CMAKE_VERSION VERSION_GREATER 2.8.0)
+    ADD_TEST(NAME "cmake-fedora-newprj"
+	CONFIGURATIONS "debug"
+	COMMAND ctest -S test/testCmakeFedoraNewprj.cmake
+	)
+ENDIF(CMAKE_VERSION VERSION_GREATER 2.8.0)
     

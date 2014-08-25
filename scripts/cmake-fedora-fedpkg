@@ -80,7 +80,14 @@ function is_package_new_in_bodhi(){
     else
 	return 0
     fi
-    
+}
+
+function try_command(){
+    if ! "$@" ;then
+	ret=$?
+	echo "cmake-fedora-fedpkg: Failed to $@" > /dev/stderr
+	exit $ret
+    fi
 }
 
 # is target in bodhi
@@ -232,7 +239,7 @@ echo "UPDATE_TYPE=$UPDATE_TYPE" > /dev/stderr
 
 cd $WORK_DIR
 if [[ ! -r $NAME ]];then
-    $FEDPKG_CMD clone $NAME
+    try_command ${FEDPKG_CMD} clone $NAME
 fi
 
 if [[ ! -x $NAME ]];then
@@ -242,12 +249,12 @@ fi
 
 cd $NAME
 echo "Pulling $NAME..." > /dev/stderr
-$FEDPKG_CMD pull
+try_command ${FEDPKG_CMD} pull
 
 ## Interset between existing and koji fedpkg branches
 FEDPKG_BRANCHES_KOJI=(`$CMAKE_FEDORA_KOJI_CMD git-branch $@ | xargs ` )
 FEDPKG_BRANCHES_EXISTING=(` $FEDPKG_CMD switch-branch | grep origin | sed -e  's|^\s*origin/||' | xargs` )
-declare -a FEDPKG_BRANCHES=(master)
+declare -a FEDPKG_BRANCHES=()
 for activeBranch in "${FEDPKG_BRANCHES_KOJI[@]}"; do
     if contains_element "${activeBranch}" "${FEDPKG_BRANCHES_EXISTING[@]}";then
 	FEDPKG_BRANCHES+=(${activeBranch})
@@ -266,21 +273,21 @@ for b in "${FEDPKG_BRANCHES[@]}";do
     koji_buildinfo_suffix=`$CMAKE_FEDORA_KOJI_CMD koji-buildinfo-suffix $b`
 
     target="$NVR.$koji_buildinfo_suffix"
-    $FEDPKG_CMD switch-branch $b
+    try_command ${FEDPKG_CMD} switch-branch $b
     echo -n "Has $target already been built in koji? ... " > /dev/stderr
     if is_target_built $target ;then
 	echo "yes, skip this." > /dev/stderr
     else
 	echo "no, start building." > /dev/stderr
 	if [[ $first = $b ]];then
-	    $FEDPKG_CMD import $SRPM
-	    $FEDPKG_CMD commit -m "$MSG"
+	    try_command ${FEDPKG_CMD} import $SRPM
+	    try_command ${FEDPKG_CMD} commit -m "$MSG"
 	else
-	    $GIT_CMD merge $first
+	    try_command $GIT_CMD merge $first
 	fi
-	$FEDPKG_CMD push
+	try_command ${FEDPKG_CMD} push
 	echo "Building $NVR.$bodhi_branch" > /dev/stderr
-	$FEDPKG_CMD build
+	try_command ${FEDPKG_CMD} build
     fi
 
     bodhi_branch=`$CMAKE_FEDORA_KOJI_CMD bodhi-branch $b`
@@ -297,7 +304,7 @@ for b in "${FEDPKG_BRANCHES[@]}";do
 done
 
 if [[ -n "$bodhiPushList" ]];then
-    ${BODHI_CMD} -n "${BODHI_OPTS[@]}" -t $UPDATE_TYPE -u $BODHI_USER -N "$CHANGELOGTEXT" -R testing $bodhiPushList
+    try_command ${BODHI_CMD} -n "${BODHI_OPTS[@]}" -t $UPDATE_TYPE -u $BODHI_USER -N "$CHANGELOGTEXT" -R testing $bodhiPushList
 else
     echo "Nothing to push to bodhi." > /dev/stderr
 fi

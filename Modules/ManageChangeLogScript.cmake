@@ -7,24 +7,37 @@
 MACRO(MANAGE_CHANGELOG_SCRIPT_PRINT_USAGE)
     MESSAGE("Manage ChangeLog script: This script is not recommend for end users.
 
-cmake -Dcmd=update 
-      -Dchangelog=<path/ChangeLog> 
-      -Drelease=<path/RELEASE-NOTES.txt>
-      -Dprj_info=<path/prj_info.cmake>
-      [\"-D<var>=<value>\"]
+cmake -D cmd=make
+      -D changelog=<path/ChangeLog> 
+      -D release=<path/RELEASE-NOTES.txt>
+      -D prj_info=<path/prj_info.cmake>
+      [-D \"<var>=<value>\"]
     -P <CmakeModulePath>/ManageChangeLogScript.cmake
-  Update the ChangeLog.
+    Always update ChangeLog.
 
-cmake -Dcmd=extract_current
-      -Drelease=<path/RELEASE-NOTES.txt>
-      [\"-D<var>=<value>\"]
+cmake -D cmd=update 
+      -D changelog=<path/ChangeLog> 
+      -D release=<path/RELEASE-NOTES.txt>
+      -D prj_info=<path/prj_info.cmake>
+      -D cmakecache=<path/CMakeCache.txt>
+      [-D cmake_source_dir=<dir>]
+      [-D \"<var>=<value>\"]
+    -P <CmakeModulePath>/ManageChangeLogScript.cmake
+    This command updates ChangeLog only at one of following condition.
+    1) ChangeLog does not exists
+    2) RELEASE-NOTES.txt is newer than CMakeCache.txt
+    3) RELEASE-NOTES.txt is newer than ChangeLog
+
+cmake -D cmd=extract_current
+      -D release=<path/RELEASE-NOTES.txt>
+      [-D \"<var>=<value>\"]
     -P <CmakeModulePath>/ManageChangeLogScript.cmake
   Extract current Changelog items from RELEASE-NOTES.txt
 
-cmake -Dcmd=extract_prev
-      -Dver=<ver>
-      -Dchangelog=<path/ChangeLog> 
-      [\"-D<var>=<value>\"]
+cmake -D cmd=extract_prev
+      -D ver=<ver>
+      -D changelog=<path/ChangeLog> 
+      [-D \"<var>=<value>\"]
     -P <CmakeModulePath>/ManageChangeLogScript.cmake
   Extract prev Changelog items from ChangeLog.
 
@@ -98,7 +111,7 @@ MACRO(EXTRACT_PREV_FROM_CHANGELOG strVar ver changeLogFile)
     SET(${strVar} "${_prev}")
 ENDMACRO()
 
-MACRO(CHANGELOG_UPDATE prj_info release changelog)
+MACRO(CHANGELOG_MAKE prj_info release changelog)
     PRJ_INFO_CMAKE_READ("${prj_info}")
 
     EXTRACT_CURRENT_FROM_RELEASE(currentStr "${release}")
@@ -148,8 +161,26 @@ INCLUDE(ManageVersion)
 IF(NOT DEFINED cmd)
     MANAGE_CHANGELOG_SCRIPT_PRINT_USAGE()
 ELSE()
-    IF("${cmd}" STREQUAL "update")
-	CHANGELOG_UPDATE(${prj_info} ${release} ${changelog})
+    IF("${cmd}" STREQUAL "make")
+	CHANGELOG_MAKE(${prj_info} ${release} ${changelog})
+    ELSEIF("${cmd}" STREQUAL "update")
+	SET(updateRequired 0)
+	IF(EXISTS ${changelog})
+	    IF(${release} IS_NEWER_THAN ${cmakecache})
+		IF(cmake_source_dir STREQUAL "")
+		    SET(cmake_source_dir ".")
+		ENDIF()
+		EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} ${cmake_source_dir})
+		SET(updateRequired 1)
+	    ELSEIF(${release} IS_NEWER_THAN ${changelog})
+		SET(updateRequired 1)
+	    ENDIF()
+	ELSE()
+	    SET(updateRequired 1)
+	ENDIF()
+	IF(updateRequired)
+	    CHANGELOG_MAKE(${prj_info} ${release} ${changelog})
+	ENDIF()
     ELSEIF("${cmd}" STREQUAL "extract_current")
 	EXTRACT_CURRENT_FROM_RELEASE(outVar ${release})
 	M_OUT("${outVar}")

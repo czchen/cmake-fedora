@@ -1,10 +1,7 @@
-PRJ_VER=2.2.1
+PRJ_VER=2.3.0
 SUMMARY=Suitable for more generic build
 REDHAT_BUGZILLA=1002279,1093336
 [Changes]
-- ManageEnvironmentCommon: Module of variable for both normal and script mode.
-- ManageDependency: Make changes suitable for more generic *nix build.
-    e.g. FEDORA_NAME -> PACKAGE_NAME
-- ManageZanata: MANAGE_ZANATA: New option CLEAN_ZANATA_XML.
-- Workaround for Bug 1115136, otherwise el7 won't work.
+- cmake-fedora-fedpkg: fix try_command
+- ManageChangeLogScript: New command "make"
 

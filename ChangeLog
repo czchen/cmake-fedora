@@ -1,3 +1,7 @@
+* Tue Aug 26 2014 Ding-Yi Chen <dchen at redhat.com> - 2.3.0
+- cmake-fedora-fedpkg: fix try_command
+- ManageChangeLogScript: New command "make"
+
 * Mon Aug 25 2014 Ding-Yi Chen <dchen at redhat.com> - 2.2.1
 - ManageEnvironmentCommon: Module of variable for both normal and script mode.
 - ManageDependency: Make changes suitable for more generic *nix build.
