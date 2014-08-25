@@ -168,8 +168,11 @@ ADD_TEST("ManageZanata" ctest -S test/testManageZanata.cmake)
 ADD_TEST("CmakeFedoraScript" ctest -S test/testCmakeFedoraScript.cmake)
 ADD_TEST("CmakeFedoraKoji" ctest -S test/testCmakeFedoraKoji.cmake)
 ADD_TEST("CmakeFedoraFedpkg" ctest -S test/testCmakeFedoraFedpkg.cmake)
-ADD_TEST(NAME "cmake-fedora-newprj"
-    CONFIGURATIONS "debug"
-    COMMAND ctest -S test/testCmakeFedoraNewprj.cmake
-    )
+
+IF(CMAKE_VERSION VERSION_GREATER 2.8.0)
+    ADD_TEST(NAME "cmake-fedora-newprj"
+	CONFIGURATIONS "debug"
+	COMMAND ctest -S test/testCmakeFedoraNewprj.cmake
+	)
+ENDIF(CMAKE_VERSION VERSION_GREATER 2.8.0)
     
