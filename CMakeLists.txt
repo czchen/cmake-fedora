@@ -90,7 +90,7 @@ MANAGE_SOURCE_VERSION_CONTROL_GIT()
 # Packing
 #
 
-ADD_CUSTEM_TARGET(ctest)
+ADD_CUSTOM_TARGET(ctest
     COMMAND ctest
     COMMENT "ctest: Run tests"
     )
@@ -167,8 +167,7 @@ ADD_TEST("CmakeFedoraScript" ctest -S test/testCmakeFedoraScript.cmake)
 ADD_TEST("CmakeFedoraKoji" ctest -S test/testCmakeFedoraKoji.cmake)
 ADD_TEST("CmakeFedoraFedpkg" ctest -S test/testCmakeFedoraFedpkg.cmake)
 ADD_TEST(NAME "cmake-fedora-newprj"
-    CONFIGURATION "debug"
-    WORKING_DIR "${CMAKE_FEDORA_TMP_DIR}"
-    COMMAND ${CMAKE_SOURCE_DIR}/scripts/cmake-fedora-newproj testProj
+    CONFIGURATIONS "debug"
+    COMMAND ctest -S test/testCmakeFedoraNewprj.cmake
     )
     

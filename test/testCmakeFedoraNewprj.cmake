@@ -19,6 +19,7 @@ FUNCTION(CMAKE_FEDORA_NEWPRJ_TEST projectName)
     IF(EXISTS "${projectDir}")
 	FILE(REMOVE_RECURSE "${projectDir}")
     ENDIF(EXISTS "${projectDir}")
+
     FILE(MAKE_DIRECTORY "${projectDir}")
     EXECUTE_PROCESS(COMMAND ${CMAKE_FEDORA_NEWPRJ_CMD} "${projectName}"
 	RESULT_VARIABLE failVar
@@ -29,8 +30,18 @@ FUNCTION(CMAKE_FEDORA_NEWPRJ_TEST projectName)
     IF(failVar)
 	MESSAGE(SEND_ERROR "${failVar}: ${errVar} |out=${outVar}|")
     ENDIF(failVar)
+    
     EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} "."
-	COMMAND make rpm
+	RESULT_VARIABLE failVar
+	OUTPUT_VARIABLE outVar
+	ERROR_VARIABLE  errVar
+	WORKING_DIRECTORY "${projectDir}"
+	)
+    IF(failVar)
+	MESSAGE(SEND_ERROR "${failVar}: ${errVar} |out=${outVar}|")
+    ENDIF(failVar)
+
+    EXECUTE_PROCESS(COMMAND make rpm
 	RESULT_VARIABLE failVar
 	OUTPUT_VARIABLE outVar
 	ERROR_VARIABLE  errVar
