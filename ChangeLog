@@ -5,12 +5,6 @@
 - ManageZanata: MANAGE_ZANATA: New option CLEAN_ZANATA_XML.
 - Workaround for Bug 1115136, otherwise el7 won't work.
 
-* Tue Aug 19 2014 Ding-Yi Chen <dchen at redhat.com> - 2.2.0
-- ManageDependency: Make changes suitable for more generic *nix build.
-    e.g. FEDORA_NAME -> PACKAGE_NAME
-- ManageZanata: MANAGE_ZANATA: New option CLEAN_ZANATA_XML.
-- Workaround for Bug 1115136, otherwise el7 won't work.
-
 * Fri Aug 15 2014 Ding-Yi Chen <dchen at redhat.com> - 2.1.3
 - Fixed cmake-fedora-fedpkg    	
 
