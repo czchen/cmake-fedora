@@ -83,7 +83,7 @@ function is_package_new_in_bodhi(){
 }
 
 function try_command(){
-    if [[ ! "$@" ]];then
+    if ! "$@" ;then
 	ret=$?
 	echo "cmake-fedora-fedpkg: Failed to $@" > /dev/stderr
 	exit $ret
@@ -254,7 +254,7 @@ try_command ${FEDPKG_CMD} pull
 ## Interset between existing and koji fedpkg branches
 FEDPKG_BRANCHES_KOJI=(`$CMAKE_FEDORA_KOJI_CMD git-branch $@ | xargs ` )
 FEDPKG_BRANCHES_EXISTING=(` $FEDPKG_CMD switch-branch | grep origin | sed -e  's|^\s*origin/||' | xargs` )
-declare -a FEDPKG_BRANCHES=(master)
+declare -a FEDPKG_BRANCHES=()
 for activeBranch in "${FEDPKG_BRANCHES_KOJI[@]}"; do
     if contains_element "${activeBranch}" "${FEDPKG_BRANCHES_EXISTING[@]}";then
 	FEDPKG_BRANCHES+=(${activeBranch})

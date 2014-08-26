@@ -1,6 +1,6 @@
-PRJ_VER=2.2.2
+PRJ_VER=2.2.3
 SUMMARY=Suitable for more generic build
 REDHAT_BUGZILLA=1002279,1093336
 [Changes]
-- cmake-fedora-fedpkg: Fail-fast if error is discovered.
+- cmake-fedora-fedpkg: fix try_command
 
