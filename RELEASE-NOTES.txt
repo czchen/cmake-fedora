@@ -1,6 +1,7 @@
-PRJ_VER=2.2.3
+PRJ_VER=2.3.0
 SUMMARY=Suitable for more generic build
 REDHAT_BUGZILLA=1002279,1093336
 [Changes]
 - cmake-fedora-fedpkg: fix try_command
+- ManageChangeLogScript: New command "make"
 

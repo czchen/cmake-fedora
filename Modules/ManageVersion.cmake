@@ -159,6 +159,8 @@ FUNCTION(RELEASE_NOTES_READ_FILE)
 	-Dchangelog=${CHANGELOG_FILE}
 	-Drelease=${RELEASE_NOTES_FILE}
 	-Dprj_info=${PRJ_INFO_CMAKE_FILE}
+	-Dcmakecache=${CMAKE_BINARY_DIR}/CMakeCache.txt
+	-Dcmake_source_dir=${CMAKE_SOURCE_DIR}
 	-P ${CMAKE_FEDORA_MODULE_DIR}/ManageChangeLogScript.cmake
 	DEPENDS ${RELEASE_NOTES_FILE}
 	COMMENT "changelog: ${CHANGELOG_FILE}"
