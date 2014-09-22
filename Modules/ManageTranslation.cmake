@@ -455,7 +455,8 @@ FUNCTION(MANAGE_GETTEXT)
     ## Depends on pot_file targets instead of pot files themselves
     ## Otherwise it won't build when pot files is in sub CMakeLists.txt
     FOREACH(potFile ${MANAGE_TRANSLATION_GETTEXT_POT_FILES})
-	ADD_DEPENDENCIES(pot_files pot_file_${potFile}_no_force)
+	MANAGE_POT_FILE_OBTAIN_TARGET_NAME(targetName "${potFile}")
+	ADD_DEPENDENCIES(pot_files pot_file_${targetName}_no_force)
     ENDFOREACH(potFile)
 
     ## Target update_po 

@@ -1,3 +1,9 @@
+* Mon Sep 22 2014 Ding-Yi Chen <dchen at redhat.com> - 2.3.1
+- Fixed RHBZ 1144906 - cmake-fedora failed to build target pot_files if the .pot file not exists.
+- ManageDependency: var_CFLAGS and var_LIBS are also cached.
+- ManageDependency: var_INCLUDEDIR also includes directories from var_CFLAGS.
+- ManageGConf: Added "Variables to cache".
+
 * Tue Aug 26 2014 Ding-Yi Chen <dchen at redhat.com> - 2.3.0
 - cmake-fedora-fedpkg: fix try_command
 - ManageChangeLogScript: New command "make"
