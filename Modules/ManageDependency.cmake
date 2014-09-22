@@ -86,6 +86,22 @@ SET(MANAGE_DEPENDENCY_PACKAGE_INSTALL_CMD yum -y install
 ## the 2nd time called.
 FIND_PACKAGE(PkgConfig)
 
+FUNCTION(MANAGE_DEPENDENCY_APPEND_INCLUDEDIR_FROM_CFLAGS var)
+    STRING(REPLACE " " ";" cflags "${${var}_CFLAGS}")
+    FOREACH(_f ${cflags})
+	IF(_f MATCHES "^-I")
+	    STRING(REGEX REPLACE "^-I" "" subDir "${_f}")
+	    LIST(APPEND ${var}_INCLUDEDIR "${subDir}")
+	    SET(${var}_INCLUDEDIR "${${var}_INCLUDEDIR}" 
+		CACHE INTERNAL "${var}_INCLUDEDIR")
+	ENDIF(_f MATCHES "^-I")
+    ENDFOREACH(_f)
+    SET(${var}_INCLUDEDIR "${${var}_INCLUDEDIR}" 
+	CACHE INTERNAL "${var}_INCLUDEDIR")
+    MARK_AS_ADVANCED(${var}_INCLUDEDIR)
+    M_MSG(${M_INFO1} "${var}_INCLUDEDIR=${${var}_INCLUDEDIR}")
+ENDFUNCTION(MANAGE_DEPENDENCY_APPEND_INCLUDEDIR_FROM_CFLAGS)
+
 ## This is declared as function, because 
 ## macro does not play nice if listVar is required in different
 ## source dir.
@@ -223,6 +239,22 @@ FUNCTION(MANAGE_DEPENDENCY listVar var)
 		MARK_AS_ADVANCED(${var}_${_u})
 		M_MSG(${M_INFO1} "${var}_${_u}=${${var}_${_u}}")
 	    ENDFOREACH(_v)
+
+	    ## Other important options
+	    FOREACH(_pOpt cflags libs)
+		STRING(TOUPPER "${_pOpt}" _u)
+		EXECUTE_PROCESS(COMMAND ${PKG_CONFIG_EXECUTABLE}
+		    "--${_pOpt}" "${pkgConf}"
+		    OUTPUT_VARIABLE ${var}_${_u}
+		    OUTPUT_STRIP_TRAILING_WHITESPACE
+		    )
+		SET(${var}_${_u} "${${var}_${_u}}" 
+		    CACHE INTERNAL "pkgconfig ${var}_${u}")
+		MARK_AS_ADVANCED(${var}_${_u})
+		M_MSG(${M_INFO1} "${var}_${_u}=${${var}_${_u}}")
+	    ENDFOREACH(_pOpt)
+
+	    MANAGE_DEPENDENCY_APPEND_INCLUDEDIR_FROM_CFLAGS(${var})
 	ENDIF(NOT pkgconfigFailed)
     ENDIF(pkgConf)
 
