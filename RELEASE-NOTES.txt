@@ -2,7 +2,8 @@ PRJ_VER=2.3.1
 SUMMARY=
 REDHAT_BUGZILLA=1144906
 [Changes]
-- Fixed RHBZ 1144906 - cmake-fedora failed to build target pot_files if the .pot file not exists
-- ManageDependency: var_CFLAGS and var_LIBS are also cached
-- ManageDependency: var_INCLUDEDIR also includes directories from var_CFLAGS
+- Fixed RHBZ 1144906 - cmake-fedora failed to build target pot_files if the .pot file not exists.
+- ManageDependency: var_CFLAGS and var_LIBS are also cached.
+- ManageDependency: var_INCLUDEDIR also includes directories from var_CFLAGS.
+- ManageGConf: Added "Variables to cache".
 

@@ -13,14 +13,11 @@
 #	    Default: ${SYSCONF_DIR}/gconf/schemas
 #         + CONFIG_SOURCE <source>: (Optional) Configuration source.
 #           Default: "" (Use the system default) 
-#       * Reads and defines following variables:
-#         + GCONF_SCHEMAS_FILE: Schema file.
-#           Default: ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.schemas
-#         + GCONF_SCHEMAS_INSTALL_DIR: Directory the 
-#           schemas file installed to
-#	    Default: ${SYSCONF_INSTALL_DIR}/gconf/schemas
-#         + GCONF_CONFIG_SOURCE: Configuration source.
-#           Default: "" (Use the system default).  
+#       * Variables to cache:
+#         + GCONF2_PKG_CONFIG: GConf2 pkg-config name
+#           Default: gconf-2.0
+#         + GCONF2_DEVEL_PACKAGE_NAME: GConf2 devel package name
+#           Default: GConf2-devel
 #       * Defines following targets:
 #         + install_schemas: install schemas.
 #         + uninstall_schemas: uninstall schemas.
@@ -31,9 +28,11 @@ IF(DEFINED _MANAGE_GCONF_CMAKE_)
 ENDIF(DEFINED _MANAGE_GCONF_CMAKE_)
 SET(_MANAGE_GCONF_CMAKE_ DEFINED)
 INCLUDE(ManageDependency)
+SET(GCONF2_PKG_CONFIG "gconf-2.0" CACHE STRING "GConf2 pkg-config name")
+SET(GCONF2_DEVEL_PACKAGE_NAME "GConf2-devel" CACHE STRING "GConf2 devel package name")
 MANAGE_DEPENDENCY(REQUIRES GCONF2 REQUIRED PACKAGE_NAME "GConf2")
 MANAGE_DEPENDENCY(BUILD_REQUIRES GCONF2 REQUIRED 
-    PKG_CONFIG "gconf-2.0" PACKAGE_NAME "GConf2-devel"
+    PKG_CONFIG ${GCONF2_PKG_CONFIG} PACKAGE_NAME "${GCONF2_DEVEL_PACKAGE_NAME}"
     )
 MANAGE_DEPENDENCY(REQUIRES_PRE GCONF2 REQUIRED 
     PACKAGE_NAME "GConf2"
