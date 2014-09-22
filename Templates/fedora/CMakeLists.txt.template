@@ -53,7 +53,7 @@ GET_FILENAME_COMPONENT(CMAKE_FEDORA_MODULE_DIR
 # Whether to build on fedora
 SET(CMAKE_FEDORA_ENABLE_FEDORA_BUILD "1" CACHE STRING "Enable fedora build")
 
-# Message level M_OFF (4)
+# Default Message level M_OFF (4)
 SET(MANAGE_MESSAGE_LEVEL 4 CACHE STRING "Message (Verbose) Level")
 
 ####################################################################

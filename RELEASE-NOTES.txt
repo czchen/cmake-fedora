@@ -1,5 +1,5 @@
 PRJ_VER=2.3.1
-SUMMARY=
+SUMMARY=Fixed RHBZ 1144906; ManageDependency; ManageGConf
 REDHAT_BUGZILLA=1144906
 [Changes]
 - Fixed RHBZ 1144906 - cmake-fedora failed to build target pot_files if the .pot file not exists.

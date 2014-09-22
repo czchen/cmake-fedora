@@ -299,6 +299,13 @@ FUNCTION(MANAGE_POT_FILE_SET_VARS cmdListVar msgmergeOptsVar msgfmtOptsVar poDir
     ENDIF()
 ENDFUNCTION(MANAGE_POT_FILE_SET_VARS)
 
+FUNCTION(MANAGE_POT_FILE_OBTAIN_TARGET_NAME var potFile)
+    FILE(RELATIVE_PATH potFileRel ${CMAKE_SOURCE_DIR} ${potFile})
+    STRING(REPLACE "/" "_" target "${potFileRel}")
+    STRING_PREPEND(target "pot_file_")
+    SET(${var} "${target}" PARENT_SCOPE)
+ENDFUNCTION(MANAGE_POT_FILE_OBTAIN_TARGET_NAME)
+
 FUNCTION(MANAGE_POT_FILE potFile)
     IF(NOT DEFINED MANAGE_GETTEXT_SUPPORT)
 	MANAGE_GETTEXT_INIT()
@@ -310,7 +317,13 @@ FUNCTION(MANAGE_POT_FILE potFile)
     MANAGE_POT_FILE_SET_VARS(cmdList msgmergeOpts msgfmtOpts poDir moDir allClean srcs depends 
 	"${potFile}" ${ARGN}
 	)
-    ADD_CUSTOM_COMMAND(OUTPUT ${potFile}
+
+    MANAGE_POT_FILE_OBTAIN_TARGET_NAME(targetName "${potFile}")
+
+    MESSAGE("## targetName=${targetName}")
+    ADD_CUSTOM_TARGET_COMMAND(${targetName}
+	OUTPUT ${potFile}
+	NO_FORCE
 	COMMAND ${cmdList}
 	DEPENDS ${srcs} ${depends}
 	COMMENT "${potFile}: ${cmdList}"
@@ -415,6 +428,7 @@ FUNCTION(MANAGE_GETTEXT)
 	MANAGE_POT_FILE("${_o_POT_FILE}" ${_addPotFileOptList})
     ENDIF()
 
+    MESSAGE("## MANAGE_TRANSLATION_GETTEXT_POT_FILES=${MANAGE_TRANSLATION_GETTEXT_POT_FILES}")
     ## Do we need to create the pot file?
     IF("${MANAGE_TRANSLATION_GETTEXT_POT_FILES}" STREQUAL "")
 	## Yes, use the default pot file, and create it
@@ -437,9 +451,14 @@ FUNCTION(MANAGE_GETTEXT)
     ## Target pot_files 
     ## PO depends on POT, so no need to put ALL here
     ADD_CUSTOM_TARGET(pot_files
-	DEPENDS ${MANAGE_TRANSLATION_GETTEXT_POT_FILES}
 	COMMENT "pot_files: ${MANAGE_TRANSLATION_GETTEXT_POT_FILES}"
 	)
+
+    ## Depends on pot_file targets instead of pot files themselves
+    ## Otherwise it won't build when pot files is in sub CMakeLists.txt
+    FOREACH(potFile ${MANAGE_TRANSLATION_GETTEXT_POT_FILES})
+	ADD_DEPENDENCIES(pot_files pot_file_${potFile}_no_force)
+    ENDFOREACH(potFile)
 
     ## Target update_po 
     ADD_CUSTOM_TARGET(update_po
