@@ -320,7 +320,6 @@ FUNCTION(MANAGE_POT_FILE potFile)
 
     MANAGE_POT_FILE_OBTAIN_TARGET_NAME(targetName "${potFile}")
 
-    MESSAGE("## targetName=${targetName}")
     ADD_CUSTOM_TARGET_COMMAND(${targetName}
 	OUTPUT ${potFile}
 	NO_FORCE
@@ -428,7 +427,6 @@ FUNCTION(MANAGE_GETTEXT)
 	MANAGE_POT_FILE("${_o_POT_FILE}" ${_addPotFileOptList})
     ENDIF()
 
-    MESSAGE("## MANAGE_TRANSLATION_GETTEXT_POT_FILES=${MANAGE_TRANSLATION_GETTEXT_POT_FILES}")
     ## Do we need to create the pot file?
     IF("${MANAGE_TRANSLATION_GETTEXT_POT_FILES}" STREQUAL "")
 	## Yes, use the default pot file, and create it
