@@ -147,7 +147,7 @@ ENDIF()
 GET_FILENAME_COMPONENT(CMAKE_FEDORA_MODULE_DIR 
     "${MANAGE_MODULE_PATH}" PATH)
 
-INCLUDE(ManageEnvironment)
+INCLUDE(ManageEnvironmentCommon)
 INCLUDE(ManageString)
 INCLUDE(ManageVariable)
 INCLUDE(ManageVersion)
