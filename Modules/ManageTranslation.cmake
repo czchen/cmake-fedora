@@ -337,6 +337,7 @@ FUNCTION(MANAGE_POT_FILE potFile)
 	## PO file
 	SET(_poFile "${poDir}/${_l}.po")
 	ADD_CUSTOM_COMMAND(OUTPUT ${_poFile}
+	    COMMAND ${CMAKE_BUILD_TOOL} ${targetName}_no_force
 	    COMMAND ${CMAKE_COMMAND} 
 	    -D cmd=po_make
 	    -D "pot=${potFile}"
@@ -344,7 +345,6 @@ FUNCTION(MANAGE_POT_FILE potFile)
 	    -D "options=${msgmergeOpts}"
 	    -D "po_dir=${poDir}"
 	    -P ${CMAKE_FEDORA_MODULE_DIR}/ManageGettextScript.cmake
-	    DEPENDS ${potFile}
 	    COMMENT "Create ${_poFile} from ${potFile}"
 	    VERBATIM
 	    )
