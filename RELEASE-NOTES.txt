@@ -1,9 +1,10 @@
-PRJ_VER=2.3.1
-SUMMARY=Fixed RHBZ 1144906; ManageDependency; ManageGConf
+PRJ_VER=2.3.2
+SUMMARY=Fixed RHBZ 1144906; el7 and fc21 is now available in bodhi
 REDHAT_BUGZILLA=1144906
 [Changes]
 - Fixed RHBZ 1144906 - cmake-fedora failed to build target pot_files if the .pot file not exists.
 - ManageDependency: var_CFLAGS and var_LIBS are also cached.
 - ManageDependency: var_INCLUDEDIR also includes directories from var_CFLAGS.
 - ManageGConf: Added "Variables to cache".
-
+- cmake-fedora.conf: el7 and fc21 is now available in bodhi.
+- ManageRPMScript: Fixed the mo file handling.

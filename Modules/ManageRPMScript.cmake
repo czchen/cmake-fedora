@@ -61,7 +61,7 @@ cmake -Dcmd=make_manifests
 ENDMACRO(MANAGE_RPM_SCRIPT_PRINT_USAGE)
 
 MACRO(MANIFEST_TO_STRING strVar hasTransVar manifestsFile)
-    SET(${hasTransVer} 0)
+    SET(${hasTransVar} 0)
 
     FILE(STRINGS ${manifestsFile} _filesInManifests)
     SET(_docList "")

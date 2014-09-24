@@ -3,6 +3,7 @@
 - ManageDependency: var_CFLAGS and var_LIBS are also cached.
 - ManageDependency: var_INCLUDEDIR also includes directories from var_CFLAGS.
 - ManageGConf: Added "Variables to cache".
+- cmake-fedora.conf: el7 and fc21 is now available in bodhi.
 
 * Tue Aug 26 2014 Ding-Yi Chen <dchen at redhat.com> - 2.3.0
 - cmake-fedora-fedpkg: fix try_command
