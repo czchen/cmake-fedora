@@ -421,6 +421,29 @@ ENDFUNCTION(MANAGE_ZANATA)
 # MANAGE_ZANATA_XML_MAKE
 #
 
+FUNCTION(ZANATA_LOCALE_TO_STRING_COMPACT var language script country modifier)
+    SET(str "${language}")
+    IF(country)
+	STRING_APPEND(str "${country}" "_")
+    ENDIF()
+    IF(modifier)
+	STRING_APPEND(str "${modifier}" "@")
+    ENDIF()
+    SET(${var} "${str}" PARENT_SCOPE)
+ENDFUNCTION(ZANATA_LOCALE_TO_STRING_COMPACT)
+
+FUNCTION(ZANATA_LANGUAGE_HAS_COUNTRY var language)
+    IF("${language}" STREQUAL "eo")
+	## Esperanto
+	SET(${var} 0 PARENT_SCOPE)
+    ELSEIF("${language}" STREQUAL "la")
+	## Latin
+	SET(${var} 0 PARENT_SCOPE)
+    ELSE()
+	SET(${var} 1 PARENT_SCOPE)
+    ENDIF()
+ENDFUNCTION(ZANATA_LANGUAGE_HAS_COUNTRY)
+
 FUNCTION(ZANATA_PARSE_LOCALE language script country modifier suggestCountry suggestModifier str)
     INCLUDE(ManageZanataSuggest)
     SET(s "")
@@ -448,6 +471,18 @@ FUNCTION(ZANATA_PARSE_LOCALE language script country modifier suggestCountry sug
 	ENDIF()
     ENDIF()
 
+    SET(${language} "${l}" PARENT_SCOPE)
+    ## No need to proceed if the language does not have country.
+    ZANATA_LANGUAGE_HAS_COUNTRY(langHasCountry l)
+    IF(NOT langHasCountry)
+	SET(${script} "${s}" PARENT_SCOPE)
+	SET(${country} "${c}" PARENT_SCOPE)
+	SET(${modifier} "${m}" PARENT_SCOPE)
+	SET(${suggestCountry} "${sC}" PARENT_SCOPE)
+	SET(${suggestModifier} "${sM}" PARENT_SCOPE)
+	RETURN()
+    ENDIF()
+
     IF(NOT "${c}" STREQUAL "")
 	SET(sC "${c}")
     ELSEIF(NOT "${s}" STREQUAL "")
@@ -463,11 +498,8 @@ FUNCTION(ZANATA_PARSE_LOCALE language script country modifier suggestCountry sug
     ENDIF()
 
     IF("${sC}" STREQUAL "")
-	IF("${l}" STREQUAL "eo")
-	ELSE()
-	    M_MSG(${M_WARN} "ZANATA_PARSE_LOCALE() Failed to recognized locale ${str}")
-	    RETURN()
-	ENDIF()
+	M_MSG(${M_INFO} "ZANATA_PARSE_LOCALE() Aassociate country for locale ${str} not found")
+	RETURN()
     ENDIF()
 
     ## Suggest modifier
@@ -480,14 +512,12 @@ FUNCTION(ZANATA_PARSE_LOCALE language script country modifier suggestCountry sug
 	ENDIF()
     ENDIF()
 
-    SET(${language} "${l}" PARENT_SCOPE)
     SET(${script} "${s}" PARENT_SCOPE)
     SET(${country} "${c}" PARENT_SCOPE)
     SET(${modifier} "${m}" PARENT_SCOPE)
     SET(${suggestCountry} "${sC}" PARENT_SCOPE)
     SET(${suggestModifier} "${sM}" PARENT_SCOPE)
 ENDFUNCTION(ZANATA_PARSE_LOCALE)
-
 
 FUNCTION(ZANATA_ZANATA_XML_DOWNLOAD zanataXml url project version)
     SET(zanataXmlUrl 
@@ -549,6 +579,18 @@ FUNCTION(ZANATA_ZANATA_XML_MAP_BETTER_MATCH var currentBestMatch serverLocale cl
     SET(${var} "${nowBest}" PARENT_SCOPE)
 ENDFUNCTION(ZANATA_ZANATA_XML_MAP_BETTER_MATCH)
 
+FUNCTION(ZANATA_LOCALE_BEST_MATCH var locale candidateLocales)
+    ## Build "Candidate Hash"
+    ZANATA_PARSE_LOCALE(Lang Script Country Modifier SCountry SModifier "${locale}") 
+    FOREACH(cL ${candidateLocales})
+	ZANATA_PARSE_LOCALE(cLang cScript cCountry cModifier cSCountry cSModifier "${cL}") 
+	IF("${cLang}" STREQUAL "${Lang}")
+	    SET(_ZANATA_LOCALE_CANDIDATE_${cLang}_${cCountry}_${cModifier} "${cScripts}_${cSCountry}_${sSModifier}")
+	ENDIF()
+    ENDFOREACH()
+
+ENDFUNCTION(ZANATA_CLIENT_LOCALE_BEST_MATCH)
+
 FUNCTION(ZANATA_ZANATA_XML_MAP zanataXml zanataXmlIn clientLocales)
     INCLUDE(ManageTranslation)
     INCLUDE(ManageZanataSuggest)
@@ -562,6 +604,12 @@ FUNCTION(ZANATA_ZANATA_XML_MAP zanataXml zanataXmlIn clientLocales)
     ENDIF()
     M_MSG(${M_INFO3} "clientLocales=${clientLocales}")
 
+    ## Build "Client Hash"
+    FOREACH(cL ${clientLocales})
+	ZANATA_PARSE_LOCALE(cLang cScript cCountry cModifier cSCountry cSModifier "${cL}") 
+	SET(_ZANATA_CLIENT_LOCALE_${cLang}_${cCountry}_${cModifier} "${cScripts}_${cSCountry}_${sSModifier}")
+    ENDFOREACH()
+
     ## Start parsing zanataXmlIn
     FOREACH(line ${zanataXmlLines})
 	IF("${line}" MATCHES "<locale>(.*)</locale>")
@@ -570,13 +618,37 @@ FUNCTION(ZANATA_ZANATA_XML_MAP zanataXml zanataXmlIn clientLocales)
 
 	    ## Find the best match
 	    SET(bestMatch "")
-	    FOREACH(cL ${clientLocales})
-		ZANATA_ZANATA_XML_MAP_BETTER_MATCH(bestMatch "${bestMatch}" "${sL}" "${cL}")
-		M_MSG(${M_INFO3} "bestMatch=${bestMatch} sL=${sL} cL=${cL}")
-		IF(bestMatch STREQUAL sL)
-		    BREAK()
+
+	    ZANATA_PARSE_LOCALE(sLang sScript sCountry sModifier sSCountry sSModifier "${sL}")
+
+	    IF(DEFINED _ZANATA_CLIENT_LOCALE_${sLang}_${sCountry}_${sModifier})
+		## Perfect match
+		ZANATA_LOCALE_TO_STRING_COMPACT(bestMatch "${sLang}" "${sScript}" "${sCountry}" "${sModifier}")
+	    ELSEIF()
+	    ELSE()
+		## No matched, use corrected sL
+		STRING(REPLACE "-" "_" sLCorrected "${sL}")
+		SET(bestMatch "${sLCorrected}")
+		IF("${sLCorrected}" STREQUAL "${sL}")
+		    M_MSG(${M_OFF} "${sL} does not have matched client locale, use as-is.")
+		ELSE()
+		    M_MSG(${M_OFF} "${sL} does not have matched client locale, use ${sLCorrected}.")
 		ENDIF()
-	    ENDFOREACH()
+	    ENDIF()
+	    ## No need to find other best Match if the language does not have country.
+	    ZANATA_LANGUAGE_HAS_COUNTRY(langHasCountry sL)
+	    IF(langHasCountry)
+		FOREACH(cL ${clientLocales})
+		    ZANATA_ZANATA_XML_MAP_BETTER_MATCH(bestMatch "${bestMatch}" "${sL}" "${cL}")
+		    M_MSG(${M_INFO3} "bestMatch=${bestMatch} sL=${sL} cL=${cL}")
+		    IF(bestMatch STREQUAL sL)
+			BREAK()
+		    ENDIF()
+		ENDFOREACH()
+	    ELSE()
+		SET(bestMatch "${sL}")
+		M_MSG(${M_INFO2} "${sL} is countryless, so use it asis")
+	    ENDIF()
 
 	    IF(bestMatch)
 		M_MSG(${M_INFO2} "Matched client locale for ${sL} is ${bestMatch}")
