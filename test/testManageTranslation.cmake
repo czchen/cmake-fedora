@@ -12,8 +12,8 @@ ENDFUNCTION()
 
 MANAGE_GETTEXT_LOCALES_TEST("LOCALES specified" "zh_CN;zh_TW" "test/data/po" LOCALES zh_CN zh_TW)
 EXECUTE_PROCESS(
-    COMMAND locale -a 
-    COMMAND grep -e "^[a-z]*_[A-Z]*\\(@.*\\)\\?$"
+    COMMAND ls -1 /usr/share/locale/
+    COMMAND grep -e "^[a-z]*\\(_[A-Z]*\\)\\?\\(@.*\\)\\?$"
     COMMAND sort -u 
     COMMAND xargs 
     COMMAND sed -e "s/ /;/g"

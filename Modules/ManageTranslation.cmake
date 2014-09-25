@@ -61,7 +61,7 @@
 #         + NO_MO: Skip the mo generation.
 #             This is for documents that do not require MO.
 #         + LOCALES locale ... : (Optional) Locale list to be generated.
-#         + SYSTEM_LOCALES: (Optional) System locales from locale -a.
+#         + SYSTEM_LOCALES: (Optional) System locales from /usr/share/locale.
 #         + XGETTEXT_OPTIONS opt ... : xgettext options.
 #         + MSGMERGE_OPTIONS msgmergeOpt: (Optional) msgmerge options.
 #           Default: ${MANAGE_TRANSLATION_MSGMERGE_OPTIONS}, which is
@@ -382,8 +382,8 @@ FUNCTION(MANAGE_GETTEXT_LOCALES localeListVar poDir)
 	## Locale is defined
     ELSEIF(DEFINED _o_SYSTEM_LOCALES)
 	EXECUTE_PROCESS(
-	    COMMAND locale -a 
-	    COMMAND grep -e "^[a-z]*_[A-Z]*\\(@.*\\)\\?$"
+	    COMMAND ls -1 /usr/share/locale/
+	    COMMAND grep -e "^[a-z]*\\(_[A-Z]*\\)\\?\\(@.*\\)\\?$"
 	    COMMAND sort -u 
 	    COMMAND xargs 
 	    COMMAND sed -e "s/ /;/g"
