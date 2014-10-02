@@ -265,7 +265,7 @@ FUNCTION(MANAGE_DEPENDENCY listVar var)
     LIST(FIND ${listVar} "${_newDep}" _index)
     IF(_index EQUAL -1)
 	LIST(APPEND ${listVar} "${_newDep}")
-	SET(${listVar} "${${listVar}}" PARENT_SCOPE)
+	SET(${listVar} "${${listVar}}" CACHE INTERNAL "${listVar} package list")
     ENDIF(_index EQUAL -1)
 ENDFUNCTION(MANAGE_DEPENDENCY)
 
