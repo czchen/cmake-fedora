@@ -46,9 +46,15 @@ SET(SYSCONF_DIR "/etc"                            CACHE PATH
     "System configuration dir"
     )
 
-IF(CMAKE_SYSTEM_PROCESSOR MATCHES "64")
+
+## CMAKE_SYSTEM_PROCESSOR does not see to be defined yet
+EXECUTE_PROCESS(COMMAND uname -p
+    OUTPUT_VARIABLE UNAME_P
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+IF("${UNAME_P}" MATCHES "64")
     SET(IS_64 "64" CACHE STRING "IS_64")
-ENDIF(CMAKE_SYSTEM_PROCESSOR MATCHES "64")
+ENDIF()
 SET(LIB_DIR "${CMAKE_INSTALL_PREFIX}/lib${IS_64}"
     CACHE PATH "Library dir"
     )
