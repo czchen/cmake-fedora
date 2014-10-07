@@ -3,7 +3,7 @@
 # This module defines the common settings of both normal and script mode.
 # Normally this module should be the first to call.
 #
-# Defined following variables:
+# Set cache for following variables:
 #   - CMAKE_INSTALL_PREFIX:
 #     Default: "/usr"
 #   - BIN_DIR: Binary dir
@@ -17,7 +17,8 @@
 #   - LIB_DIR: System wide library path.
 #     Default: ${CMAKE_INSTALL_PREFIX}/lib for 32 bit,
 #              ${CMAKE_INSTALL_PREFIX}/lib64 for 64 bit.
-#   - LIBEXEC_DIR: Directory for executables that are end-user facing
+#   - LIBEXEC_DIR: Directory for executables that should not called by 
+#       end-user directly
 #     Default: "${CMAKE_INSTALL_PREFIX}/libexec"
 #   - CMAKE_FEDORA_SCRIPT_PATH_HINTS: PATH hints to find cmake-fedora scripts
 #   - CMAKE_FEDORA_TMP_DIR: Director that stores cmake-fedora
