@@ -19,7 +19,7 @@
 # Defines following functions:
 #   MANAGE_DEPENDENCY(<listVar> <var> [VER <ver> [EXACT]] [REQUIRED] 
 #     [PROGRAM_NAMES <name1> ...] [PROGRAM_SEARCH_PATHS <path1> ...] 
-#     [PKG_CONFIG <pkgConfigName>]
+#     [PKG_CONFIG <pkgConfigName1> ...]
 #     [PACKAGE_NAME <packageName> | DEVEL]
 #     )
 #     - Add a new dependency to a list. 
@@ -49,7 +49,7 @@
 #             deemed as not found.
 #         + PROGRAM_SEARCH_PATHS path1 ...: Additional program search path.
 #             It will act as PATHS arguments for FIND_PROGRAM.
-#         + PKG_CONFIG pkgConfigName: Name of the pkg-config file
+#         + PKG_CONFIG pkgConfigName1 ...: List of the pkg-config file
 #             exclude the directory and .pc. e.g. "gtk+-2.0"
 #         + PACKAGE_NAME packageName: The actual package name in repository. 
 #             If not specified, use the lowercase of ${var}.
@@ -61,7 +61,7 @@
 #       * Variables to cache:
 #         + ${listVar}_${listVar}_${var}_PACKAGE_NAME: The actual package name in repository.
 #             Override this if your system is different from Fedora.
-#         + ${listVar}_${var}_PKG_CONFIG: Name of pkg-config file.
+#         + ${listVar}_${var}_PKG_CONFIG: List of pkg-config files.
 #             Override this if your system is different from Fedora.
 #         + ${var}_<print_variable>: The pkg-config variables.
 #             For example, datadir=/usr/share/chewing will be
@@ -215,47 +215,36 @@ FUNCTION(MANAGE_DEPENDENCY listVar var)
 	ELSE(PKG_CONFIG_EXECUTABLE)
 	    M_MSG(${M_ERROR} "pkgconfig is required with ${var}")
 	ENDIF(PKG_CONFIG_EXECUTABLE)
+	SET(pCList "")
+	FOREACH(pC ${pkgConf})
+	    LIST(APPEND pCList "${pC}${_rel}${_opt_VER}")
+	    ## Get all variables
+	    EXECUTE_PROCESS(COMMAND ${PKG_CONFIG_EXECUTABLE}
+		--print-variables "${pC}"
+		OUTPUT_VARIABLE _variables
+		OUTPUT_STRIP_TRAILING_WHITESPACE
+		RESULT_VARIABLE pkgconfigFailed
+		)
+	    IF(NOT pkgconfigFailed)
+		STRING_SPLIT(${var}_VARIABLES "\n" "${_variables}")
+		FOREACH(_v ${${var}_VARIABLES})
+		    STRING(TOUPPER "${_v}" _u)
+		    EXECUTE_PROCESS(COMMAND ${PKG_CONFIG_EXECUTABLE}
+			--variable "${_v}" "${pC}"
+			OUTPUT_VARIABLE ${var}_${pC}_${_u}
+			OUTPUT_STRIP_TRAILING_WHITESPACE
+			)
+		    SET(${var}_${pC}_${_u} "${${var}_${pC}_${_u}}" 
+			CACHE INTERNAL "pkgconfig ${${var}_${pC}_${_u}}")
+		    MARK_AS_ADVANCED(${${var}_${pC}_${_u}})
+		    M_MSG(${M_INFO1} "${${var}_${pC}_${_u}}=${${${var}_${pC}_${_u}}}")
+		ENDFOREACH(_v)
+
+		# MANAGE_DEPENDENCY_APPEND_INCLUDEDIR_FROM_CFLAGS(${var})
+	    ENDIF(NOT pkgconfigFailed)
+	ENDFOREACH(pC)
 	PKG_CHECK_MODULES(${var} ${_required}
-	    "${pkgConf}${_rel}${_opt_VER}")
-
-	## Get all variables
-	EXECUTE_PROCESS(COMMAND ${PKG_CONFIG_EXECUTABLE}
-	    --print-variables "${pkgConf}"
-	    OUTPUT_VARIABLE _variables
-	    OUTPUT_STRIP_TRAILING_WHITESPACE
-	    RESULT_VARIABLE pkgconfigFailed
-	    )
-	IF(NOT pkgconfigFailed)
-	    STRING_SPLIT(${var}_VARIABLES "\n" "${_variables}")
-	    FOREACH(_v ${${var}_VARIABLES})
-		STRING(TOUPPER "${_v}" _u)
-		EXECUTE_PROCESS(COMMAND ${PKG_CONFIG_EXECUTABLE}
-		    --variable "${_v}" "${pkgConf}"
-		    OUTPUT_VARIABLE ${var}_${_u}
-		    OUTPUT_STRIP_TRAILING_WHITESPACE
-		    )
-		SET(${var}_${_u} "${${var}_${_u}}" 
-		    CACHE INTERNAL "pkgconfig ${var}_${u}")
-		MARK_AS_ADVANCED(${var}_${_u})
-		M_MSG(${M_INFO1} "${var}_${_u}=${${var}_${_u}}")
-	    ENDFOREACH(_v)
-
-	    ## Other important options
-	    FOREACH(_pOpt cflags libs)
-		STRING(TOUPPER "${_pOpt}" _u)
-		EXECUTE_PROCESS(COMMAND ${PKG_CONFIG_EXECUTABLE}
-		    "--${_pOpt}" "${pkgConf}"
-		    OUTPUT_VARIABLE ${var}_${_u}
-		    OUTPUT_STRIP_TRAILING_WHITESPACE
-		    )
-		SET(${var}_${_u} "${${var}_${_u}}" 
-		    CACHE INTERNAL "pkgconfig ${var}_${u}")
-		MARK_AS_ADVANCED(${var}_${_u})
-		M_MSG(${M_INFO1} "${var}_${_u}=${${var}_${_u}}")
-	    ENDFOREACH(_pOpt)
-
-	    MANAGE_DEPENDENCY_APPEND_INCLUDEDIR_FROM_CFLAGS(${var})
-	ENDIF(NOT pkgconfigFailed)
+	    ${pcList})
     ENDIF(pkgConf)
 
     ## Insert when it's not duplicated

@@ -1,7 +1,6 @@
-* Sun Sep 28 2014 Ding-Yi Chen <dchen at redhat.com> - 2.3.2
+* Mon Oct 27 2014 Ding-Yi Chen <dchen at redhat.com> - 2.3.2
 - Fixed RHBZ 1144906 - cmake-fedora failed to build target pot_files if the .pot file not exists.
-- ManageDependency: var_CFLAGS and var_LIBS are also cached.
-- ManageDependency: var_INCLUDEDIR also includes directories from var_CFLAGS.
+- ManageDependency: Now able to assign multiple PKG_CONFIG files.
 - ManageGConf: Added "Variables to cache".
 - cmake-fedora.conf: el7 and fc21 is now available in bodhi.
 - ManageRPMScript: Fixed the mo file handling.
