@@ -86,22 +86,6 @@ SET(MANAGE_DEPENDENCY_PACKAGE_INSTALL_CMD yum -y install
 ## the 2nd time called.
 FIND_PACKAGE(PkgConfig)
 
-FUNCTION(MANAGE_DEPENDENCY_APPEND_INCLUDEDIR_FROM_CFLAGS var)
-    STRING(REPLACE " " ";" cflags "${${var}_CFLAGS}")
-    FOREACH(_f ${cflags})
-	IF(_f MATCHES "^-I")
-	    STRING(REGEX REPLACE "^-I" "" subDir "${_f}")
-	    LIST(APPEND ${var}_INCLUDEDIR "${subDir}")
-	    SET(${var}_INCLUDEDIR "${${var}_INCLUDEDIR}" 
-		CACHE INTERNAL "${var}_INCLUDEDIR")
-	ENDIF(_f MATCHES "^-I")
-    ENDFOREACH(_f)
-    SET(${var}_INCLUDEDIR "${${var}_INCLUDEDIR}" 
-	CACHE INTERNAL "${var}_INCLUDEDIR")
-    MARK_AS_ADVANCED(${var}_INCLUDEDIR)
-    M_MSG(${M_INFO1} "${var}_INCLUDEDIR=${${var}_INCLUDEDIR}")
-ENDFUNCTION(MANAGE_DEPENDENCY_APPEND_INCLUDEDIR_FROM_CFLAGS)
-
 ## This is declared as function, because 
 ## macro does not play nice if listVar is required in different
 ## source dir.
@@ -236,15 +220,15 @@ FUNCTION(MANAGE_DEPENDENCY listVar var)
 			)
 		    SET(${var}_${pC}_${_u} "${${var}_${pC}_${_u}}" 
 			CACHE INTERNAL "pkgconfig ${${var}_${pC}_${_u}}")
+
 		    MARK_AS_ADVANCED(${${var}_${pC}_${_u}})
-		    M_MSG(${M_INFO1} "${${var}_${pC}_${_u}}=${${${var}_${pC}_${_u}}}")
+		    M_MSG(${M_INFO1} "${var}_${pC}_${_u}=${${var}_${pC}_${_u}}")
 		ENDFOREACH(_v)
 
-		# MANAGE_DEPENDENCY_APPEND_INCLUDEDIR_FROM_CFLAGS(${var})
 	    ENDIF(NOT pkgconfigFailed)
 	ENDFOREACH(pC)
 	PKG_CHECK_MODULES(${var} ${_required}
-	    ${pcList})
+	    ${pCList})
     ENDIF(pkgConf)
 
     ## Insert when it's not duplicated
