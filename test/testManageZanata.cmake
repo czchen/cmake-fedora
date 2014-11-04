@@ -2,6 +2,16 @@ INCLUDE(test/testCommon.cmake)
 INCLUDE(ManageMessage)
 INCLUDE(ManageZanata)
 
+FUNCTION(ZANATA_CLIENT_OPT_DASH_TO_CAMEL_CASE_TEST expStr str)
+    MESSAGE("ZANATA_CLIENT_OPT_DASH_TO_CAMEL_CASE_TEST(${expStr})")
+    ZANATA_CLIENT_OPT_DASH_TO_CAMEL_CASE(opt "${str}")
+    TEST_STR_MATCH(opt "${expStr}")
+ENDFUNCTION(ZANATA_CLIENT_OPT_DASH_TO_CAMEL_CASE_TEST)
+
+ZANATA_CLIENT_OPT_DASH_TO_CAMEL_CASE_TEST("username" "username")
+ZANATA_CLIENT_OPT_DASH_TO_CAMEL_CASE_TEST("pushType" "push-type")
+ZANATA_CLIENT_OPT_DASH_TO_CAMEL_CASE_TEST("disableSslCert" "disable-ssl-cert")
+
 FUNCTION(ZANATA_PARSE_LOCALE_TEST expLanguage expScript expCountry expModifier str)
     MESSAGE("ZANATA_PARSE_LOCALE_TEST(${str})")
     ZANATA_PARSE_LOCALE(language script country modifier "${str}")
