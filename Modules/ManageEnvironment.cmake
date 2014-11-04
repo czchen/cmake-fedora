@@ -1,8 +1,15 @@
-# - Manage build environment like environment variables and compile flags.
-# This module pre-defines and manages various environment variables,
-# cmake policies, and compile flags.
+# - Manage environment in build mode after project information is defined.
 #
-# The setting can be viewed and modified by ccmake.
+# This module manages build mode environment, including variables, compiler 
+# flags and CMake policies.
+#
+# The main difference between this module and ManageEnvironmentCommon are:
+#   - ManageEnvironmentCommon is called by both script and build mode;
+#       while this module is called by only build mode.
+#   - ManageEnvironmentCommon should be invoked before project definition;
+#       this module should be invoked after project defintion.
+#   - ManageEnvironmentCommon caches only variables; 
+#       this module not only caches variables, but also set the compiler flags.
 #
 # Included Modules:
 #   - ManageMessage
@@ -11,25 +18,13 @@
 #   - CMAKE_INSTALL_PREFIX: Install directory used by install.
 #   - PROJECT_NAME: Project name.
 #
-# Cache following variables:
-#   - IS_64: Defined as "64" if built for 64-bit application.
-#
-# Defines or reads following variables:
-#   - LIB_DIR: System wide library path.
-#     Default: ${CMAKE_INSTALL_PREFIX}/lib for 32 bit,
-#              ${CMAKE_INSTALL_PREFIX}/lib64 for 64 bit.
-#   - LIBEXEC_DIR: Executables that are not meant to be executed
-#       by user directly.
-#     Default: ${CMAKE_INSTALL_PREFIX}/libexec
-#   - PRJ_DATA_DIR: Data directory for the project.
+# Set cache for following variables:
+#   - PRJ_DATA_DIR: Project data dir
 #     Default: ${DATA_DIR}/${PROJECT_NAME}
-#   - PRJ_DOC_DIR: DocuFILEPATH = File chooser dialog.
+#   - PRJ_DOC_DIR: Project doc dir
 #     Default: ${DOC_DIR}/${PROJECT_NAME}
-#   - CMAKE_FEDORA_TMP_DIR: Director that stores cmake-fedora
-#       temporary items.
-#     Default: ${CMAKE_BINARY_DIR}/NO_PACK
 #
-# Defines following compile flags: (which use same values with variables)
+# Defines following compile flags: (which use variables with same names)
 #   - CMAKE_INSTALL_PREFIX
 #   - PROJECT_NAME
 #   - BIN_DIR
@@ -38,9 +33,12 @@
 #   - SYSCONF_DIR
 #   - LIB_DIR
 #   - LIBEXEC_DIR
+#   - PRJ_DATA_DIR
+#   - PRJ_DOC_DIR
+#
 # Note: compile flag PRJ_VER is defined in ManageVersion.
 #
-# Defines following macros:
+# Defines following functions:
 #   SET_COMPILE_ENV(<var> [<defaultValue>] [ENV_NAME <envName>]
 #       [CACHE <type> <docstring> [FORCE]]
 #     )
@@ -141,7 +139,7 @@ FILE(MAKE_DIRECTORY "${CMAKE_FEDORA_TMP_DIR}")
 M_MSG(${M_INFO1} "CMAKE_HOST_SYSTEM=${CMAKE_HOST_SYSTEM}")
 M_MSG(${M_INFO1} "CMAKE_HOST_SYSTEM_PROCESSOR=${CMAKE_HOST_SYSTEM_PROCESSOR}")
 M_MSG(${M_INFO1} "CMAKE_SYSTEM=${CMAKE_SYSTEM}")
-M_MSG(${M_INFO1} "CMAKE_HOST_PROCESSOR=${CMAKE_SYSTEM_PROCESSOR}")
+M_MSG(${M_INFO1} "CMAKE_SYSTEM_PROCESSOR=${CMAKE_SYSTEM_PROCESSOR}")
 
 ## Set compile flags
 SET_COMPILE_ENV(BIN_DIR)
@@ -152,7 +150,7 @@ SET_COMPILE_ENV(LIB_DIR)
 SET_COMPILE_ENV(LIBEXEC_DIR)
 
 IF(CMAKE_SYSTEM_PROCESSOR MATCHES "64")
-    SET_COMPILE_ENV(IS_64 "64")
+    SET_COMPILE_ENV(IS_64)
 ENDIF(CMAKE_SYSTEM_PROCESSOR MATCHES "64")
 
 SET_COMPILE_ENV(PRJ_DATA_DIR "${DATA_DIR}/${PROJECT_NAME}"
@@ -163,5 +161,4 @@ SET_COMPILE_ENV(PRJ_DOC_DIR "${DOC_DIR}/${PROJECT_NAME}"
     )
 
 SET_COMPILE_ENV(PROJECT_NAME)
-
 

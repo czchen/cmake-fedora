@@ -125,6 +125,7 @@ SET(ZANATA_MAVEN_SUBCOMMAND_PREFIX "org.zanata:zanata-maven-plugin:")
 ## Internal
 FUNCTION(ZANATA_CLIENT_OPT_DASH_TO_CAMEL_CASE var opt)
     STRING_SPLIT(_strList "-" "${opt}")
+    SET(_first 1)
     SET(_retStr "")
     FOREACH(_s ${_strList})
 	IF("${_retStr}" STREQUAL "")

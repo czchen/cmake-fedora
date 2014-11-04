@@ -201,5 +201,3 @@ STRING_SPLIT_TEST("STRING_SPLIT_allow_empty_1" "hi; ;;hello; how are you;I'm fin
 
 STRING_SPLIT_TEST("STRING_SPLIT_allow_empty_2" "* Tue;-Enhancement;;* Fri;" "\n" "* Tue\n-Enhancement\n\n* Fri\n" ALLOW_EMPTY)
 
-STRING_SPLIT_TEST("With-Type" "push;type" "-" "push-type")
-

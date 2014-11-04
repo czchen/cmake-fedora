@@ -419,12 +419,9 @@ FUNCTION(STRING_SPLIT var delimiter str)
 	STRING_SPLIT_2(_token _str _has_delimiter "${_delimiter}" "${_str}")
 	#MESSAGE("_token_count=${_token_count} _max_tokens=${_max_tokens} _token=|${_token}| _str=${_str}")
 	MATH(EXPR _token_count ${_token_count}+1)
-	# Use length check to avoid the reserved word like "type"
-	STRING(LENGTH "${_token}" _token_len)
-
-	IF(_token_len GREATER 0 OR _ALLOW_EMPTY)
-    	    LIST(APPEND _str_list "${_token}")
-	ENDIF(_token_len GREATER 0 OR _ALLOW_EMPTY)
+	IF(NOT "${_token}" STREQUAL "" OR _ALLOW_EMPTY)
+	    LIST(APPEND _str_list "${_token}")
+	ENDIF(NOT "${_token}" STREQUAL "" OR _ALLOW_EMPTY)
 	IF(_has_delimiter EQUAL 0)
 	    ## No more tokens
 	    BREAK()
