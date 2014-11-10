@@ -498,29 +498,53 @@ FUNCTION(ZANATA_BEST_MATCH_LOCALES var serverLocales clientLocales)
 	ENDIF()
     ENDFOREACH()
 
+    ## 1st pass: Exact match
     FOREACH(sL ${serverLocales})
 	ZANATA_PARSE_LOCALE(sLang sScript sCountry sModifier "${sL}")
-	SET(sKey "_ZANATA_CLIENT_LOCALE_${sLang}_${sScript}_${sCountry}_${sModifier}")
-	ZANATA_LOCALE_COMPLETE(sCLocale "${sLang}" "${sScript}" "${sCountry}" "${sModifier}")
-	SET(sCompKey "_ZANATA_CLIENT_COMPLETE_LOCALE_${sCLocale}")
-
-	SET(bestMatch "")
-	IF(NOT "${${sKey}}" STREQUAL "")
-	    SET(bestMatch "${${sKey}}")
-	ELSE(NOT "${${sCompKey}}" STREQUAL "")
-	    SET(bestMatch "${${sCompKey}}")
+	SET(scKey "_ZANATA_CLIENT_LOCALE_${sLang}_${sScript}_${sCountry}_${sModifier}")
+	## Exact match locale
+	SET(cLExact "${${scKey}}")
+	IF(NOT "${cLExact}" STREQUAL "")
+	    SET(_ZANATA_SERVER_LOCALE_${sL} "${cLExact}")
+	    SET(_ZANATA_CLIENT_LOCALE_${cLExact}  "${sL}")
+	    LIST(APPEND result "${sL},${cLExact}")
 	ENDIF()
-	IF(bestMatch STREQUAL "")
-	    ## No matched, use corrected sL
-	    STRING(REPLACE "-" "_" bestMatch "${sL}")
-	    IF("${bestMatch}" STREQUAL "${sL}")
-		M_MSG(${M_OFF} "${sL} does not have matched client locale, use as-is.")
-	    ELSE()
-		M_MSG(${M_OFF} "${sL} does not have matched client locale, use ${bestMatch}.")
-	    ENDIF()
-	ENDIF()
-	LIST(APPEND result "${sL},${bestMatch}")
     ENDFOREACH() 
+
+    ## 2nd pass: Find the next best match
+    FOREACH(sL ${serverLocales})
+	IF("${_ZANATA_SERVER_LOCALE_${sL}}" STREQUAL "")
+	    ## no exact match
+	    ZANATA_PARSE_LOCALE(sLang sScript sCountry sModifier "${sL}")
+
+	    ## Locale completion
+	    ZANATA_LOCALE_COMPLETE(sCLocale "${sLang}" "${sScript}" "${sCountry}" "${sModifier}")
+	    SET(sCompKey "_ZANATA_CLIENT_COMPLETE_LOCALE_${sCLocale}")
+	    SET(bestMatch "")
+
+	    ## Match client locale after Locale completion
+	    SET(cLComp "${${sCompKey}}")
+	    IF(NOT "${cLComp}" STREQUAL "")
+		## And the client locale is not occupied
+		IF("${_ZANATA_CLIENT_LOCALE_${cLComp}}" STREQUAL "")
+		    SET(_ZANATA_SERVER_LOCALE_${sL} "${cLComp}")
+		    SET(_ZANATA_CLIENT_LOCALE_${cLComp}  "${sL}")
+		    SET(bestMatch "${cLComp}")
+		ENDIF()
+	    ENDIF()
+	    IF(bestMatch STREQUAL "")
+		## No matched, use corrected sL
+		STRING(REPLACE "-" "_" bestMatch "${sL}")
+		IF("${bestMatch}" STREQUAL "${sL}")
+		    M_MSG(${M_OFF} "${sL} does not have matched client locale, use as-is.")
+		ELSE()
+		    M_MSG(${M_OFF} "${sL} does not have matched client locale, use ${bestMatch}.")
+		ENDIF()
+	    ENDIF()
+	    LIST(APPEND result "${sL},${bestMatch}")
+	ENDIF()
+    ENDFOREACH() 
+    LIST(SORT result)
     SET(${var} "${result}" PARENT_SCOPE)
 ENDFUNCTION(ZANATA_BEST_MATCH_LOCALES)
 

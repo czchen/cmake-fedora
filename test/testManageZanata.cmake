@@ -42,8 +42,9 @@ ENDFUNCTION(ZANATA_BEST_MATCH_LOCALES_TEST)
 ZANATA_BEST_MATCH_LOCALES_TEST("de-DE,de;fr,fr_FR;lt-LT,lt_LT;lv,lv;zh-Hans,zh_CN"
     "de-DE;fr;lt-LT;lv;zh-Hans" "de;fr_BE;fr_FR;lt_LT;zh_CN;zh_TW")
 
-ZANATA_BEST_MATCH_LOCALES_TEST("sr-Latn,sr_RS@latin;sr-Cyrl,sr_RS;zh-Hans,zh_CN;zh-Hant-TW,zh_TW"
+ZANATA_BEST_MATCH_LOCALES_TEST("sr-Cyrl,sr_RS;sr-Latn,sr_RS@latin;zh-Hans,zh_CN;zh-Hant-TW,zh_TW"
     "sr-Latn;sr-Cyrl;zh-Hans;zh-Hant-TW" 
     "de;fr_BE;fr_FR;lt_LT;sr_RS@latin;zh_CN;zh_TW;sr_RS;sr;sr@ije")
 
+ZANATA_BEST_MATCH_LOCALES_TEST("kw,kw;kw-GB,kw_GB" "kw;kw-GB" "kw")
 
