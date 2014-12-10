@@ -1,4 +1,4 @@
-* Wed Dec 10 2014 Ding-Yi Chen <dchen at redhat.com> - 2.3.2
+* Wed Dec 10 2014 Ding-Yi Chen <dchen at redhat.com> - 2.3.3
 - Fixed RHBZ 1144906 - cmake-fedora failed to build target pot_files if the .pot file not exists.
 - ManageDependency: Now able to assign multiple PKG_CONFIG files.
 - ManageGConf: Added "Variables to cache".
