@@ -17,7 +17,7 @@ cmake -D cmd=make_tag_file
   Options:
      ver: project version
      outputFile: Tag file
-     message: message associate with tag
+     msg: message associate with tag
      cmake_fedora_module_dir: 
         Specify this if cmake and cmake-fedora failed to find 
         the location of CMake Fedora modules. 
@@ -39,17 +39,12 @@ FUNCTION(MAKE_TAG_FILE)
 	## No tag
 	EXECUTE_PROCESS(
 	    COMMAND make VERBOSE=1 tag_pre
-	    COMMAND git tag -a -m "${message}" "${ver}" HEAD
-	    OUTPUT_VARIABLE cmdStdout
-	    ERROR_VARIABLE cmdStderr
 	    RESULT_VARIABLE tagResult
-	    OUTPUT_STRIP_TRAILING_WHITESPACE
 	    )
-	M_OUT("${cmdStdout}")
-	M_OUT("${cmdStderr}")
 	IF(NOT tagResult EQUAL 0)
 	    M_MSG(${M_FATAL} "Failed to build before tagging")
 	ENDIF()
+	EXECUTE_PROCESS(COMMAND git tag -a -m "${msg}" "${ver}" HEAD)
     ENDIF()
     FILE(WRITE "${output_file}" "${msg}")
 

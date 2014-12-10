@@ -1,4 +1,4 @@
-PRJ_VER=2.3.3
+PRJ_VER=2.3.4
 SUMMARY=Fixed RHBZ 1144906; el7 and fc21 is now available in bodhi
 REDHAT_BUGZILLA=1144906
 [Changes]
