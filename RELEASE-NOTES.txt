@@ -1,10 +1,7 @@
-PRJ_VER=2.3.4
-SUMMARY=Fixed RHBZ 1144906; el7 and fc21 is now available in bodhi
-REDHAT_BUGZILLA=1144906
+PRJ_VER=2.4.0
+SUMMARY=cmake-fedora-zanata
+REDHAT_BUGZILLA=
 [Changes]
-- Fixed RHBZ 1144906 - cmake-fedora failed to build target pot_files if the .pot file not exists.
-- ManageDependency: Now able to assign multiple PKG_CONFIG files.
-- ManageGConf: Added "Variables to cache".
-- cmake-fedora.conf: el7 and fc21 is now available in bodhi.
-- ManageRPMScript: Fixed the mo file handling.
-- ManageZanata: Use /usr/share/locale as SYSTEM_LOCALE source instead.
+- cmake-fedora-zanata: New script: zanata helper script.
+- Add additional path to cmake-fedora.conf
+- ManageFile: New function: MANAGE_FILE_COMMON_DIR

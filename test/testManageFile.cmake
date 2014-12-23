@@ -77,6 +77,16 @@ ENDFUNCTION(MANAGE_FILE_CACHE_TEST expected file)
 MANAGE_FILE_CACHE_TEST("Hi" "simple" COMMAND echo "Hi")
 MANAGE_FILE_CACHE_TEST("Bye" "piped" COMMAND echo "Hi" COMMAND sed -e "s/Hi/Bye/")
 
+## MANAGE_FILE_COMMON_DIR_TEST
+FUNCTION(MANAGE_FILE_COMMON_DIR_TEST expected file)
+    MESSAGE("MANAGE_FILE_COMMON_DIR: ${expected}: ${file} ${ARGN}" )
+    MANAGE_FILE_COMMON_DIR(v ${file} ${ARGN})
+    TEST_STR_MATCH(v "${expected}")
+ENDFUNCTION(MANAGE_FILE_COMMON_DIR_TEST expected file)
+MANAGE_FILE_COMMON_DIR_TEST("po" "po/zh_CN.po" "po" "po/" "po/test/zh_TW.po" )
+MANAGE_FILE_COMMON_DIR_TEST("" "po/a.pot" "b.pot")
+
+
 # Don't use existing file, as it will be clean up
 FUNCTION(MANAGE_FILE_EXPIRY_TEST expected file expireSecond)
     MESSAGE("MANAGE_FILE_EXPIRY: ${expected}_${file}")

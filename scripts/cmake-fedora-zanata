@@ -1,0 +1,91 @@
+#!/bin/bash
+
+function print_usage(){
+    cat<<END
+NAME 
+    cmake-fedora-zanata - cmake-fedora helper script to operate with zanata the translation system
+
+SYNOPSIS
+    cmake-fedora-zanata [options] new [-l <locales> | -c ] [-p <projType> ] <url> [<project> [<version>]]
+    cmake-fedora-zanata [options] xml-download <url> [<project> [<version>]]
+    cmake-fedora-zanata [options] xml-map  [-l <locales> | -c ]
+    cmake-fedora-zanata [options] xml-make  <url> [<project> [<version>]]
+
+ARGUMENTS and OPTIONS
+    Arguments:
+        <url> 
+	    Zanata server URL (e.g. https://translate.zanata.org/zanata/)
+
+	<project>
+	    project: project ID in Zanata.
+	    Default: name of parent directory.
+
+	<version>
+	    version ID in Zanata.
+	    Default: master
+
+    Common options:
+        -z <zanata.xml>
+	     Output zanata.xml file.
+	
+
+DESCRIPTION
+    Note that this program assumes that your ~/.config/zanata.ini is set,
+    and you registered in the coresponding Zanata server.
+
+    This program only support gettext and podir project type.
+
+    Following sub-command are recognized:
+        new 
+	    All round-trip workflow. From creating project, version,
+            fix zanata.xml, and push the source files and existing translations.
+	    By default, it uses /usr/share/locales as source of client locales.
+
+	    Options:
+		-c
+		    Derive client locales from local translation files (.po).
+
+		-l <locale1;locale2;...>
+		    Specify client locale manually. Use ';' to separate locales.
+	    
+	xml-download
+	    Download zanata.xml from Zanata Server.
+
+	xml-map
+	    Map the zanata server locales with client translation files,
+	    so it will output correctly.
+
+	xml-make
+	    Make a working zanata.xml
+
+END
+}
+
+
+# Check for dependency
+for cmd in cmake zanata;do
+    if ! which $cmd &>/dev/null;then
+	echo "[Error] $cmd is not found in path" > /dev/stderr
+	exit 2
+    fi
+done
+
+SCRIPT_DIR=$(readlink -f `dirname $0`)
+for d in Modules cmake-fedora/Modules ${SCRIPT_DIR}/../Modules /usr/share/cmake/Modules;do
+    if [ -r $d/ManageZanataScript.cmake ];then
+	CMAKE_FEDORA_ZANATA_CMAKE=$d/ManageZanataScript.cmake
+    fi
+done
+if [ -z "${CMAKE_FEDORA_ZANATA_CMAKE}" ];then
+    echo "[Error] ManageZanataScript.cmake is not found" > /dev/stderr
+    exit 2
+fi
+
+if [ $# = 0 ]; then
+    print_usage
+    exit 0
+fi
+
+exit 0
+
+

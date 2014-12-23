@@ -587,6 +587,7 @@ FUNCTION(ZANATA_ZANATA_XML_MAP zanataXml zanataXmlIn clientLocales)
 	    ## Not a locale string, write as-is
 	ENDIF()
     ENDFOREACH()
+    LIST(SORT serverLocales)
     ZANATA_BEST_MATCH_LOCALES(bestMatches "${serverLocales}" "${clientLocales}")
     FILE(WRITE "${zanataXml}" "${zanataXmlHeader}\n")
 

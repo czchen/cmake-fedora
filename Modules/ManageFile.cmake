@@ -69,6 +69,16 @@
 #         + ERROR_VAR errorVar: This variable will be set to 1
 #           when cmake-fedora.conf is not found.
 #
+#   MANAGE_FILE_COMMON_DIR(<var> <file1> ...>)
+#     - Get the longest common path. 
+#       Note that this function just do string comparison, it does not convert to real path.
+#       It is recommended to use all absolute paths or all relative paths.
+#       * Parameters:
+#         + var: The variable that returns the file expiry status.
+#           Valid status: ERROR, NOT_FOUND, EXPIRED, NOT_EXPIRED.
+#         + file1 ...: files to compare.
+#
+#
 #   MANAGE_FILE_CACHE(<var> <file> [EXPIRY_SECONDS <expirySecond>]
 #     [CACHE_DIR <dir>] [ERROR_VAR <errorVar>] [RESULT_VAR resultVar]
 #     COMMAND <cmd ...>
@@ -106,6 +116,7 @@
 #         + file: File to be processed.
 #         + expirySecond: Seconds before the file expired.
 #
+#
 # Defines following macros:
 #   MANAGE_FILE_INSTALL(<fileType>
 #     [<files> | FILES <files>] [DEST_SUBDIR <subDir>] 
@@ -135,6 +146,52 @@ SET(FILE_INSTALL_LIST_TYPES
 INCLUDE(ManageMessage RESULT_VARIABLE MANAGE_MODULE_PATH)
 GET_FILENAME_COMPONENT(CMAKE_FEDORA_MODULE_DIR "${MANAGE_MODULE_PATH}" PATH)
 INCLUDE(ManageVariable)
+INCLUDE(ManageString)
+
+## Common path between two
+FUNCTION(MANAGE_FILE_COMMON_DIR_2 var file1 file2 separator)
+    SET(result "")
+    IF("${file1}" STREQUAL "${file2}")
+	SET(result "${file1}")
+    ELSE()
+	STRING_SPLIT(dirA1 "${separator}" "${file1}")
+	LIST(LENGTH dirA1 dirA1Len)
+	STRING_SPLIT(dirA2 "${separator}" "${file2}")
+	LIST(LENGTH dirA2 dirA2Len)
+	SET(i 0)
+	WHILE(i LESS dirA1Len)
+	    IF(NOT i LESS dirA2Len)
+		BREAK()
+	    ENDIF()
+	    LIST(GET dirA1 ${i} token1)
+	    LIST(GET dirA2 ${i} token2)
+	    IF(NOT "${token1}" STREQUAL "${token2}")
+		BREAK()
+	    ENDIF()
+	    STRING_APPEND(result "${token1}" "${separator}")
+	    MATH(EXPR i ${i}+1)
+	ENDWHILE()
+    ENDIF()
+    SET(${var} "${result}" PARENT_SCOPE)
+ENDFUNCTION(MANAGE_FILE_COMMON_DIR_2)
+
+FUNCTION(MANAGE_FILE_COMMON_DIR var file1)
+    SET(separator "/")
+    IF(EXISTS "${file1}")
+	IF(IS_DIRECTORY "${file1}")
+	    SET(commonDir "${file1}")
+	ELSE()
+	    GET_FILENAME_COMPONENT(commonDir "${file1}" PATH)
+	ENDIF()
+    ELSE()
+	SET(commonDir "${file1}")
+    ENDIF()
+
+    FOREACH(f ${ARGN})
+	MANAGE_FILE_COMMON_DIR_2(commonDir "${commonDir}" "${f}" "${separator}")
+    ENDFOREACH(f)
+    SET(${var} "${commonDir}" PARENT_SCOPE)
+ENDFUNCTION(MANAGE_FILE_COMMON_DIR)
 
 MACRO(_MANAGE_FILE_SET_FILE_INSTALL_LIST fileType)
     SET(FILE_INSTALL_${fileType}_LIST "${FILE_INSTALL_${fileType}_LIST}"
