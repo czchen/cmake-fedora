@@ -13,6 +13,7 @@
 #   - ManageMessage
 #   - ManageString
 #   - ManageVariable
+#   - ManageZanataSuggest
 #
 # Defines following targets:
 #   + translations: Virtual target that make the translation files.
@@ -130,6 +131,7 @@ INCLUDE(ManageMessage)
 INCLUDE(ManageFile)
 INCLUDE(ManageString)
 INCLUDE(ManageVariable)
+INCLUDE(ManageZanataSuggest)
 
 #######################################
 # GETTEXT support
@@ -375,7 +377,6 @@ FUNCTION(MANAGE_POT_FILE potFile)
 ENDFUNCTION(MANAGE_POT_FILE)
 
 SET(MANAGE_GETTEXT_LOCALES_VALID_OPTIONS "LOCALES" "SYSTEM_LOCALES")
-## Internal
 FUNCTION(MANAGE_GETTEXT_LOCALES localeListVar poDir)
     VARIABLE_PARSE_ARGN(_o MANAGE_GETTEXT_LOCALES_VALID_OPTIONS ${ARGN})
     IF(NOT "${_o_LOCALES}" STREQUAL "")
@@ -393,19 +394,39 @@ FUNCTION(MANAGE_GETTEXT_LOCALES localeListVar poDir)
     ELSE()
 	## LOCALES is not specified, detect now
 	EXECUTE_PROCESS(
-	    COMMAND find ${poDir} -name "*.po" -printf "%f\n"
+	    COMMAND find ${poDir} -name "*.po" -printf "%P\n"
 	    COMMAND sed -e "s/.po//g"
 	    COMMAND sort -u
 	    COMMAND xargs
 	    COMMAND sed -e "s/ /;/g"
-	    OUTPUT_VARIABLE _o_LOCALES
+	    OUTPUT_VARIABLE poFileList
 	    OUTPUT_STRIP_TRAILING_WHITESPACE
 	    )
-	LIST(APPEND _o_LOCALES ${_locales})
+	MANAGE_FILE_COMMON_DIR(commonDir ${poFileList})
+	IF("${commonDir}" STREQUAL "")
+	    SET(commonPath "")
+	ELSE()
+	    GET_FILENAME_COMPONENT(commonPath "${poDir}/${commonDir}" ABSOLUTE)
+	ENDIF()
+	FOREACH(f ${poFileList})
+	    IF("${commonPath}" STREQUAL "")
+		SET(rF "${f}")
+	    ELSE()
+		GET_FILENAME_COMPONENT(filePath "${f}" ABSOLUTE)
+		FILE(RELATIVE_PATH rF "${commonPath}" "${filePath}")
+	    ENDIF()
+	    LOCALE_IN_PATH(l "${rF}")
+	    IF(NOT "${l}" STREQUAL "")
+		LIST(APPEND _o_LOCALES "${l}")
+	    ENDIF()
+	ENDFOREACH()
+
 	IF("${_o_LOCALES}" STREQUAL "")
 	    ## Failed to find any locale
 	    M_MSG(${M_ERROR} "MANAGE_GETTEXT: Failed to detect locales. Please either specify LOCALES or SYSTEM_LOCALES.")
 	ENDIF()
+	LIST(REMOVE_DUPLICATES _o_LOCALES)
+	LIST(SORT _o_LOCALES)
     ENDIF()
     MANAGE_TRANSLATION_LOCALES_SET("${_o_LOCALES}")
     SET(${localeListVar} "${_o_LOCALES}" PARENT_SCOPE)
@@ -483,3 +504,66 @@ FUNCTION(MANAGE_GETTEXT)
 
 ENDFUNCTION(MANAGE_GETTEXT)
 
+FUNCTION(LOCALE_PARSE_STRING language script country modifier str)
+    SET(s "")
+    SET(c "")
+    SET(m "")
+    IF("${str}" MATCHES "(.*)@(.*)")
+	SET(m "${CMAKE_MATCH_2}")
+	SET(str "${CMAKE_MATCH_1}")
+    ENDIF()
+    STRING(REPLACE "-" "_" str "${str}")
+    STRING_SPLIT(lA "_" "${str}")
+    LIST(LENGTH lA lLen)
+    LIST(GET lA 0 l)
+    IF(lLen GREATER 2)
+	LIST(GET lA 2 c)
+    ENDIF()
+    IF(lLen GREATER 1)
+	LIST(GET lA 1 x)
+	IF("${x}" MATCHES "[A-Z][a-z][a-z][a-z]")
+	    SET(s "${x}")
+	ELSE()
+	    SET(c "${x}")
+	ENDIF()
+    ENDIF()
+
+    # Make sure the language is in the list
+    IF(NOT DEFINED ZANATA_SUGGEST_COUNTRY_${l}__)
+	# empty language means invalid languages
+	SET(l "")
+	SET(s "")
+	SET(c "")
+	SET(m "")
+    ENDIF()
+
+    SET(${language} "${l}" PARENT_SCOPE)
+    SET(${script} "${s}" PARENT_SCOPE)
+    SET(${country} "${c}" PARENT_SCOPE)
+    SET(${modifier} "${m}" PARENT_SCOPE)
+ENDFUNCTION(LOCALE_PARSE_STRING)
+
+FUNCTION(LOCALE_IN_PATH var path)
+    SET(result "")
+    GET_FILENAME_COMPONENT(file "${path}" NAME_WE)
+    LOCALE_PARSE_STRING(language script country modifier "${file}")
+    IF(NOT "${language}" STREQUAL "")
+	SET(${var} "${file}" PARENT_SCOPE)
+	RETURN()
+    ENDIF()
+
+    GET_FILENAME_COMPONENT(dir "${path}" PATH)
+    STRING_SPLIT(dirA "/" "${dir}")
+    LIST(LENGTH dirA dirALen)
+    MATH(EXPR i ${dirALen}-1)
+    WHILE(NOT i LESS 0)
+	LIST(GET dirA ${i} token)
+	LOCALE_PARSE_STRING(language script country modifier "${token}")
+	IF(NOT "${language}" STREQUAL "")
+	    SET(${var} "${token}" PARENT_SCOPE)
+	    RETURN()
+	ENDIF()
+    ENDWHILE()
+
+    SET(${var} "" PARENT_SCOPE)
+ENDFUNCTION(LOCALE_IN_PATH)

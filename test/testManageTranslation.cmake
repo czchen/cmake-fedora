@@ -2,6 +2,27 @@ INCLUDE(test/testCommon.cmake)
 INCLUDE(ManageMessage)
 INCLUDE(ManageTranslation)
 
+FUNCTION(LOCALE_PARSE_STRING_TEST expLanguage expScript expCountry expModifier str)
+    MESSAGE("LOCALE_PARSE_STRING_TEST(${str})")
+    LOCALE_PARSE_STRING(language script country modifier "${str}")
+    TEST_STR_MATCH(language "${expLanguage}")
+    TEST_STR_MATCH(script "${expScript}")
+    TEST_STR_MATCH(country "${expCountry}")
+    TEST_STR_MATCH(modifier "${expModifier}")
+ENDFUNCTION(LOCALE_PARSE_STRING_TEST)
+
+LOCALE_PARSE_STRING_TEST("fr" "" "" "" "fr")
+LOCALE_PARSE_STRING_TEST("de" "" "DE"  "" "de_DE")
+LOCALE_PARSE_STRING_TEST("bem" "" "ZM" "" "bem_ZM")
+LOCALE_PARSE_STRING_TEST("zh" "Hans" "" "" "zh-Hans")
+LOCALE_PARSE_STRING_TEST("zh" "Hant" "" "" "zh-Hant")
+LOCALE_PARSE_STRING_TEST("zh" "Hant" "TW" ""  "zh-Hant-TW")
+LOCALE_PARSE_STRING_TEST("sr" "Latn" "" "" "sr-Latn")
+LOCALE_PARSE_STRING_TEST("sr" "Cyrl" "" ""  "sr-Cyrl")
+LOCALE_PARSE_STRING_TEST("sr" "" "RS" "latin" "sr_RS@latin")
+LOCALE_PARSE_STRING_TEST("eo" "" "" ""  "eo")
+LOCALE_PARSE_STRING_TEST("nb" "" "NO" "" "nb_NO")
+
 FUNCTION(MANAGE_GETTEXT_LOCALES_TEST testName expLanguageList poDir)
     MESSAGE("MANAGE_GETTEXT_LOCALES_TEST(${testName}): ${expLanguageList}")
     SET(localeList "")
@@ -24,6 +45,8 @@ MANAGE_GETTEXT_LOCALES_TEST("SYSTEM_LOCALES" "${_sysLocales}" "test/data/po" SYS
 
 MANAGE_GETTEXT_LOCALES_TEST("Detect locales" "de_DE;es_ES;fr_FR;it_IT" "test/data/po")
 
+MANAGE_GETTEXT_LOCALES_TEST("Detect locales" "de-DE;de_CH;ko;sr@latin;zh-Hans;zh_TW" "test/data/podir")
+
 FUNCTION(MANAGE_POT_FILE_TEST expPoDir potFile)
     MESSAGE("MANAGE_POT_FILE_TEST(${expPoDir} ${potFile})")
     VARIABLE_PARSE_ARGN(_o ${MANAGE_POT_FILE_VALID_OPTIONS} ${ARGN})
@@ -32,6 +55,8 @@ FUNCTION(MANAGE_POT_FILE_TEST expPoDir potFile)
 	)
     TEST_STR_MATCH(poDir "${expPoDir}")
 ENDFUNCTION(MANAGE_POT_FILE_TEST)
+
+
 
 IF(NOT CMAKE_CURRENT_BINARY_DIR)
     IF(CMAKE_CURRENT_SOURCE_DIR)

@@ -443,7 +443,7 @@ FUNCTION(ZANATA_LOCALE_COMPLETE var language script country modifier)
     SET(${var} "${language}_${script}_${country}_${modifier}" PARENT_SCOPE)
 ENDFUNCTION(ZANATA_LOCALE_COMPLETE var locale)
 
-FUNCTION(ZANATA_PARSE_LOCALE language script country modifier str)
+FUNCTION(LOCALE_PARSE_STRING language script country modifier str)
     INCLUDE(ManageZanataSuggest)
     SET(s "")
     SET(c "")
@@ -472,7 +472,7 @@ FUNCTION(ZANATA_PARSE_LOCALE language script country modifier str)
     SET(${script} "${s}" PARENT_SCOPE)
     SET(${country} "${c}" PARENT_SCOPE)
     SET(${modifier} "${m}" PARENT_SCOPE)
-ENDFUNCTION(ZANATA_PARSE_LOCALE)
+ENDFUNCTION(LOCALE_PARSE_STRING)
 
 FUNCTION(ZANATA_ZANATA_XML_DOWNLOAD zanataXml url project version)
     SET(zanataXmlUrl 
@@ -489,7 +489,7 @@ ENDFUNCTION(ZANATA_ZANATA_XML_DOWNLOAD)
 FUNCTION(ZANATA_BEST_MATCH_LOCALES var serverLocales clientLocales)
     ## Build "Client Hash"
     FOREACH(cL ${clientLocales})
-	ZANATA_PARSE_LOCALE(cLang cScript cCountry cModifier "${cL}")
+	LOCALE_PARSE_STRING(cLang cScript cCountry cModifier "${cL}")
 	SET(_ZANATA_CLIENT_LOCALE_${cLang}_${cScript}_${cCountry}_${cModifier} "${cL}")
 	ZANATA_LOCALE_COMPLETE(cCLocale "${cLang}" "${cScript}" "${cCountry}" "${cModifier}")
 	SET(compKey "_ZANATA_CLIENT_COMPLETE_LOCALE_${cCLocale}")
@@ -500,7 +500,7 @@ FUNCTION(ZANATA_BEST_MATCH_LOCALES var serverLocales clientLocales)
 
     ## 1st pass: Exact match
     FOREACH(sL ${serverLocales})
-	ZANATA_PARSE_LOCALE(sLang sScript sCountry sModifier "${sL}")
+	LOCALE_PARSE_STRING(sLang sScript sCountry sModifier "${sL}")
 	SET(scKey "_ZANATA_CLIENT_LOCALE_${sLang}_${sScript}_${sCountry}_${sModifier}")
 	## Exact match locale
 	SET(cLExact "${${scKey}}")
@@ -515,7 +515,7 @@ FUNCTION(ZANATA_BEST_MATCH_LOCALES var serverLocales clientLocales)
     FOREACH(sL ${serverLocales})
 	IF("${_ZANATA_SERVER_LOCALE_${sL}}" STREQUAL "")
 	    ## no exact match
-	    ZANATA_PARSE_LOCALE(sLang sScript sCountry sModifier "${sL}")
+	    LOCALE_PARSE_STRING(sLang sScript sCountry sModifier "${sL}")
 
 	    ## Locale completion
 	    ZANATA_LOCALE_COMPLETE(sCLocale "${sLang}" "${sScript}" "${sCountry}" "${sModifier}")
@@ -551,7 +551,6 @@ ENDFUNCTION(ZANATA_BEST_MATCH_LOCALES)
 FUNCTION(ZANATA_ZANATA_XML_MAP zanataXml zanataXmlIn clientLocales)
     INCLUDE(ManageTranslation)
     INCLUDE(ManageZanataSuggest)
-    SET(localeListVar "${ARGN}")
     FILE(STRINGS "${zanataXmlIn}" zanataXmlLines)
     FILE(REMOVE ${zanataXml})
 
