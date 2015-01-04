@@ -22,7 +22,9 @@ cmake -D cmd=zanata_xml_download
             Default: zanata.xml
 
 cmake -D cmd=zanata_xml_map
+      [-D system_locales=1]
       [-D \"locales=<locale1;locale2...>\"]
+      [-D po_dir=<po_dir> ]
       [-D zanata_xml=<zanata.xml>]
       [-D zanata_xml_in=<zanata.xml>]
       [-D \"<var>=<value>\"]
@@ -31,6 +33,7 @@ cmake -D cmd=zanata_xml_map
     Map the zanata server locales with client translation files,
     so it will output correctly.
     Options:
+        system_locales: use system locales in /usr/share/locale.
         locales: client-side locales to be mapped.
 	zanata_xml: (Optional) zanata.xml output file.
 	     Default: zanata.xml
@@ -41,7 +44,9 @@ cmake -D cmd=zanata_xml_make
       -D url=<zanata_server_url>
       -D project=<project_id>
       -D version=<version_id>
+      [-D system_locales=1]
       [-D \"locales=<locale1;locale2...>\"]
+      [-D po_dir=<po_dir> ]
       [-D zanata_xml=<zanata.xml>]
       [-D \"<var>=<value>\"]
     -P <CmakeModulePath>/ManageZanataScript.cmake
@@ -52,7 +57,8 @@ cmake -D cmd=zanata_xml_make
 	    This should be indentical to what is written in zanata.ini.
 	project: project ID in Zanata.
 	version: version ID in Zanata.
-        locales: client-side locales to be mapped.
+	system_locales: use system locales in /usr/share/locale.
+	locales: client-side locales to be mapped.
 	zanata_xml: (Optional) zanata.xml output file.
 	     Default: zanata.xml
 	"
@@ -100,7 +106,18 @@ MACRO(ZANATA_XML_MAP_CHECK)
     IF(NOT _requirementMet)
 	RETURN()
     ENDIF()
-    ZANATA_ZANATA_XML_MAP("${zanata_xml}" "${zanata_xml_in}" "${locales}")
+
+    IF("${po_dir}" STREQUAL "")
+	SET(po_dir ".")
+    ENDIF()
+
+    SET(extOptions "")
+    IF("${system_locales}" STREQUAL "1")
+	LIST(APPEND extOptions "SYSTEM_LOCALES")
+    ELSEIF(NOT "${locales}" STREQUAL "")
+	LIST(APPEND extOptions "LOCALES" "${locales}")
+    ENDIF()
+    ZANATA_ZANATA_XML_MAP("${zanata_xml}" "${zanata_xml_in}" "${po_dir}" ${extOptions})
 ENDMACRO()
 
 FUNCTION(ZANATA_XML_MAKE_CHECK)

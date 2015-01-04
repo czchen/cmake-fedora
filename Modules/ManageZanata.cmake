@@ -548,16 +548,14 @@ FUNCTION(ZANATA_BEST_MATCH_LOCALES var serverLocales clientLocales)
     SET(${var} "${result}" PARENT_SCOPE)
 ENDFUNCTION(ZANATA_BEST_MATCH_LOCALES)
 
-FUNCTION(ZANATA_ZANATA_XML_MAP zanataXml zanataXmlIn clientLocales)
+FUNCTION(ZANATA_ZANATA_XML_MAP zanataXml zanataXmlIn poDir)
     INCLUDE(ManageTranslation)
     INCLUDE(ManageZanataSuggest)
     FILE(STRINGS "${zanataXmlIn}" zanataXmlLines)
     FILE(REMOVE ${zanataXml})
 
-    IF("${clientLocales}" STREQUAL "")
-	## Use client-side system locales.
-	MANAGE_GETTEXT_LOCALES(clientLocales "" SYSTEM_LOCALES)
-    ENDIF()
+    MANAGE_GETTEXT_LOCALES(clientLocales "${poDir}" ${ARGN})
+
     M_MSG(${M_INFO3} "clientLocales=${clientLocales}")
 
     ## Build "Client Hash"

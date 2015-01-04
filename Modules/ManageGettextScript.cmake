@@ -57,6 +57,20 @@ cmake -D cmd=mo_make
 	    set the exec variable.
 	locales: Locale to be created
 	system_locales: All locales in system would be created.
+
+cmake -D cmd=find_locales
+      [-D po_dir=<dir>]
+      [-Dsystem_locales]
+      [-D \"<var>=<value>\"]
+      -P <CmakeModulePath>/ManageGettextScript.cmake
+    Find locales from local system.
+    Options:
+	po_dir: Base directory that contains po.
+	system_locales: All locales in system would be created.
+	options:STRING: Options to pass to msgmerge
+	    Note that \"STRING\" is needed, as its quite likely to pass the options 
+	    like: \"--keyword=C_:1c,2;--keyword=NC_:1c,2\" which make cmake failed to
+	    set the exec variable.
     "
     )
 ENDMACRO(MANAGE_GETTEXT_SCRIPT_PRINT_USAGE)
@@ -150,7 +164,7 @@ MACRO(MO_MAKE)
     IF("${mo_dir}" STREQUAL "")
 	SET(mo_dir "${po_dir}")
     ENDIF()
-    MANAGE_GETTEXT_LOCALES(localeListVar ${_gettext_locale_opts})
+    MANAGE_GETTEXT_LOCALES(localeListVar "${po_dir}" ${_gettext_locale_opts})
     FOREACH(_l ${localeListVar})
 	SET(exec "msgfmt" "--locale=${_l}" ${options} -o ${mo_dir}/${_l}.gmo ${po_dir}/${_l}.po)
 	EXECUTE_PROCESS(COMMAND ${exec}
@@ -174,6 +188,27 @@ MACRO(MO_MAKE_VARIABLE_CHECK)
     ENDIF()
     MO_MAKE()
 ENDMACRO(MO_MAKE_VARIABLE_CHECK)
+
+MACRO(FIND_LOCALES)
+    SET(_gettext_locale_opts "")
+    IF(DEFINED system_locales)
+	LIST(APPEND _gettext_locale_opts "SYSTEM_LOCALES")
+    ELSEIF(NOT "${locales}" STREQUAL "")
+	LIST(APPEND _gettext_locale_opts "LOCALES" ${locales})
+    ENDIF()
+    MANAGE_GETTEXT_LOCALES(localeListVar "${po_dir}" ${_gettext_locale_opts})
+    M_OUT("${localeListVar}")
+ENDMACRO(FIND_LOCALES)
+
+MACRO(FIND_LOCALES_VARIABLE_CHECK)
+    IF("${po_dir}" STREQUAL "")
+	SET(po_dir ".")
+    ENDIF()
+    IF(NOT EXISTS ${po_dir})
+	M_MSG(${M_FATAL} "Failed to find ${po_dir}")
+    ENDIF()
+    FIND_LOCALES()
+ENDMACRO(FIND_LOCALES_VARIABLE_CHECK)
 
 SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS ON)
 #######################################
@@ -221,6 +256,8 @@ ELSE()
 	PO_MAKE_VARIABLE_CHECK()
     ELSEIF("${cmd}" STREQUAL "mo_make")
 	MO_MAKE_VARIABLE_CHECK()
+    ELSEIF("${cmd}" STREQUAL "find_locales")
+	FIND_LOCALES_VARIABLE_CHECK()
     ELSE()
 	MANAGE_GETTEXT_SCRIPT_PRINT_USAGE()
 	M_MSG(${M_FATAL} "Invalid cmd ${cmd}")

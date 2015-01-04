@@ -8,8 +8,8 @@ NAME
 SYNOPSIS
     cmake-fedora-zanata [options] new [-l <locales> | -c ] [-p <projType> ] <url> [<project> [<version>]]
     cmake-fedora-zanata [options] xml-download <url> [<project> [<version>]]
-    cmake-fedora-zanata [options] xml-map  [-l <locales> | -c ]
-    cmake-fedora-zanata [options] xml-make  <url> [<project> [<version>]]
+    cmake-fedora-zanata [options] xml-map [-P poDir] [-l <locales> | -c ] <url>
+    cmake-fedora-zanata [options] xml-make <url> [<project> [<version>]]
 
 ARGUMENTS and OPTIONS
     Arguments:
@@ -61,9 +61,63 @@ DESCRIPTION
 END
 }
 
+cmakeOptions=()
+
+systemLocales=
+projectType=gettext
+poDir="."
+locales=""
+zanataXml="zanata.xml"
+
+function parse_options(){
+    while getopts "cl:p:P:z:" opt;do
+	case $opt in
+	    c )
+		cmakeOptions+=-D
+		systemLocales=1
+		;;
+	    l )
+		locales=$OPTARG
+		;;
+	    p )
+		projectType=$OPTARG
+		;;
+	    P )
+		poDir=$OPTARG
+		;;
+	    z )
+		zanataXml=$OPTARG
+		;;
+	esac
+    done
+    shift $((OPTIND-1))
+}
+
+url=
+project=
+version=
+
+function parse_arguments(){
+    if [ -z "${url}" ];then
+	url=$1
+	shift
+    fi
+    if [ -z "${project}" ];then
+	project=$1
+	shift
+    fi
+    if [ -z "${version}" ];then
+	version=$1
+	shift
+    fi
+}
+
+function convert_to_cmake_options(){
+    for o in url project version projectType
+}
 
 # Check for dependency
-for cmd in cmake zanata;do
+for cmd in cmake ;do
     if ! which $cmd &>/dev/null;then
 	echo "[Error] $cmd is not found in path" > /dev/stderr
 	exit 2
@@ -71,12 +125,25 @@ for cmd in cmake zanata;do
 done
 
 SCRIPT_DIR=$(readlink -f `dirname $0`)
-for d in Modules cmake-fedora/Modules ${SCRIPT_DIR}/../Modules /usr/share/cmake/Modules;do
-    if [ -r $d/ManageZanataScript.cmake ];then
-	CMAKE_FEDORA_ZANATA_CMAKE=$d/ManageZanataScript.cmake
+CMAKE_FEDORA_MODULE_PATHS=( Modules cmake-fedora/Modules ${SCRIPT_DIR}/../Modules /usr/share/cmake/Modules ) 
+for d in "${CMAKE_FEDORA_MODULE_PATHS[@]}" ;do
+    if [ -r $d/ManageGettextScript.cmake ];then
+	MANAGE_GETTEXT_SCRIPT_CMAKE=$d/ManageGettextScript.cmake
+	break
     fi
 done
-if [ -z "${CMAKE_FEDORA_ZANATA_CMAKE}" ];then
+if [ -z "${MANAGE_GETTEXT_SCRIPT_CMAKE}" ];then
+    echo "[Error] ManageGettextScript.cmake is not found" > /dev/stderr
+    exit 2
+fi
+
+for d in "${CMAKE_FEDORA_MODULE_PATHS[@]}" ;do
+    if [ -r $d/ManageZanataScript.cmake ];then
+	MANAGE_ZANATA_SCRIPT_CMAKE=$d/ManageZanataScript.cmake
+	break
+    fi
+done
+if [ -z "${MANAGE_ZANATA_SCRIPT_CMAKE}" ];then
     echo "[Error] ManageZanataScript.cmake is not found" > /dev/stderr
     exit 2
 fi
@@ -86,6 +153,30 @@ if [ $# = 0 ]; then
     exit 0
 fi
 
-exit 0
+parse_options
 
+subCmd=$1
+shift
+
+case $subCmd in
+    new )
+	parse_options
+	parse_arguments
+	;;
+    xml-download )
+	parse_options
+	parse_arguments
+	cmake -D cmd=zanata_xml_download -D url=$url  -P "${MANAGE_ZANTA_SCRIPT_CMAKE}"
+	;;
+    xml-map )
+	;;
+    xml-make )
+	;;
+    * )
+	echo "Sub-command $subCmd is not recognized" > /dev/stderr
+	exit 2
+	;;
+esac
+
+exit 0
 

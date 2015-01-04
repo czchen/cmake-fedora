@@ -563,6 +563,7 @@ FUNCTION(LOCALE_IN_PATH var path)
 	    SET(${var} "${token}" PARENT_SCOPE)
 	    RETURN()
 	ENDIF()
+	MATH(EXPR i ${i}-1)
     ENDWHILE()
 
     SET(${var} "" PARENT_SCOPE)
