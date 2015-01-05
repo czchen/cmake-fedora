@@ -272,7 +272,7 @@ FUNCTION(MANAGE_POT_FILE_SET_VARS cmdListVar msgmergeOptsVar msgfmtOptsVar poDir
     SET(${poDirVar} "${_o_PO_DIR}" PARENT_SCOPE)
 
     IF(MANAGE_TRANSLATION_LOCALES STREQUAL "")
-	MANAGE_GETTEXT_LOCALES(_locales "${_o_PO_DIR}" ${ARGN})
+	MANAGE_GETTEXT_LOCALES(_locales WORKING_DIRECTORY "${_o_PO_DIR}" ${ARGN})
     ENDIF()
 
     IF("${_o_MSGMERGE_OPTIONS}" STREQUAL "")
@@ -376,9 +376,10 @@ FUNCTION(MANAGE_POT_FILE potFile)
     ENDIF()
 ENDFUNCTION(MANAGE_POT_FILE)
 
-SET(MANAGE_GETTEXT_LOCALES_VALID_OPTIONS "LOCALES" "SYSTEM_LOCALES")
-FUNCTION(MANAGE_GETTEXT_LOCALES localeListVar poDir)
+SET(MANAGE_GETTEXT_LOCALES_VALID_OPTIONS "WORKING_DIRECTORY" "LOCALES" "SYSTEM_LOCALES" "DETECT_PO_DIR")
+FUNCTION(MANAGE_GETTEXT_LOCALES localeListVar)
     VARIABLE_PARSE_ARGN(_o MANAGE_GETTEXT_LOCALES_VALID_OPTIONS ${ARGN})
+    SET(detectedPoDir "NOTFOUND")
     IF(NOT "${_o_LOCALES}" STREQUAL "")
 	## Locale is defined
     ELSEIF(DEFINED _o_SYSTEM_LOCALES)
@@ -392,21 +393,28 @@ FUNCTION(MANAGE_GETTEXT_LOCALES localeListVar poDir)
 	    OUTPUT_STRIP_TRAILING_WHITESPACE
 	    )
     ELSE()
+	IF("${_o_WORKING_DIRECTORY}" STREQUAL "")
+	    SET(_o_WORKING_DIRECTORY ".")
+	ENDIF()
 	## LOCALES is not specified, detect now
 	EXECUTE_PROCESS(
-	    COMMAND find ${poDir} -name "*.po" -printf "%P\n"
+	    COMMAND find . -name "*.po" -printf "%P\n"
 	    COMMAND sed -e "s/.po//g"
 	    COMMAND sort -u
 	    COMMAND xargs
 	    COMMAND sed -e "s/ /;/g"
+	    WORKING_DIRECTORY "${_o_WORKING_DIRECTORY}"
 	    OUTPUT_VARIABLE poFileList
 	    OUTPUT_STRIP_TRAILING_WHITESPACE
 	    )
-	MANAGE_FILE_COMMON_DIR(commonDir ${poFileList})
-	IF("${commonDir}" STREQUAL "")
+	IF("${poFileList}" STREQUAL "")
+	    M_MSG(${M_ERROR} "MANAGE_GETTEXT_LOCALES: Failed to find any .po files. Please either provide .po files, or specify SYSTEM_LOCALES or  LOCALES")
+	ENDIF()
+	MANAGE_FILE_COMMON_DIR(detectedPoDir ${poFileList})
+	IF("${detectedPoDir}" STREQUAL "")
 	    SET(commonPath "")
 	ELSE()
-	    GET_FILENAME_COMPONENT(commonPath "${poDir}/${commonDir}" ABSOLUTE)
+	    GET_FILENAME_COMPONENT(commonPath "${_o_WORKING_DIRECTORY}/${detectedPoDir}" ABSOLUTE)
 	ENDIF()
 	FOREACH(f ${poFileList})
 	    IF("${commonPath}" STREQUAL "")
@@ -423,13 +431,18 @@ FUNCTION(MANAGE_GETTEXT_LOCALES localeListVar poDir)
 
 	IF("${_o_LOCALES}" STREQUAL "")
 	    ## Failed to find any locale
-	    M_MSG(${M_ERROR} "MANAGE_GETTEXT: Failed to detect locales. Please either specify LOCALES or SYSTEM_LOCALES.")
+	    M_MSG(${M_ERROR} "MANAGE_GETTEXT_LOCALES: Failed to detect locales. Please either provide .po files, or specify SYSTEM_LOCALES or  LOCALES")
 	ENDIF()
 	LIST(REMOVE_DUPLICATES _o_LOCALES)
 	LIST(SORT _o_LOCALES)
     ENDIF()
     MANAGE_TRANSLATION_LOCALES_SET("${_o_LOCALES}")
     SET(${localeListVar} "${_o_LOCALES}" PARENT_SCOPE)
+
+    ## Return detected po dir if requested
+    IF(NOT "${_o_DETECT_PO_DIR}" STREQUAL "")
+	SET(${_o_DETECT_PO_DIR} "${detectedPoDir}" PARENT_SCOPE)
+    ENDIF()
 ENDFUNCTION(MANAGE_GETTEXT_LOCALES)
 
 SET(MANAGE_GETTEXT_VALID_OPTIONS ${MANAGE_POT_FILE_VALID_OPTIONS} "ALL" "POT_FILE")

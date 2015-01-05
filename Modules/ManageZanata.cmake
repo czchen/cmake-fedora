@@ -548,25 +548,26 @@ FUNCTION(ZANATA_BEST_MATCH_LOCALES var serverLocales clientLocales)
     SET(${var} "${result}" PARENT_SCOPE)
 ENDFUNCTION(ZANATA_BEST_MATCH_LOCALES)
 
-FUNCTION(ZANATA_ZANATA_XML_MAP zanataXml zanataXmlIn poDir)
+FUNCTION(ZANATA_ZANATA_XML_MAP zanataXml zanataXmlIn workDir)
     INCLUDE(ManageTranslation)
     INCLUDE(ManageZanataSuggest)
     FILE(STRINGS "${zanataXmlIn}" zanataXmlLines)
     FILE(REMOVE ${zanataXml})
 
-    MANAGE_GETTEXT_LOCALES(clientLocales "${poDir}" ${ARGN})
-
-    M_MSG(${M_INFO3} "clientLocales=${clientLocales}")
-
     ## Build "Client Hash"
+    MANAGE_GETTEXT_LOCALES(clientLocales WORKING_DIRECTORY "${workDir}" ${ARGN})
+
+    ## Last resort
     IF("${clientLocales}" STREQUAL "")
-	## Use client-side system locales.
-	MANAGE_GETTEXT_LOCALES(clientLocales "" SYSTEM_LOCALES)
+	MANAGE_GETTEXT_LOCALES(clientLocales SYSTEM_LOCALES)
     ENDIF()
+    M_MSG(${M_INFO3} "clientLocales=${clientLocales}")
     SET(serverLocales "")
     SET(zanataXmlHeader "")
     SET(zanataXmlFooter "")
     SET(zanataXmlIsHeader 1)
+    SET(srcDirOrig "")
+    SET(transDirOrig "")
 
     ## Start parsing zanataXmlIn and gather serverLocales
     FOREACH(line ${zanataXmlLines})
@@ -575,6 +576,10 @@ FUNCTION(ZANATA_ZANATA_XML_MAP zanataXml zanataXmlIn poDir)
 	    Set(zanataXmlIsHeader 0)
 	    SET(sL "${CMAKE_MATCH_1}")
 	    LIST(APPEND serverLocales "${sL}")
+	ELSEIF("${line}" MATCHES "<src-dir>(.*)</src-dir>")
+	    SET(srcDirOrig "${CMAKE_MATCH_1}")
+	ELSEIF("${line}" MATCHES "<trans-dir>(.*)</trans-dir>")
+	    SET(transDirOrig "${CMAKE_MATCH_1}")
 	ELSE()
 	    IF(zanataXmlIsHeader)
 		STRING_APPEND(zanataXmlHeader "${line}" "\n")
