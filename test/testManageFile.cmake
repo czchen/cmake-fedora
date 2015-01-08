@@ -86,7 +86,6 @@ ENDFUNCTION(MANAGE_FILE_COMMON_DIR_TEST expected file)
 MANAGE_FILE_COMMON_DIR_TEST("po" "po/zh_CN.po" "po" "po/" "po/test/zh_TW.po" )
 MANAGE_FILE_COMMON_DIR_TEST("" "po/a.pot" "b.pot")
 
-
 # Don't use existing file, as it will be clean up
 FUNCTION(MANAGE_FILE_EXPIRY_TEST expected file expireSecond)
     MESSAGE("MANAGE_FILE_EXPIRY: ${expected}_${file}")

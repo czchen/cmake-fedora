@@ -120,7 +120,13 @@ INCLUDE(ManageString)
 INCLUDE(ManageVariable)
 INCLUDE(ManageZanataSuggest)
 
-SET(ZANATA_MAVEN_SUBCOMMAND_PREFIX "org.zanata:zanata-maven-plugin:")
+SET(ZANATA_URL "https://translate.zanata.org/zanata/" CACHE STRING "Zanata Server URL")
+
+SET(ZANATA_MAVEN_SUBCOMMAND_PREFIX "org.zanata:zanata-maven-plugin")
+
+#######################################
+# ZANATA options conversion functions
+#
 
 ## Internal
 FUNCTION(ZANATA_CLIENT_OPT_DASH_TO_CAMEL_CASE var opt)
@@ -175,6 +181,22 @@ FUNCTION(ZANATA_CLIENT_OPT_LIST_PARSE_APPEND var backend opt)
 ENDFUNCTION(ZANATA_CLIENT_OPT_LIST_PARSE_APPEND)
 
 ## Internal
+SET(ZANATA_CLIENT_GLOBAL_VALID_OPTIONS "YES" "BATCH" "ERRORS" "DEBUG")
+FUNCTION(ZANATA_CLIENT_OBTAIN_GLOBAL_OPTIONS listVar)
+    SET(result "")
+    FOREACH(opt ${ARGN})
+	IF("${opt}" STREQUAL "YES" OR "${opt}" STREQUAL "BATCH")
+	    LIST(APPEND result "-B")
+	ELSEIF("${opt}" STREQUAL "ERRORS")
+	    LIST(APPEND result "-e")
+	ELSEIF("${opt}" STREQUAL "DEBUG")
+	    LIST(APPEND result "-X")
+	ENDIF()
+    ENDFOREACH()
+    SET(${listVar} "${result}" PARENT_SCOPE)
+ENDFUNCTION(ZANATA_CLIENT_OBTAIN_GLOBAL_OPTIONS)
+
+## Internal
 FUNCTION(ZANATA_CLIENT_SUB_COMMAND var backend subCommand)
     IF("${backend}" STREQUAL "mvn")
 	SET(${var} "${ZANATA_MAVEN_SUBCOMMAND_PREFIX}:${subCommand}" PARENT_SCOPE)
@@ -184,21 +206,74 @@ FUNCTION(ZANATA_CLIENT_SUB_COMMAND var backend subCommand)
     ENDIF()
 ENDFUNCTION(ZANATA_CLIENT_SUB_COMMAND)
 
-SET(MANAGE_ZANATA_COMMON_VALID_OPTIONS "YES" "USERNAME" "DISABLE_SSL_CERT" "USER_CONFIG")
-SET(MANAGE_ZANATA_PROJECT_VALID_OPTIONS "DEFAULT_PROJECT_TYPE")
-SET(MANAGE_ZANATA_VERSION_VALID_OPTIONS "PROJECT_TYPE" "VERSION" )
-SET(MANAGE_ZANATA_PROJECT_VERSION_VALID_OPTIONS "PROJECT_CONFIG" "SRC_DIR" "TRANS_DIR")
-SET(MANAGE_ZANATA_PUSH_VALID_OPTIONS "")
-SET(MANAGE_ZANATA_PULL_VALID_OPTIONS "")
+SET(ZANATA_CLIENT_COMMON_VALID_OPTIONS "URL" "USERNAME" "DISABLE_SSL_CERT" "USER_CONFIG" "KEY")
+SET(ZANATA_CLIENT_PROJECT_VALID_OPTIONS "DEFAULT_PROJECT_TYPE")
+SET(ZANATA_CLIENT_VERSION_VALID_OPTIONS "PROJECT_TYPE" "VERSION" )
+SET(ZANATA_CLIENT_PROJECT_VERSION_VALID_OPTIONS "SRC_DIR" "TRANS_DIR" "LOCALES" "PROJECT_CONFIG" )
+SET(ZANATA_CLIENT_PUSH_VALID_OPTIONS "PUSH_TYPE" "COPY_TRANS")
+SET(ZANATA_CLIENT_PULL_VALID_OPTIONS "PULL_TYPE")
 SET(MANAGE_ZANATA_VALID_OPTIONS "GENERATE_ZANATA_XML" "CLEAN_ZANATA_XML"
     "PUSH_OPTIONS" "PULL_OPTIONS"
     "CLIENT_COMMAND"
-    ${MANAGE_ZANATA_COMMON_VALID_OPTIONS}
-    ${MANAGE_ZANATA_PROJECT_VALID_OPTIONS}
-    ${MANAGE_ZANATA_VERSION_VALID_OPTIONS}
-    ${MANAGE_ZANATA_PUSH_VALID_OPTIONS}
-    ${MANAGE_ZANATA_PULL_VALID_OPTIONS}
+    ${ZANATA_CLIENT_GLOBAL_VALID_OPTIONS}
+    ${ZANATA_CLIENT_COMMON_VALID_OPTIONS}
+    ${ZANATA_CLIENT_PROJECT_VALID_OPTIONS}
+    ${ZANATA_CLIENT_VERSION_VALID_OPTIONS}
+    ${ZANATA_CLIENT_PUSH_VALID_OPTIONS}
+    ${ZANATA_CLIENT_PULL_VALID_OPTIONS}
     )
+
+SET(ZANATA_CLIENT_PUSH_OPTIONAL_OPTIONS
+    "PROJECT" "LOCALES" "PROJECT_CONFIG"
+    ${ZANATA_CLIENT_COMMON_VALID_OPTIONS}
+    ${ZANATA_CLIENT_VERSION_VALID_OPTIONS}
+    ${ZANATA_CLIENT_PUSH_VALID_OPTIONS}
+    )
+
+SET(MANAGE_ZANATA_OBTAIN_PUSH_COMMAND_VALID_OPTIONS
+    "SRC_DIR" "TRANS_DIR"
+    ${ZANATA_CLIENT_GLOBAL_VALID_OPTIONS}
+    ${ZANATA_CLIENT_PUSH_OPTIONAL_OPTIONS}
+)
+
+FUNCTION(MANAGE_ZANATA_OBTAIN_PUSH_COMMAND cmdListVar zanataExecutable)
+    ### zanata_push
+    VARIABLE_PARSE_ARGN(_o MANAGE_ZANATA_VALID_OPTIONS ${ARGN})
+    SET(result "${zanataExecutable}")
+
+    ## Add global options
+    VARIABLE_TO_ARGN(preArgs "_o" ${ZANATA_CLIENT_GLOBAL_VALID_OPTIONS})
+    ZANATA_CLIENT_OBTAIN_GLOBAL_OPTIONS(preList ${preArgs})
+    LIST(APPEND result ${preList})
+
+    ## These are compulsory for zanata-client (java)
+    IF("${_o_SRC_DIR}" STREQUAL "")
+	SET(_o_SRC_DIR ".")
+    ENDIF()
+    IF("${_o_TRANS_DIR}" STREQUAL "")
+	SET(_o_TRANS_DIR ".")
+    ENDIF()
+
+    GET_FILENAME_COMPONENT(zanataBackend "${zanataExecutable}" NAME)
+
+    ZANATA_CLIENT_SUB_COMMAND(subCommand "${zanataBackend}" "push")
+    LIST(APPEND result ${subCommand})
+
+    ## Optional options
+    IF(NOT "${_o_VERSION}" STREQUAL "")
+	ZANATA_CLIENT_OPT_LIST_APPEND(result "${zanataBackend}" "project-version" "${_o_VERSION}")
+    ENDIF()
+
+    FOREACH(optCName ${ZANATA_CLIENT_PUSH_OPTIONAL_OPTIONS})
+	SET(value "${_o_${optCName}}")
+	MESSAGE("optCNAME=${optCNAME} value=${value}")
+	IF(value)
+	    ZANATA_CLIENT_OPT_LIST_APPEND(result "${zanataBackend}" "${optCName}" "${value}")
+	ENDIF()
+    ENDFOREACH(optCName)
+
+    SET(${cmdListVar} "${result}" PARENT_SCOPE) 
+ENDFUNCTION(MANAGE_ZANATA_OBTAIN_PUSH_COMMAND)
 
 FUNCTION(MANAGE_ZANATA)
     VARIABLE_PARSE_ARGN(_o MANAGE_ZANATA_VALID_OPTIONS ${ARGN})
@@ -244,10 +319,8 @@ FUNCTION(MANAGE_ZANATA)
     ENDIF()
 
     ## Manage zanata.xml
-    IF("${_o}" STREQUAL "")
-	SET(_o_URL "https://translate.zanata.org/zanata/")
-    ELSE()
-	SET(_o_URL "${_o}")
+    IF(NOT "${_o}" STREQUAL "")
+	SET(ZANATA_URL "${_o}" CACHE STRING "Zanata Server URL")
     ENDIF()
     IF("${_o_PROJECT_SLUG}" STREQUAL "")
 	SET(_o_PROJECT_SLUG "${PROJECT_NAME}")
@@ -265,7 +338,7 @@ FUNCTION(MANAGE_ZANATA)
 	    OUTPUT "${zanataXml}"
 	    COMMAND ${CMAKE_COMMAND} 
 	    -D cmd=zanata_xml_make
-	    -D "url=${_o_URL}"
+	    -D "url=${ZANATA_URL}"
 	    -D "project=${_o_PROJECT_SLUG}"
 	    -D "version=${_o_VERSION}"
 	    -D "locales=${_o_LOCALES}"
@@ -287,7 +360,7 @@ FUNCTION(MANAGE_ZANATA)
 
     ### Common options
     SET(zanataCommonOptions "")
-    FOREACH(optCName "URL" ${MANAGE_ZANATA_COMMON_VALID_OPTIONS})
+    FOREACH(optCName "URL" ${ZANATA_CLIENT_COMMON_VALID_OPTIONS})
 	SET(value "${_o_${optCName}}")
 	IF(value)
 	    ZANATA_CLIENT_OPT_LIST_APPEND(zanataCommonOptions "${ZANATA_BACKEND}" "${optCName}" "${value}")
@@ -297,7 +370,6 @@ FUNCTION(MANAGE_ZANATA)
     IF("${_o_DEFAULT_PROJECT_TYPE}" STREQUAL "")
 	SET(_o_DEFAULT_PROJECT_TYPE "gettext")
     ENDIF()
-
 
     ### zanata_put_project
     SET(ZANATA_DESCRIPTION_SIZE 80 CACHE STRING "Zanata description size")
@@ -336,37 +408,13 @@ FUNCTION(MANAGE_ZANATA)
 	)
 
     ### zanata_push
-    IF("${_o_SRC_DIR}" STREQUAL "")
-	SET(_o_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
-    ENDIF()
-    IF("${_o_TRANS_DIR}" STREQUAL "")
-	SET(_o_TRANS_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
-    ENDIF()
+    VARIABLE_TO_ARGN(pushOptions "_o" ${MANAGE_ZANATA_OBTAIN_PUSH_COMMAND_VALID_OPTIONS} ${ZANATA_CLIENT_GLOBAL_VALID_OPTIONS})
+    MANAGE_ZANATA_OBTAIN_PUSH_COMMAND(cmdStr "${ZANATA_EXECUTABLE}" ${pushOptions} )
 
-    ZANATA_CLIENT_SUB_COMMAND(subCommand "${ZANATA_BACKEND}" "push")
-    SET(options "")
-    ZANATA_CLIENT_OPT_LIST_APPEND(options "${ZANATA_BACKEND}" "project" "${_o_PROJECT_SLUG}")
-    ZANATA_CLIENT_OPT_LIST_APPEND(options "${ZANATA_BACKEND}" "project-version" "${_o_VERSION}")
-    IF(_o_PROJECT_TYPE)
-	ZANATA_CLIENT_OPT_LIST_APPEND(options "${ZANATA_BACKEND}" "project-type" "${_o_PROJECT_TYPE}")
-    ENDIF()
-    FOREACH(optCName ${MANAGE_ZANATA_PROJECT_VERSION_VALID_OPTIONS})
-	SET(value "${_o_${optCName}}")
-	IF(value)
-	    ZANATA_CLIENT_OPT_LIST_APPEND(options "${ZANATA_BACKEND}" "${optCName}" "${value}")
-	ENDIF()
-    ENDFOREACH(optCName)
-    IF(_o_PUSH_OPTIONS)
-	FOREACH(optStr ${o_PUSH_OPTIONS})
-	    M_MSG(${M_INFO2} "ManageZanata: PUSH_OPTION ${optStr}")
-	    ZANATA_CLIENT_OPT_LIST_PARSE_APPEND(options "${ZANATA_BACKEND}" "${optStr}")
-	ENDFOREACH(optStr)
-    ENDIF()
-
-    SET(exec ${_o_CLIENT_COMMAND} ${subCommand} ${zanataCommonOptions} ${options}) 
+    #SET(exec ${_o_CLIENT_COMMAND} ${subCommand} ${zanataCommonOptions} ${options}) 
     ADD_CUSTOM_TARGET(zanata_push
-	COMMAND ${exec}
-	COMMENT "zanata_push: with ${exec}"
+	COMMAND ${cmdStr}
+	COMMENT "zanata_push: with ${cmdStr}"
 	DEPENDS ${zanataXml}
 	)
 
@@ -374,8 +422,8 @@ FUNCTION(MANAGE_ZANATA)
     SET(extraOptions "")
     ZANATA_CLIENT_OPT_LIST_APPEND(extraOptions "${ZANATA_BACKEND}" "push-type" "both")
     ADD_CUSTOM_TARGET(zanata_push_both 
-	COMMAND ${exec} ${extraOptions}
-	COMMENT "zanata_push: with ${exec} ${extraOptions}"
+	COMMAND ${cmdStr} ${extraOptions}
+	COMMENT "zanata_push: with ${cmdStr} ${extraOptions}"
 	DEPENDS ${zanataXml}
 	)
 
@@ -383,8 +431,8 @@ FUNCTION(MANAGE_ZANATA)
     SET(extraOptions "")
     ZANATA_CLIENT_OPT_LIST_APPEND(extraOptions "${ZANATA_BACKEND}" "push-type" "trans")
     ADD_CUSTOM_TARGET(zanata_push_trans 
-	COMMAND ${exec} ${extraOptions}
-	COMMENT "zanata_push: with ${exec} ${extraOptions}"
+	COMMAND ${cmdStr} ${extraOptions}
+	COMMENT "zanata_push: with ${cmdStr} ${extraOptions}"
 	DEPENDS ${zanataXml}
 	)
 
@@ -396,7 +444,7 @@ FUNCTION(MANAGE_ZANATA)
     IF(_o_PROJECT_TYPE)
 	ZANATA_CLIENT_OPT_LIST_APPEND(options "${ZANATA_BACKEND}" "project-type" "${_o_PROJECT_TYPE}")
     ENDIF()
-    FOREACH(optCName ${MANAGE_ZANATA_PROJECT_VERSION_VALID_OPTIONS})
+    FOREACH(optCName ${ZANATA_CLIENT_PROJECT_VERSION_VALID_OPTIONS})
 	SET(value "${_o_${optCName}}")
 	IF(value)
 	    ZANATA_CLIENT_OPT_LIST_APPEND(options "${ZANATA_BACKEND}" "${optCName}" "${value}")
@@ -555,7 +603,18 @@ FUNCTION(ZANATA_ZANATA_XML_MAP zanataXml zanataXmlIn workDir)
     FILE(REMOVE ${zanataXml})
 
     ## Build "Client Hash"
-    MANAGE_GETTEXT_LOCALES(clientLocales WORKING_DIRECTORY "${workDir}" ${ARGN})
+    MANAGE_GETTEXT_LOCALES(clientLocales WORKING_DIRECTORY "${workDir}" DETECT_PO_DIR poDir ${ARGN})
+    IF("${poDir}" STREQUAL "")
+	SET(poDir ".")
+    ENDIF()
+
+    MANAGE_GETTEXT_DETECT_POT_DIR(potDir WORKING_DIRECTORY "${workDir}")
+    IF("${potDir}" STREQUAL "NOTFOUND")
+	M_MSG(${M_ERROR} "ZANATA_ZANATA_XML_MAP: Failed to detect pot dir because .pot files are not found in ${workDir}")
+    ELSEIF("${potDir}" STREQUAL "")
+	SET(potDir ".")
+    ENDIF()
+
 
     ## Last resort
     IF("${clientLocales}" STREQUAL "")
@@ -573,13 +632,15 @@ FUNCTION(ZANATA_ZANATA_XML_MAP zanataXml zanataXmlIn workDir)
     FOREACH(line ${zanataXmlLines})
 	IF("${line}" MATCHES "<locale>(.*)</locale>")
 	    ## Is a locale string
-	    Set(zanataXmlIsHeader 0)
 	    SET(sL "${CMAKE_MATCH_1}")
 	    LIST(APPEND serverLocales "${sL}")
 	ELSEIF("${line}" MATCHES "<src-dir>(.*)</src-dir>")
 	    SET(srcDirOrig "${CMAKE_MATCH_1}")
 	ELSEIF("${line}" MATCHES "<trans-dir>(.*)</trans-dir>")
 	    SET(transDirOrig "${CMAKE_MATCH_1}")
+	ELSEIF("${line}" MATCHES "<locales>")
+	    SET(transDirOrig "${CMAKE_MATCH_1}")
+	    Set(zanataXmlIsHeader 0)
 	ELSE()
 	    IF(zanataXmlIsHeader)
 		STRING_APPEND(zanataXmlHeader "${line}" "\n")
@@ -591,7 +652,12 @@ FUNCTION(ZANATA_ZANATA_XML_MAP zanataXml zanataXmlIn workDir)
     ENDFOREACH()
     LIST(SORT serverLocales)
     ZANATA_BEST_MATCH_LOCALES(bestMatches "${serverLocales}" "${clientLocales}")
+
     FILE(WRITE "${zanataXml}" "${zanataXmlHeader}\n")
+
+    FILE(APPEND "${zanataXml}" "  <src-dir>${potDir}</src-dir>\n")
+    FILE(APPEND "${zanataXml}" "  <trans-dir>${poDir}</trans-dir>\n")
+    FILE(APPEND "${zanataXml}" "  <locales>\n")
 
     FOREACH(bM ${bestMatches})
 	STRING_SPLIT(lA "," "${bM}")

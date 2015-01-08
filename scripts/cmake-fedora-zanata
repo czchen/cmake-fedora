@@ -8,7 +8,6 @@ NAME
 SYNOPSIS
     cmake-fedora-zanata [options] new [-l <locales> | -c ] [-p <projType> ] <url> [<project> [<version>]]
     cmake-fedora-zanata [options] xml-download <url> [<project> [<version>]]
-    cmake-fedora-zanata [options] xml-map [-P poDir] [-l <locales> | -c ] <url>
     cmake-fedora-zanata [options] xml-make <url> [<project> [<version>]]
 
 ARGUMENTS and OPTIONS
@@ -51,9 +50,6 @@ DESCRIPTION
 	xml-download
 	    Download zanata.xml from Zanata Server.
 
-	xml-map
-	    Map the zanata server locales with client translation files,
-	    so it will output correctly.
 
 	xml-make
 	    Make a working zanata.xml
@@ -168,9 +164,9 @@ case $subCmd in
 	parse_arguments
 	cmake -D cmd=zanata_xml_download -D url=$url  -P "${MANAGE_ZANTA_SCRIPT_CMAKE}"
 	;;
-    xml-map )
-	;;
     xml-make )
+	parse_options
+	parse_arguments
 	;;
     * )
 	echo "Sub-command $subCmd is not recognized" > /dev/stderr
