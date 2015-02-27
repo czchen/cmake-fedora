@@ -534,11 +534,14 @@ FUNCTION(MANAGE_GETTEXT_DETECT_POT_DIR potDirVar)
 	OUTPUT_VARIABLE potFileList
 	OUTPUT_STRIP_TRAILING_WHITESPACE
 	)
-    IF("${potFileList}" STREQUAL "")
-	SET(${potDirVar} "${detectedPotDir}" PARENT_SCOPE)
-	RETURN()
+    LIST(LENGTH potFileList potFileListLen)
+    IF( potFileListLen EQUAL 0 )
+	## NOT_FOUND
+    ELSEIF( potFileListLen EQUAL 1 )
+	GET_FILENAME_COMPONENT(detectedPotDir "${potFileList}" PATH)
+    ELSE()
+	MANAGE_FILE_COMMON_DIR(detectedPotDir ${potFileList})
     ENDIF()
-    MANAGE_FILE_COMMON_DIR(detectedPotDir ${potFileList})
     SET(${potDirVar} "${detectedPotDir}" PARENT_SCOPE)
 ENDFUNCTION(MANAGE_GETTEXT_DETECT_POT_DIR)
 

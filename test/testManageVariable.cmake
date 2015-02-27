@@ -93,3 +93,20 @@ IF(NOT _opt_COMMAND STREQUAL "${_exp}")
     MESSAGE(SEND_ERROR "_opt_INCLUDE should be '${_exp}' instead of '${_opt_COMMAND}'")
 ENDIF(NOT _opt_COMMAND STREQUAL "${_exp}")
 
+#######################################
+# VARIABLE_TO_ARGN
+#
+
+FUNCTION(VARIABLE_TO_ARGN_TEST expected prefix optionList)
+    MESSAGE("VARIABLE_TO_ARGN_TEST(${expected} ${ARGN})")
+    VARIABLE_TO_ARGN(v ${prefix} ${optionList})
+    TEST_STR_MATCH(v "${expected}")
+ENDFUNCTION(VARIABLE_TO_ARGN_TEST)
+
+SET(_o_YES "")
+SET(_o_DISABLE_SSL_CERT "")
+SET(_o_URL "https://fedora.zanata.org/")
+SET(_o_KEY "myKey")
+SET(OPTION_LIST YES DISABLE_SSL_CERT URL USER)
+VARIABLE_TO_ARGN_TEST("YES;DISABLE_SSL_CERT;URL;https://fedora.zanata.org/" _o "OPTION_LIST")
+
