@@ -51,7 +51,6 @@ MANAGE_GETTEXT_LOCALES_TEST("SYSTEM_LOCALES" "${_sysLocales}" "0" "test/data/po"
 
 MANAGE_GETTEXT_LOCALES_TEST("Detect locales" "de_DE;es_ES;fr_FR;it_IT" "" "test/data/po")
 
-
 MANAGE_GETTEXT_LOCALES_TEST("Detect locales" "de-DE;de_CH;ko;sr@latin;zh-Hans;zh_TW" "po" "test/data/podir" )
 
 FUNCTION(MANAGE_POT_FILE_TEST expPoDir potFile)

@@ -398,8 +398,8 @@ FUNCTION(MANAGE_GETTEXT_LOCALES localeListVar)
 	ENDIF()
 	## LOCALES is not specified, detect now
 	EXECUTE_PROCESS(
-	    COMMAND find . -name "*.po" -printf "%P\n"
-	    COMMAND sed -e "s/.po//g"
+	    COMMAND find . -name "*.po"
+	    COMMAND sed -e "s|^\\./||"
 	    COMMAND sort -u
 	    COMMAND xargs
 	    COMMAND sed -e "s/ /;/g"
@@ -408,7 +408,7 @@ FUNCTION(MANAGE_GETTEXT_LOCALES localeListVar)
 	    OUTPUT_STRIP_TRAILING_WHITESPACE
 	    )
 	IF("${poFileList}" STREQUAL "")
-	    M_MSG(${M_ERROR} "MANAGE_GETTEXT_LOCALES: Failed to find any .po files. Please either provide .po files, or specify SYSTEM_LOCALES or  LOCALES")
+	    M_MSG(${M_ERROR} "MANAGE_GETTEXT_LOCALES: Failed to find any .po files. Please either provide .po files, or specify SYSTEM_LOCALES or LOCALES")
 	ENDIF()
 	MANAGE_FILE_COMMON_DIR(detectedPoDir ${poFileList})
 	IF("${detectedPoDir}" STREQUAL "")
@@ -525,8 +525,8 @@ FUNCTION(MANAGE_GETTEXT_DETECT_POT_DIR potDirVar)
 	SET(_o_WORKING_DIRECTORY ".")
     ENDIF()
     EXECUTE_PROCESS(
-	COMMAND find . -name "*.pot" -printf "%P\n"
-	COMMAND sed -e "s/.pot//g"
+	COMMAND find . -name "*.pot"
+	COMMAND sed -e "s|^\\./||"
 	COMMAND sort -u
 	COMMAND xargs
 	COMMAND sed -e "s/ /;/g"
