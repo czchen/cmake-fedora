@@ -2,6 +2,34 @@ INCLUDE(test/testCommon.cmake)
 INCLUDE(ManageMessage)
 INCLUDE(ManageZanata)
 
+#######################################
+# ZANATA_JSON_GET_VALUE
+#
+FUNCTION(ZANATA_JSON_GET_VALUE_TEST expStr key str)
+    MESSAGE("ZANATA_JSON_GET_VALUE_TEST(${expStr})")
+    ZANATA_JSON_GET_VALUE(opt "${key}" "${str}")
+    TEST_STR_MATCH(opt "${expStr}")
+ENDFUNCTION(ZANATA_JSON_GET_VALUE_TEST)
+
+ZANATA_JSON_GET_VALUE_TEST("Gettext" "projectType" "{\"id\":\"master\",\"status\":\"ACTIVE\",\"projectType\":\"Gettext\"}")
+ZANATA_JSON_GET_VALUE_TEST("3.5" "id" "{\"id\":\"3.5\",\"status\":\"ACTIVE\",\"projectType\":\"Gettext\"}")
+
+#######################################
+# ZANATA_JSON_TO_ARRAY
+#
+FUNCTION(ZANATA_JSON_TO_ARRAY_TEST expStr str)
+    MESSAGE("ZANATA_JSON_TO_ARRAY_TEST(${expStr})")
+    ZANATA_JSON_TO_ARRAY(opt "${str}")
+    TEST_STR_MATCH(opt "${expStr}")
+ENDFUNCTION(ZANATA_JSON_TO_ARRAY_TEST)
+
+ZANATA_JSON_TO_ARRAY_TEST("{\"localeId\":\"sq\",\"displayName\":\"Albanian\"};{\"localeId\":\"ast\",\"displayName\":\"Asturian\"};{\"localeId\":\"zh-TW\",\"displayName\":\"Chinese (Taiwan)\"}" 
+    "[{\"localeId\":\"sq\",\"displayName\":\"Albanian\"},{\"localeId\":\"ast\",\"displayName\":\"Asturian\"},{\"localeId\":\"zh-TW\",\"displayName\":\"Chinese (Taiwan)\"}]")
+
+
+#######################################
+# ZANATA_STRING_DASH_TO_CAMEL_CASE
+#
 FUNCTION(ZANATA_STRING_DASH_TO_CAMEL_CASE_TEST expStr str)
     MESSAGE("ZANATA_STRING_DASH_TO_CAMEL_CASE_TEST(${expStr})")
     ZANATA_STRING_DASH_TO_CAMEL_CASE(opt "${str}")

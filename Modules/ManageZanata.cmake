@@ -759,6 +759,50 @@ FUNCTION(LOCALE_PARSE_STRING language script country modifier str)
     SET(${modifier} "${m}" PARENT_SCOPE)
 ENDFUNCTION(LOCALE_PARSE_STRING)
 
+FUNCTION(ZANATA_JSON_GET_VALUE var key string)
+    STRING(REGEX REPLACE ".*[{,]\"${key}\":\"([^\"]*)\".*" "\\1" ret "${string}")
+    SET(${var} "${ret}" PARENT_SCOPE)
+ENDFUNCTION(ZANATA_JSON_GET_VALUE)
+
+FUNCTION(ZANATA_JSON_TO_ARRAY var string)
+    STRING(REGEX REPLACE "[[]\(.*\)[]]" "\\1" ret1 "${string}")
+    STRING(REGEX REPLACE "},{" "};{" ret "${ret1}")
+    SET(${var} "${ret}" PARENT_SCOPE)
+ENDFUNCTION(ZANATA_JSON_TO_ARRAY)
+
+FUNCTION(ZANATA_REST_GET_PROJECT_VERSION_TYPE var url project version)
+    SET(restUrl "${url}rest/projects/p/${project}/iterations/i/${version}")
+    EXECUTE_PROCESS(COMMAND curl -f -G -s -H  "Content-Type:application/json" 
+	-H "Accept:application/json" "${restUrl}"
+	RESULT_VARIABLE curlRet
+	OUTPUT_VARIABLE curlOut)
+    IF(NOT curlRet EQUAL 0)
+	M_MSG(${M_OFF} "Failed to get project type from project ${project} to ${version} with ${url}")
+	RETURN()
+    ENDIF()
+    ZANATA_JSON_GET_VALUE(ret "projectType" "${curlOut}")
+    SET(${var} "${ret}" PARENT_SCOPE)
+ENDFUNCTION(ZANATA_REST_GET_PROJECT_VERSION_TYPE)
+
+FUNCTION(ZANATA_REST_GET_PROJECT_VERSION_LOCALES var url project version)
+    SET(restUrl "${url}rest/projects/p/${project}/iterations/i/${version}/locales")
+    EXECUTE_PROCESS(COMMAND curl -f -G -s -H  "Content-Type:application/json" 
+	-H "Accept:application/json" "${restUrl}"
+	RESULT_VARIABLE curlRet
+	OUTPUT_VARIABLE curlOut)
+    IF(NOT curlRet EQUAL 0)
+	M_MSG(${M_OFF} "Failed to get project type from project ${project} to ${version} with ${url}")
+	RETURN()
+    ENDIF()
+    ZANATA_JSON_TO_ARRAY(nodeArray "${curlOut}")
+    SET(retArray "")
+    FOREACH(node ${nodeArray})
+	ZANATA_JSON_GET_VALUE(l "localeId" "${node}")
+	LIST(APPEND retArray "${l}")
+    ENDFOREACH()
+    SET(${var} "${retArray}" PARENT_SCOPE)
+ENDFUNCTION(ZANATA_REST_GET_PROJECT_VERSION_LOCALES)
+
 FUNCTION(ZANATA_ZANATA_XML_DOWNLOAD zanataXml url project version)
     SET(zanataXmlUrl 
 	"${url}iteration/view/${project}/${version}?actionMethod=iteration%2Fview.xhtml%3AconfigurationAction.downloadGeneralConfig%28%29"

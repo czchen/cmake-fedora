@@ -22,9 +22,10 @@ cmake -D cmd=zanata_xml_download
             Default: zanata.xml
 
 cmake -D cmd=zanata_xml_map
-      [-D system_locales=1]
       [-D \"locales=<locale1;locale2...>\"]
+      [-D system_locales=1]
       [-D po_dir=<po_dir> ]
+      [-D trans_dir=<trans_dir> ]
       [-D zanata_xml=<zanata.xml>]
       [-D zanata_xml_in=<zanata.xml>]
       [-D \"<var>=<value>\"]
@@ -35,6 +36,8 @@ cmake -D cmd=zanata_xml_map
     Options:
         system_locales: use system locales in /usr/share/locale.
         locales: client-side locales to be mapped.
+	po_dir: (Deprecated) Use trans_dir instead
+	trans_dir: (Optional) Specify base directory of translation files.
 	zanata_xml: (Optional) zanata.xml output file.
 	     Default: zanata.xml
 	zanata_xml_in: (Optional) zanata.xml input file.
@@ -44,9 +47,10 @@ cmake -D cmd=zanata_xml_make
       -D url=<zanata_server_url>
       -D project=<project_id>
       -D version=<version_id>
-      [-D system_locales=1]
       [-D \"locales=<locale1;locale2...>\"]
+      [-D system_locales=1]
       [-D po_dir=<po_dir> ]
+      [-D trans_dir=<trans_dir> ]
       [-D zanata_xml=<zanata.xml>]
       [-D \"<var>=<value>\"]
     -P <CmakeModulePath>/ManageZanataScript.cmake
@@ -55,6 +59,8 @@ cmake -D cmd=zanata_xml_make
     Options:
         url: Zanata server URL (e.g. https://translate.zanata.org/zanata/)
 	    This should be indentical to what is written in zanata.ini.
+	po_dir: (Deprecated) Use trans_dir instead
+	trans_dir: (Optional) Specify base directory of translation files.
 	project: project ID in Zanata.
 	version: version ID in Zanata.
 	system_locales: use system locales in /usr/share/locale.
@@ -107,8 +113,12 @@ MACRO(ZANATA_XML_MAP_CHECK)
 	RETURN()
     ENDIF()
 
-    IF("${po_dir}" STREQUAL "")
-	SET(po_dir ".")
+    IF(NOT "${po_dir}" STREQUAL "")
+	SET(trans_dir "${po_dir}")
+    ENDIF()
+
+    IF("${trans_dir}" STREQUAL "")
+	SET(trans_dir ".")
     ENDIF()
 
     SET(extOptions "")
@@ -117,7 +127,7 @@ MACRO(ZANATA_XML_MAP_CHECK)
     ELSEIF(NOT "${locales}" STREQUAL "")
 	LIST(APPEND extOptions "LOCALES" "${locales}")
     ENDIF()
-    ZANATA_ZANATA_XML_MAP("${zanata_xml}" "${zanata_xml_in}" "${po_dir}" ${extOptions})
+    ZANATA_ZANATA_XML_MAP("${zanata_xml}" "${zanata_xml_in}" "${trans_dir}" ${extOptions})
 ENDMACRO()
 
 FUNCTION(ZANATA_XML_MAKE_CHECK)
@@ -181,7 +191,7 @@ ELSE()
 	ZANATA_XML_MAKE_CHECK()
     ELSE()
 	MANAGE_ZANATA_SCRIPT_PRINT_USAGE()
-	M_MSG(${M_FATAL} "Invalid cmd ${cmd}")
+	M_MSG(${M_FATAL} "Invalid sub-command ${cmd}")
     ENDIF()
 ENDIF()
 

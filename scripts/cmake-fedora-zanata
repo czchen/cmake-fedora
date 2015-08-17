@@ -6,11 +6,11 @@ NAME
     cmake-fedora-zanata - cmake-fedora helper script to operate with zanata the translation system
 
 SYNOPSIS
-    cmake-fedora-zanata [options] new [-l <locales> | -c ] [-p <projType> ] <url> [<project> [<version>]]
+    cmake-fedora-zanata [options] new <url> [<project> [<version>]]
     cmake-fedora-zanata [options] xml-download <url> [<project> [<version>]]
     cmake-fedora-zanata [options] xml-make <url> [<project> [<version>]]
 
-ARGUMENTS and OPTIONS
+ARGUMENTS
     Arguments:
         <url> 
 	    Zanata server URL (e.g. https://translate.zanata.org/zanata/)
@@ -26,7 +26,29 @@ ARGUMENTS and OPTIONS
     Common options:
         -z <zanata.xml>
 	     Output zanata.xml file.
-	
+
+OPTIONS
+    -c
+        Derive client Locales from local translation files (.po).
+	It should NOT be use with -l
+
+    -l <Locale1;Locale2;...>
+	Specify client Locale manually. Use ';' to separate Locales.
+	It should NOT be use with -c
+
+    -p <projectType>
+        Specify project type. If not specified, it will set to 'file' for new projects,
+	or whatever defined in Zanata server for existing projects.
+	Available project types: file, gettext, podir, properties, utf8properties, xliff
+
+    -t <transDir>
+	Specify the base directory that contains translation files.
+	Default: Current directory.
+
+    -z <zanata.xml>
+	Output zanata.xml file.
+	Default: zanata.xml
+
 
 DESCRIPTION
     Note that this program assumes that your ~/.config/zanata.ini is set,
@@ -38,14 +60,14 @@ DESCRIPTION
         new 
 	    All round-trip workflow. From creating project, version,
             fix zanata.xml, and push the source files and existing translations.
-	    By default, it uses /usr/share/locales as source of client locales.
+	    By default, it uses /usr/share/Locales as source of client Locales.
 
 	    Options:
 		-c
-		    Derive client locales from local translation files (.po).
+		    Derive client Locales from local translation files (.po).
 
-		-l <locale1;locale2;...>
-		    Specify client locale manually. Use ';' to separate locales.
+		-l <Locale1;Locale2;...>
+		    Specify client Locale manually. Use ';' to separate Locales.
 	    
 	xml-download
 	    Download zanata.xml from Zanata Server.
@@ -57,60 +79,48 @@ DESCRIPTION
 END
 }
 
-cmakeOptions=()
-
-systemLocales=
-projectType=gettext
-poDir="."
-locales=""
-zanataXml="zanata.xml"
+##=== Variables ===
+Locales=""
+ProjectType=file
+TransDir="${PWD}"
+ZanataXml="${PWD}/zanata.xml"
+Url=
+Project=
+Version=
+SystemLocales=1
+declare -a CmakeOptionArray
 
 function parse_options(){
-    while getopts "cl:p:P:z:" opt;do
+    while getopts "cl:p:t:z:" opt;do
 	case $opt in
 	    c )
-		cmakeOptions+=-D
-		systemLocales=1
+		SystemLocales=0
 		;;
 	    l )
-		locales=$OPTARG
+		SystemLocales=0
+		Locales=$OPTARG
+		CmakeOptionArray+=( -D "locales=$Locales" )
 		;;
 	    p )
-		projectType=$OPTARG
+		ProjectType=$OPTARG
 		;;
-	    P )
-		poDir=$OPTARG
+	    t )
+		TransDir=$OPTARG
+		CmakeOptionArray+=( -D "trans_dir=${TransDir}" )
 		;;
 	    z )
-		zanataXml=$OPTARG
+		ZanataXml=$OPTARG
+		CmakeOptionArray+=( -D "zanata_xml=${ZanataXml}" )
 		;;
 	esac
     done
     shift $((OPTIND-1))
-}
 
-url=
-project=
-version=
-
-function parse_arguments(){
-    if [ -z "${url}" ];then
-	url=$1
-	shift
-    fi
-    if [ -z "${project}" ];then
-	project=$1
-	shift
-    fi
-    if [ -z "${version}" ];then
-	version=$1
-	shift
+    if [ $SystemLocales -eq 1 ];then
+	CmakeOptionArray+=( -D system_locales=1 )
     fi
 }
 
-function convert_to_cmake_options(){
-    for o in url project version projectType
-}
 
 # Check for dependency
 for cmd in cmake ;do
@@ -120,22 +130,12 @@ for cmd in cmake ;do
     fi
 done
 
+set -x
 SCRIPT_DIR=$(readlink -f `dirname $0`)
 CMAKE_FEDORA_MODULE_PATHS=( Modules cmake-fedora/Modules ${SCRIPT_DIR}/../Modules /usr/share/cmake/Modules ) 
-for d in "${CMAKE_FEDORA_MODULE_PATHS[@]}" ;do
-    if [ -r $d/ManageGettextScript.cmake ];then
-	MANAGE_GETTEXT_SCRIPT_CMAKE=$d/ManageGettextScript.cmake
-	break
-    fi
-done
-if [ -z "${MANAGE_GETTEXT_SCRIPT_CMAKE}" ];then
-    echo "[Error] ManageGettextScript.cmake is not found" > /dev/stderr
-    exit 2
-fi
-
-for d in "${CMAKE_FEDORA_MODULE_PATHS[@]}" ;do
-    if [ -r $d/ManageZanataScript.cmake ];then
-	MANAGE_ZANATA_SCRIPT_CMAKE=$d/ManageZanataScript.cmake
+for ModuleDir in "${CMAKE_FEDORA_MODULE_PATHS[@]}" ;do
+    if [ -r $ModuleDir/ManageZanataScript.cmake ];then
+	MANAGE_ZANATA_SCRIPT_CMAKE=${ModuleDir}/ManageZanataScript.cmake
 	break
     fi
 done
@@ -149,30 +149,45 @@ if [ $# = 0 ]; then
     exit 0
 fi
 
-parse_options
-
 subCmd=$1
 shift
 
+parse_options
+if [ -z "${Url}" ];then
+    Url=$1
+    CmakeOptionArray+=( -D "url=$Url" )
+    shift
+fi
+if [ -z "${Project}" ];then
+    Project=$1
+    CmakeOptionArray+=( -D "project=$Project" )
+    shift
+fi
+if [ -z "${Version}" ];then
+    Version=$1
+    CmakeOptionArray+=( -D "version=$Version" )
+    shift
+fi
+
+
 case $subCmd in
     new )
-	parse_options
-	parse_arguments
+	CmakeOptionArray+=( -D cmd=new )
+	cmake "${CmakeOptionArray[@]}"  -P "${MANAGE_ZANATA_SCRIPT_CMAKE}"
 	;;
     xml-download )
-	parse_options
-	parse_arguments
-	cmake -D cmd=zanata_xml_download -D url=$url  -P "${MANAGE_ZANTA_SCRIPT_CMAKE}"
+	CmakeOptionArray+=( -D cmd=zanata_xml_download )
+	cmake "${CmakeOptionArray[@]}"  -P "${MANAGE_ZANATA_SCRIPT_CMAKE}"
 	;;
     xml-make )
-	parse_options
-	parse_arguments
+	CmakeOptionArray+=( -D cmd=zanata_xml_make )
+	cmake "${CmakeOptionArray[@]}" 	-P "${MANAGE_ZANATA_SCRIPT_CMAKE}"
 	;;
     * )
 	echo "Sub-command $subCmd is not recognized" > /dev/stderr
 	exit 2
 	;;
 esac
-
+set +x
 exit 0
 
