@@ -26,6 +26,17 @@ ENDFUNCTION(ZANATA_JSON_TO_ARRAY_TEST)
 ZANATA_JSON_TO_ARRAY_TEST("{\"localeId\":\"sq\",\"displayName\":\"Albanian\"};{\"localeId\":\"ast\",\"displayName\":\"Asturian\"};{\"localeId\":\"zh-TW\",\"displayName\":\"Chinese (Taiwan)\"}" 
     "[{\"localeId\":\"sq\",\"displayName\":\"Albanian\"},{\"localeId\":\"ast\",\"displayName\":\"Asturian\"},{\"localeId\":\"zh-TW\",\"displayName\":\"Chinese (Taiwan)\"}]")
 
+#######################################
+# ZANATA_REST_GET_PROJECT_VERSION_TYPE
+#
+FUNCTION(ZANATA_REST_GET_PROJECT_VERSION_TYPE_TEST expStr url project version)
+    MESSAGE("ZANATA_REST_GET_PROJECT_VERSION_TYPE_TEST(${expStr} ${url} ${project} ${version})")
+    ZANATA_REST_GET_PROJECT_VERSION_TYPE(actual "${url}" "${project}" "${version}")
+    TEST_STR_MATCH(actual "${expStr}")
+ENDFUNCTION(ZANATA_REST_GET_PROJECT_VERSION_TYPE_TEST)
+
+ZANATA_REST_GET_PROJECT_VERSION_TYPE_TEST("Gettext" "https://fedora.zanata.org/" "ibus-chewing" master)
+
 
 #######################################
 # ZANATA_STRING_DASH_TO_CAMEL_CASE

@@ -137,6 +137,57 @@ SET(ZANATA_PROJECT_TYPE "gettext" CACHE STRING "Project Type of this project")
 SET(ZANATA_DESCRIPTION_SIZE 80 CACHE STRING "Zanata description size")
 
 #######################################
+# ZANATA "Object"
+#
+MACRO(MANAGE_ZANATA_XML_OBJECT_NEW var url )
+    SET(${var} "url")
+    SET(${var}_url "${url}")
+    FOREACH(arg ${ARGN})
+	IF("${${var}_project}" STREQUAL "")
+	    MANAGE_ZANATA_XML_OBJECT_ADD_PROPERTY(${var} "project" "${arg}")
+	ELSEIF("${${var}_version}" STREQUAL "")
+	    MANAGE_ZANATA_XML_OBJECT_ADD_PROPERTY(${var} "version" "${arg}")
+	ELSEIF("${${var}_type}" STREQUAL "")
+	    MANAGE_ZANATA_XML_OBJECT_ADD_PROPERTY(${var} "type" "${arg}")
+	ENDIF()
+    ENDFOREACH(arg)
+ENDMACRO(MANAGE_ZANATA_XML_OBJECT_NEW)
+
+MACRO(MANAGE_ZANATA_XML_OBJECT_ADD_PROPERTY var key value )
+    LIST(APPEND ${var} "${key}")
+    SET(${var}_${key} "${value}")
+ENDMACRO(MANAGE_ZANATA_XML_OBJECT_ADD_PROPERTY)
+
+FUNCTION(MANAGE_ZANATA_XML_OBJECT_TO_STRING outputVar var)
+    SET(buf "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>")
+    STRING_APPEND(buf "<config xmlns=\"http://zanata.org/namespace/config/\">" "\n")
+    STRING_APPEND(buf "  <url>${${var}_url}</url>" "\n")
+    STRING_APPEND(buf "  <project>${${var}_project}</project>" "\n")
+    STRING_APPEND(buf "  <project-version>${${var}_version}</project-version>" "\n")
+    STRING(TOLOWER "${${var}_type}" projectType)
+    STRING_APPEND(buf "  <project-type>${projectType}</project-type>" "\n")
+    IF(NOT "${${var}_srcdir}" STREQUAL "")
+	STRING_APPEND(buf "  <src-dir>${${var}_srcdir}</src-dyr>" "\n")
+    ENDIF()
+    IF(NOT "${${var}_transdir}" STREQUAL "")
+	STRING_APPEND(buf "  <trans-dir>${${var}_transdir}</trans-dir>" "\n")
+    ENDIF()
+    IF(NOT "${${var}_locales}" STREQUAL "")
+	STRING_APPEND(buf "  <locales>" "\n")
+	FOREACH(l ${${${var}_locales})
+	    IF(NOT "${${var}_locales_${l}}" STREQUAL "")
+		STRING_APPEND(buf "    <locale map-from=\"${${var}_locales_${l}}\">${l}</locale>" "\n")
+	    ELSE()
+		STRING_APPEND(buf "    <locale>${l}</locale>" "\n")
+	    ENDIF()
+	ENDFOREACH(l)
+	STRING_APPEND(buf "  </locales>" "\n")
+    ENDIF()
+    STRING_APPEND(buf "</config>" "\n")
+    SET(${outputVar} "${buf}" PARENT_SCOPE)
+ENDFUNCTION(MANAGE_ZANATA_XML_OBJECT_TO_STRING)
+
+#######################################
 ## Option Conversion Function
 
 ## ZANATA_STRING_DASH_TO_CAMEL_CASE(var opt)
@@ -566,7 +617,6 @@ FUNCTION(MANAGE_ZANATA_PULL_TARGETS cmdList)
 
 ENDFUNCTION(MANAGE_ZANATA_PULL_TARGETS)
 
-
 #######################################
 # ZANATA Main
 #
@@ -804,15 +854,15 @@ FUNCTION(ZANATA_REST_GET_PROJECT_VERSION_LOCALES var url project version)
 ENDFUNCTION(ZANATA_REST_GET_PROJECT_VERSION_LOCALES)
 
 FUNCTION(ZANATA_ZANATA_XML_DOWNLOAD zanataXml url project version)
-    SET(zanataXmlUrl 
-	"${url}iteration/view/${project}/${version}?actionMethod=iteration%2Fview.xhtml%3AconfigurationAction.downloadGeneralConfig%28%29"
-	)
     GET_FILENAME_COMPONENT(zanataXmlDir "${zanataXml}" PATH)
     IF(NOT zanataXmlDir)
 	SET(zanataXml "./${zanataXml}")
     ENDIF()
-    FILE(DOWNLOAD "${zanataXmlUrl}" "${zanataXml}" LOG logv)
-    M_MSG(${M_INFO1} "LOG=${logv}")
+
+    ZANATA_REST_GET_PROJECT_VERSION_TYPE(pType "${url}" "${project}" "${version}")
+    MANAGE_ZANATA_XML_OBJECT_NEW(zObj "${url}" "${project}" "${version}" "${pType}")
+    MANAGE_ZANATA_XML_OBJECT_TO_STRING(buf zObj)
+    FILE(WRITE "${zanataXml}" "${buf}")
 ENDFUNCTION(ZANATA_ZANATA_XML_DOWNLOAD)
 
 FUNCTION(ZANATA_BEST_MATCH_LOCALES var serverLocales clientLocales)
@@ -884,33 +934,10 @@ FUNCTION(ZANATA_ZANATA_XML_MAP zanataXml zanataXmlIn workDir)
     FILE(STRINGS "${zanataXmlIn}" zanataXmlLines)
     FILE(REMOVE ${zanataXml})
 
-    ## Build "Client Hash"
-    MANAGE_GETTEXT_LOCALES(clientLocales WORKING_DIRECTORY "${workDir}" DETECT_PO_DIR poDir ${ARGN})
-    IF("${poDir}" STREQUAL "")
-	SET(poDir ".")
-    ENDIF()
-
-    MANAGE_GETTEXT_DETECT_POT_DIR(potDir WORKING_DIRECTORY "${workDir}")
-    IF("${potDir}" STREQUAL "NOTFOUND")
-	M_MSG(${M_ERROR} "ZANATA_ZANATA_XML_MAP: Failed to detect pot dir because .pot files are not found in ${workDir}")
-    ELSEIF("${potDir}" STREQUAL "")
-	SET(potDir ".")
-    ENDIF()
-
-
-    ## Last resort
-    IF("${clientLocales}" STREQUAL "")
-	MANAGE_GETTEXT_LOCALES(clientLocales SYSTEM_LOCALES)
-    ENDIF()
-    M_MSG(${M_INFO3} "clientLocales=${clientLocales}")
+    ## Start parsing zanataXmlIn and gather serverLocales
     SET(serverLocales "")
-    SET(zanataXmlHeader "")
-    SET(zanataXmlFooter "")
-    SET(zanataXmlIsHeader 1)
     SET(srcDirOrig "")
     SET(transDirOrig "")
-
-    ## Start parsing zanataXmlIn and gather serverLocales
     FOREACH(line ${zanataXmlLines})
 	IF("${line}" MATCHES "<locale>(.*)</locale>")
 	    ## Is a locale string
@@ -920,9 +947,14 @@ FUNCTION(ZANATA_ZANATA_XML_MAP zanataXml zanataXmlIn workDir)
 	    SET(srcDirOrig "${CMAKE_MATCH_1}")
 	ELSEIF("${line}" MATCHES "<trans-dir>(.*)</trans-dir>")
 	    SET(transDirOrig "${CMAKE_MATCH_1}")
-	ELSEIF("${line}" MATCHES "<locales>")
-	    SET(transDirOrig "${CMAKE_MATCH_1}")
-	    Set(zanataXmlIsHeader 0)
+	ELSEIF("${line}" MATCHES "<url>(.*)</url>")
+	    SET(url "${CMAKE_MATCH_1}")
+	ELSEIF("${line}" MATCHES "<project>(.*)</project>")
+	    SET(project "${CMAKE_MATCH_1}")
+	ELSEIF("${line}" MATCHES "<project-version>(.*)</project-version>")
+	    SET(version "${CMAKE_MATCH_1}")
+	ELSEIF("${line}" MATCHES "<project-type>(.*)</project-type>")
+	    SET(projectType "${CMAKE_MATCH_1}")
 	ELSE()
 	    IF(zanataXmlIsHeader)
 		STRING_APPEND(zanataXmlHeader "${line}" "\n")
@@ -932,26 +964,58 @@ FUNCTION(ZANATA_ZANATA_XML_MAP zanataXml zanataXmlIn workDir)
 	    ## Not a locale string, write as-is
 	ENDIF()
     ENDFOREACH()
-    LIST(SORT serverLocales)
-    ZANATA_BEST_MATCH_LOCALES(bestMatches "${serverLocales}" "${clientLocales}")
 
-    FILE(WRITE "${zanataXml}" "${zanataXmlHeader}\n")
+    MANAGE_ZANATA_XML_OBJECT_NEW(zObj ${url} ${project} ${version} ${projectType})
 
-    FILE(APPEND "${zanataXml}" "  <src-dir>${potDir}</src-dir>\n")
-    FILE(APPEND "${zanataXml}" "  <trans-dir>${poDir}</trans-dir>\n")
-    FILE(APPEND "${zanataXml}" "  <locales>\n")
 
-    FOREACH(bM ${bestMatches})
-	STRING_SPLIT(lA "," "${bM}")
-	LIST(GET lA 0 sLocale)
-	LIST(GET lA 1 cLocale)
-	IF("${sLocale}" STREQUAL "${cLocale}")
-	    FILE(APPEND "${zanataXml}" "    <locale>${sLocale}</locale>\n")
-	ELSE()
-	    FILE(APPEND "${zanataXml}" "    <locale map-from=\"${cLocale}\">${sLocale}</locale>\n")
+    ## Build "Client Hash"
+    MANAGE_GETTEXT_LOCALES(clientLocales WORKING_DIRECTORY "${workDir}" DETECT_PO_DIR poDir ${ARGN})
+    IF(NOT "${srcDirOrig}" STREQUAL "")
+	SET(poDir "${srcDirOrig}")
+    ELSEIF("${poDir}" STREQUAL "")
+	SET(poDir ".")
+    ENDIF()
+
+    IF(NOT "${transDirOrig}" STREQUAL "")
+	SET(potDir "${transDirOrig}")
+    ELSE()
+	MANAGE_GETTEXT_DETECT_POT_DIR(potDir WORKING_DIRECTORY "${workDir}")
+	IF("${potDir}" STREQUAL "NOTFOUND")
+	    M_MSG(${M_ERROR} "ZANATA_ZANATA_XML_MAP: Failed to detect pot dir because .pot files are not found in ${workDir}")
+	ELSEIF("${potDir}" STREQUAL "")
+	    SET(potDir ".")
 	ENDIF()
-    ENDFOREACH(bM)
-    FILE(APPEND "${zanataXml}" "${zanataXmlFooter}\n")
+    ENDIF()
+    MANAGE_ZANATA_XML_OBJECT_ADD_PROPERTY(zObj "src-dir" "${potDir}")
+    MANAGE_ZANATA_XML_OBJECT_ADD_PROPERTY(zObj "trans-dir" "${poDir}")
+
+    
+    IF(NOT "${serverLocales}" STREQUAL "")
+	## If server locales are available, then start matching the client and server locales
+
+	## clientLocales if not specified
+	IF("${clientLocales}" STREQUAL "")
+	    MANAGE_GETTEXT_LOCALES(clientLocales SYSTEM_LOCALES)
+	ENDIF()
+	M_MSG(${M_INFO3} "clientLocales=${clientLocales}")
+
+	LIST(SORT serverLocales)
+	ZANATA_BEST_MATCH_LOCALES(bestMatches "${serverLocales}" "${clientLocales}")
+
+	FOREACH(bM ${bestMatches})
+	    STRING_SPLIT(lA "," "${bM}")
+	    LIST(GET lA 0 sLocale)
+	    LIST(GET lA 1 cLocale)
+	    LIST(APPEND zObj_locales "${sLocale}")
+
+	    IF(NOT "${sLocale}" STREQUAL "${cLocale}")
+		SET(zObj_locales_${sLocale} "${cLocale}")
+	    ENDIF()
+	ENDFOREACH(bM)
+    ENDIF(NOT "${serverLocales}" STREQUAL "")
+
+    MANAGE_ZANATA_XML_OBJECT_TO_STRING(outputBuf zObj)
+    FILE(WRITE "${zanataXml}" "${outputBuf}")
 ENDFUNCTION(ZANATA_ZANATA_XML_MAP)
 
 

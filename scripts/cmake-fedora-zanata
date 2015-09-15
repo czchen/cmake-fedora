@@ -70,8 +70,9 @@ DESCRIPTION
 		    Specify client Locale manually. Use ';' to separate Locales.
 	    
 	xml-download
-	    Download zanata.xml from Zanata Server.
-
+	    Create a zanata.xml locally, just as-if you were download from server.
+	    This is call 'download' for backward compability, because since
+	    zanata 3.7, there is no direct download link for zanata.xml
 
 	xml-make
 	    Make a working zanata.xml
