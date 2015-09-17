@@ -6,7 +6,6 @@ NAME
     cmake-fedora-zanata - cmake-fedora helper script to operate with zanata the translation system
 
 SYNOPSIS
-    cmake-fedora-zanata [options] new <url> [<project> [<version>]]
     cmake-fedora-zanata [options] xml-download <url> [<project> [<version>]]
     cmake-fedora-zanata [options] xml-make <url> [<project> [<version>]]
 
@@ -57,18 +56,6 @@ DESCRIPTION
     This program only support gettext and podir project type.
 
     Following sub-command are recognized:
-        new 
-	    All round-trip workflow. From creating project, version,
-            fix zanata.xml, and push the source files and existing translations.
-	    By default, it uses /usr/share/Locales as source of client Locales.
-
-	    Options:
-		-c
-		    Derive client Locales from local translation files (.po).
-
-		-l <Locale1;Locale2;...>
-		    Specify client Locale manually. Use ';' to separate Locales.
-	    
 	xml-download
 	    Create a zanata.xml locally, just as-if you were download from server.
 	    This is call 'download' for backward compability, because since
