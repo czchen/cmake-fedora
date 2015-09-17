@@ -37,7 +37,8 @@ FUNCTION(CMAKE_FEDORA_SCRIPT_FIND_TEST expected cmd names)
     TEST_STR_MATCH(v "${expected}")
 ENDFUNCTION(CMAKE_FEDORA_SCRIPT_FIND_TEST expected cmd names)
 
-CMAKE_FEDORA_SCRIPT_FIND_TEST("/usr/bin/cmake" "find_program" "cmake")
+EXECUTE_PROCESS(COMMAND which cmake OUTPUT_VARIABLE CMAKE_CMD OUTPUT_STRIP_TRAILING_WHITESPACE)
+CMAKE_FEDORA_SCRIPT_FIND_TEST("${CMAKE_CMD}" "find_program" "cmake")
 CMAKE_FEDORA_SCRIPT_FIND_TEST("" "find_program" "not exist" 
     "-Dverbose_level=${M_OFF}"
     )
