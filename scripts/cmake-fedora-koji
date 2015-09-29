@@ -6,7 +6,12 @@ NAME
     cmake-fedora-koji - cmake-fedora helper script to get koji build information
 
 SYNOPSIS
-    cmake-fedora-koji <ver|branch|git-branch|bodhi-branch> [scope1 [scope2] ....]]
+    cmake-fedora-koji ver [scope1 [scope2] ...]
+    cmake-fedora-koji branch [scope1 [scope2] ...]
+    cmake-fedora-koji koji-buildinfo-suffix [scope1 [scope2] ...]
+    cmake-fedora-koji git-branch [scope1 [scope2] ...]
+    cmake-fedora-koji bodhi-branch [scope1 [scope2] ...]
+    cmake-fedora-koji target [scope1 [scope2] ...]
     cmake-fedora-koji newest-build [package]
     cmake-fedora-koji newest-changelog [package]
     cmake-fedora-koji clean
@@ -258,6 +263,11 @@ else
 		    fedoraList+=($scopeCmd)
 		fi
 		;;
+	    fc[0-9]* )
+		if [[ $fedora -eq 0 ]];then
+		    fedoraList+=($(sed -e 's/fc/f/g' <<<$scopeCmd ))
+		fi
+		;;
 	    el[0-9]* )
 		if [[ $epel -eq 0 ]];then
 		    epelList+=($scopeCmd)
@@ -351,12 +361,8 @@ case $subCmd in
 	;;
 
     bodhi-branch )
-	IFS=$'\;' BODHI_BRANCHES_KNOWN=(`get_variable BODHI_BRANCHES` )
 	for b in "${FEDORA_NR_BRANCHES_SCOPE[@]}" "${EPEL_BRANCHES_SCOPE[@]}";do
-	    b=`sed -e 's/f/fc/' <<<$b`
-	    for m in ${BODHI_BRANCHES_KNOWN[*]};do
-		[ "$b" = "$m" ] && echo "$b" && break
-	    done
+	    sed -e 's/f/fc/' <<<$b | sed -e 's/epel/el/'
 	done
 	;;
     target )
