@@ -19,64 +19,63 @@ SYNOPSIS
 DESCRIPTION
     Following sub-command are recognized:
         ver
-            Return version numbers, such as "21 20 7 6"
+        Return version numbers, such as "21 20 7 6"
 
         branch
             Return branch names by removing '-candidate' from koji 
-	    targets, such as "f21 f20 epel7 el6"
+        targets, such as "f21 f20 epel7 el6"
 
-	koji-buildinfo-suffix
-	    Return the tags for koij buildinfo, such as "fc22 fc21 el7 el6"
+    koji-buildinfo-suffix
+        Return the tags for koij buildinfo, such as "fc22 fc21 el7 el6"
 
-	git-branch 
+    git-branch 
             Return fedpkg git branch names, such as "master f20 epel7 el6"
 
         bodhi-branch
             Return bodhi branch names, 
-	    such as "fc21 fc20 el7 el6", this does not return rawhide.
+        such as "fc21 fc20 el7 el6", this does not return rawhide.
 
         target
             Return koji target names, such as "f21-candidate el7-candidate"
-	
-	newest-build
-	    Return the newest build in n-v-r.t format.
-	    Note that koji latest-build only returns the updates pushed
-	    to stable, newest-build, however, returns the updates in
-	    testing as well.
+    
+    newest-build
+        Return the newest build in n-v-r.t format.
+        Note that koji latest-build only returns the updates pushed
+        to stable, newest-build, however, returns the updates in
+        testing as well.
 
-	newest-changelog
-	    Return the newest changelog of a package in
-	    release, updates, and update-testing
-	    Note that koji latest-build only returns the updates pushed
-	    to stable, newest-build, however, returns the updates in
-	    testing as well.
+    newest-changelog
+        Return the newest changelog of a package in
+        release, updates, and update-testing
+        Note that koji latest-build only returns the updates pushed
+        to stable, newest-build, however, returns the updates in
+        testing as well.
 
-	clean
-            For cleaning cache.
+    clean
+        For cleaning cache.
 
     scopes: releases of what to build. Multiple values are allowed.
-    	Valid values:
-        rawhide: Build rawhide.
+        Valid values:
+            rawhide: Build rawhide.
 
-        fedora: Build actives fedora releases, including Rawhide.
+            fedora: Build actives fedora releases, including Rawhide.
+            fedora_1: Build the latest supported fedora releases.
+               This is one release eariler than rawhide.
 
-        fedora_1: Build the latest supported fedora releases.
-        This is one release eariler than rawhide.
+            fedora_2: Build the second latest supported fedora releases.
+               This is two releases eariler than rawhide.
 
-        fedora_2: Build the second latest supported fedora releases.
-        This is two releases eariler than rawhide.
+            f22 f21 ...: Build the specified fedora releases.
 
-        f22 f21 ...: Build the specified fedora releases.
+            epel: Build the currently supported EPEL releases.
 
-        epel: Build the currently supported EPEL releases.
+            epel_1: Build the latest supported EPEL releases.
 
-        epel_1: Build the latest supported EPEL releases.
+            epel_2: Build the second latest supported EPEL releases.
 
-        epel_2: Build the second latest supported EPEL releases.
+            epel7 el6 ... : The EPEL releases to be built.
 
-        epel7 el6 ... : The EPEL releases to be built.
-
-        If scopes is not specified, then "fedora epel" is assumed.
+         If scopes is not specified, then "fedora epel" is assumed.
 
 END
 }
