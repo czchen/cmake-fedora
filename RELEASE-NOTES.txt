@@ -2,7 +2,9 @@ PRJ_VER=2.4.0
 SUMMARY=cmake-fedora-zanata
 REDHAT_BUGZILLA=
 [Changes]
-- cmake-fedora-zanata: New script: zanata helper script.
-  Support zanata-server and zanata-client 3.7.
+- Enhancement:
+  * cmake-fedora-pkgdb: New script: pkgdb helper script.
+  * cmake-fedora-zanata: New script: zanata helper script.
+- Support zanata-server and zanata-client 3.7.
 - Add additional path to cmake-fedora.conf
 - ManageFile: New function: MANAGE_FILE_COMMON_DIR

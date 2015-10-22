@@ -1,0 +1,65 @@
+#!/bin/bash
+function print_usage(){
+    cat <<END
+Usage: $0
+
+This program queries the pkgdb.
+
+DESCRIPTION
+    This program queries the pkgdb and return corresponding active fedpkg git branches.
+
+END
+}
+
+##=== Dependency Checking ===
+ScriptDir=$(readlink -f `dirname $0`)
+for d in Modules cmake-fedora/Modules ${ScriptDir}/../Modules /usr/share/cmake/Modules;do
+    if [ -r $d/CmakeFedoraScript.cmake ];then
+	CMakeFedoraScriptCMake=$d/CmakeFedoraScript.cmake
+    fi
+done
+if [ -z "${CMakeFedoraScriptCMake}" ];then
+    echo "[Error] CmakeFedoraScript.cmake is not found" > /dev/stderr
+    exit -2
+fi
+
+CMakeFedoraKojiCmd=${ScriptDir}/cmake-fedora-koji
+if [ ! -x ${CMakeFedoraKojiCmd} ];then
+    echo "[Error] cmake-fedora-koji is not found" > /dev/stderr
+    exit -2
+fi
+
+for cmd in awk pkgdb-cli ;do
+    CMakeFedoraScriptOptArray=(-D cmd=find_program verbose_level=1  )
+    CMakeFedoraScriptOptArray+=( -D "names=$cmd")
+    CmdPath=`cmake "${CMakeFedoraScriptOptArray[@]}" -P ${CMakeFedoraScriptCMake}`
+    if [ $? -ne 0 ];then
+	exit $?
+    fi
+
+    VarName=`tr a-z- A-Z_ <<<$cmd`_CMD
+    eval "$VarName=$CmdPath"
+done
+
+List=$($PKGDB_CLI_CMD branches | $AWK_CMD '{print $1}' | sort -u -r)
+ResultArray=()
+
+for b in $(xargs <<<"$List");do
+    case $b in
+	master )
+	    ResultArray+=($b)
+	    ;;
+	f* )
+	    ResultArray+=($b)
+	    ;;
+	epel* )
+	    ResultArray+=($b)
+	    ;;
+	el* )
+	    ResultArray+=($b)
+	    ;;
+    esac
+done
+
+echo "${ResultArray[@]}"
+
