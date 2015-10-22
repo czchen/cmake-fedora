@@ -2,58 +2,61 @@
 
 function print_usage(){
     cat <<END
-Usage: $0 [-b bugs] [-d work_dir] [-m message] [-t updateType] <srpm> [scope1 [scope2 ....]]
+Usage: $0 [Options]  <srpm> [scope1 [scope2 ...]]
 
-  This command automates the release process from SRPM to bodhi pushing.
+  This command automates the release process from SRPM to bodhi
 
-Parameters:
+ARGUMENTS
+    <srpm>
+	Source RPM to be build from.
+
+    [scope1 [scope2 ...]]
+        What should be build against.
+	Valid values:
+	    rawhide: Build rawhide.
+	    fedora: Build actives fedora releases, including Rawhide.
+	    fedora_1: Build the latest supported fedora releases.
+	    This is one release eariler than rawhide.
+
+	    fedora_2: Build the second latest supported fedora releases.
+	    This is two releases eariler than rawhide.
+
+	    f22 f21 ...: Build the specified fedora releases.
+
+	    epel: Build the currently supported EPEL releases.
+
+	    epel_1: Build the latest supported EPEL releases.
+
+	    epel_2: Build the second latest supported EPEL releases.
+
+	    epel7 el6 ... : The EPEL releases to be built.
+
+        If scopes is not specified, then it will use the existing branch for koji.
+
+OPTIONS
     -b bugs: The list of bug this update fixed. Split with ','.
 
     -d work_dir: The work directory. Default is current directory.
 
-    -m message: Message used as commit message.
+    -m <message>: Message used as commit message.
        If not specified, then use the latest changelog text.
-       (i.e. rpm -qp --queryformat "%{CHANGELOGTEXT}" <srpm>)
+       (i.e. rpm -qp --queryformat "%{ChangeLogText}" <srpm>)
+
+    -s: Scratch build instead of real build.
 
     -t updateType: Update type. Valid values:
        [bugfix|security|enhancement|newpackage].
        Default: 
          newpackage: if this package does not exist in bodhi
          enhancement: if the latest change log item has "Enhancement:"
-         bugfix: for everything else.   
+         bugfix: for everything else.
 
     srpm: SRPM file to be scratch-built with koji.
 
-    scopes: Fedora and/or EPEL branche to release. 
-      Multiple values are allowed.
-      Valid values:
-          rawhide: Release rawhide.
-
-          fedora: Release active fedora releases, including Rawhide.
-
-          fedora_1: Build the latest released fedora release.
-              This is one release eariler than rawhide.
-
-          fedora_2: Build the second latest released fedora releases.
-              This is two releases eariler than rawhide.
-
-          f22 f21 ...: Build the specified fedora releases.
-
-          epel: Build the active EPEL releases.
-
-          epel_1: Build the latest released EPEL releases.
-
-          epel_2: Build the second latest released EPEL releases.
-
-          epel7 el6 ... : The EPEL releases to be built.
-
-         If scopes is not specified, then it builds all active Fedora  
-	 (including rawhide) and EPEL releases in fedpkg branches.
-
-Environment Variables:
+ENVIRONMENT
     FEDPKG_DIR
         The directory that this program should work on.
-	If -d is not specified, this program will use the value as
+	If -d is not specified, this program will use this value as
 	work directory.
 
     BODHI_USER
@@ -62,6 +65,14 @@ Environment Variables:
 
 
 END
+}
+
+##=== Begin functions ===
+
+function contains_element () {
+    local e
+    for e in "${@:2}"; do [[ "$e" == "$1" ]] && return 0; done
+    return 1
 }
 
 # is target been built in koji
@@ -75,7 +86,7 @@ function is_target_built(){
 # Valid target example: cmake-fedora
 function is_package_new_in_bodhi(){
     package=$1
-    if $BODHI_CMD $package | grep -qcs $package;then
+    if $CURL_CMD -s -f -X GET "https://admin.fedoraproject.org/pkgdb/api/package/?pkgname=${package}"; then
 	return 1
     else
 	return 0
@@ -93,90 +104,126 @@ function try_command(){
 # is target in bodhi
 # Valid target example: cmake-fedora-1.4.0-1.fc21
 function is_target_in_bodhi(){
-    target=$1
-    $BODHI_CMD "${target}" | grep -qcs -i "Update ID" > /dev/null
+    local result=$($CURL_CMD -X GET "https://bodhi.fedoraproject.org/builds/?nvr=$1")
+    if [ -z $result ]; then
+	return 1
+    elif grep -qcs -i '"total": 0,' > /dev/null;then
+	return 1
+    fi
+    return 0
 }
 
 function is_update_enhancement(){
-    echo $CHANGELOGTEXT | grep -qcs -e "Enhancement:"
+    echo $ChangeLogText | grep -qcs -e "Enhancement:"
 }
 
-function contains_element () {
-    local e
-    for e in "${@:2}"; do [[ "$e" == "$1" ]] && return 0; done
-    return 1
+## fedpkg_build <srpm> <gitBranch> <firstBranch> <Nvr> [Options]
+function fedpkg_build(){
+    local optArray=()
+    local srpm=$1
+    local gitBranch=$2
+    local firstBranch=$3
+    local nvr=$4
+    shift 4
+    local kojiBuildInfoSuffix=`$CMakeFedoraKojiCmd koji-buildinfo-suffix $gitBranch`
+    local build="$nvr.$kojiBuildInfoSuffix"
+    try_command ${FEDPKG_CMD} switch-branch $b
+    echo -n "Has $build already been built in koji? ... " > /dev/stderr
+    if is_target_built $build ;then
+	echo "yes, skip this." > /dev/stderr
+    else
+	echo "no, start building." > /dev/stderr
+	if [[ -z "$srpm" ]];then
+	    if [[ "$gitBranch" = "$firstBranch" ]];then
+		try_command ${FEDPKG_CMD} import $Srpm
+		try_command ${FEDPKG_CMD} commit -m "$Msg"
+	    else
+		try_command $GIT_CMD merge $firstBranch
+	    fi
+	    try_command ${FEDPKG_CMD} push
+	    echo "Building $Nvr.$bodhi_branch" > /dev/stderr
+	    try_command ${FEDPKG_CMD} build
+	else
+	    local target=`$CMakeFedoraKojiCmd target $gitBranch`
+	    try_command ${FEDPKG_CMD} build --target $target --srpm $srpm "$@" 
+	fi
+    fi
 }
 
-
-SCRIPT_DIR=$(readlink -f `dirname $0`)
-for d in Modules cmake-fedora/Modules ${SCRIPT_DIR}/../Modules /usr/share/cmake/Modules;do
+##=== Dependency Checking ===
+ScriptDir=$(readlink -f `dirname $0`)
+for d in Modules cmake-fedora/Modules ${ScriptDir}/../Modules /usr/share/cmake/Modules;do
     if [ -r $d/CmakeFedoraScript.cmake ];then
-	CMAKE_FEDORA_SCRIPT_CMAKE=$d/CmakeFedoraScript.cmake
+	CMakeFedoraScriptCMake=$d/CmakeFedoraScript.cmake
     fi
 done
-if [ -z "${CMAKE_FEDORA_SCRIPT_CMAKE}" ];then
+if [ -z "${CMakeFedoraScriptCMake}" ];then
     echo "[Error] CmakeFedoraScript.cmake is not found" > /dev/stderr
     exit -2
 fi
 
-CMAKE_FEDORA_KOJI_CMD=${SCRIPT_DIR}/cmake-fedora-koji
-if [ ! -x ${CMAKE_FEDORA_KOJI_CMD} ];then
+CMakeFedoraKojiCmd=${ScriptDir}/cmake-fedora-koji
+if [ ! -x ${CMakeFedoraKojiCmd} ];then
     echo "[Error] cmake-fedora-koji is not found" > /dev/stderr
     exit -2
 fi
 
-for cmd in fedpkg bodhi koji git rpm ;do
-    cfsOpts=(-D cmd=find_program verbose_level=1  )
-    ## Workaround for Bug 1115136 otherwise el7 won't work
-    case $cmd in
-	bodhi )
-	    cfsOpts+=( -D "names=bodhi;client.py" -D "paths=/usr/bin/bodhi" )
-	    ;;
-	*)
-	    cfsOpts+=( -D "names=$cmd")
-	    ;;
-    esac
-    cmdPath=`cmake "${cfsOpts[@]}" -P ${CMAKE_FEDORA_SCRIPT_CMAKE}`
+CMakeFedoraPkgdbCmd=${ScriptDir}/cmake-fedora-pkgdb
+if [ ! -x ${CMakeFedoraPkgdbCmd} ];then
+    echo "[Error] cmake-fedora-db is not found" > /dev/stderr
+    exit -2
+fi
+
+
+for cmd in curl fedpkg bodhi koji rpm ;do
+    CMakeFedoraScriptOptArray=(-D cmd=find_program verbose_level=1  )
+    CMakeFedoraScriptOptArray+=( -D "names=$cmd")
+    CmdPath=`cmake "${CMakeFedoraScriptOptArray[@]}" -P ${CMakeFedoraScriptCMake}`
     if [ $? -ne 0 ];then
 	exit $?
     fi
 
-    VAR_NAME=`tr a-z A-Z <<<$cmd`_CMD
-    eval "$VAR_NAME=$cmdPath"
+    VarName=`tr a-z A-Z <<<$cmd`_CMD
+    eval "$VarName=$CmdPath"
 done
 
-
+##=== Parameter Parsing ===
 if [ $# = 0 ]; then
     print_usage
     exit 0
 fi
 
 
-BODHI_USER=${BODHI_USER:=$LOGNAME}
+: ${BODHI_USER:=$LOGNAME}
 echo "BODHI_USER=$BODHI_USER"
 
-WORK_DIR=${FEDPKG_DIR:-$PWD}
-MSG=
-BODHI_OPTS=()
-UPDATE_TYPE=
+WorkDir=${FEDPKG_DIR:-$PWD}
+Msg=
+BodhiOptArray=()
+Bugs=
+ScratchBuild=
+UpdateType=
 
-while getopts "hb:d:m:t:" opt;do
+while getopts "hb:d:m:st:" opt;do
     case $opt in
 	h)
 	    print_usage
 	    exit 0
 	    ;;
 	b )
-	    BUGS=$OPTARG
+	    Bugs=$OPTARG
 	    ;;
 	d )
-	    WORK_DIR=$OPTARG
+	    WorkDir=$OPTARG
 	    ;;
 	m )
-	    MSG=$OPTARG
+	    Msg=$OPTARG
+	    ;;
+	s )
+	    ScratchBuild=1
 	    ;;
 	t )
-	    UPDATE_TYPE=$OPTARG
+	    UpdateType=$OPTARG
 	    ;;
 	* )
 	    ;;
@@ -185,126 +232,145 @@ while getopts "hb:d:m:t:" opt;do
 done
 shift $((OPTIND-1)) 
 
-SRPM=$1
+Srpm=$1
 shift
 
-if [[ -z $SRPM ]];then
+if [[ -z $Srpm ]];then
     print_usage
     exit 1
 else
-    SRPM=`readlink -f $SRPM`
+    Srpm=`readlink -f $Srpm`
 fi
 
-if [[ ! -r "$SRPM" ]];then
-    echo "[Fatal] Failed to read $SRPM" > /dev/stderr
+if [[ ! -r "$Srpm" ]];then
+    echo "[Fatal] Failed to read $Srpm" > /dev/stderr
     exit 2
 fi
 
-if [[ -n "$BUGS" ]];then
-    BODHI_OPTS+=(--bugs $BUGS)
+if [[ -n "$Bugs" ]];then
+    BodhiOptArray+=(--bugs $Bugs)
 fi
 
-if [[ ! -w $WORK_DIR ]];then
-    if ! mkdir -p $WORK_DIR; then
-	echo "$WORK_DIR is not writable." > /dev/stderr
+if [[ ! -w $WorkDir ]];then
+    if ! mkdir -p $WorkDir; then
+	echo "$WorkDir is not writable." > /dev/stderr
 	exit 2
     fi
 fi
-echo "WORK_DIR=$WORK_DIR" > /dev/stderr
+echo "WorkDir=$WorkDir" > /dev/stderr
 
-CHANGELOGTEXT=`$RPM_CMD -qp --queryformat "%{CHANGELOGTEXT}" $SRPM`
-echo "CHANGELOGTEXT=$CHANGELOGTEXT" > /dev/stderr
+ChangeLogText=`$RPM_CMD -qp --queryformat "%{ChangeLogText}" $Srpm`
+echo "ChangeLogText=$ChangeLogText" > /dev/stderr
 
-if [[ -z "$MSG" ]];then
-    MSG=$CHANGELOGTEXT
+if [[ -z "$Msg" ]];then
+    Msg=$ChangeLogText
 fi
 
-NAME=`$RPM_CMD -qp --queryformat "%{NAME}" $SRPM`
-echo "NAME=$NAME" > /dev/stderr
+Name=`$RPM_CMD -qp --queryformat "%{NAME}" $Srpm`
+echo "Name=$Name" > /dev/stderr
 
-## NVR here does not include release tag,
+## Nvr here does not include release tag,
 ##  (e.g. cmake-fedora-2.0.0-1)
-NVR=`$RPM_CMD -qp --queryformat "%{NAME}-%{VERSION}-%{RELEASE}" $SRPM | sed -e 's/\.fc[0-9]*$//' | sed -e 's/\.el[0-9]*$//'`
+Nvr=`$RPM_CMD -qp --queryformat "%{NAME}-%{VERSION}-%{RELEASE}" $Srpm | sed -e 's/\.fc[0-9]*$//' | sed -e 's/\.el[0-9]*$//'`
 
-if [[ -z "$UPDATE_TYPE" ]];then
-    if  is_package_new_in_bodhi $NAME; then
-	UPDATE_TYPE=newpackage
+if [[ -z "$UpdateType" ]];then
+    if  is_package_new_in_bodhi $Name; then
+	UpdateType=newpackage
     elif is_update_enhancement; then
-	UPDATE_TYPE=enhancement
+	UpdateType=enhancement
     else
-	UPDATE_TYPE=bugfix
+	UpdateType=bugfix
     fi
 fi
-echo "UPDATE_TYPE=$UPDATE_TYPE" > /dev/stderr
+echo "UpdateType=$UpdateType" > /dev/stderr
 
-cd $WORK_DIR
-if [[ ! -r $NAME ]];then
-    try_command ${FEDPKG_CMD} clone $NAME
+
+##=== Determine Branch To Build ===
+ScopeBranchArray=(`$CMakeFedoraKojiCmd git-branch $@ | xargs ` )
+PackageBranchArray=(`$CMakeFedoraPkgdbCmd $Name`)
+
+declare -a ActionBranchArray=()
+
+if [ -z "$PackageBranchArray" ];then
+    ## Cannot found package in PkgDb, maybe a new package?
+    if [ $ScratchBuild -eq 0 ];then
+	## Failed as the non-scratch build requires a existing package
+	echo "[ERROR] Failed to find package in PkgDB for non-scratch build" > /dev/stderr
+	exit 1
+    fi
+    ActionBranchArray=(${ScopeBranchArray[@]})
+else
+    ## Interset between scope and branches that package has
+    for activeBranch in "${PackageBranchArray[@]}"; do
+	if contains_element "${activeBranch}" "${ScopeBranchArray[@]}";then
+	    ActionBranchArray+=(${activeBranch})
+	fi
+    done
 fi
 
-if [[ ! -x $NAME ]];then
-    echo "Failed to change to $WORK_DIR/$NAME" > /dev/stderr
+##=== Build ===
+if [ $ScratchBuild -eq 1 ];then
+    ##=== Begin Scratch Build ===
+    for b in "${FedPkgBranchArray[@]}";do
+	try_command fedpkg_build "$Srpm" "$b" "" $Nvr --scratch
+    done
+    exit 0
+    ##=== End   Scratch Build ===
+fi
+
+##=== Non-Scratch Build ===
+cd $WorkDir
+if [[ ! -r $Name ]];then
+    try_command ${FEDPKG_CMD} clone $Name
+fi
+
+if [[ ! -x $Name ]];then
+    echo "Failed to change to $WorkDir/$Name" > /dev/stderr
     exit 3
 fi
 
-cd $NAME
-echo "Pulling $NAME..." > /dev/stderr
+cd $Name
+echo "Pulling $Name..." > /dev/stderr
 try_command ${FEDPKG_CMD} pull
 
 ## Interset between existing and koji fedpkg branches
-FEDPKG_BRANCHES_KOJI=(`$CMAKE_FEDORA_KOJI_CMD git-branch $@ | xargs ` )
-FEDPKG_BRANCHES_EXISTING=(` $FEDPKG_CMD switch-branch | grep origin | sed -e  's|^\s*origin/||' | xargs` )
-declare -a FEDPKG_BRANCHES=()
-for activeBranch in "${FEDPKG_BRANCHES_KOJI[@]}"; do
-    if contains_element "${activeBranch}" "${FEDPKG_BRANCHES_EXISTING[@]}";then
-	FEDPKG_BRANCHES+=(${activeBranch})
+FedPkgBranchKoji=(`$CMakeFedoraKojiCmd git-branch $@ | xargs ` )
+FedPkgBranchExisting=(` $FEDPKG_CMD switch-branch | grep origin | sed -e  's|^\s*origin/||' | xargs` )
+declare -a FedPkgBranchArray=()
+for activeBranch in "${FedPkgBranchKoji[@]}"; do
+    if contains_element "${activeBranch}" "${FedPkgBranchExisting[@]}";then
+	FedPkgBranchArray+=(${activeBranch})
     fi
 done
 echo -n "Branches to process:"
-(IFS=' ' echo "${FEDPKG_BRANCHES[@]}")
+(IFS=' ' echo "${FedPkgBranchArray[@]}")
 bodhiPushList=
 first=
 
-for b in "${FEDPKG_BRANCHES[@]}";do
+
+
+for b in "${FedPkgBranchArray[@]}";do
     if [[ -z "$first" ]];then
 	first=$b
     fi
-    
-    koji_buildinfo_suffix=`$CMAKE_FEDORA_KOJI_CMD koji-buildinfo-suffix $b`
 
-    target="$NVR.$koji_buildinfo_suffix"
-    try_command ${FEDPKG_CMD} switch-branch $b
-    echo -n "Has $target already been built in koji? ... " > /dev/stderr
-    if is_target_built $target ;then
-	echo "yes, skip this." > /dev/stderr
-    else
-	echo "no, start building." > /dev/stderr
-	if [[ $first = $b ]];then
-	    try_command ${FEDPKG_CMD} import $SRPM
-	    try_command ${FEDPKG_CMD} commit -m "$MSG"
-	else
-	    try_command $GIT_CMD merge $first
-	fi
-	try_command ${FEDPKG_CMD} push
-	echo "Building $NVR.$bodhi_branch" > /dev/stderr
-	try_command ${FEDPKG_CMD} build
-    fi
+    try_command fedpkg_build "" "$b" "$first" $Nvr
 
-    bodhi_branch=`$CMAKE_FEDORA_KOJI_CMD bodhi-branch $b`
+    bodhi_branch=`$CMakeFedoraKojiCmd bodhi-branch $b`
 
     if [[ -n "$bodhi_branch" ]];then
-	echo -n "Has $target already in bodhi? ... " > /dev/stderr
-	if is_target_in_bodhi $target ; then
+	echo -n "Has $Target already in bodhi? ... " > /dev/stderr
+	if is_target_in_bodhi $Target ; then
 	    echo "yes, skip this." > /dev/stderr
 	else
 	    echo "no, will push it." > /dev/stderr
-	    bodhiPushList="$bodhiPushList $NVR.$bodhi_branch"
+	    bodhiPushList="$bodhiPushList $Nvr.$bodhi_branch"
 	fi
     fi
 done
 
 if [[ -n "$bodhiPushList" ]];then
-    try_command ${BODHI_CMD} -n "${BODHI_OPTS[@]}" -t $UPDATE_TYPE -u $BODHI_USER -N "$CHANGELOGTEXT" -R testing $bodhiPushList
+    try_command ${BODHI_CMD} -n "${BodhiOptArray[@]}" -t $UpdateType -u $BODHI_USER -N "$ChangeLogText" -R testing $bodhiPushList
 else
     echo "Nothing to push to bodhi." > /dev/stderr
 fi
