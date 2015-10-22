@@ -1,13 +1,22 @@
 #!/bin/bash
 function print_usage(){
     cat <<END
-Usage: $0
+Usage: $0 [-h] [package]
 
 This program queries the pkgdb.
 
 DESCRIPTION
     This program queries the pkgdb and return corresponding active fedpkg git branches.
 
+    If package is given, then it will return active branches.
+    
+OPTIONS
+    -h: Show the help
+
+    <package>: The package to be search
+
+BUGS
+    This program will NOT filter out Orphaned and Retired branches.
 END
 }
 
@@ -29,7 +38,7 @@ if [ ! -x ${CMakeFedoraKojiCmd} ];then
     exit -2
 fi
 
-for cmd in awk pkgdb-cli ;do
+for cmd in awk curl pkgdb-cli ;do
     CMakeFedoraScriptOptArray=(-D cmd=find_program verbose_level=1  )
     CMakeFedoraScriptOptArray+=( -D "names=$cmd")
     CmdPath=`cmake "${CMakeFedoraScriptOptArray[@]}" -P ${CMakeFedoraScriptCMake}`
@@ -41,25 +50,52 @@ for cmd in awk pkgdb-cli ;do
     eval "$VarName=$CmdPath"
 done
 
-List=$($PKGDB_CLI_CMD branches | $AWK_CMD '{print $1}' | sort -u -r)
-ResultArray=()
 
-for b in $(xargs <<<"$List");do
-    case $b in
-	master )
-	    ResultArray+=($b)
-	    ;;
-	f* )
-	    ResultArray+=($b)
-	    ;;
-	epel* )
-	    ResultArray+=($b)
-	    ;;
-	el* )
-	    ResultArray+=($b)
+##=== Parameter Parsing ===
+
+while getopts "h" opt;do
+    case $opt in
+	h)
+	    print_usage
+	    exit 0
 	    ;;
     esac
 done
+shift $((OPTIND-1)) 
 
-echo "${ResultArray[@]}"
+Package=$1
+shift
+
+if [ -z "$Package" ];then
+##=== Get Active branches ===
+    List=$($PKGDB_CLI_CMD branches | $AWK_CMD '{print $1}' | sort -u -r)
+    ResultArray=()
+
+    for b in $(xargs <<<"$List");do
+	case $b in
+	    master )
+		ResultArray+=($b)
+		;;
+	    f* )
+		ResultArray+=($b)
+		;;
+	    epel* )
+		ResultArray+=($b)
+		;;
+	    el* )
+		ResultArray+=($b)
+		;;
+	esac
+    done
+
+    echo "${ResultArray[@]}"
+else
+    ##=== Get Package Active branches ===
+    PkgDbResult=$(curl  -s -f -X GET "https://admin.fedoraproject.org/pkgdb/api/package/$Package?acls=false")
+    if [ $? -ne 0 ];then
+	echo "[PkgDb] Failed to find information about package $Package" > /dev/stderr
+	exit 1
+    fi
+    grep branchname <<< "$PkgDbResult" | sed -e 's/^.*"branchname": "\(.*\)",.*/\1/' | sort -u -r | xargs
+fi
 
