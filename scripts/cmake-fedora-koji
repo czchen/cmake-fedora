@@ -23,38 +23,39 @@ DESCRIPTION
 
         branch
             Return branch names by removing '-candidate' from koji 
-        targets, such as "f21 f20 epel7 el6"
+            targets, such as "f21 f20 epel7 el6"
 
-    koji-buildinfo-suffix
-        Return the tags for koij buildinfo, such as "fc22 fc21 el7 el6"
+        koji-buildinfo-suffix
+            Return the tags for koij buildinfo, such as "fc22 fc21 el7 el6"
 
-    git-branch 
+        git-branch 
             Return fedpkg git branch names, such as "master f20 epel7 el6"
 
         bodhi-branch
             Return bodhi branch names, 
-        such as "fc21 fc20 el7 el6", this does not return rawhide.
+            such as "fc21 fc20 el7 el6", this does not return rawhide.
 
         target
             Return koji target names, such as "f21-candidate el7-candidate"
     
-    newest-build
-        Return the newest build in n-v-r.t format.
-        Note that koji latest-build only returns the updates pushed
-        to stable, newest-build, however, returns the updates in
-        testing as well.
+        newest-build
+            Return the newest build in n-v-r.t format.
+            Note that koji latest-build only returns the updates pushed
+            to stable, newest-build, however, returns the updates in
+            testing as well.
 
-    newest-changelog
-        Return the newest changelog of a package in
-        release, updates, and update-testing
-        Note that koji latest-build only returns the updates pushed
-        to stable, newest-build, however, returns the updates in
-        testing as well.
+        newest-changelog
+            Return the newest changelog of a package in
+            release, updates, and update-testing
+            Note that koji latest-build only returns the updates pushed
+            to stable, newest-build, however, returns the updates in
+            testing as well.
 
-    clean
-        For cleaning cache.
+        clean
+            For cleaning cache.
 
-    scopes: releases of what to build. Multiple values are allowed.
+SCOPES
+    scopes are set of branch to build. Multiple values are allowed.
         Valid values:
             rawhide: Build rawhide.
 
