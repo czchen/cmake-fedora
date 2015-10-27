@@ -42,6 +42,8 @@ OPTIONS
        If not specified, then use the latest changelog text.
        (i.e. rpm -qp --queryformat "%{ChangeLogText}" <srpm>)
 
+    -i: Import mode
+
     -s: Scratch build instead of real build.
 
     -t updateType: Update type. Valid values:
@@ -86,7 +88,7 @@ function is_target_built(){
 # Valid target example: cmake-fedora
 function is_package_new_in_bodhi(){
     package=$1
-    if $CURL_CMD -s -f -X GET "https://admin.fedoraproject.org/pkgdb/api/package/?pkgname=${package}"; then
+    if $CURL_CMD -s -f -X GET "https://admin.fedoraproject.org/pkgdb/api/package/?pkgname=${package}" > /dev/null; then
 	return 1
     else
 	return 0
@@ -127,25 +129,31 @@ function fedpkg_build(){
     shift 4
     local kojiBuildInfoSuffix=`$CMakeFedoraKojiCmd koji-buildinfo-suffix $gitBranch`
     local build="$nvr.$kojiBuildInfoSuffix"
-    try_command ${FEDPKG_CMD} switch-branch $b
-    echo -n "Has $build already been built in koji? ... " > /dev/stderr
-    if is_target_built $build ;then
-	echo "yes, skip this." > /dev/stderr
+    if [ $ScratchBuild -eq 1 ];then
+	local kojiBranch=$($CMakeFedoraKojiCmd branch $gitBranch)
+	try_command ${FEDPKG_CMD} --dist $kojiBranch scratch-build --srpm "${srpm}"
     else
-	echo "no, start building." > /dev/stderr
-	if [[ -z "$srpm" ]];then
-	    if [[ "$gitBranch" = "$firstBranch" ]];then
-		try_command ${FEDPKG_CMD} import $Srpm
-		try_command ${FEDPKG_CMD} commit -m "$Msg"
-	    else
-		try_command $GIT_CMD merge $firstBranch
-	    fi
-	    try_command ${FEDPKG_CMD} push
-	    echo "Building $Nvr.$bodhi_branch" > /dev/stderr
-	    try_command ${FEDPKG_CMD} build
+	## Real build
+	try_command ${FEDPKG_CMD} switch-branch $b
+	echo -n "Has $build already been built in koji? ... " > /dev/stderr
+	if is_target_built $build ;then
+	    echo "yes, skip this." > /dev/stderr
 	else
-	    local target=`$CMakeFedoraKojiCmd target $gitBranch`
-	    try_command ${FEDPKG_CMD} build --target $target --srpm $srpm "$@" 
+	    echo "no, start building." > /dev/stderr
+	    if [[ -z "$srpm" ]];then
+		if [[ "$gitBranch" = "$firstBranch" ]];then
+		    try_command ${FEDPKG_CMD} import $Srpm
+		    try_command ${FEDPKG_CMD} commit -m "$Msg"
+		else
+		    try_command $GIT_CMD merge $firstBranch
+		fi
+		try_command ${FEDPKG_CMD} push
+		echo "Building $Nvr.$bodhi_branch" > /dev/stderr
+		try_command ${FEDPKG_CMD} build
+	    else
+		local target=`$CMakeFedoraKojiCmd target $gitBranch`
+		try_command ${FEDPKG_CMD} build --target $target --srpm $srpm "$@" 
+	    fi
 	fi
     fi
 }
@@ -211,19 +219,19 @@ while getopts "hb:d:m:st:" opt;do
 	    exit 0
 	    ;;
 	b )
-	    Bugs=$OPTARG
+	    Bugs="$OPTARG"
 	    ;;
 	d )
-	    WorkDir=$OPTARG
+	    WorkDir="$OPTARG"
 	    ;;
 	m )
-	    Msg=$OPTARG
+	    Msg="$OPTARG"
 	    ;;
 	s )
 	    ScratchBuild=1
 	    ;;
 	t )
-	    UpdateType=$OPTARG
+	    UpdateType="$OPTARG"
 	    ;;
 	* )
 	    ;;
@@ -311,7 +319,7 @@ fi
 ##=== Build ===
 if [ $ScratchBuild -eq 1 ];then
     ##=== Begin Scratch Build ===
-    for b in "${FedPkgBranchArray[@]}";do
+    for b in "${ActionBranchArray[@]}";do
 	try_command fedpkg_build "$Srpm" "$b" "" $Nvr --scratch
     done
     exit 0
@@ -333,23 +341,12 @@ cd $Name
 echo "Pulling $Name..." > /dev/stderr
 try_command ${FEDPKG_CMD} pull
 
-## Interset between existing and koji fedpkg branches
-FedPkgBranchKoji=(`$CMakeFedoraKojiCmd git-branch $@ | xargs ` )
-FedPkgBranchExisting=(` $FEDPKG_CMD switch-branch | grep origin | sed -e  's|^\s*origin/||' | xargs` )
-declare -a FedPkgBranchArray=()
-for activeBranch in "${FedPkgBranchKoji[@]}"; do
-    if contains_element "${activeBranch}" "${FedPkgBranchExisting[@]}";then
-	FedPkgBranchArray+=(${activeBranch})
-    fi
-done
 echo -n "Branches to process:"
-(IFS=' ' echo "${FedPkgBranchArray[@]}")
+(IFS=' ' echo "${ActionBranchArray[@]}")
 bodhiPushList=
 first=
 
-
-
-for b in "${FedPkgBranchArray[@]}";do
+for b in "${ActionBranchArray[@]}";do
     if [[ -z "$first" ]];then
 	first=$b
     fi
