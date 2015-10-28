@@ -1,3 +1,11 @@
+* Wed Oct 28 2015 Ding-Yi Chen <dchen at redhat.com> - 2.4.0
+- Enhancement:
+  * cmake-fedora-pkgdb: New script: pkgdb helper script.
+  * cmake-fedora-zanata: New script: zanata helper script.
+- Support zanata-server and zanata-client 3.7.
+- Add additional path to cmake-fedora.conf
+- ManageFile: New function: MANAGE_FILE_COMMON_DIR
+
 * Thu Dec 11 2014 Ding-Yi Chen <dchen at redhat.com> - 2.3.4
 - Fixed RHBZ 1144906 - cmake-fedora failed to build target pot_files if the .pot file not exists.
 - ManageDependency: Now able to assign multiple PKG_CONFIG files.
