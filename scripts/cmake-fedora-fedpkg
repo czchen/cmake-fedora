@@ -2,9 +2,34 @@
 
 function print_usage(){
     cat <<END
-Usage: $0 [Options]  <srpm> [scope1 [scope2 ...]]
+Usage: $0 [Options] <srpm> [scope1 [scope2 ...]]
 
-  This command automates the release process from SRPM to bodhi
+    This command automates the release process from SRPM to bodhi
+
+DESCRIPTION
+    This program runs the build in koji build system, then submit successful
+builds to bodhi the package update system.
+
+    Scopes tells this program what branches to be build. 
+The default scope (without specifing any scope) is all active branches
+(the branches that currently accepts new builds) of this package. 
+You can also specify something like "fedora" "epel7" "el6",
+which basically means that all fedora active branches (including rawhide),
+as well as EPEL 7 and EPEL 6, will be processed.
+
+    If the scopes cover more than one branches, and this program will
+also merge git branches for real build (without option "-s").
+For example, if the scopes covers master, f24 and f23, it will firstly
+import the SRPM on master branch and build, if successful, then it will
+checkout the f24 and "git merge master", and so on. 
+
+    The FedPkg git repos will be cloned as sub-directory of current directory
+by default. The destination can be changed by either option '-d' or enviornment
+FEDPKG_DIR. Note that this program will not resolve the merge conflict, it is
+recommended to build with scratch-build first.
+
+    Scratch build mode can be invoked with option '-s'.
+
 
 ARGUMENTS
     <srpm>
@@ -34,15 +59,13 @@ ARGUMENTS
         If scopes is not specified, then it will use the existing branch for koji.
 
 OPTIONS
-    -b bugs: The list of bug this update fixed. Split with ','.
+    -b <bugs>: The list of bug this update fixed. Split with ','.
 
-    -d work_dir: The work directory. Default is current directory.
+    -d <work_dir>: The parent directory of a fedpkg module.
 
     -m <message>: Message used as commit message.
        If not specified, then use the latest changelog text.
        (i.e. rpm -qp --queryformat "%{ChangeLogText}" <srpm>)
-
-    -i: Import mode
 
     -s: Scratch build instead of real build.
 
@@ -65,7 +88,27 @@ ENVIRONMENT
         Bodhi username. If not specified, it uses environment variable
        	LOGNAME.
 
+EXIT_STATUS
+    Success:
+        EXIT_OK
+ 
+    Fatal that should stop immediately:
+        EXIT_FATAL_UNSPECIFIED: Unspecified fatal error, 
+            usually indicate a bug in our scripts.
 
+        EXIT_FATAL_INVALID_OPTIONS: Wrong options were given.
+
+        EXIT_FATAL_MISSING_DEPENDENCY: Cannot find dependency.
+
+        EXIT_FATAL_UNKNOWN_MODULE: Invalid or unknown module name.
+
+        EXIT_FATAL_FAIL: Script detected that a fatal error occurred.
+
+    Error that need to stop before next stage:
+         EXIT_ERROR_FAIL: Script detected that an error occurred.
+
+    Return value, should not print error messages:
+         EXIT_RETURN_FALSE: Script should return false.
 END
 }
 
@@ -107,9 +150,9 @@ function try_command(){
 # Valid target example: cmake-fedora-1.4.0-1.fc21
 function is_target_in_bodhi(){
     local result=$($CURL_CMD -X GET "https://bodhi.fedoraproject.org/builds/?nvr=$1")
-    if [ -z $result ]; then
+    if [[ -z "$result" ]]; then
 	return 1
-    elif grep -qcs -i '"total": 0,' > /dev/null;then
+    elif grep -qcs -i '"total": 0,' <<< "$result" > /dev/null;then
 	return 1
     fi
     return 0
@@ -119,47 +162,55 @@ function is_update_enhancement(){
     echo $ChangeLogText | grep -qcs -e "Enhancement:"
 }
 
-## fedpkg_build <srpm> <gitBranch> <firstBranch> <Nvr> [Options]
+## fedpkg_build <gitBranch> <firstBranch> [Options]
 function fedpkg_build(){
     local optArray=()
-    local srpm=$1
-    local gitBranch=$2
-    local firstBranch=$3
-    local nvr=$4
-    shift 4
-    local kojiBuildInfoSuffix=`$CMakeFedoraKojiCmd koji-buildinfo-suffix $gitBranch`
-    local build="$nvr.$kojiBuildInfoSuffix"
-    if [ $ScratchBuild -eq 1 ];then
-	local kojiBranch=$($CMakeFedoraKojiCmd branch $gitBranch)
-	try_command ${FEDPKG_CMD} --dist $kojiBranch scratch-build --srpm "${srpm}"
+    local gitBranch=$1
+    local firstBranch=$2
+    shift 2
+
+    echo -n "Has $Build already been built in koji? ... " > /dev/stderr
+    if is_target_built $Build ;then
+	echo "yes, skip this." > /dev/stderr
     else
-	## Real build
-	try_command ${FEDPKG_CMD} switch-branch $b
-	echo -n "Has $build already been built in koji? ... " > /dev/stderr
-	if is_target_built $build ;then
-	    echo "yes, skip this." > /dev/stderr
+	echo "no, start building." > /dev/stderr
+	if [[ $ScratchBuild -eq 1 ]];then
+	    local kojiBranch=$($CMakeFedoraKojiCmd branch $gitBranch)
+	    try_command ${FEDPKG_CMD} --dist $kojiBranch scratch-build --srpm "$Srpm" "$@"
 	else
-	    echo "no, start building." > /dev/stderr
-	    if [[ -z "$srpm" ]];then
-		if [[ "$gitBranch" = "$firstBranch" ]];then
-		    try_command ${FEDPKG_CMD} import $Srpm
-		    try_command ${FEDPKG_CMD} commit -m "$Msg"
-		else
-		    try_command $GIT_CMD merge $firstBranch
-		fi
-		try_command ${FEDPKG_CMD} push
-		echo "Building $Nvr.$bodhi_branch" > /dev/stderr
-		try_command ${FEDPKG_CMD} build
-	    else
+	    ## Real build
+	    if [[ "$gitBranch" = "$firstBranch" ]];then
 		local target=`$CMakeFedoraKojiCmd target $gitBranch`
-		try_command ${FEDPKG_CMD} build --target $target --srpm $srpm "$@" 
+		try_command $FEDPKG_CMD build --target $target --srpm "$Srpm" "$@"
+		if [[ $GitNeedBranch -eq 1 ]];then
+		    cd "$Name"
+		    try_command $GIT_CMD stash
+		    try_command $GIT_CMD fetch
+		    try_command $FEDPKG_CMD switch-branch $gitBranch
+		    try_command $FEDPKG_CMD pull
+		fi
+	    else
+		try_command $FEDPKG_CMD switch-branch $gitBranch
+		try_command $GIT_CMD merge $firstBranch
+		try_command $FEDPKG_CMD push
+		try_command $FEDPKG_CMD build
 	    fi
 	fi
     fi
 }
 
-##=== Dependency Checking ===
+##=== Variable Definition ===
 ScriptDir=$(readlink -f `dirname $0`)
+declare EXIT_OK=0
+declare EXIT_FATAL_UNSPECIFIED=1
+declare EXIT_FATAL_INVALID_OPTIONS=3
+declare EXIT_FATAL_MISSING_DEPENDENCY=4
+declare EXIT_FATAL_UNKNOWN_MODULE=5
+declare EXIT_FATAL_FAIL=5
+declare EXIT_ERROR_FAIL=20
+declare EXIT_RETURN_FALSE=40
+
+##=== Dependency Checking ===
 for d in Modules cmake-fedora/Modules ${ScriptDir}/../Modules /usr/share/cmake/Modules;do
     if [ -r $d/CmakeFedoraScript.cmake ];then
 	CMakeFedoraScriptCMake=$d/CmakeFedoraScript.cmake
@@ -167,28 +218,27 @@ for d in Modules cmake-fedora/Modules ${ScriptDir}/../Modules /usr/share/cmake/M
 done
 if [ -z "${CMakeFedoraScriptCMake}" ];then
     echo "[Error] CmakeFedoraScript.cmake is not found" > /dev/stderr
-    exit -2
+    exit $EXIT_FATAL_MISSING_DEPENDENCY
 fi
 
 CMakeFedoraKojiCmd=${ScriptDir}/cmake-fedora-koji
 if [ ! -x ${CMakeFedoraKojiCmd} ];then
     echo "[Error] cmake-fedora-koji is not found" > /dev/stderr
-    exit -2
+    exit $EXIT_FATAL_MISSING_DEPENDENCY
 fi
 
 CMakeFedoraPkgdbCmd=${ScriptDir}/cmake-fedora-pkgdb
 if [ ! -x ${CMakeFedoraPkgdbCmd} ];then
     echo "[Error] cmake-fedora-db is not found" > /dev/stderr
-    exit -2
+    exit $EXIT_FATAL_MISSING_DEPENDENCY
 fi
 
-
-for cmd in curl fedpkg bodhi koji rpm ;do
+for cmd in curl fedpkg bodhi git koji rpm ;do
     CMakeFedoraScriptOptArray=(-D cmd=find_program verbose_level=1  )
     CMakeFedoraScriptOptArray+=( -D "names=$cmd")
     CmdPath=`cmake "${CMakeFedoraScriptOptArray[@]}" -P ${CMakeFedoraScriptCMake}`
     if [ $? -ne 0 ];then
-	exit $?
+	exit $EXIT_FATAL_MISSING_DEPENDENCY
     fi
 
     VarName=`tr a-z A-Z <<<$cmd`_CMD
@@ -198,9 +248,8 @@ done
 ##=== Parameter Parsing ===
 if [ $# = 0 ]; then
     print_usage
-    exit 0
+    exit $EXIT_FATAL_INVALID_OPTIONS
 fi
-
 
 : ${BODHI_USER:=$LOGNAME}
 echo "BODHI_USER=$BODHI_USER"
@@ -209,14 +258,14 @@ WorkDir=${FEDPKG_DIR:-$PWD}
 Msg=
 BodhiOptArray=()
 Bugs=
-ScratchBuild=
+ScratchBuild=0
 UpdateType=
 
 while getopts "hb:d:m:st:" opt;do
     case $opt in
 	h)
 	    print_usage
-	    exit 0
+	    exit $EXIT_OK
 	    ;;
 	b )
 	    Bugs="$OPTARG"
@@ -245,33 +294,14 @@ shift
 
 if [[ -z $Srpm ]];then
     print_usage
-    exit 1
+    exit $EXIT_FATAL_INVALID_OPTIONS
 else
     Srpm=`readlink -f $Srpm`
 fi
 
 if [[ ! -r "$Srpm" ]];then
     echo "[Fatal] Failed to read $Srpm" > /dev/stderr
-    exit 2
-fi
-
-if [[ -n "$Bugs" ]];then
-    BodhiOptArray+=(--bugs $Bugs)
-fi
-
-if [[ ! -w $WorkDir ]];then
-    if ! mkdir -p $WorkDir; then
-	echo "$WorkDir is not writable." > /dev/stderr
-	exit 2
-    fi
-fi
-echo "WorkDir=$WorkDir" > /dev/stderr
-
-ChangeLogText=`$RPM_CMD -qp --queryformat "%{ChangeLogText}" $Srpm`
-echo "ChangeLogText=$ChangeLogText" > /dev/stderr
-
-if [[ -z "$Msg" ]];then
-    Msg=$ChangeLogText
+    exit $EXIT_FATAL_INVALID_OPTIONS
 fi
 
 Name=`$RPM_CMD -qp --queryformat "%{NAME}" $Srpm`
@@ -281,17 +311,30 @@ echo "Name=$Name" > /dev/stderr
 ##  (e.g. cmake-fedora-2.0.0-1)
 Nvr=`$RPM_CMD -qp --queryformat "%{NAME}-%{VERSION}-%{RELEASE}" $Srpm | sed -e 's/\.fc[0-9]*$//' | sed -e 's/\.el[0-9]*$//'`
 
-if [[ -z "$UpdateType" ]];then
-    if  is_package_new_in_bodhi $Name; then
-	UpdateType=newpackage
-    elif is_update_enhancement; then
-	UpdateType=enhancement
-    else
-	UpdateType=bugfix
+if [[ $ScratchBuild -eq 0 ]];then
+    ## Variable that required by real build
+    if [[ -n "$Bugs" ]];then
+	BodhiOptArray+=(--bugs $Bugs)
     fi
-fi
-echo "UpdateType=$UpdateType" > /dev/stderr
 
+    ChangeLogText=$($RPM_CMD -qp --queryformat "%{ChangeLogText}" $Srpm)
+    echo "ChangeLogText=$ChangeLogText" > /dev/stderr
+
+    if [[ -z "$Msg" ]];then
+	Msg=$ChangeLogText
+    fi
+
+    if [[ -z "$UpdateType" ]];then
+	if  is_package_new_in_bodhi $Name; then
+	    UpdateType=newpackage
+	elif is_update_enhancement; then
+	    UpdateType=enhancement
+	else
+	    UpdateType=bugfix
+	fi
+    fi
+    echo "UpdateType=$UpdateType" > /dev/stderr
+fi
 
 ##=== Determine Branch To Build ===
 ScopeBranchArray=(`$CMakeFedoraKojiCmd git-branch $@ | xargs ` )
@@ -303,8 +346,8 @@ if [ -z "$PackageBranchArray" ];then
     ## Cannot found package in PkgDb, maybe a new package?
     if [ $ScratchBuild -eq 0 ];then
 	## Failed as the non-scratch build requires a existing package
-	echo "[ERROR] Failed to find package in PkgDB for non-scratch build" > /dev/stderr
-	exit 1
+	echo "[ERROR] Failed to find package $Name in PkgDB for a real build." > /dev/stderr
+	exit $EXIT_FATAL_FAIL
     fi
     ActionBranchArray=(${ScopeBranchArray[@]})
 else
@@ -316,58 +359,61 @@ else
     done
 fi
 
-##=== Build ===
-if [ $ScratchBuild -eq 1 ];then
-    ##=== Begin Scratch Build ===
-    for b in "${ActionBranchArray[@]}";do
-	try_command fedpkg_build "$Srpm" "$b" "" $Nvr --scratch
-    done
-    exit 0
-    ##=== End   Scratch Build ===
-fi
-
-##=== Non-Scratch Build ===
-cd $WorkDir
-if [[ ! -r $Name ]];then
-    try_command ${FEDPKG_CMD} clone $Name
-fi
-
-if [[ ! -x $Name ]];then
-    echo "Failed to change to $WorkDir/$Name" > /dev/stderr
-    exit 3
-fi
-
-cd $Name
-echo "Pulling $Name..." > /dev/stderr
-try_command ${FEDPKG_CMD} pull
-
 echo -n "Branches to process:"
 (IFS=' ' echo "${ActionBranchArray[@]}")
-bodhiPushList=
-first=
 
-for b in "${ActionBranchArray[@]}";do
-    if [[ -z "$first" ]];then
-	first=$b
+GitBranches=${#ActionBranchArray[@]}
+if [[ $GitBranches -gt 1 && $ScratchBuild -eq 0 ]];then
+    ## More than one branches for real build, thus need git branches
+    GitNeedMerge=1
+else
+    GitNeedMerge=0
+fi
+
+if [[ $GitNeedMerge -eq 1 ]];then
+    if [[ ! -w "$WorkDir" ]];then
+	if ! mkdir -p "$WorkDir"; then
+	    echo "$WorkDir is not writable." > /dev/stderr
+	    exit $EXIT_FATAL_INVALID_OPTIONS
+	fi
     fi
 
-    try_command fedpkg_build "" "$b" "$first" $Nvr
+    cd "$WorkDir"
+    if [[ ! -x "$Name" ]] ;then
+	try_command $FEDPKG_CMD clone "$Name"
+    fi
+    echo "WorkDir=$WorkDir" > /dev/stderr
+fi
 
-    bodhi_branch=`$CMakeFedoraKojiCmd bodhi-branch $b`
+##=== Build ===
+BodhiPushList=
+First=
 
-    if [[ -n "$bodhi_branch" ]];then
-	echo -n "Has $Target already in bodhi? ... " > /dev/stderr
-	if is_target_in_bodhi $Target ; then
+for b in "${ActionBranchArray[@]}";do
+    if [[ -z "$First" ]];then
+	First=$b
+    fi
+
+    KojiBuildInfoSuffix=$($CMakeFedoraKojiCmd koji-buildinfo-suffix $b)
+    Build="$Nvr.$KojiBuildInfoSuffix"
+
+    try_command fedpkg_build "$Srpm" "$b" "$First" $Nvr
+
+    BodhiBranch=$($CMakeFedoraKojiCmd bodhi-branch $b)
+
+    if [[ -n "$BodhiBranch" ]];then
+	echo -n "Has $Build already in bodhi? ... " > /dev/stderr
+	if is_target_in_bodhi $Build ; then
 	    echo "yes, skip this." > /dev/stderr
 	else
 	    echo "no, will push it." > /dev/stderr
-	    bodhiPushList="$bodhiPushList $Nvr.$bodhi_branch"
+	    BodhiPushList+=" $Build"
 	fi
     fi
 done
 
-if [[ -n "$bodhiPushList" ]];then
-    try_command ${BODHI_CMD} -n "${BodhiOptArray[@]}" -t $UpdateType -u $BODHI_USER -N "$ChangeLogText" -R testing $bodhiPushList
+if [[ -n "$BodhiPushList" ]];then
+    try_command ${BODHI_CMD} -n "${BodhiOptArray[@]}" -t $UpdateType -u $BODHI_USER -N "$ChangeLogText" -R testing $BodhiPushList
 else
     echo "Nothing to push to bodhi." > /dev/stderr
 fi
