@@ -73,7 +73,6 @@
 #         + NOUNQUOTE: (Optional) do not remove the double quote mark
 #           around the string.
 #
-# Defines the following macros:
 #   STRING_UNQUOTE(<var> <str>)
 #     - Remove double quote marks and quote marks around a string.
 #       If the string is not quoted, then content of str is copied to var
@@ -81,6 +80,7 @@
 #         + var: A variable that stores the result.
 #         + str: A string.
 #
+# Defines the following macros:
 #   STRING_JOIN(<var> <delimiter> <strList> [<str> ...])
 #     - Concatenate strings, with delimiter inserted between strings.
 #       * Parameters:
@@ -322,7 +322,7 @@ FUNCTION(_STRING_UNESCAPE var str)
     #MESSAGE("*** _STRING_UNESCAPE: ${var}=${${var}}")
 ENDFUNCTION(_STRING_UNESCAPE var str)
 
-MACRO(STRING_UNQUOTE var str)
+FUNCTION(STRING_UNQUOTE var str)
     SET(_ret "${str}")
     STRING(LENGTH "${str}" _strLen)
 
@@ -344,8 +344,8 @@ MACRO(STRING_UNQUOTE var str)
 	    STRING(SUBSTRING "${_ret}" 1 ${_strLen_2} _ret)
 	ENDIF("${_lCh}" STREQUAL "\"" AND "${_rCh}" STREQUAL "\"")
     ENDIF (_strLen GREATER 1)
-    SET(${var} "${_ret}")
-ENDMACRO(STRING_UNQUOTE var str)
+    SET(${var} "${_ret}" PARENT_SCOPE)
+ENDFUNCTION(STRING_UNQUOTE var str)
 
 MACRO(STRING_JOIN var delimiter)
     SET(_ret "")
