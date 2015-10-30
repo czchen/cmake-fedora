@@ -229,7 +229,7 @@ fi
 
 CMakeFedoraPkgdbCmd=${ScriptDir}/cmake-fedora-pkgdb
 if [ ! -x ${CMakeFedoraPkgdbCmd} ];then
-    echo "[Error] cmake-fedora-db is not found" > /dev/stderr
+    echo "[Error] cmake-fedora-pkgdb is not found" > /dev/stderr
     exit $EXIT_FATAL_MISSING_DEPENDENCY
 fi
 
