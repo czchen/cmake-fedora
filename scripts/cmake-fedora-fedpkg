@@ -397,7 +397,7 @@ for b in "${ActionBranchArray[@]}";do
     KojiBuildInfoSuffix=$($CMakeFedoraKojiCmd koji-buildinfo-suffix $b)
     Build="$Nvr.$KojiBuildInfoSuffix"
 
-    try_command fedpkg_build "$Srpm" "$b" "$First" $Nvr
+    try_command fedpkg_build "$b" "$First"
 
     BodhiBranch=$($CMakeFedoraKojiCmd bodhi-branch $b)
 
