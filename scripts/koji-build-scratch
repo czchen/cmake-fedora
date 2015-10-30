@@ -35,51 +35,92 @@ Parameters:
        	as if "rawhide fedora epel" are specified.
 END
 }
+##=== Variable Definition ===
+ScriptDir=$(readlink -f `dirname $0`)
+declare EXIT_OK=0
+declare EXIT_FATAL_UNSPECIFIED=1
+declare EXIT_FATAL_INVALID_OPTIONS=3
+declare EXIT_FATAL_MISSING_DEPENDENCY=4
+declare EXIT_FATAL_UNKNOWN_MODULE=5
+declare EXIT_FATAL_FAIL=5
+declare EXIT_ERROR_FAIL=20
+declare EXIT_RETURN_FALSE=40
 
-# Check for dependency
-for cmd in koji;do
-    if ! which $cmd &>/dev/null;then
-	echo "[Error] $cmd is not found in path" > /dev/stderr
-	exit -2
+##=== Dependency Checking ===
+for d in Modules cmake-fedora/Modules ${ScriptDir}/../Modules /usr/share/cmake/Modules;do
+    if [ -r $d/CmakeFedoraScript.cmake ];then
+	CMakeFedoraScriptCMake=$d/CmakeFedoraScript.cmake
     fi
 done
-
-SCRIPT_DIR=$(readlink -f `dirname $0`)
-CMAKE_FEDORA_KOJI_CMD=${SCRIPT_DIR}/cmake-fedora-koji
-if [ ! -x ${CMAKE_FEDORA_KOJI_CMD} ];then
-    echo "[Error] cmake-fedora-koji is not found" > /dev/stderr
-    exit -2
+if [ -z "${CMakeFedoraScriptCMake}" ];then
+    echo "[Error] CmakeFedoraScript.cmake is not found" > /dev/stderr
+    exit $EXIT_FATAL_MISSING_DEPENDENCY
 fi
 
+CMakeFedoraKojiCmd=${ScriptDir}/cmake-fedora-koji
+if [ ! -x ${CMakeFedoraKojiCmd} ];then
+    echo "[Error] cmake-fedora-koji is not found" > /dev/stderr
+    exit $EXIT_FATAL_MISSING_DEPENDENCY
+fi
+
+CMakeFedoraPkgdbCmd=${ScriptDir}/cmake-fedora-pkgdb
+if [ ! -x ${CMakeFedoraPkgdbCmd} ];then
+    echo "[Error] cmake-fedora-pkgdb is not found" > /dev/stderr
+    exit $EXIT_FATAL_MISSING_DEPENDENCY
+fi
+
+for cmd in curl fedpkg  ;do
+    CMakeFedoraScriptOptArray=(-D cmd=find_program verbose_level=1  )
+    CMakeFedoraScriptOptArray+=( -D "names=$cmd")
+    CmdPath=`cmake "${CMakeFedoraScriptOptArray[@]}" -P ${CMakeFedoraScriptCMake}`
+    if [ $? -ne 0 ];then
+	exit $EXIT_FATAL_MISSING_DEPENDENCY
+    fi
+
+    VarName=`tr a-z A-Z <<<$cmd`_CMD
+    eval "$VarName=$CmdPath"
+done
+
+##=== Parameter Parsing ===
 if [ $# = 0 ]; then
     print_usage
-    exit 0
+    exit $EXIT_FATAL_INVALID_OPTIONS
 fi
 
-SRPM=$1
+Srpm=$1
 shift
 
-if [[ -z "$SRPM" ]];then
+if [[ -z $Srpm ]];then
     print_usage
-    exit -1
-elif [[ ! -r "$SRPM" ]];then
-    echo "Fail to read SRPM file $SRPM" > /dev/stderr
-    exit -2
+    exit $EXIT_FATAL_INVALID_OPTIONS
+else
+    Srpm=`readlink -f $Srpm`
 fi
 
-TARGETS=`$CMAKE_FEDORA_KOJI_CMD target $@ | xargs`
-echo "TARGETS=$TARGETS"
-FAILED=
+if [[ ! -r "$Srpm" ]];then
+    echo "[Fatal] Failed to read $Srpm" > /dev/stderr
+    exit $EXIT_FATAL_INVALID_OPTIONS
+fi
 
-for t in $TARGETS;do
-    if ! koji build --scratch $t $SRPM; then
-	FAILED="$FAILED $t"
+#TargetArray=($($CMakeFedoraKojiCmd target "$@" | xargs) )
+TargetArray=($($CMakeFedoraKojiCmd branch "$@" | xargs) )
+
+echo -n "Targets to process:"
+(IFS=' ' echo "${TargetArray[@]}")
+
+Failed=
+
+for t in "${TargetArray[@]}";do
+    ## Workaround Bug 1186994 - koji error: SysCallError: (-1, 'Unexpected EOF') when scratch build SRPM 
+    ## if ! ${KOJI_CMD} build --scratch $t $Srpm; then
+    if ! ${FEDPKG_CMD} --dist $t scratch-build --srpm $Srpm; then
+	Failed+=" $t"
     fi
 done
 
-if [ -n "$FAILED" ]; then
-    echo "Failed targets:$FAILED" > /dev/stderr
-    exit 1
+if [ -n "$Failed" ]; then
+    echo "Failed targets:$Failed" > /dev/stderr
+    exit $EXIT_ERROR_FAILED
 fi
-exit 0
+exit $EXIT_OK
 
