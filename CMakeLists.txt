@@ -92,11 +92,11 @@ MANAGE_SOURCE_VERSION_CONTROL_GIT()
 # Packing
 #
 
-ADD_CUSTOM_TARGET(ctest
-    COMMAND ctest
+ADD_CUSTOM_TARGET(test_all
+    COMMAND ctest -C Debug --output-on-failure
     COMMENT "ctest: Run tests"
     )
-ADD_DEPENDENCIES(pack_src_pre ctest)
+ADD_DEPENDENCIES(pack_src_pre test_all)
 
 ## Pack Source 
 SET(SOURCE_ARCHIVE_DIR ${CMAKE_BINARY_DIR}/SOURCES CACHE PATH "Source Archive Dir")
@@ -107,7 +107,7 @@ PACK_SOURCE_ARCHIVE("${SOURCE_ARCHIVE_DIR}"
 IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
     SET(RPM_BUILD_SOURCES ${SOURCE_ARCHIVE_DIR})
     INCLUDE(ManageRPM)
-    RPM_SPEC_STRING_ADD_DIRECTIVE(RPM_SPEC_SCRIPT_OUTPUT check "" "make test")
+    RPM_SPEC_STRING_ADD_DIRECTIVE(RPM_SPEC_SCRIPT_OUTPUT check "" "ctest --output-on-failure")
     PACK_RPM(SPEC_IN "Templates/fedora/project.spec.in")
     RPM_MOCK_BUILD()
 ENDIF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
@@ -150,7 +150,7 @@ ADD_DEPENDENCIES(upload tag_push)
 INCLUDE(ManageRelease)
 IF(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
     INCLUDE(ManageReleaseFedora)
-    RELEASE_FEDORA(fedora epel)
+    RELEASE_FEDORA(fedora epel7 el6)
     # "Off" Warning is displayed if mock is not installed.
     MANAGE_RELEASE(upload tag_push release_fedora)
 ELSE(CMAKE_FEDORA_ENABLE_FEDORA_BUILD)
@@ -164,14 +164,17 @@ ADD_TEST("ManageString" ctest -S test/testManageString.cmake)
 ADD_TEST("ManageVariable" ctest -S test/testManageVariable.cmake)
 ADD_TEST("ManageFile" ctest -S test/testManageFile.cmake)
 ADD_TEST("ManageTranslation" ctest -S test/testManageTranslation.cmake)
-ADD_TEST("ManageZanata" ctest -S test/testManageZanata.cmake)
 ADD_TEST("CmakeFedoraScript" ctest -S test/testCmakeFedoraScript.cmake)
 ADD_TEST("CmakeFedoraKoji" ctest -S test/testCmakeFedoraKoji.cmake)
 ADD_TEST("CmakeFedoraFedpkg" ctest -S test/testCmakeFedoraFedpkg.cmake)
 
 IF(CMAKE_VERSION VERSION_GREATER 2.8.0)
+    ## Use cmake 
+    ADD_TEST(NAME "ManageZanata" 
+	CONFIGURATIONS "Debug"
+	COMMAND ctest -S test/testManageZanata.cmake)
     ADD_TEST(NAME "cmake-fedora-newprj"
-	CONFIGURATIONS "debug"
+	CONFIGURATIONS "Debug"
 	COMMAND ctest -S test/testCmakeFedoraNewprj.cmake
 	)
 ENDIF(CMAKE_VERSION VERSION_GREATER 2.8.0)
