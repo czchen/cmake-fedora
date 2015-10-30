@@ -18,7 +18,6 @@ Makefile
 *.lo
 *.loT
 *NO_PACK*
-*.pot
 SPECS/
 RPMS/
 SRPMS/
