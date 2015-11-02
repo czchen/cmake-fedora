@@ -1,7 +1,8 @@
 * Mon Nov 02 2015 Ding-Yi Chen <dchen at redhat.com> - 2.4.3
 - Enhancement:
-  * cmake-fedora-pkgdb: New script: pkgdb helper script.
-  * cmake-fedora-zanata: New script: zanata helper script.
+  * New scripts: cmake-fedora-pkgdb, cmake-fedora-zanata
+  * New target: 
+    - refresh_cmake_cache: Remove the old cache and rebuild the new cache.
 - Fixed:
   * Resolves: RHBZ 1194797: find -printf is not portable
 - Changed:
