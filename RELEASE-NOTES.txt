@@ -1,5 +1,5 @@
-PRJ_VER=2.4.2
-SUMMARY=cmake-fedora-zanata
+PRJ_VER=2.4.3
+SUMMARY=RHBZ #1194797; cmake-fedora-zanata, cmake-fedora-pkgdb
 REDHAT_BUGZILLA=1194797
 [Changes]
 - Enhancement:

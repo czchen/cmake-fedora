@@ -185,6 +185,7 @@ function fedpkg_build(){
 		try_command $FEDPKG_CMD switch-branch $gitBranch
 		try_command $FEDPKG_CMD pull
 		try_command $FEDPKG_CMD import "$Srpm"
+		try_command $FEDPKG_CMD commit -m "$ChangeLogText"
 		try_command $FEDPKG_CMD push
 		try_command $FEDPKG_CMD build
 	    else
