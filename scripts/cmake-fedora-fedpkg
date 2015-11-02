@@ -381,7 +381,7 @@ if [[  $ScratchBuild -eq 0 ]];then
 	try_command $FEDPKG_CMD clone "$Name"
     fi
     echo "WorkDir=$WorkDir" > /dev/stderr
-    cd "Name"
+    cd "$Name"
 fi
 
 ##=== Build ===

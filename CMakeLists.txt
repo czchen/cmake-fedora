@@ -11,7 +11,7 @@ GET_FILENAME_COMPONENT(CMAKE_FEDORA_MODULE_DIR
     )
 
 # Whether to build on fedora
-SET(CMAKE_FEDORA_ENABLE_FEDORA_BUILD "1" CACHE STRING "Enable fedora build")
+SET(CMAKE_FEDORA_ENABLE_FEDORA_BUILD "1" CACHE STRING "Enable fedora build" FORCE)
 
 ####################################################################
 # Project specific information
