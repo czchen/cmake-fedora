@@ -180,15 +180,13 @@ function fedpkg_build(){
 	else
 	    ## Real build
 	    if [[ "$gitBranch" = "$firstBranch" ]];then
-		local target=`$CMakeFedoraKojiCmd target $gitBranch`
-		try_command $FEDPKG_CMD build --target $target --srpm "$Srpm" "$@"
-		if [[ $GitNeedBranch -eq 1 ]];then
-		    cd "$Name"
-		    try_command $GIT_CMD stash
-		    try_command $GIT_CMD fetch
-		    try_command $FEDPKG_CMD switch-branch $gitBranch
-		    try_command $FEDPKG_CMD pull
-		fi
+		try_command $GIT_CMD stash
+		try_command $GIT_CMD fetch
+		try_command $FEDPKG_CMD switch-branch $gitBranch
+		try_command $FEDPKG_CMD pull
+		try_command $FEDPKG_CMD import "$Srpm"
+		try_command $FEDPKG_CMD push
+		try_command $FEDPKG_CMD build
 	    else
 		try_command $FEDPKG_CMD switch-branch $gitBranch
 		try_command $GIT_CMD merge $firstBranch
@@ -370,7 +368,7 @@ else
     GitNeedMerge=0
 fi
 
-if [[ $GitNeedMerge -eq 1 ]];then
+if [[  $ScratchBuild -eq 0 ]];then
     if [[ ! -w "$WorkDir" ]];then
 	if ! mkdir -p "$WorkDir"; then
 	    echo "$WorkDir is not writable." > /dev/stderr
@@ -383,6 +381,7 @@ if [[ $GitNeedMerge -eq 1 ]];then
 	try_command $FEDPKG_CMD clone "$Name"
     fi
     echo "WorkDir=$WorkDir" > /dev/stderr
+    cd "Name"
 fi
 
 ##=== Build ===

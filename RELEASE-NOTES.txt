@@ -1,4 +1,4 @@
-PRJ_VER=2.4.0
+PRJ_VER=2.4.1
 SUMMARY=cmake-fedora-zanata
 REDHAT_BUGZILLA=1194797
 [Changes]

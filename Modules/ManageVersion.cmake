@@ -126,7 +126,6 @@ FUNCTION(RELEASE_NOTES_READ_FILES_VARIABLES releaseNoteFile )
 	    BREAK()
 	ELSEIF(NOT "${_line}" MATCHES "^\\s*#")
 	    SETTING_STRING_GET_VARIABLE(var value "${_line}")
-	    MESSAGE("var=${var} value=${value}")
 
 	    IF("${var}" STREQUAL "PRJ_VER")
 		SET_COMPILE_ENV(${var} "${value}" CACHE STRING "Project Version" FORCE)
