@@ -30,6 +30,12 @@ FUNCTION(CMAKE_FEDORA_NEWPRJ_TEST projectName)
     IF(failVar)
 	MESSAGE(SEND_ERROR "${failVar}: ${errVar} |out=${outVar}|")
     ENDIF(failVar)
+
+    ## Install a hello world script
+    FILE(WRITE "${projectDir}/hello_world.sh" "#!/bin/bash\necho 'Hello World!'")
+    EXECUTE_PROCESS(COMMAND sed -i -e "s/#SET(BUILD_ARCH \"noarch\")/SET(BUILD_ARCH \"noarch\")/" "${projectDir}/CMakeLists.txt")
+    FILE(APPEND "${projectDir}/CMakeLists.txt" "INSTALL(PROGRAMS hello_world.sh DESTINATION /usr/bin)")
+
     
     MESSAGE("CMAKE_FEDORA_NEWPRJ: ${projectName} cmake .")
     EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} "."

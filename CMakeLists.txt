@@ -178,4 +178,4 @@ IF(CMAKE_VERSION VERSION_GREATER 2.8.0)
 	COMMAND ctest -S test/testCmakeFedoraNewprj.cmake
 	)
 ENDIF(CMAKE_VERSION VERSION_GREATER 2.8.0)
-    
+
