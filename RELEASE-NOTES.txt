@@ -1,18 +1,7 @@
-PRJ_VER=2.4.3
-SUMMARY=RHBZ #1194797; cmake-fedora-zanata, cmake-fedora-pkgdb
-REDHAT_BUGZILLA=1194797
+PRJ_VER=2.4.4
+SUMMARY=
+REDHAT_BUGZILLA=
 [Changes]
-- Enhancement:
-  * cmake-fedora-pkgdb: New script: pkgdb helper script.
-  * cmake-fedora-zanata: New script: zanata helper script.
 - Fixed:
-  * Resolves: RHBZ 1194797: find -printf is not portable
-- Changed:
-  * Support zanata-server and zanata-client 3.7.
-  * Add additional path to cmake-fedora.conf
-  * cmake-fedora.conf: Remove bodhi branch, 
-    use whatever cmake-fedora-pkgdb found. 
-  * ManageFile: New function: MANAGE_FILE_COMMON_DIR
-  * ManageString: Macro to function: STRING_UNQUOTE
-  * koji-build-scratch: Use fedpkg backend instead
-  * cmake-fedora-fedpkg: Fix 
+  * [TODO] Zanata target generation
+

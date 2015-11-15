@@ -11,10 +11,10 @@
 #   - ManageString
 #
 # Define following functions:
-#   MANAGE_ZANATA([<serverUrl>] [YES] [ERRORS] [DEBUG]
+#   MANAGE_ZANATA([[URL] <serverUrl>] [YES] [ERRORS] [DEBUG]
 #       [CHUNK_SIZE <sizeInByte>]
 #       [CLEAN_ZANATA_XML]
-#       [CLIENT_COMMAND <command> ... ]
+#       [CLIENT_COMMAND <command> ]
 #       [COPY_TRANS <bool>]
 #       [CREATE_SKELETONS]
 #       [DISABLE_SSL_CERT]
@@ -34,6 +34,7 @@
 #       [USER_CONFIG <zanata.ini>]
 #       [USERNAME <username>]
 #       [VERSION <ver>]
+#       [ZANATA_EXECUTABLE <command> ]
 #     )
 #     - Use Zanata as translation service.
 #         Zanata is a web-based translation manage system.
@@ -45,9 +46,9 @@
 #
 #         In order to use Zanata with command line, you will need either
 #         Zanata client:
+#         * zanata-cli: Zanata java command line client.
 #         * mvn: Maven build system.
 #         * zanata: Zanata python command line client.
-#         * zanata-cli: Zanata java command line client.
 #
 #         In addition, ~/.config/zanata.ini is also required as it contains API key.
 #         API key should not be put in source tree, otherwise it might be
@@ -63,8 +64,9 @@
 #         + DEBUG: (Optional) Show debug message. As "-X" in maven.
 #         + CLEAN_ZANATA_XML: (Optional) zanata.xml will be removed with 
 #             "make clean"
-#         + CLIENT_COMMAND command ... : (Optional) command path to Zanata client.
-#           Default: "mvn"
+#         + CLIENT_COMMAND command: (Optional)(Depreciated) command path to Zanata client.
+#           Use ZANATA_EXECUTABLE instead.
+#           Default: "zanata-cli"
 #         + COPY_TRANS bool: (Optional) Copy translation from existing versions.
 #           Default: "true"
 #         + CREATE_SKELETONS: (Optional) Create .po file even if there is no translation
@@ -110,6 +112,8 @@
 #           Default: $HOME/.config/zanata.ini
 #         + USERNAME username: (Optional) Zanata username
 #         + VERSION version: (Optional) The version to push
+#         + ZANATA_EXECUTABLE command : (Optional) command path to Zanata client.
+#           Default: "zanata-cli"
 #       * Targets:
 #         + zanata_put_projet: Put project in zanata server.
 #         + zanata_put_version: Put version in zanata server.
@@ -118,6 +122,12 @@
 #         + zanata_push_both: Push source messages and translations to
 #             zanata server.
 #         + zanata_pull: Pull translations from zanata server.
+#       * Variable Cached:
+#         + ZANATA_CLIENT_EXECUTABLE: Full path of the client program.
+#         + ZANATA_CLIENT_TYPE: The type of Zanata client, either
+#             java: Java client
+#             python: Python client
+#             mvn: zanata-maven-plugin
 #
 
 
@@ -132,8 +142,7 @@ INCLUDE(ManageVariable)
 INCLUDE(ManageZanataDefinition)
 INCLUDE(ManageZanataSuggest)
 
-SET(ZANATA_URL "https://translate.zanata.org/zanata/" CACHE STRING "Zanata Server URL")
-SET(ZANATA_PROJECT_TYPE "gettext" CACHE STRING "Project Type of this project")
+## Variable ZANATA_* are compulsory  
 SET(ZANATA_DESCRIPTION_SIZE 80 CACHE STRING "Zanata description size")
 
 #######################################
@@ -254,7 +263,7 @@ FUNCTION(ZANATA_CLIENT_OPTNAME_LIST_APPEND_MVN listVar subCommandName optName)
     SET(${listVar} "${${listVar}}" PARENT_SCOPE)
 ENDFUNCTION(ZANATA_CLIENT_OPTNAME_LIST_APPEND_MVN)
 
-FUNCTION(ZANATA_CLIENT_OPTNAME_LIST_APPEND_ZANATA_CLI listVar subCommandName optName)
+FUNCTION(ZANATA_CLIENT_OPTNAME_LIST_APPEND_JAVA listVar subCommandName optName)
     IF("${optName}" STREQUAL "BATCH")
 	LIST(APPEND ${listVar} "-B")
     ELSEIF("${optName}" STREQUAL "ERRORS")
@@ -281,7 +290,7 @@ FUNCTION(ZANATA_CLIENT_OPTNAME_LIST_APPEND_ZANATA_CLI listVar subCommandName opt
 	ENDIF()
     ENDIF()
     SET(${listVar} "${${listVar}}" PARENT_SCOPE)
-ENDFUNCTION(ZANATA_CLIENT_OPTNAME_LIST_APPEND_ZANATA_CLI)
+ENDFUNCTION(ZANATA_CLIENT_OPTNAME_LIST_APPEND_JAVA)
 
 FUNCTION(ZANATA_CLIENT_OPTNAME_LIST_APPEND_PYTHON listVar subCommandName optName)
     IF("${optName}" STREQUAL "BATCH")
@@ -301,33 +310,39 @@ FUNCTION(ZANATA_CLIENT_OPTNAME_LIST_APPEND_PYTHON listVar subCommandName optName
     SET(${listVar} "${${listVar}}" PARENT_SCOPE)
 ENDFUNCTION(ZANATA_CLIENT_OPTNAME_LIST_APPEND_PYTHON)
 
-FUNCTION(ZANATA_CLIENT_OPTNAME_LIST_APPEND listVar backend subCommand optName)
+FUNCTION(ZANATA_CLIENT_OPTNAME_LIST_APPEND listVar subCommand optName)
     ZANATA_STRING_LOWERCASE_DASH_TO_UPPERCASE_UNDERSCORE(subCommandName "${subCommand}")
-    IF("${backend}" STREQUAL "mvn")
+    ## Skip Options that should not in the final command
+    IF(optName STREQUAL "ZANATA_EXECUTABLE")
+	RETURN()
+    ENDIF()
+
+    ## Invoke corresponding command
+    IF(ZANATA_CLIENT_TYPE STREQUAL "mvn")
 	ZANATA_CLIENT_OPTNAME_LIST_APPEND_MVN(${listVar} ${subCommandName} ${optName} ${ARGN})
-    ELSEIF("${backend}" STREQUAL "zanata-cli")
-	ZANATA_CLIENT_OPTNAME_LIST_APPEND_ZANATA_CLI(${listVar} ${subCommandName} ${optName} ${ARGN})
-    ELSEIF("${backend}" STREQUAL "zanata")
+    ELSEIF(ZANATA_CLIENT_TYPE STREQUAL "java")
+	ZANATA_CLIENT_OPTNAME_LIST_APPEND_JAVA(${listVar} ${subCommandName} ${optName} ${ARGN})
+    ELSEIF(ZANATA_CLIENT_TYPE STREQUAL "python")
 	ZANATA_CLIENT_OPTNAME_LIST_APPEND_PYTHON(${listVar} ${subCommandName} ${optName} ${ARGN})
     ELSE()
-	M_MSG(${M_ERROR} "ManageZanata: Unrecognized zanata backend ${backend}")
+	M_MSG(${M_ERROR} "ManageZanata: Unrecognized zanata client type ${ZANATA_CLIENT_TYPE}")
     ENDIF()
     SET(${listVar} "${${listVar}}" PARENT_SCOPE)
 ENDFUNCTION(ZANATA_CLIENT_OPTNAME_LIST_APPEND)
 
-## ZANATA_CLIENT_OPTNAME_LIST_PARSE_APPEND(var backend subCommand opt)
-## e.g ZANATA_CLIENT_OPTNAME_LIST_PARSE_APPEND(srcDir zanata-cli push "srcDir=.")
-FUNCTION(ZANATA_CLIENT_OPTNAME_LIST_PARSE_APPEND var backend subCommand opt)
+## ZANATA_CLIENT_OPTNAME_LIST_PARSE_APPEND(var subCommand opt)
+## e.g ZANATA_CLIENT_OPTNAME_LIST_PARSE_APPEND(srcDir push "srcDir=.")
+FUNCTION(ZANATA_CLIENT_OPTNAME_LIST_PARSE_APPEND var subCommand opt)
     STRING_SPLIT(_list "=" "${opt}")
-    ZANATA_CLIENT_OPTNAME_LIST_APPEND(${var} ${backend} ${subCommand} ${_list})
+    ZANATA_CLIENT_OPTNAME_LIST_APPEND(${var} ${subCommand} ${_list})
     SET(${var} "${${var}}" PARENT_SCOPE)
 ENDFUNCTION(ZANATA_CLIENT_OPTNAME_LIST_PARSE_APPEND)
 
 ## Internal
-FUNCTION(ZANATA_CLIENT_SUB_COMMAND var backend subCommand)
-    IF("${backend}" STREQUAL "mvn")
+FUNCTION(ZANATA_CLIENT_SUB_COMMAND var subCommand)
+    IF(ZANATA_CLIENT_TYPE STREQUAL "mvn")
 	SET(${var} "${ZANATA_MAVEN_SUBCOMMAND_PREFIX}:${subCommand}" PARENT_SCOPE)
-    ELSEIF("${backend}" STREQUAL "zanata")
+    ELSEIF(ZANATA_CLIENT_TYPE STREQUAL "python")
 	## Python client
 	IF("${subCommand}" STREQUAL "put-project")
 	    SET(${var} "project" "create" PARENT_SCOPE)
@@ -337,21 +352,52 @@ FUNCTION(ZANATA_CLIENT_SUB_COMMAND var backend subCommand)
 	    SET(${var} "${subCommand}" PARENT_SCOPE)
 	ENDIF()
     ELSE()
-	## zanata-cli
+	## java
 	SET(${var} "${subCommand}" PARENT_SCOPE)
     ENDIF()
 ENDFUNCTION(ZANATA_CLIENT_SUB_COMMAND)
 
+## Set variable for ZANATA
+FUNCTION(ZANATA_SET_CACHE_VAR mapVar key)
+    IF(NOT DEFINED ZANATA_OPTION_NAME_${key}_VAR_TYPE)
+	M_MSG(${M_ERROR} "[ManageZanata] key ${key} is invalid")
+	RETURN()
+    ENDIF()
+
+    IF("${${mapVar}_${key}}" STREQUAL "")
+	IF(key STREQUAL "PROJECT")
+	    SET(v "${PROJECT_NAME}")
+	ELSEIF(key STREQUAL "PROJECT_CONFIG")
+	    SET(v "${CMAKE_CURRENT_DIR_DIR}/zanata.xml")
+	ELSEIF(key STREQUAL "USER_CONFIG")
+	    SET(v "$ENV{HOME}/.config/zanata.ini")
+	ELSE()
+	    SET(v "${ZANATA_OPTION_NAME_${key}_DEFAULT}")
+	ENDIF()
+	SET(force "")
+    ELSE()
+	SET(v "${${mapVar}_${key}}")
+	SET(force "FORCE")
+    ENDIF()
+    SET(ZANATA_${key} "${v}" CACHE "${ZANATA_OPTION_NAME_VAR_TYPE}" "ZANATA_${key}" ${force})
+ENDFUNCTION(ZANATA_SET_CACHE_VAR)
+
+## ZANATA_CMAKE_OPTIONS_PARSE_OPTIONSMAP <varPrefix> [ARGN]
+##   Parse the arguments from MANAGE_ZANATA.
+## Returns: <varPrefix> contains the specified arguments
+## Defines: <varPrefix>_<ARGUMENT> with value 
 FUNCTION(ZANATA_CMAKE_OPTIONS_PARSE_OPTIONS_MAP varPrefix)
     ## isValue=2 Must be an option value
     ## isValue=1 Maybe either
     ## isValue=0 Must be an option name
     SET(result "")
-    SET(isValue 0)
+    SET(isValue 1)
+    SET(isOptName 1)
     SET(optName "")
+    SET(dependencyMissing 0)
 
     FOREACH(opt ${ARGN})
-	IF(${isValue} EQUAL 1)
+	IF(isValue EQUAL 1)
 	    ## Can be either, determine what it is
 	    IF(DEFINED ZANATA_OPTION_NAME_${opt})
 		## This is a new option name
@@ -359,25 +405,38 @@ FUNCTION(ZANATA_CMAKE_OPTIONS_PARSE_OPTIONS_MAP varPrefix)
 	    ELSEIF(NOT "${optName}" STREQUAL "")
 		## This should be an option value
 		SET(isValue 2)
+	    ELSEIF(opt MATCHES "^http")
+		## Zanata server url
+		SET(optName "URL")
+		SET(isValue 2)
+	        LIST(APPEND ${varPrefix} "${optName}")
 	    ELSE()
-		## Don't know
-		M_MSG(${M_ERROR} "ManageZanata: String '${opt}' is neigher a option name, nor a value")
+		## Cannot decided
+		M_MSG(${M_ERROR} "ManageZanata: String '${opt}' is neither a option name, nor a value")
 	    ENDIF()
 	ENDIF()
 
-	IF (${isValue} EQUAL 0)
+	IF (isValue EQUAL 0)
 	    ## Must be option name
 	    IF(NOT DEFINED ZANATA_OPTION_NAME_${opt})
 		M_MSG(${M_ERROR} "ManageZanata: Unrecognized option name ${opt}")
 	    ENDIF()
 
-	    IF(DEFINED ZANATA_OPTION_NAME_ALIAS_${opt})
-		SET(optName "${ZANATA_OPTION_NAME_ALIAS_${opt}}")
+	    IF(DEFINED ZANATA_OPTION_ALIAS_${opt})
+		SET(optName "${ZANATA_OPTION_ALIAS_${opt}}")
 	    ELSE()
 		SET(optName "${opt}")
 	    ENDIF()
 	    LIST(APPEND ${varPrefix} "${optName}")
+
+	    ## Find on next opt is value or option name
 	    LIST(GET ZANATA_OPTION_NAME_${optName} 0 isValue)
+
+	    ## Set value as 1 for no or optional value, as DEFINED is not reliable for sibling functions
+	    IF(isValue LESS 2)
+	        SET(${varPrefix}_${optName} "1")
+	        SET(${varPrefix}_${optName} "1" PARENT_SCOPE)
+	    ENDIF()
 	ELSEIF (${isValue} EQUAL 2)
 	    ## Must be option value
 	    IF("${optName}" STREQUAL "")
@@ -388,82 +447,82 @@ FUNCTION(ZANATA_CMAKE_OPTIONS_PARSE_OPTIONS_MAP varPrefix)
 	    SET(optName "")
 	    SET(isValue 0)
 	ELSE()
-	    ## Don't know
+	    ## Invalid Argument
 	    M_MSG(${M_ERROR} "ManageZanata: Error: isValue should not be ${isValue} with string '${opt}' ")
 	ENDIF()
     ENDFOREACH()
 
-    ## Default Options
-    IF("${${varPrefix}_ZANATA_EXECUTABLE}" STREQUAL "")
-	FIND_PROGRAM_ERROR_HANDLING(${varPrefix}_ZANATA_EXECUTABLE
-	    ERROR_MSG " Zanata support is disabled."
-	    ERROR_VAR _zanata_dependency_missing
-	    VERBOSE_LEVEL ${M_OFF}
-	    FIND_ARGS NAMES zanata-cli mvn zanata
-	    )
+    ##== Set cache variable
+    FOREACH(optName ${ZANATA_OPTION_INIT_LIST})
+	ZANATA_SET_CACHE_VAR(${varPrefix} "${optName}")
+    ENDFOREACH()
 
-	SET(${varPrefix}_ZANATA_EXECUTABLE "${${varPrefix}_ZANATA_EXECUTABLE}" PARENT_SCOPE)
-    ENDIF()
-    GET_FILENAME_COMPONENT(${varPrefix}_ZANATA_BACKEND "${zanataExecutable}" NAME)
-    SET(${varPrefix}_ZANATA_BACKEND "${${varPrefix}_ZANATA_BACKEND}" PARENT_SCOPE)
-
-    IF("${${varPrefix}_URL}" STREQUAL "")
-	SET(${varPrefix}_URL "https://translate.zanata.org/zanata/" PARENT_SCOPE)
+    ##== Variable that need to check
+    ## USER_CONFIG
+    IF(NOT EXISTS "${ZANATA_USER_CONFIG}")
+	SET(dependencyMissing 1)
+	M_MSG(${M_OFF} "MANAGE_ZANATA: Failed to find zanata.ini at ${ZANATA_USER_CONFIG}")
     ENDIF()
 
-    IF("${${varPrefix}_USER_CONFIG}" STREQUAL "")
-	SET(${varPrefix}_USER_CONFIG "$ENV{HOME}/.config/zanata.ini" PARENT_SCOPE)
-    ENDIF()
-
-    IF("${${varPrefix}_PROJECT_CONFIG}" STREQUAL "")
-	SET(${varPrefix}_PROJECT_CONFIG "${CMAKE_CURRENT_BINARY_DIR}/zanata.xml" PARENT_SCOPE)
-    ENDIF()
-
-    IF("${${varPrefix}_PROJECT}" STREQUAL "")
-	SET(${varPrefix}_PROJECT "${PROJECT_NAME}" PARENT_SCOPE)
-    ENDIF()
-
-    IF("${${varPrefix}_PROJECT_NAME}" STREQUAL "")
-	SET(${varPrefix}_PROJECT_NAME "${${varPrefix}_PROJECT}" PARENT_SCOPE)
-    ENDIF()
-
-    IF("${${varPrefix}_PROJECT_DESC}" STREQUAL "")
-	STRING(LENGTH "${PRJ_SUMMARY}" _prjSummaryLen)
-	IF(NOT _prjSummaryLen GREATER ${ZANATA_DESCRIPTION_SIZE})
-	    SET(${varPrefix}_PROJECT_DESC "${PRJ_SUMMARY}")
-	ELSE()
-	    STRING(SUBSTRING "${PRJ_SUMMARY}" 0
-		${ZANATA_DESCRIPTION_SIZE} ${varPrefix}_PROJECT_DESC
+    ## ZANATA_CLIENT_EXECUTABLE
+    IF("${_o_ZANATA_EXECUTABLE}" STREQUAL "")
+	IF("${ZANATA_CLIENT_EXECUTABLE}" STREQUAL "")
+	    SET(zanataClientMissing 0)
+	    FIND_PROGRAM_ERROR_HANDLING(ZANATA_CLIENT_EXECUTABLE
+		ERROR_MSG " Zanata support is disabled."
+		ERROR_VAR zanataClientMissing
+		VERBOSE_LEVEL ${M_OFF}
+		FIND_ARGS NAMES zanata-cli mvn zanata
 		)
+	    IF(zanataClientMissing EQUAL 1)
+		SET(dependencyMissing 1)
+		M_MSG(${M_OFF} "MANAGE_ZANATA: Failed to find zanata client, Zanata support disabled")
+	    ELSE()
+		SET(ZANATA_CLIENT_EXECUTABLE "${ZANATA_CLIENT_EXECUTABLE}"
+		    CACHE FILEPATH "Zanata client excutable"
+		    )
+	    ENDIF()
 	ENDIF()
-	SET(${varPrefix}_PROJECT_DESC "${${varPrefix}_PROJECT_DESC}" PARENT_SCOPE)
+    ELSE()
+	LIST(GET ${varPrefix}_ZANATA_EXECUTABLE 0 ZANATA_CLIENT_EXECUTABLE)
+	SET(ZANATA_CLIENT_EXECUTABLE "${${varPrefix}_ZANATA_EXECUTABLE}"
+	    CACHE FILEPATH "Zanata client excutable" FORCE
+	    )
+    ENDIF()
+    GET_FILENAME_COMPONENT(zanataClientFilename "${ZANATA_CLIENT_EXECUTABLE}" NAME)
+    IF(zanataClientFilename STREQUAL "zanata")
+	SET(ZANATA_CLIENT_TYPE "python" CACHE INTERNAL "Zanata Client Type")
+    ELSEIF(zanataClientFilename STREQUAL "zanata-cli")
+	SET(ZANATA_CLIENT_TYPE "java" CACHE INTERNAL "Zanata Client Type")
+    ELSEIF(zanataClientFilename STREQUAL "mvn")
+	SET(ZANATA_CLIENT_TYPE "mvn" CACHE INTERNAL "Zanata Client Type")
+    ELSE()
+	M_MSG(${M_OFF} "${ZANATA_CLIENT_EXECUTABLE is not a supported Zanata client")
+	SET(dependencyMissing 1)
     ENDIF()
 
-    IF("${${varPrefix}_PROJECT_TYPE}" STREQUAL "")
-	SET(${varPrefix}_PROJECT_TYPE "gettext" PARENT_SCOPE)
+    IF(dependencyMissing EQUAL 1)
+	SET(${varPrefix}_DEPENDENCY_MISSING 1 PARENT_SCOPE)
+	RETURN()
     ENDIF()
 
-    IF("${${varPrefix}_VERSION}" STREQUAL "")
-	SET(${varPrefix}_VERSION "master" PARENT_SCOPE)
+    ##== Other Variables
+    IF("${${varPrefix}_PROJECT_DESC}" STREQUAL "")
+	SET(${varPrefix}_PROJECT_DESC "${PRJ_SUMMARY}")
     ENDIF()
-
-    IF("${${varPrefix}_SRC_DIR}" STREQUAL "")
-	SET(${varPrefix}_SRC_DIR "." PARENT_SCOPE)
+    STRING(LENGTH "${${varPrefix}_PROJECT_DESC}" _prjSummaryLen)
+    IF(_prjSummaryLen GREATER ${ZANATA_DESCRIPTION_SIZE})
+	STRING(SUBSTRING "${${varPrefix}_PROJECT_DESC}" 0 ${ZANATA_DESCRIPTION_SIZE} 
+	    ${varPrefix}_PROJECT_DESC
+	    )
     ENDIF()
-
-    IF("${${varPrefix}_TRANS_DIR}" STREQUAL "")
-	SET(${varPrefix}_TRANS_DIR "." PARENT_SCOPE)
-    ENDIF()
-
-    IF("${${varPrefix}_TRANS_DIR_PULL}" STREQUAL "")
-	SET(${varPrefix}_TRANS_DIR_PULL "${${varPrefix}_TRANS_DIR}" PARENT_SCOPE)
-    ENDIF()
+    SET(${varPrefix}_PROJECT_DESC "${${varPrefix}_PROJECT_DESC}" PARENT_SCOPE)
 
     SET(${varPrefix} "${${varPrefix}}" PARENT_SCOPE)
 ENDFUNCTION(ZANATA_CMAKE_OPTIONS_PARSE_OPTIONS_MAP)
 
-#   MANAGE_ZANATA_OBTAIN_REAL_COMMAND(<cmdListVar> <zanataExecutable>
-#       <subCommand> <optionValidList>
+#   MANAGE_ZANATA_OBTAIN_REAL_COMMAND(<cmdListVar>
+#       <subCommand> <optionMapVar>
 #       [YES] [BATCH] [ERRORS] [DEBUG]
 #       [DISABLE_SSL_CERT]
 #       [URL <url>]
@@ -473,52 +532,57 @@ ENDFUNCTION(ZANATA_CMAKE_OPTIONS_PARSE_OPTIONS_MAP)
 #       ...
 #     )
 
-FUNCTION(MANAGE_ZANATA_OBTAIN_REAL_COMMAND cmdListVar zanataExecutable 
-	subCommand optionValidListVar)
-    ZANATA_CMAKE_OPTIONS_PARSE_OPTIONS_MAP(_o ${ARGN} ZANATA_EXECUTABLE ${zanataExecutable})
-
-    LIST(FIND _o "BATCH" index)
-    IF(NOT ${index} LESS 0)
-	## BATCH is specified
-	IF("${_o_ZANATA_BACKEND}" STREQUAL "zanata")
-	    SET(result "yes" "|" "${zanataExecutable}")
+FUNCTION(MANAGE_ZANATA_OBTAIN_REAL_COMMAND cmdListVar subCommand optionMapVar)
+    IF(${optionMapVar}_BATCH)
+	IF(${optionMapVar}_BACKEND STREQUAL "python")
+	    SET(result "yes" "|" "${ZANATA_CLIENT_EXECUTABLE}")
 	ELSE()
-	    SET(result "${zanataExecutable}" "-B")
+	    SET(result "${ZANATA_CLIENT_EXECUTABLE}")
+	    ZANATA_CLIENT_OPTNAME_LIST_APPEND(result "${subCommand}" "BATCH" )
 	ENDIF()
     ELSE()
-	SET(result "${zanataExecutable}")
+	SET(result "${ZANATA_CLIENT_EXECUTABLE}")
     ENDIF()
 
-    ## Other global options
     FOREACH(optName "DEBUG" "ERRORS")
-	LIST(FIND _o "${optName}" index)
-	IF(NOT ${index} LESS 0)
-	    ZANATA_CLIENT_OPTNAME_LIST_APPEND(result "${_o_ZANATA_BACKEND}" "${subCommand}" "${optName}" )
+	IF(${optionMapVar}_${optName})
+	    ZANATA_CLIENT_OPTNAME_LIST_APPEND(result "${subCommand}" "${optName}" )
 	ENDIF()
     ENDFOREACH(optName)
 
     ## Sub-command
-    ZANATA_CLIENT_SUB_COMMAND(subCommandReal "${_o_ZANATA_BACKEND}" "${subCommand}")
+    ZANATA_CLIENT_SUB_COMMAND(subCommandReal "${subCommand}")
     LIST(APPEND result "${subCommandReal}")
 
     ## Explicit Options
-    FOREACH(optName ${_o})
-	LIST(FIND ${optionValidListVar} "${optName}" index)
-	IF(NOT ${index} LESS 0)
-	    ZANATA_CLIENT_OPTNAME_LIST_APPEND(result "${_o_ZANATA_BACKEND}" "${subCommand}" "${optName}" "${_o_${optName}}")
+    FOREACH(optName ${${optionMapVar}})
+	IF(optName STREQUAL "BATCH")
+	ELSEIF(optName STREQUAL "DEBUG")
+	ELSEIF(optName STREQUAL "ERRORS")
+	ELSE()
+	    IF(${optionMapVar}_${optName})
+		IF(ZANATA_OPTION_NAME_${optName} EQUAL 1 AND "${${optionMapVar}_${optName}}" STREQUAL "1")
+		    ZANATA_CLIENT_OPTNAME_LIST_APPEND(result "${subCommand}" "${optName}")
+		ELSE()
+		    ZANATA_CLIENT_OPTNAME_LIST_APPEND(result "${subCommand}" "${optName}"  "${${optionMapVar}_${optName}}")
+		ENDIF()
+	    ENDIF()
 	ENDIF()
     ENDFOREACH(optName)
 
     ## Implied options: Mandatory options but not specified.
     ZANATA_STRING_LOWERCASE_DASH_TO_UPPERCASE_UNDERSCORE(subCommandName "${subCommand}")
-    ZANATA_STRING_LOWERCASE_DASH_TO_UPPERCASE_UNDERSCORE(backendName "${_o_ZANATA_BACKEND}")
+    STRING(TOUPPER "${ZANATA_CLIENT_TYPE}" zanataClientTypeUpper)
     
-    IF(DEFINED ZANATA_${_o_ZANATA_BACKEND}_${subCommandName}_MANDATORY_OPTIONS)
-	FOREACH(optName ${ZANATA_${_o_ZANATA_BACKEND}_${subCommandName}_MANDATORY_OPTIONS})
-	    IF(NOT DEFINED _o_${optName})
-		ZANATA_CLIENT_OPTNAME_LIST_APPEND(result "${_o_ZANATA_BACKEND}" "${subCommand}" "${optName}" )
+    IF(DEFINED ZANATA_${zanataClientTypeUpper}_${subCommandName}_MANDATORY_OPTIONS)
+	FOREACH(optName ${ZANATA_${zanataClientTypeUpper}_${subCommandName}_MANDATORY_OPTIONS})
+	    IF(DEFINED ZANATA_${optName})
+		## Implied options
+		IF("${${optionMapVar}_${optName}}" STREQUAL "")
+		    ## Not yet append as exlicit options
+		    ZANATA_CLIENT_OPTNAME_LIST_APPEND(result "${subCommand}" "${optName}" "${ZANATA_${optName}}")
+		ENDIF()
 	    ENDIF()
-	    ZANATA_CLIENT_OPTNAME_LIST_APPEND(result "${_o_ZANATA_BACKEND}" "${subCommand}" "${optName}" )
 	ENDFOREACH(optName)
     ENDIF()
 
@@ -529,11 +593,10 @@ ENDFUNCTION(MANAGE_ZANATA_OBTAIN_REAL_COMMAND)
 # ZANATA Put_Version
 #
 
-# MANAGE_ZANATA_OBTAIN_PUT_VERSION_COMMAND(<cmdListVar> <zanataExecutable> [SRC_DIR <srcDir> ] ...)
-FUNCTION(MANAGE_ZANATA_OBTAIN_PUT_VERSION_COMMAND cmdListVar zanataExecutable)
+# MANAGE_ZANATA_OBTAIN_PUT_VERSION_COMMAND(<cmdListVar> <optionMapVar>)
+FUNCTION(MANAGE_ZANATA_OBTAIN_PUT_VERSION_COMMAND cmdListVar optionMapVar) 
     ### zanata_put-version
-    MANAGE_ZANATA_OBTAIN_REAL_COMMAND(result "${zanataExecutable}" put-version
-	ZANATA_SUBCOMMAND_PUT_VERSION_VALID_OPTIONS ${ARGN})
+    MANAGE_ZANATA_OBTAIN_REAL_COMMAND(result put-version ${optionMapVar})
     SET(${cmdListVar} "${result}" PARENT_SCOPE) 
 ENDFUNCTION(MANAGE_ZANATA_OBTAIN_PUT_VERSION_COMMAND)
 
@@ -550,11 +613,10 @@ ENDFUNCTION(MANAGE_ZANATA_PUT_VERSION_TARGETS)
 # ZANATA Push
 #
 
-# MANAGE_ZANATA_OBTAIN_PUSH_COMMAND(<cmdListVar> <zanataExecutable> [SRC_DIR <srcDir> ] ...)
-FUNCTION(MANAGE_ZANATA_OBTAIN_PUSH_COMMAND cmdListVar zanataExecutable)
+# MANAGE_ZANATA_OBTAIN_PUSH_COMMAND(<cmdListVar> <optionMapVar>)
+FUNCTION(MANAGE_ZANATA_OBTAIN_PUSH_COMMAND cmdListVar optionMapVar)
     ### zanata_push
-    MANAGE_ZANATA_OBTAIN_REAL_COMMAND(result "${zanataExecutable}" push
-	ZANATA_SUBCOMMAND_PUSH_VALID_OPTIONS ${ARGN})
+    MANAGE_ZANATA_OBTAIN_REAL_COMMAND(result push ${optionMapVar})
     SET(${cmdListVar} "${result}" PARENT_SCOPE) 
 ENDFUNCTION(MANAGE_ZANATA_OBTAIN_PUSH_COMMAND)
 
@@ -565,12 +627,9 @@ FUNCTION(MANAGE_ZANATA_PUSH_TARGETS cmdList)
 	DEPENDS ${zanataXml}
 	)
 
-    LIST(GET cmdList 0 zanataExecutable)
-    GET_FILENAME_COMPONENT(zanataBackend "${zanataExecutable}" NAME)
-
     ### zanata_push_both
     SET(extraOptions "")
-    ZANATA_CLIENT_OPTNAME_LIST_APPEND(extraOptions "${zanataBackend}" "PUSH_TYPE" "both")
+    ZANATA_CLIENT_OPTNAME_LIST_APPEND(extraOptions "PUSH_TYPE" "both")
     ADD_CUSTOM_TARGET(zanata_push_both 
 	COMMAND ${cmdList} ${extraOptions}
 	COMMENT "zanata_push: with ${cmdList} ${extraOptions}"
@@ -579,7 +638,7 @@ FUNCTION(MANAGE_ZANATA_PUSH_TARGETS cmdList)
 
     ### zanata_push_trans
     SET(extraOptions "")
-    ZANATA_CLIENT_OPTNAME_LIST_APPEND(extraOptions "${zanataBackend}" "PUSH_TYPE" "trans")
+    ZANATA_CLIENT_OPTNAME_LIST_APPEND(extraOptions "PUSH_TYPE" "trans")
     ADD_CUSTOM_TARGET(zanata_push_trans 
 	COMMAND ${cmdList} ${extraOptions}
 	COMMENT "zanata_push: with ${cmdList} ${extraOptions}"
@@ -591,11 +650,10 @@ ENDFUNCTION(MANAGE_ZANATA_PUSH_TARGETS)
 # ZANATA Pull
 #
 
-# MANAGE_ZANATA_OBTAIN_PULL_COMMAND(<cmdListVar> <zanataExecutable> [SRC_DIR <srcDir> ] ...)
-FUNCTION(MANAGE_ZANATA_OBTAIN_PULL_COMMAND cmdListVar zanataExecutable)
-    ### zanata_push
-    MANAGE_ZANATA_OBTAIN_REAL_COMMAND(result "${zanataExecutable}" pull
-	ZANATA_SUBCOMMAND_PULL_VALID_OPTIONS ${ARGN})
+# MANAGE_ZANATA_OBTAIN_PULL_COMMAND(<cmdListVar> <optionMapVar>)
+FUNCTION(MANAGE_ZANATA_OBTAIN_PULL_COMMAND cmdListVar optionMapVar)
+    ### zanata_pull
+    MANAGE_ZANATA_OBTAIN_REAL_COMMAND(result pull ${optionMapVar})
     SET(${cmdListVar} "${result}" PARENT_SCOPE) 
 ENDFUNCTION(MANAGE_ZANATA_OBTAIN_PULL_COMMAND)
 
@@ -608,7 +666,7 @@ FUNCTION(MANAGE_ZANATA_PULL_TARGETS cmdList)
 
     ### zanata_push_both
     SET(extraOptions "")
-    ZANATA_CLIENT_OPTNAME_LIST_APPEND(extraOptions "${zanataBackend}" "PULL_TYPE" "both")
+    ZANATA_CLIENT_OPTNAME_LIST_APPEND(extraOptions "PULL_TYPE" "both")
     ADD_CUSTOM_TARGET(zanata_pull_both 
 	COMMAND ${cmdList} ${extraOptions}
 	COMMENT "zanata_pull: with ${cmdList} ${extraOptions}"
@@ -622,85 +680,10 @@ ENDFUNCTION(MANAGE_ZANATA_PULL_TARGETS)
 #
 
 FUNCTION(MANAGE_ZANATA)
-    VARIABLE_PARSE_ARGN(_o MANAGE_ZANATA_VALID_OPTIONS ${ARGN})
+    ZANATA_CMAKE_OPTIONS_PARSE_OPTIONS_MAP(_o ${ARGN})
 
-    SET(_zanata_dependency_missing 0)
-    ## Is zanata.ini exists
-    IF("${_o_USER_CONFIG}" STREQUAL "")
-	SET(_o_USER_CONFIG "$ENV{HOME}/.config/zanata.ini")
-    ENDIF()
-    IF(NOT DEFINED ${_o_USER_CONFIG})
-	SET(_zanata_dependency_missing 1)
-	M_MSG(${M_OFF} "MANAGE_ZANATA: Failed to find zanata.ini at ${_o_USER_CONFIG}"
-	    )
-    ENDIF(NOT DEFINED ${_o_USER_CONFIG})
-
-    ## Find client command 
-    IF("${_o_CLIENT_COMMAND}" STREQUAL "")
-	FIND_PROGRAM_ERROR_HANDLING(ZANATA_EXECUTABLE
-	    ERROR_MSG " Zanata support is disabled."
-	    ERROR_VAR _zanata_dependency_missing
-	    VERBOSE_LEVEL ${M_OFF}
-	    FIND_ARGS NAMES zanata-cli mvn zanata
-	    )
-
-	IF(NOT _zanata_dependency_missing)
-	    SET(_o_CLIENT_COMMAND "${ZANATA_EXECUTABLE}" "-e")
-	ENDIF()
-    ELSE()
-	LIST(GET _o_CLIENT_COMMAND 0 ZANATA_EXECUTABLE)
-    ENDIF()
-
-    ## Disable unsupported  client.
-    IF(_zanata_dependency_missing)
+    IF(_o_DEPENDENCIES_MISSING EQUAL 1)
 	RETURN()
-    ELSE()
-	GET_FILENAME_COMPONENT(ZANATA_BACKEND "${ZANATA_EXECUTABLE}" NAME)
-	IF(ZANATA_BACKEND STREQUAL "mvn")
-	ELSEIF(ZANATA_BACKEND STREQUAL "zanata-cli")
-	ELSE()
-	    M_MSG(${M_OFF} "${ZANATA_BACKEND} is ${_o_CLIENT_CMD} not a supported Zanata client")
-	    RETURN()
-	ENDIF()
-    ENDIF()
-
-    ## Manage zanata.xml
-    IF(NOT "${_o}" STREQUAL "")
-	SET(ZANATA_URL "${_o}" CACHE STRING "Zanata Server URL")
-    ENDIF()
-    IF("${_o_PROJECT_SLUG}" STREQUAL "")
-	SET(_o_PROJECT_SLUG "${PROJECT_NAME}")
-    ENDIF()
-    IF("${_o_VERSION}" STREQUAL "")
-	SET(_o_VERSION "${PRJ_VER}")
-    ENDIF()
-    IF(_o_PROJECT_CONFIG)
-	SET(zanataXml "${_o_PROJECT_CONFIG}")
-    ELSE()
-	SET(zanataXml "${CMAKE_CURRENT_SOURCE_DIR}/zanata.xml")
-    ENDIF()
-    IF(DEFINED _o_GENERATE_ZANATA_XML)
-	ADD_CUSTOM_TARGET_COMMAND(zanata_xml
-	    OUTPUT "${zanataXml}"
-	    COMMAND ${CMAKE_COMMAND} 
-	    -D cmd=zanata_xml_make
-	    -D "url=${ZANATA_URL}"
-	    -D "project=${_o_PROJECT_SLUG}"
-	    -D "version=${_o_VERSION}"
-	    -D "locales=${_o_LOCALES}"
-	    -D "zanataXml=${zanataXml}"
-	    -P ${CMAKE_FEDORA_MODULE_DIR}/ManageZanataScript.cmake
-	    COMMENT "zanata_xml: ${zanataXml}"
-	    VERBATIM
-	    )
-	IF(NOT DEFINED _o_CLEAN_ZANATA_XML)
-	    SET_DIRECTORY_PROPERTIES(PROPERTIES CLEAN_NO_CUSTOM "1")
-	ENDIF()
-    ENDIF()
-
-    ## Convert to client options
-    IF(DEFINED _o_YES)
-	LIST(APPEND _o_CLIENT_COMMAND "-B")
     ENDIF()
 
     ### Common options
@@ -708,48 +691,29 @@ FUNCTION(MANAGE_ZANATA)
     FOREACH(optCName "URL" ${ZANATA_CLIENT_COMMON_VALID_OPTIONS})
 	SET(value "${_o_${optCName}}")
 	IF(value)
-	    ZANATA_CLIENT_OPTNAME_LIST_APPEND(zanataCommonOptions "${ZANATA_BACKEND}" "${optCName}" "${value}")
+	    ZANATA_CLIENT_OPTNAME_LIST_APPEND(zanataCommonOptions "${optCName}" "${value}")
 	ENDIF()
     ENDFOREACH(optCName)
 
-    IF("${_o_DEFAULT_PROJECT_TYPE}" STREQUAL "")
-	SET(_o_DEFAULT_PROJECT_TYPE "gettext")
-    ENDIF()
-
     ### zanata_put_project
-    ZANATA_CLIENT_SUB_COMMAND(subCommand "${ZANATA_BACKEND}" "put-project")
-    SET(options "")
-    ZANATA_CLIENT_OPTNAME_LIST_APPEND(options "${ZANATA_BACKEND}" "project-slug" "${_o_PROJECT_SLUG}")
-    ZANATA_CLIENT_OPTNAME_LIST_APPEND(options "${ZANATA_BACKEND}" "project-name" "${PROJECT_NAME}")
-    IF(NOT _prjSummaryLen GREATER ${ZANATA_DESCRIPTION_SIZE})
-	SET(_description "${PRJ_SUMMARY}")
-    ELSE()
-	STRING(SUBSTRING "${PRJ_SUMMARY}" 0
-	    ${ZANATA_DESCRIPTION_SIZE} _description
-	    )
-    ENDIF()
-    ZANATA_CLIENT_OPTNAME_LIST_APPEND(options "${ZANATA_BACKEND}" "project-desc" "${_description}")
-    ZANATA_CLIENT_OPTNAME_LIST_APPEND(options "${ZANATA_BACKEND}" "default-project-type" "${_o_DEFAULT_PROJECT_TYPE}")
-    SET(exec ${_o_CLIENT_COMMAND} ${subCommand} ${zanataCommonOptions} ${options}) 
+    SET(exec "")
+    MANAGE_ZANATA_OBTAIN_REAL_COMMAND(exec put-project _o)
+    LIST(APPEND exec  ${zanataCommonOptions}) 
     ADD_CUSTOM_TARGET(zanata_put_project
 	COMMAND ${exec}
 	COMMENT "zanata_put_project: with ${exec}"
 	)
 
     ### zanata_put_version 
-    VARIABLE_TO_ARGN(putVersionOptions "_o" MANAGE_ZANATA_OBTAIN_PUT_VERSION_COMMAND_VALID_OPTIONS)
-    MANAGE_ZANATA_OBTAIN_PUT_VERSION_COMMAND(cmdPutVersionList "${ZANATA_EXECUTABLE}" ${putVersion})
-    MANAGE_ZANATA_PUT_VERSION_TARGETS("${cmdPutVersionList}")
-
-    ### zanata_push
-    VARIABLE_TO_ARGN(pushOptions "_o" MANAGE_ZANATA_OBTAIN_PUSH_COMMAND_VALID_OPTIONS)
-    MANAGE_ZANATA_OBTAIN_PUSH_COMMAND(cmdPushList "${ZANATA_EXECUTABLE}" ${pushOptions})
+    MANAGE_ZANATA_OBTAIN_PUT_VERSION_COMMAND(cmdPushList _o)
     MANAGE_ZANATA_PUSH_TARGETS("${cmdPushList}")
 
+    ### zanata_push
+    MANAGE_ZANATA_OBTAIN_PUSH_COMMAND(cmdPushList _o)
+    MANAGE_ZANATA_PUSH_TARGETS("${cmdPushList}")
 
     ### zanata_pull
-    VARIABLE_TO_ARGN(pullOptions "_o" MANAGE_ZANATA_OBTAIN_PULL_COMMAND_VALID_OPTIONS)
-    MANAGE_ZANATA_OBTAIN_PULL_COMMAND(cmdPullList "${ZANATA_EXECUTABLE}" ${pullOptions} )
+    MANAGE_ZANATA_OBTAIN_PULL_COMMAND(cmdPullList _o)
     MANAGE_ZANATA_PULL_TARGETS("${cmdPullList}")
 ENDFUNCTION(MANAGE_ZANATA)
 

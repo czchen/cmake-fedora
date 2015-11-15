@@ -1,6 +1,7 @@
 INCLUDE(test/testCommon.cmake)
 INCLUDE(ManageMessage)
 INCLUDE(ManageZanata)
+SET(PROJECT_NAME "cmake-fedora")
 
 #######################################
 # ZANATA_JSON_GET_VALUE
@@ -53,42 +54,71 @@ ZANATA_STRING_DASH_TO_CAMEL_CASE_TEST("pushType" "push-type")
 #######################################
 # MANAGE_ZANATA_OBTAIN_PUT_VERSION_COMMAND
 #
-FUNCTION(MANAGE_ZANATA_OBTAIN_PUT_VERSION_COMMAND_TEST expect zanataExecutable)
+FUNCTION(MANAGE_ZANATA_OBTAIN_PUT_VERSION_COMMAND_TEST expect)
     MESSAGE("# MANAGE_ZANATA_OBTAIN_PUT_VERSION_COMMAND_TEST(${expect})")
-    MANAGE_ZANATA_OBTAIN_PUT_VERSION_COMMAND(v "${zanataExecutable}" ${ARGN})
+    UNSET(ZANATA_PROJECT CACHE)
+    UNSET(ZANATA_VERSION CACHE)
+    UNSET(ZANATA_CLIENT_EXECUTABLE CACHE)
+    ZANATA_CMAKE_OPTIONS_PARSE_OPTIONS_MAP(_o ${ARGN})
+    MANAGE_ZANATA_OBTAIN_PUT_VERSION_COMMAND(v _o)
     TEST_STR_MATCH(v "${expect}")
 ENDFUNCTION(MANAGE_ZANATA_OBTAIN_PUT_VERSION_COMMAND_TEST)
 
-MANAGE_ZANATA_OBTAIN_PUT_VERSION_COMMAND_TEST("/usr/bin/mvn;${ZANATA_MAVEN_SUBCOMMAND_PREFIX}:put-version" "/usr/bin/mvn")  
-MANAGE_ZANATA_OBTAIN_PUT_VERSION_COMMAND_TEST("/usr/bin/mvn;-B;-X;-e;${ZANATA_MAVEN_SUBCOMMAND_PREFIX}:put-version;-Dzanata.disableSSLCert;-Dzanata.url=https://fedora.zanata.org/;-Dzanata.versionProject=prj;-Dzanata.versionSlug=master" "/usr/bin/mvn" YES DEBUG ERRORS DISABLE_SSL_CERT URL https://fedora.zanata.org/ PROJECT prj VERSION master)
-MANAGE_ZANATA_OBTAIN_PUT_VERSION_COMMAND_TEST("/usr/bin/zanata-cli;put-version" "/usr/bin/zanata-cli")  
-MANAGE_ZANATA_OBTAIN_PUT_VERSION_COMMAND_TEST("/usr/bin/zanata-cli;-B;-e;put-version;--disable-ssl-cert;--url;https://fedora.zanata.org/;--version-project;prj;--version-slug;master" "/usr/bin/zanata-cli" YES ERRORS DISABLE_SSL_CERT URL https://fedora.zanata.org/ PROJECT prj VERSION master)
+MANAGE_ZANATA_OBTAIN_PUT_VERSION_COMMAND_TEST("/usr/bin/mvn;${ZANATA_MAVEN_SUBCOMMAND_PREFIX}:put-version;-Dzanata.versionProject=cmake-fedora;-Dzanata.versionSlug=master" 
+    ZANATA_EXECUTABLE "/usr/bin/mvn" 
+    )  
+MANAGE_ZANATA_OBTAIN_PUT_VERSION_COMMAND_TEST("/usr/bin/mvn;-B;-X;-e;${ZANATA_MAVEN_SUBCOMMAND_PREFIX}:put-version;-Dzanata.disableSSLCert;-Dzanata.url=https://fedora.zanata.org/;-Dzanata.versionProject=prj;-Dzanata.versionSlug=master" 
+    ZANATA_EXECUTABLE "/usr/bin/mvn" YES DEBUG ERRORS DISABLE_SSL_CERT URL https://fedora.zanata.org/ PROJECT prj VERSION master
+    )
+MANAGE_ZANATA_OBTAIN_PUT_VERSION_COMMAND_TEST("/usr/bin/zanata-cli;put-version;--version-project;cmake-fedora;--version-slug;master"  ZANATA_EXECUTABLE "/usr/bin/zanata-cli")  
+MANAGE_ZANATA_OBTAIN_PUT_VERSION_COMMAND_TEST("/usr/bin/zanata-cli;-B;-e;put-version;--url;https://fedora.zanata.org/;--disable-ssl-cert;--version-project;prj;--version-slug;release" 
+    https://fedora.zanata.org/ ZANATA_EXECUTABLE "/usr/bin/zanata-cli" YES ERRORS DISABLE_SSL_CERT  PROJECT prj VERSION release
+    )
 
 #######################################
 # MANAGE_ZANATA_OBTAIN_PUSH_COMMAND
 #
-FUNCTION(MANAGE_ZANATA_OBTAIN_PUSH_COMMAND_TEST expect zanataExecutable)
+FUNCTION(MANAGE_ZANATA_OBTAIN_PUSH_COMMAND_TEST expect)
     MESSAGE("# MANAGE_ZANATA_OBTAIN_PUSH_COMMAND_TEST(${expect})")
-    MANAGE_ZANATA_OBTAIN_PUSH_COMMAND(v "${zanataExecutable}" ${ARGN})
+    UNSET(ZANATA_PROJECT CACHE)
+    UNSET(ZANATA_VERSION CACHE)
+    UNSET(ZANATA_CLIENT_EXECUTABLE CACHE)
+    ZANATA_CMAKE_OPTIONS_PARSE_OPTIONS_MAP(_o ${ARGN})
+    MANAGE_ZANATA_OBTAIN_PUSH_COMMAND(v _o)
     TEST_STR_MATCH(v "${expect}")
 ENDFUNCTION(MANAGE_ZANATA_OBTAIN_PUSH_COMMAND_TEST)
 
-MANAGE_ZANATA_OBTAIN_PUSH_COMMAND_TEST("/usr/bin/mvn;${ZANATA_MAVEN_SUBCOMMAND_PREFIX}:push" "/usr/bin/mvn")  
-MANAGE_ZANATA_OBTAIN_PUSH_COMMAND_TEST("/usr/bin/mvn;-B;-X;-e;${ZANATA_MAVEN_SUBCOMMAND_PREFIX}:push;-Dzanata.disableSSLCert;-Dzanata.url=https://fedora.zanata.org/" "/usr/bin/mvn" YES DEBUG ERRORS DISABLE_SSL_CERT URL https://fedora.zanata.org/ )
-MANAGE_ZANATA_OBTAIN_PUSH_COMMAND_TEST("/usr/bin/zanata-cli;push" "/usr/bin/zanata-cli")  
-MANAGE_ZANATA_OBTAIN_PUSH_COMMAND_TEST("/usr/bin/zanata-cli;-B;-e;push;--disable-ssl-cert;--url;https://fedora.zanata.org/" "/usr/bin/zanata-cli" YES ERRORS DISABLE_SSL_CERT URL https://fedora.zanata.org/ )
+MANAGE_ZANATA_OBTAIN_PUSH_COMMAND_TEST("/usr/bin/mvn;${ZANATA_MAVEN_SUBCOMMAND_PREFIX}:push" CLIENT_COMMAND "/usr/bin/mvn")  
+MANAGE_ZANATA_OBTAIN_PUSH_COMMAND_TEST("/usr/bin/mvn;-B;-X;-e;${ZANATA_MAVEN_SUBCOMMAND_PREFIX}:push;-Dzanata.disableSSLCert;-Dzanata.url=https://fedora.zanata.org/"
+    YES DEBUG ERRORS DISABLE_SSL_CERT URL https://fedora.zanata.org/  CLIENT_COMMAND "/usr/bin/mvn"
+    )
+MANAGE_ZANATA_OBTAIN_PUSH_COMMAND_TEST("zanata-cli;push"  CLIENT_COMMAND "zanata-cli")  
+MANAGE_ZANATA_OBTAIN_PUSH_COMMAND_TEST("/usr/bin/zanata-cli;-B;-e;push;--disable-ssl-cert;--url;https://fedora.zanata.org/" 
+    CLIENT_COMMAND "/usr/bin/zanata-cli" YES ERRORS DISABLE_SSL_CERT URL https://fedora.zanata.org/ 
+    )
 
 #######################################
 # MANAGE_ZANATA_OBTAIN_PULL_COMMAND
 #
-FUNCTION(MANAGE_ZANATA_OBTAIN_PULL_COMMAND_TEST expect zanataExecutable)
+FUNCTION(MANAGE_ZANATA_OBTAIN_PULL_COMMAND_TEST expect)
     MESSAGE("# MANAGE_ZANATA_OBTAIN_PULL_COMMAND_TEST(${expect})")
-    MANAGE_ZANATA_OBTAIN_PULL_COMMAND(v "${zanataExecutable}" ${ARGN})
+    UNSET(ZANATA_PROJECT CACHE)
+    UNSET(ZANATA_VERSION CACHE)
+    UNSET(ZANATA_CLIENT_EXECUTABLE CACHE)
+    ZANATA_CMAKE_OPTIONS_PARSE_OPTIONS_MAP(_o ${ARGN})
+    MANAGE_ZANATA_OBTAIN_PULL_COMMAND(v _o)
     TEST_STR_MATCH(v "${expect}")
 ENDFUNCTION(MANAGE_ZANATA_OBTAIN_PULL_COMMAND_TEST)
 
-MANAGE_ZANATA_OBTAIN_PULL_COMMAND_TEST("/usr/bin/mvn;${ZANATA_MAVEN_SUBCOMMAND_PREFIX}:pull" "/usr/bin/mvn")  
-MANAGE_ZANATA_OBTAIN_PULL_COMMAND_TEST("/usr/bin/mvn;-B;-X;-e;${ZANATA_MAVEN_SUBCOMMAND_PREFIX}:pull;-Dzanata.disableSSLCert;-Dzanata.url=https://fedora.zanata.org/;-Dzanata.createSkeletons;-Dzanata.encodeTabs=true" "/usr/bin/mvn" YES ERRORS DEBUG DISABLE_SSL_CERT URL https://fedora.zanata.org/ CREATE_SKELETONS ENCODE_TABS "true")
+MANAGE_ZANATA_OBTAIN_PULL_COMMAND_TEST("/usr/bin/mvn;${ZANATA_MAVEN_SUBCOMMAND_PREFIX}:pull" 
+    ZANATA_EXECUTABLE "/usr/bin/mvn"
+    )  
+MANAGE_ZANATA_OBTAIN_PULL_COMMAND_TEST("/usr/bin/mvn;-B;-X;-e;${ZANATA_MAVEN_SUBCOMMAND_PREFIX}:pull;-Dzanata.disableSSLCert;-Dzanata.url=https://fedora.zanata.org/;-Dzanata.createSkeletons;-Dzanata.encodeTabs=true" 
+    YES ERRORS DEBUG DISABLE_SSL_CERT ZANATA_EXECUTABLE "/usr/bin/mvn" URL https://fedora.zanata.org/ CREATE_SKELETONS ENCODE_TABS "true"
+    )
+MANAGE_ZANATA_OBTAIN_PULL_COMMAND_TEST("/usr/bin/zanata-cli;pull;--src-dir;po;--trans-dir;po_out" 
+    ZANATA_EXECUTABLE "/usr/bin/zanata-cli" SRC_DIR po TRANS_DIR po_out
+    )
 
 #######################################
 # ZANATA_BEST_MATCH_LOCALES
