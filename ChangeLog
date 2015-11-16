@@ -1,3 +1,9 @@
+* Mon Nov 16 2015 Ding-Yi Chen <dchen at redhat.com> - 2.4.4
+- Fixed:
+  * Zanata target generation
+  * Missing CmakeFedoraScript.cmake
+  * Missing cmake-fedora-pkgdb
+
 * Mon Nov 02 2015 Ding-Yi Chen <dchen at redhat.com> - 2.4.3
 - Enhancement:
   * New scripts: cmake-fedora-pkgdb, cmake-fedora-zanata
