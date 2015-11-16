@@ -73,10 +73,3 @@ SET(CMAKE_FEDORA_TMP_DIR "${CMAKE_BINARY_DIR}/NO_PACK"
 ## Message level INFO1 (5)
 SET(MANAGE_MESSAGE_LEVEL 5 CACHE STRING "Message (Verbose) Level")
 
-## Perfer the files located in the the CMake module directory thne CMAKE_MODULE_PATH
-IF(POLICY CMP0017)
-    CMAKE_POLICY(GET CMP0017 Cmp0017Var)
-    IF(NOT Cmp0017Var)
-	CMAKE_POLICY(SET CMP0017 NEW)
-    ENDIF(NOT Cmp0017Var)
-ENDIF()
