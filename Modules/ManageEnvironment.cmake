@@ -7,7 +7,7 @@
 #   - ManageEnvironmentCommon is called by both script and build mode;
 #       while this module is called by only build mode.
 #   - ManageEnvironmentCommon should be invoked before project definition;
-#       this module should be invoked after project defintion.
+#       this module should be invoked after project definition.
 #   - ManageEnvironmentCommon caches only variables; 
 #       this module not only caches variables, but also set the compiler flags.
 #

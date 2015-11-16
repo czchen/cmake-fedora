@@ -180,12 +180,12 @@ FUNCTION(CMAKE_FEDORA_GET_VARIABLE_SCRIPT)
     M_OUT("${${var}}")
 ENDFUNCTION(CMAKE_FEDORA_GET_VARIABLE_SCRIPT)
 
+#######################################
+# Init
+#
 SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS ON)
 
-#######################################
-# Determine CMAKE_FEDORA_MODULE_DIR
-#
-
+##== Determine CMAKE_FEDORA_MODULE_DIR ==
 ## It is possible that current dir is in NO_PACK/FedPkg/<prj>
 LIST(INSERT CMAKE_MODULE_PATH 0
     ${CMAKE_SOURCE_DIR}/Modules ${CMAKE_SOURCE_DIR}/cmake-fedora/Modules 
@@ -204,12 +204,21 @@ IF(cmake_fedora_module_dir)
     LIST(INSERT CMAKE_MODULE_PATH 0 "${cmake_fedora_module_dir}")
 ENDIF()
 
+##== Policies ==
+IF(POLICY CMP0017)
+    CMAKE_POLICY(SET CMP0017 NEW)
+ENDIF()
+ 
+##== Module Includes ==
 INCLUDE(ManageMessage RESULT_VARIABLE MANAGE_MODULE_PATH)
 IF(NOT MANAGE_MODULE_PATH)
     MESSAGE(FATAL_ERROR "ManageMessage.cmake cannot be found in ${CMAKE_MODULE_PATH}")
 ENDIF()
 INCLUDE(ManageFile)
 
+#######################################
+# Parse Arguments and Run
+#
 IF(NOT DEFINED cmd)
     CMAKE_FEDORA_SCRIPT_PRINT_USAGE()
 ELSEIF(cmd STREQUAL "find_file" OR cmd STREQUAL "find_program")
