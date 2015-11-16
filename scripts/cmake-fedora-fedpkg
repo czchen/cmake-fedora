@@ -369,7 +369,7 @@ else
     GitNeedMerge=0
 fi
 
-if [[  $ScratchBuild -eq 0 ]];then
+if [[ $ScratchBuild -eq 0 ]];then
     if [[ ! -w "$WorkDir" ]];then
 	if ! mkdir -p "$WorkDir"; then
 	    echo "$WorkDir is not writable." > /dev/stderr
@@ -399,22 +399,25 @@ for b in "${ActionBranchArray[@]}";do
 
     try_command fedpkg_build "$b" "$First"
 
-    BodhiBranch=$($CMakeFedoraKojiCmd bodhi-branch $b)
+    if [[ $ScratchBuild -eq 0 ]];then
+	BodhiBranch=$($CMakeFedoraKojiCmd bodhi-branch $b)
 
-    if [[ -n "$BodhiBranch" ]];then
-	echo -n "Has $Build already in bodhi? ... " > /dev/stderr
-	if is_target_in_bodhi $Build ; then
-	    echo "yes, skip this." > /dev/stderr
-	else
-	    echo "no, will push it." > /dev/stderr
-	    BodhiPushList+=" $Build"
+	if [[ -n "$BodhiBranch" ]];then
+	    echo -n "Has $Build already in bodhi? ... " > /dev/stderr
+	    if is_target_in_bodhi $Build ; then
+		echo "yes, skip this." > /dev/stderr
+	    else
+		echo "no, will push it." > /dev/stderr
+		BodhiPushList+=" $Build"
+	    fi
 	fi
     fi
 done
 
-if [[ -n "$BodhiPushList" ]];then
-    try_command ${BODHI_CMD} -n "${BodhiOptArray[@]}" -t $UpdateType -u $BODHI_USER -N "$ChangeLogText" -R testing $BodhiPushList
-else
-    echo "Nothing to push to bodhi." > /dev/stderr
+if [[ $ScratchBuild -eq 0 ]];then
+    if [[ -n "$BodhiPushList" ]];then
+	try_command ${BODHI_CMD} -n "${BodhiOptArray[@]}" -t $UpdateType -u $BODHI_USER -N "$ChangeLogText" -R testing $BodhiPushList
+    else
+	echo "Nothing to push to bodhi." > /dev/stderr
+    fi
 fi
-
