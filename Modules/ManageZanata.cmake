@@ -664,7 +664,7 @@ FUNCTION(MANAGE_ZANATA_PULL_TARGETS cmdList)
 	DEPENDS ${zanataXml}
 	)
 
-    ### zanata_push_both
+    ### zanata_pull_both
     SET(extraOptions "")
     ZANATA_CLIENT_OPTNAME_LIST_APPEND(extraOptions "PULL_TYPE" "both")
     ADD_CUSTOM_TARGET(zanata_pull_both 
@@ -706,7 +706,7 @@ FUNCTION(MANAGE_ZANATA)
 
     ### zanata_put_version 
     MANAGE_ZANATA_OBTAIN_PUT_VERSION_COMMAND(cmdPushList _o)
-    MANAGE_ZANATA_PUSH_TARGETS("${cmdPushList}")
+    MANAGE_ZANATA_PUT_VERSION_TARGETS("${cmdPushList}")
 
     ### zanata_push
     MANAGE_ZANATA_OBTAIN_PUSH_COMMAND(cmdPushList _o)
@@ -930,7 +930,6 @@ FUNCTION(ZANATA_ZANATA_XML_MAP zanataXml zanataXmlIn workDir)
     ENDFOREACH()
 
     MANAGE_ZANATA_XML_OBJECT_NEW(zObj ${url} ${project} ${version} ${projectType})
-
 
     ## Build "Client Hash"
     MANAGE_GETTEXT_LOCALES(clientLocales WORKING_DIRECTORY "${workDir}" DETECT_PO_DIR poDir ${ARGN})
