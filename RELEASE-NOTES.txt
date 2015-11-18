@@ -1,8 +1,8 @@
 PRJ_VER=2.4.4
-SUMMARY=Fix Zanata target and missing CmakeFedoraScript.cmake
-REDHAT_BUGZILLA=
+SUMMARY=Fix Zanata targets and missing CmakeFedoraScript.cmake
+REDHAT_BUGZILLA=1283082
 [Changes]
 - Fixed:
+  * Bug 1283082 - CmakeFedoraScript.cmake is not found
   * Zanata target generation
-  * Missing CmakeFedoraScript.cmake
   * Missing cmake-fedora-pkgdb

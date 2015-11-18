@@ -1,7 +1,7 @@
-* Mon Nov 16 2015 Ding-Yi Chen <dchen at redhat.com> - 2.4.4
+* Wed Nov 18 2015 Ding-Yi Chen <dchen at redhat.com> - 2.4.4
 - Fixed:
+  * Bug 1283082 - CmakeFedoraScript.cmake is not found
   * Zanata target generation
-  * Missing CmakeFedoraScript.cmake
   * Missing cmake-fedora-pkgdb
 
 * Mon Nov 02 2015 Ding-Yi Chen <dchen at redhat.com> - 2.4.3
