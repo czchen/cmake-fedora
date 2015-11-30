@@ -497,7 +497,7 @@ FUNCTION(ZANATA_CMAKE_OPTIONS_PARSE_OPTIONS_MAP varPrefix)
     ELSEIF(zanataClientFilename STREQUAL "mvn")
 	SET(ZANATA_CLIENT_TYPE "mvn" CACHE INTERNAL "Zanata Client Type")
     ELSE()
-	M_MSG(${M_OFF} "${ZANATA_CLIENT_EXECUTABLE is not a supported Zanata client")
+	M_MSG(${M_OFF} "${ZANATA_CLIENT_EXECUTABLE} is not a supported Zanata client")
 	SET(dependencyMissing 1)
     ENDIF()
 
